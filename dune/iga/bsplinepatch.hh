@@ -42,13 +42,29 @@ public:
 
   BSplineGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk) const
   {
-    assert(dim==2);  // only works for 2d, I was too lazy to implement the general case yet
     std::vector<FieldVector<double,dimworld> > corners(1<<dim);
-    corners[0] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]];
-    corners[1] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]+1];
-    corners[2] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]];
-    corners[3] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]+1];
 
+    switch (dim)
+    {
+      case 1:
+      {
+        corners[0] = controlPoints_[ijk[0]];
+        corners[1] = controlPoints_[ijk[0]+1];
+
+        break;
+      }
+      case 2:
+      {
+        corners[0] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]];
+        corners[1] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]+1];
+        corners[2] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]];
+        corners[3] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]+1];
+
+        break;
+      }
+      default:
+        DUNE_THROW(Dune::NotImplemented, "General case not implemented yet!");
+    }
     return BSplineGeometry<dim,dimworld>(corners);
   }
 
