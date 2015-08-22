@@ -14,23 +14,23 @@ class BsplinePatchData
 {
 public:
     BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
-               const std::vector<FieldVector<double,dimworld> > controlPoints,
-               const int order)
+               const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints,
+               const std::array<int,dim> order)
     : knotSpans_(knotSpans)
     , controlPoints_(controlPoints)
     , order_(order)
     {
     }
 
-    const std::array<std::vector<double>, dim> & getknots()
+    const std::array<std::vector<double>, dim> & getknots() const
     {
         return knotSpans_;
     }
-    const std::vector<FieldVector<double,dimworld>> & getcontrolPoints ()
+    const std::vector<std::vector<FieldVector<double,dimworld> > > & getcontrolPoints () const
     {
         return controlPoints_;
     }
-    const int getorder()
+    const std::array<int,dim> & getorder() const
     {
         return order_;
     }
@@ -38,9 +38,9 @@ private:
 
   const std::array<std::vector<double>,dim>& knotSpans_;
 
-  std::vector<FieldVector<double,dimworld> > controlPoints_;
+  const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints_;
 
-  const int order_;
+  const std::array<int,dim> order_;
 
 };
 
@@ -49,77 +49,128 @@ class BSplineGeometry
 {
 public:
 
-  BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, const double* corner)
+  BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<const double*,dim> corner)
   : Patchdata_(Patchdata)
   , corner_(corner)
-  {}
-
-  FieldVector<double,dimworld> global(const FieldVector<double,dim>& local) const
   {
-    if (local[0]<0 || local[0]>1)
-    {
-        //DUNE_THROW(OutofRange, "local coordinates havae to be in [0,1]!");
-        std::cout<<"fail"<<std::endl;
-    }
-    else
-    {
-        double loc = local[0]*(*(corner_+1)-*corner_) + *corner_;
+      std::array<std::vector<std::vector<double>>,dim> basis;
+      auto & knotSpans = Patchdata_->getknots();
+      auto & order = Patchdata_->getorder();
 
-        const auto& knotSpans = Patchdata_->getknots();
-        const auto& controlPoints = Patchdata_->getcontrolPoints();
-        auto order = Patchdata_->getorder();
-
-        std::vector<std::vector<double>> basis;
-        basis.resize(order+1);
-
-        for (int j=0; j<knotSpans[0].size()-1; ++j)
+        for (int d=0; d<dim; ++d)
         {
-            if(&(knotSpans[0][j]) == (corner_))
-                basis[0].push_back(1);
-            else
+            basis[d].resize(order[d]+1);
+            for (int j=0; j<knotSpans[d].size()-1; ++j)
             {
-                basis[0].push_back(0);
+                if(&(knotSpans[d][j]) == (corner_[d]))
+                    basis[d][0].push_back(1);
+                else
+                    basis[d][0].push_back(0);
             }
         }
+      basis_ = basis;
 
-         double A,B;
-        for (int o=1; o<=order; ++o)
-        {
-            for (int k=0; k<(knotSpans[0].size()-o); ++k)
-            {
-                if ((knotSpans[0][k+o]-knotSpans[0][k]) == 0)
-                    A = 0;
-                else
-                    A = ((loc)-knotSpans[0][k])/ (knotSpans[0][k+o]-knotSpans[0][k]);
+}
 
-                if ((knotSpans[0][k+o+1]-knotSpans[0][k+1]) == 0)
-                    B = 0;
-                else
-                    B = (knotSpans[0][k+o+1]-(loc))/ (knotSpans[0][k+o+1]-knotSpans[0][k+1]);
+  FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+  {
 
-                 basis[o].push_back(A*basis[o-1][k] + B*basis[o-1][k+1]);
-            }
-        }
+    const auto& knotSpans = Patchdata_->getknots();
+    const auto& controlPoints = Patchdata_->getcontrolPoints();
+    const auto& order = Patchdata_->getorder();
+    const auto& basis  = this->getbasis(local);
 
-        FieldVector<double,dimworld> glob = {0,0,0};
+    FieldVector<double,dimworld> glob = {0,0,0};
 
-        for (int i=0; i<controlPoints.size(); ++i)
-        {
-            for (int j=0; j<dimworld; ++j)
-                glob[j] += controlPoints[i][j]*basis[order][i];
+    switch (dim)
+    {
+      case 1:
+      {
+        for (int j=0; j<controlPoints[0].size(); ++j)
+            for (int k=0; k<dimworld; ++k)
+                glob[k] += controlPoints[0][j][k]*basis[0][order[0]][j];
 
+        break;
+      }
+      case 2:
+      {
+        for (int i=0; i<controlPoints[1].size(); ++i)
+            for (int j=0; j<controlPoints[0].size(); ++j)
+                for (int k=0; k<dimworld; ++k)
+                    glob[k] += controlPoints[i][j][k]*basis[0][order[0]][i]*basis[1][order[1]][j];
+
+        break;
+      }
+      default:
+        DUNE_THROW(Dune::NotImplemented, "General case not implemented yet!");
+        /* find a way to handle n-D nets (maybe a new stuct can help a n-D net mapped into a 2-D vector )*/
         }
 
     return glob;
 
+
+  }
+
+  const std::array<std::vector<std::vector<double> >,dim > & getbasis (const FieldVector<double,dim>& local)
+  {
+      /*note: define lower and upperbounds so a loop over all knots is not needed.... or fnd a better way to generate the right basis functions*/
+    if (check(local) == true)
+    {
+        const auto & order = Patchdata_->getorder();
+        const auto & knotSpans = Patchdata_->getknots();
+        double loc, A, B;
+
+        /*generate the basis functions using the Cox-de Boor recursion formula*/
+        for (int d=0; d<dim; ++d)
+        {
+            loc = local[d]*(*(corner_[d]+1)-*corner_[d]) + *corner_[d];
+            for (int o=1; o<=order[d]; ++o)
+            {
+                basis_[d][o].resize(knotSpans[d].size()-o);
+
+                for (int k=0; k<(knotSpans[d].size()-o); ++k)
+                {
+                    if ((knotSpans[d][k+o]-knotSpans[d][k]) == 0)
+                        A = 0;
+                    else
+                        A = ((loc)-knotSpans[d][k])/ (knotSpans[d][k+o]-knotSpans[d][k]);
+
+                    if ((knotSpans[d][k+o+1]-knotSpans[d][k+1]) == 0)
+                        B = 0;
+                    else
+                        B = (knotSpans[d][k+o+1]-(loc))/ (knotSpans[d][k+o+1]-knotSpans[d][k+1]);
+
+                    basis_[d][o][k] =  A*basis_[d][o-1][k] + B*basis_[d][o-1][k+1];
+
+                }
+            }
+        }
     }
+
+    return basis_;
   }
 
 private:
 
+    bool check (const FieldVector<double,dim> &local) const
+    {
+        for (int i=0; i<dim;++i)
+        {
+            if (local[i]<0 || local[i]>1)
+            {
+                //DUNE_THROW(OutofRange, "local coordinates havae to be in [0,1]!");
+                std::cout<<"fail"<<std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
+
     std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata_;
 
-    const double* corner_;
+    std::array<const double*,dim> corner_;
+
+    std::array<std::vector<std::vector<double>>,dim> basis_;
 
 };
 
@@ -128,66 +179,66 @@ class BSplinePatch
 {
 public:
 
-  BSplinePatch(/*const FieldVector<double,dim>& lower,
-               const FieldVector<double,dim>& upper,*/
-               const std::array<std::vector<double>,dim>& knotSpans,
-               const std::vector<FieldVector<double,dimworld> > controlPoints,
-               const int order)
+  BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
+               const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints,
+               const std::array<int,dim> order)
   : Patchdata_(new BsplinePatchData<dim,dimworld>(knotSpans, controlPoints, order))
   {
   }
 
   BSplineGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
   {
-//     std::vector<FieldVector<double,dimworld> > corners(1<<dim);
-//         corners[0] = controlPoints_[ijk[0]];
-//         corners[1] = controlPoints_[ijk[0]+1];
 
-//     switch (dim)
-//     {
-//       case 1:
-//       {
-//         corners[0] = controlPoints_[ijk[0]];
-//         corners[1] = controlPoints_[ijk[0]+1];
-//
-//         break;
-//       }
-//       case 2:
-//       {
-//         corners[0] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]];
-//         corners[1] = controlPoints_[ijk[1]*(knotSpans_[0]+1) + ijk[0]+1];
-//         corners[2] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]];
-//         corners[3] = controlPoints_[(ijk[1]+1)*(knotSpans_[0]+1) + ijk[0]+1];
-//
-//         break;
-//       }
-//       default:
-//         DUNE_THROW(Dune::NotImplemented, "General case not implemented yet!");
-//     }
+        const auto & knotSpans = Patchdata_->getknots();
 
-
-        unsigned int i = 0;
         unsigned int count = 0;
+        std::array<unsigned int,dim> index;
+        for (int i=0; i<dim; ++i)
+            index[i]=0;
 
-        auto& knotSpans = Patchdata_->getknots();
-
-
+        /*finds the working geometry object ijk
+         *(working geometry objects are difined between 2 knots, were knot[i]<kont[i+1])*/
         for (int j=0; j<dim; ++j)
         {
-            while(count <= ijk[0])
+            count = 0;
+            while(count <= ijk[j])
             {
-                if (i == knotSpans[0].size())
+                if (index[j] == knotSpans[j].size())
                     break;
 
-                if (knotSpans[j][i+1] > knotSpans[j][i])
+                if (knotSpans[j][index[j]+1] > knotSpans[j][index[j]])
                     count++;
 
-                ++i;
+                ++index[j];
             }
-
         }
 
-    return BSplineGeometry<dim,dimworld>(Patchdata_,&knotSpans[0][i-1]);
+        /*the pointer on each dim-knotspan for geometry ijk is stored in an array named corners*/
+        std::array<const double* ,dim> corners;
+        for(int i=0; i<dim; ++i)
+            corners[i] = &knotSpans[i][index[i]-1];
+
+
+    return BSplineGeometry<dim,dimworld>(Patchdata_,corners);
+  }
+
+  std::array<unsigned int,dim> validknotsize() const
+  {
+      const auto & knotSpans = Patchdata_->getknots();
+      std::array<unsigned int,dim> validknotsize;
+      for (int i=0; i<dim; ++i)
+          validknotsize[i]=0;
+
+      for (int j=0; j<dim; ++j){
+        for (int i=0; i<knotSpans[j].size()-1; ++i)
+        {
+                if (knotSpans[j][i+1] > knotSpans[j][i])
+                    ++validknotsize[j];
+
+            }
+        }
+
+        return validknotsize;
   }
 
 private:
