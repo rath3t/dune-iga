@@ -1,7 +1,6 @@
 #ifndef DUNE_IGA_BSPLINEPATCH_HH
 #define DUNE_IGA_BSPLINEPATCH_HH
 
-#include <dune/geometry/multilineargeometry.hh>
 #include <memory>
 
 namespace Dune
