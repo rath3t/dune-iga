@@ -80,7 +80,8 @@ public:
     const auto& order = Patchdata_->getorder();
     const auto& basis  = this->getbasis(local);
 
-    FieldVector<double,dimworld> glob = {0,0,0};
+    FieldVector<double,dimworld> glob;
+    std::fill(glob.begin(), glob.end(), 0.0);
 
     switch (dim)
     {
@@ -193,8 +194,7 @@ public:
 
         unsigned int count = 0;
         std::array<unsigned int,dim> index;
-        for (int i=0; i<dim; ++i)
-            index[i]=0;
+        std::fill(index.begin(), index.end(), 0);
 
         /*finds the working geometry object ijk
          *(working geometry objects are difined between 2 knots, were knot[i]<kont[i+1])*/
@@ -226,8 +226,7 @@ public:
   {
       const auto & knotSpans = Patchdata_->getknots();
       std::array<unsigned int,dim> validknotsize;
-      for (int i=0; i<dim; ++i)
-          validknotsize[i]=0;
+      std::fill(validknotsize.begin(), validknotsize.end(), 0);
 
       for (int j=0; j<dim; ++j){
         for (int i=0; i<knotSpans[j].size()-1; ++i)
