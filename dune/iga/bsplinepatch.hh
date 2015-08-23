@@ -113,9 +113,11 @@ public:
 
   const std::array<std::vector<std::vector<double> >,dim > & getbasis (const FieldVector<double,dim>& local)
   {
+    for (int i=0; i<dim;++i)
+      if (local[i]<0 || local[i]>1)
+        DUNE_THROW(RangeError, "Local coordinates have to be in [0,1]^dim!");
+
       /*note: define lower and upperbounds so a loop over all knots is not needed.... or fnd a better way to generate the right basis functions*/
-    if (check(local) == true)
-    {
         const auto & order = Patchdata_->getorder();
         const auto & knotSpans = Patchdata_->getknots();
         double loc, A, B;
@@ -145,26 +147,11 @@ public:
                 }
             }
         }
-    }
 
     return basis_;
   }
 
 private:
-
-    bool check (const FieldVector<double,dim> &local) const
-    {
-        for (int i=0; i<dim;++i)
-        {
-            if (local[i]<0 || local[i]>1)
-            {
-                //DUNE_THROW(OutofRange, "local coordinates havae to be in [0,1]!");
-                std::cout<<"fail"<<std::endl;
-                return false;
-            }
-        }
-        return true;
-    }
 
     std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata_;
 
