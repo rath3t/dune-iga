@@ -47,10 +47,10 @@ void testBSplineSurface()
 
 const auto validknotes = patch.validknotsize();
 
-for (unsigned int d=0; d<dim; ++d){
-  for (unsigned int i=0; i<validknotes[d]; i++)
+for (unsigned int j=0; j<validknotes[1]; ++j){
+  for (unsigned int i=0; i<validknotes[0]; i++)
   {
-      auto geometry = patch.geometry({i,0});
+      auto geometry = patch.geometry({i,j});
 
       //Add vertex coordinates to the VTK file
       for (int iy=0; iy<=(1<<subSampling); iy++)

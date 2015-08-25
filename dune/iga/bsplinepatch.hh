@@ -131,8 +131,7 @@ public:
             for (int o=1; o<=order[d]; ++o)
             {
                 basis_[d][o].resize(knotSpans[d].size()-o);
-
-                for (int k=0; k<(knotSpans[d].size()-o); ++k)
+                for (int k=0; k<(knotSpans[d].size()-(o+1)); ++k)
                 {
                     if ((knotSpans[d][k+o]-knotSpans[d][k]) == 0)
                         A = 0;
