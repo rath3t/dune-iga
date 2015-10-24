@@ -5,8 +5,112 @@
 
 #include <memory>
 
+
 namespace Dune
 {
+template <int netdim, int dimworld>
+class MultiDimensionNet
+{
+public:
+	MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
+	: dimSize_(dimSize)
+	{
+		int size = 1;
+		for (int i=0; i<netdim; ++i)
+			size*=dimSize_[i];
+
+		values_.resize(size);
+	}
+	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<FieldVector<double, dimworld>> values)
+	: values_(values)
+	, dimSize_(dimSize)
+	{}
+
+	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<std::vector<FieldVector<double, dimworld> > > values)
+	: dimSize_(dimSize)
+	{
+		values_.resize(values.size()*values[0].size());
+
+		for (unsigned int i=0; i<values.size(); ++i){
+			for(unsigned int j=0; j<values[0].size(); ++j){
+				std::array<unsigned int,netdim> multiIndex = {i,j};
+				this->set(multiIndex, values[i][j]);
+			}
+		}
+	}
+
+	void set (std::array<unsigned int, netdim> multiIndex, FieldVector<double,dimworld> value)
+	{
+		int index = this->index(multiIndex);
+		values_[index] = value;
+	}
+
+	FieldVector<double, dimworld> get (std::array<unsigned int, netdim> multiIndex) const
+	{
+		int index = this->index(multiIndex);
+		return values_[index];
+	}
+
+	FieldVector<double, dimworld> directGet (int index) const
+	{
+		return values_[index];
+	}
+
+	std::array<unsigned int,netdim> directToMultiIndex (unsigned int index) const
+	{
+		std::array<unsigned int, netdim> multiIndex;
+
+		unsigned int help = index ;
+		int temp;
+		for (int i=0; i<netdim; ++i)
+		{
+				temp = help%(dimSize_[netdim-(i+1)]);
+				multiIndex[netdim-(i+1)] = temp;
+				help -= temp;
+				help = help/dimSize_[netdim-(i+1)];
+		}
+
+
+		return multiIndex;
+	}
+// used for testing
+// 	void disp() const
+// 	{
+// 		for (int i=0; i<values_.size(); ++i)
+// 			std::cout<<"i: "<<i<<" value= "<<values_[i][0]<<" "<<values_[i][1]<<" "<<values_[i][2]<<std::endl;
+// 	}
+
+	std::array<unsigned int,netdim> size() const
+	{
+		return dimSize_;
+	}
+
+	unsigned int directSize () const
+	{
+		return values_.size();
+	}
+private:
+	int index (std::array<unsigned int, netdim> multiIndex)const
+	{
+		int index,help ;
+		index = 0;
+		for (int i=0; i<netdim; ++i)
+		{
+			help = 1;
+			for (int j=(i+1); j<netdim ;++j)
+				help *= dimSize_[j];
+
+			index += help*multiIndex[i];
+		}
+		return index;
+	}
+
+private:
+
+	std::array<unsigned int,netdim> dimSize_;
+	std::vector<FieldVector<double,dimworld> > values_;
+};
+
 namespace IGA
 {
 
@@ -15,7 +119,7 @@ class BsplinePatchData
 {
 public:
     BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
-               const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints,
+               const MultiDimensionNet<dim,dimworld> controlPoints,
                const std::array<int,dim> order)
     : knotSpans_(knotSpans)
     , controlPoints_(controlPoints)
@@ -27,7 +131,7 @@ public:
     {
         return knotSpans_;
     }
-    const std::vector<std::vector<FieldVector<double,dimworld> > > & getcontrolPoints () const
+    const MultiDimensionNet<dim,dimworld> & getcontrolPoints () const
     {
         return controlPoints_;
     }
@@ -39,7 +143,7 @@ private:
 
   const std::array<std::vector<double>,dim>& knotSpans_;
 
-  const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints_;
+  const MultiDimensionNet<dim,dimworld>  controlPoints_;
 
   const std::array<int,dim> order_;
 
@@ -84,29 +188,21 @@ public:
     FieldVector<double,dimworld> glob;
     std::fill(glob.begin(), glob.end(), 0.0);
 
-    switch (dim)
-    {
-      case 1:
-      {
-        for (int j=0; j<controlPoints[0].size(); ++j)
-            for (int k=0; k<dimworld; ++k)
-                glob[k] += controlPoints[0][j][k]*basis[0][order[0]][j];
+	std::array<unsigned int,dim> multiIndex;
+	double temp;
 
-        break;
-      }
-      case 2:
-      {
-        for (int i=0; i<controlPoints[1].size(); ++i)
-            for (int j=0; j<controlPoints[0].size(); ++j)
-                for (int k=0; k<dimworld; ++k)
-                    glob[k] += controlPoints[i][j][k]*basis[0][order[0]][i]*basis[1][order[1]][j];
+	for (unsigned int i=0; i<controlPoints.directSize(); ++i)
+	{
+		auto cp = controlPoints.directGet(i);
+		multiIndex =  controlPoints.directToMultiIndex(i);
+		temp = 1;
+		for (unsigned int d=0; d<dim; ++d)
+			temp *= basis[d][order[d]][multiIndex[d]];
 
-        break;
-      }
-      default:
-        DUNE_THROW(Dune::NotImplemented, "General case not implemented yet!");
-        /* find a way to handle n-D nets (maybe a new stuct can help a n-D net mapped into a 2-D vector )*/
-        }
+		for (unsigned int k=0; k<dimworld; ++k)
+			glob[k] += cp[k]*temp;
+
+	}
 
     return glob;
 
@@ -168,7 +264,7 @@ class BSplinePatch
 public:
 
   BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
-               const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints,
+               const MultiDimensionNet<dim,dimworld> controlPoints,
                const std::array<int,dim> order)
   : Patchdata_(new BsplinePatchData<dim,dimworld>(knotSpans, controlPoints, order))
   {

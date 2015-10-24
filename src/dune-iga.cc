@@ -31,8 +31,12 @@ void testBSplineSurface()
   const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,1},{0,0,0,1,1,1}}};
 
   const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints = {{{{0,0,1},{1,0,1},{2,0,2}}, {{0,1,0},{1,1,0},{2,1,0}}, {{0,2,1},{1,2,2},{2,2,2}} }};
-//
-   IGA::BSplinePatch<dim,dimworld> patch(knotSpans, controlPoints, order);
+
+  std::array<unsigned int,dim> dimsize = {controlPoints.size(),controlPoints[0].size()};
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+  //controlNet.disp();
+
+  IGA::BSplinePatch<dim,dimworld> patch(knotSpans, controlNet, order);
 
 
   ////////////////////////////////////////////////////////////////
@@ -114,9 +118,13 @@ void testBSplineCurve()
 
   const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,2,3,4,4,5,5,5}}};
 
-  const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints = {{{{1,3,4}, {2,2,2}, {3,4,5}, {5,1,7}, {4,7,2}, {8,6,2}, {2,9,9}, {1,4,3},{1,7,1}}}};
+  const std::vector<FieldVector<double,dimworld> > controlPoints = {{1,3,4}, {2,2,2}, {3,4,5}, {5,1,7}, {4,7,2}, {8,6,2}, {2,9,9}, {1,4,3},{1,7,1}};
 
-  IGA::BSplinePatch<dim,dimworld> patch(knotSpans, controlPoints, order);
+  std::array<unsigned int,dim> dimsize = {controlPoints.size()};
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+  //controlNet.disp();
+
+  IGA::BSplinePatch<dim,dimworld> patch(knotSpans, controlNet, order);
 
   ////////////////////////////////////////////////////////////////
   //  Write to a VTK file.                                      //
@@ -172,16 +180,12 @@ int main(int argc, char** argv) try
 
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
-  const int dim =1;
 
   testBSplineCurve();
   std::cout<< "done with curve" << std::endl;
 
   testBSplineSurface();
   std::cout<< "done with surface" << std::endl;
-
-
-
 
   return 0;
 }
