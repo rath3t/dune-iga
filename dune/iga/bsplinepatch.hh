@@ -8,10 +8,15 @@
 
 namespace Dune
 {
+	/** \brief class holds a n-dim net */
 template <int netdim, int dimworld>
 class MultiDimensionNet
 {
 public:
+	/** \brief default constructor
+	 *
+	 * \param[in] dimSize array of the size of each dimension
+	 */
 	MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
 	: dimSize_(dimSize)
 	{
@@ -21,11 +26,23 @@ public:
 
 		values_.resize(size);
 	}
+
+	/** \brief constructor intended for the 1-D if the values are already in a vector
+	 * \note can also be used if the values are already mapped
+	 *
+	 *  \param[in] dimSize array of the size of each dimension
+	 *  \param[in] values vector with values
+	 */
 	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<FieldVector<double, dimworld>> values)
 	: values_(values)
 	, dimSize_(dimSize)
 	{}
 
+	/** \brief constructor intended for the 2-D if the values are already in a matrix
+	 *
+	 *  \param[in] dimSize array of the size of each dimension
+	 *  \param[in] values matrix with values
+	 */
 	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<std::vector<FieldVector<double, dimworld> > > values)
 	: dimSize_(dimSize)
 	{
@@ -39,23 +56,29 @@ public:
 		}
 	}
 
+	/** \brief sets a value at the multiindex */
 	void set (std::array<unsigned int, netdim> multiIndex, FieldVector<double,dimworld> value)
 	{
 		int index = this->index(multiIndex);
 		values_[index] = value;
 	}
 
+	/** \brief returns the value at the multiindex */
 	FieldVector<double, dimworld> get (std::array<unsigned int, netdim> multiIndex) const
 	{
 		int index = this->index(multiIndex);
 		return values_[index];
 	}
 
+	/** \brief returns a value at an index (unmapped)
+	  * \note only to be used when the mapping is known
+	 */
 	FieldVector<double, dimworld> directGet (int index) const
 	{
 		return values_[index];
 	}
 
+	/** \brief returns a multiindex for a scalar index */
 	std::array<unsigned int,netdim> directToMultiIndex (unsigned int index) const
 	{
 		std::array<unsigned int, netdim> multiIndex;
@@ -73,13 +96,8 @@ public:
 
 		return multiIndex;
 	}
-// used for testing
-// 	void disp() const
-// 	{
-// 		for (int i=0; i<values_.size(); ++i)
-// 			std::cout<<"i: "<<i<<" value= "<<values_[i][0]<<" "<<values_[i][1]<<" "<<values_[i][2]<<std::endl;
-// 	}
 
+	/** \brief returns an array with the size of each dimension */
 	std::array<unsigned int,netdim> size() const
 	{
 		return dimSize_;
@@ -114,10 +132,17 @@ private:
 namespace IGA
 {
 
+/** \brief class that holds all data regarding the B-Spline stucture */
 template<int dim, int dimworld>
 class BsplinePatchData
 {
 public:
+	/** \brief default Constructor
+	 *
+	 * \param[in] knotSpans vector of knotSpans for each dimension
+	 * \param[in] controlPoints a n-dimensional net of Control controlPoints
+	 * \param[in] order orde of the B-Spline structure for each dimension
+	 */
     BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
                const MultiDimensionNet<dim,dimworld> controlPoints,
                const std::array<int,dim> order)
@@ -127,14 +152,19 @@ public:
     {
     }
 
+    /** \brief returns the Knot Span*/
     const std::array<std::vector<double>, dim> & getknots() const
     {
         return knotSpans_;
     }
+
+    /** \brief returns the Control Point*/
     const MultiDimensionNet<dim,dimworld> & getcontrolPoints () const
     {
         return controlPoints_;
     }
+
+    /** \brief returns the order*/
     const std::array<int,dim> & getorder() const
     {
         return order_;
@@ -149,15 +179,21 @@ private:
 
 };
 
+/** \brief */
 template <int dim, int dimworld>
 class BSplineGeometry
 {
 public:
-
+  /** \brief default Constructor
+   *
+   * \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
+   * \param[in] corner Pointer (for each dimension) to the Knot span where the Geometry object is supposed to operate
+   */
   BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<const double*,dim> corner)
   : Patchdata_(Patchdata)
   , corner_(corner)
   {
+	  // note it`s maybe not such a good a idea to store all of that!
       std::array<std::vector<std::vector<double>>,dim> basis;
       auto & knotSpans = Patchdata_->getknots();
       auto & order = Patchdata_->getorder();
@@ -177,6 +213,10 @@ public:
 
 }
 
+  /** \brief evaluates the B-Spline mapping
+   *
+   * \param[in] local local coordinates for each dimension
+   */
   FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
   {
 
@@ -209,6 +249,10 @@ public:
 
   }
 
+  /** \brief evaluates the basis Functions at the given local coordinates
+   *
+   * \param[in] local loacal coordinates for each dimension
+   */
   const std::array<std::vector<std::vector<double> >,dim > & getbasis (const FieldVector<double,dim>& local)
   {
     for (int i=0; i<dim;++i)
@@ -258,11 +302,17 @@ private:
 
 };
 
+/** \brief class */
 template <int dim, int dimworld>
 class BSplinePatch
 {
 public:
-
+	/** \brief default Constructor
+	 *
+	 * \param[in] knotSpans vector of knotSpans for each dimension
+	 * \param[in] controlPoints a n-dimensional net of Control controlPoints
+	 * \param[in] order orde of the B-Spline structure for each dimension
+	 */
   BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
                const MultiDimensionNet<dim,dimworld> controlPoints,
                const std::array<int,dim> order)
@@ -270,6 +320,12 @@ public:
   {
   }
 
+  /** \brief creates a BSplineGeometry object
+   *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimesion
+   *  and generates a Geometry object
+   *
+   * \param[in] ijk array of indecies for each dimension
+   */
   BSplineGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
   {
 
@@ -305,6 +361,7 @@ public:
     return BSplineGeometry<dim,dimworld>(Patchdata_,corners);
   }
 
+  /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
   std::array<unsigned int,dim> validknotsize() const
   {
       const auto & knotSpans = Patchdata_->getknots();
