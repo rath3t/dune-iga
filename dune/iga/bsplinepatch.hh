@@ -194,6 +194,7 @@ public:
   , corner_(corner)
   {
 	  // note it`s maybe not such a good a idea to store all of that!
+      // Yes, true
       std::array<std::vector<std::vector<double>>,dim> basis;
       auto & knotSpans = Patchdata_->getknots();
       auto & order = Patchdata_->getorder();
@@ -264,6 +265,7 @@ public:
         const auto & knotSpans = Patchdata_->getknots();
         double loc, A, B;
 
+        /*only generate non-vanishing basis function*/
         /*generate the basis functions using the Cox-de Boor recursion formula*/
         for (int d=0; d<dim; ++d)
         {
@@ -352,6 +354,7 @@ public:
             }
         }
 
+        /* nothing */
         /*the pointer on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<const double* ,dim> corners;
         for(int i=0; i<dim; ++i)
