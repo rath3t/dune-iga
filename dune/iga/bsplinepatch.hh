@@ -189,30 +189,13 @@ public:
    * \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
    * \param[in] corner Pointer (for each dimension) to the Knot span where the Geometry object is supposed to operate
    */
-  BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<const double*,dim> corner)
+  BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<std::vector<double>::const_iterator,dim> corner)
   : Patchdata_(Patchdata)
   , corner_(corner)
   {
 	  // note it`s maybe not such a good a idea to store all of that!
-      // Yes, true
-      std::array<std::vector<std::vector<double>>,dim> basis;
-      auto & knotSpans = Patchdata_->getknots();
-      auto & order = Patchdata_->getorder();
-
-        for (int d=0; d<dim; ++d)
-        {
-            basis[d].resize(order[d]+1);
-            for (int j=0; j<knotSpans[d].size()-1; ++j)
-            {
-                if(&(knotSpans[d][j]) == (corner_[d]))
-                    basis[d][0].push_back(1);
-                else
-                    basis[d][0].push_back(0);
-            }
-        }
-      basis_ = basis;
-
-}
+      std::array<std::vector<double>,dim> _basis;
+  }
 
   /** \brief evaluates the B-Spline mapping
    *
@@ -225,24 +208,31 @@ public:
     const auto& controlPoints = Patchdata_->getcontrolPoints();
     const auto& order = Patchdata_->getorder();
     const auto& basis  = this->getbasis(local);
-
     FieldVector<double,dimworld> glob;
     std::fill(glob.begin(), glob.end(), 0.0);
-
-	std::array<unsigned int,dim> multiIndex;
-	double temp;
-
-	for (unsigned int i=0; i<controlPoints.directSize(); ++i)
+    std::array<unsigned int,dim> multiIndex_Basisfucntion, multiIndex_ControlNet;
+    double temp;
+    std::array<unsigned int,dim> dimsize;
+    std::array<unsigned int,dim> cornerIdx;
+    for (unsigned int d=0; d<dim; ++d)
 	{
-		auto cp = controlPoints.directGet(i);
-		multiIndex =  controlPoints.directToMultiIndex(i);
-		temp = 1;
-		for (unsigned int d=0; d<dim; ++d)
-			temp *= basis[d][order[d]][multiIndex[d]];
-
+        dimsize[d] = order[d]+1;
+        cornerIdx[d] = corner_[d]-knotSpans[d].begin();
+    }
+    /*Index net for valid basis functions*/
+    auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+    for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
+    {
+        multiIndex_Basisfucntion =  basisFunctionNet.directToMultiIndex(i);
+        temp = 1;
+        for (unsigned int d=0; d<dim; ++d)
+        {
+            temp *= basis[d][multiIndex_Basisfucntion[d]];
+            multiIndex_ControlNet[d] = multiIndex_Basisfucntion[d]+cornerIdx[d]-order[d];
+        }
+        auto cp = controlPoints.get(multiIndex_ControlNet);
 		for (unsigned int k=0; k<dimworld; ++k)
 			glob[k] += cp[k]*temp;
-
 	}
 
     return glob;
@@ -254,7 +244,7 @@ public:
    *
    * \param[in] local loacal coordinates for each dimension
    */
-  const std::array<std::vector<std::vector<double> >,dim > & getbasis (const FieldVector<double,dim>& local)
+  const std::array<std::vector<double>,dim > & getbasis (const FieldVector<double,dim>& local)
   {
     for (int i=0; i<dim;++i)
       if (local[i]<0 || local[i]>1)
@@ -263,31 +253,30 @@ public:
       /*note: define lower and upperbounds so a loop over all knots is not needed.... or fnd a better way to generate the right basis functions*/
         const auto & order = Patchdata_->getorder();
         const auto & knotSpans = Patchdata_->getknots();
-        double loc, A, B;
+        double loc;
+        double saved;
 
-        /*only generate non-vanishing basis function*/
-        /*generate the basis functions using the Cox-de Boor recursion formula*/
+        /*Compute the nonvanishing basis function. See "The NURBS book"*/
         for (int d=0; d<dim; ++d)
         {
             loc = local[d]*(*(corner_[d]+1)-*corner_[d]) + *corner_[d];
+            basis_[d].resize(order[d]+1);
+            std::vector<double> left, right;
+            left.resize(order[d]+1);
+            right.resize(order[d]+1);
+            basis_[d][0] = 1;
             for (int o=1; o<=order[d]; ++o)
             {
-                basis_[d][o].resize(knotSpans[d].size()-o);
-                for (int k=0; k<(knotSpans[d].size()-(o+1)); ++k)
+                left[o] = loc-*(corner_[d]+1-o);
+                right[o] = *(corner_[d]+o)-loc;
+                saved = 0;
+                for (int r=0; r<o; ++r)
                 {
-                    if ((knotSpans[d][k+o]-knotSpans[d][k]) == 0)
-                        A = 0;
-                    else
-                        A = ((loc)-knotSpans[d][k])/ (knotSpans[d][k+o]-knotSpans[d][k]);
-
-                    if ((knotSpans[d][k+o+1]-knotSpans[d][k+1]) == 0)
-                        B = 0;
-                    else
-                        B = (knotSpans[d][k+o+1]-(loc))/ (knotSpans[d][k+o+1]-knotSpans[d][k+1]);
-
-                    basis_[d][o][k] =  A*basis_[d][o-1][k] + B*basis_[d][o-1][k+1];
-
+                    double temp = basis_[d][r]/(right[r+1]+left[o-r]);
+                    basis_[d][r] = saved+right[r+1]*temp;
+                    saved = left[o-r]*temp;
                 }
+                basis_[d][o] = saved;
             }
         }
 
@@ -298,9 +287,9 @@ private:
 
     std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata_;
 
-    std::array<const double*,dim> corner_;
+    std::array<std::vector<double>::const_iterator,dim> corner_;
 
-    std::array<std::vector<std::vector<double>>,dim> basis_;
+    std::array<std::vector<double>,dim> basis_;
 
 };
 
@@ -354,11 +343,12 @@ public:
             }
         }
 
-        /* nothing */
         /*the pointer on each dim-knotspan for geometry ijk is stored in an array named corners*/
-        std::array<const double* ,dim> corners;
+        std::array<std::vector<double>::const_iterator,dim> corners;
         for(int i=0; i<dim; ++i)
-            corners[i] = &knotSpans[i][index[i]-1];
+        {
+          corners[i] = (knotSpans[i]).begin()+index[i]-1;
+        }
 
 
     return BSplineGeometry<dim,dimworld>(Patchdata_,corners);
