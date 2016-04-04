@@ -1,168 +1,32 @@
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_IGA_BSPLINEPATCH_HH
-#define DUNE_IGA_BSPLINEPATCH_HH
+#ifndef DUNE_IGA_NURBSPATCH_HH
+#define DUNE_IGA_NURBSPATCH_HH
 
 #include <memory>
-
+#include <dune/iga/bsplinepatch.hh>
 
 namespace Dune
 {
-	/** \brief class holds a n-dim net */
-template <int netdim, int dimworld>
-class MultiDimensionNet
-{
-public:
-	/** \brief default constructor
-	 *
-	 * \param[in] dimSize array of the size of each dimension
-	 */
-	MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
-	: dimSize_(dimSize)
-	{
-		int size = 1;
-		for (int i=0; i<netdim; ++i)
-			size*=dimSize_[i];
-
-		values_.resize(size);
-	}
-
-	/** \brief constructor intended for the 1-D if the values are already in a vector
-	 * \note can also be used if the values are already mapped
-	 *
-	 *  \param[in] dimSize array of the size of each dimension
-	 *  \param[in] values vector with values
-	 */
-	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<FieldVector<double, dimworld>> values)
-	: values_(values)
-	, dimSize_(dimSize)
-	{}
-
-	/** \brief constructor intended for the 2-D if the values are already in a matrix
-	 *
-	 *  \param[in] dimSize array of the size of each dimension
-	 *  \param[in] values matrix with values
-	 */
-	MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<std::vector<FieldVector<double, dimworld> > > values)
-	: dimSize_(dimSize)
-	{
-		values_.resize(values.size()*values[0].size());
-
-		for (unsigned int i=0; i<values.size(); ++i){
-			for(unsigned int j=0; j<values[0].size(); ++j){
-				std::array<unsigned int,netdim> multiIndex = {i,j};
-				this->set(multiIndex, values[i][j]);
-			}
-		}
-	}
-
-    /** \brief constructor for a grid of the same value
-     *
-     *  \param[in] dimSize array of the size of each dimension
-     *  \param[in] value a common value to fill the grid
-     */
-    MultiDimensionNet (std::array<unsigned int, netdim> dimSize, FieldVector<double, dimworld> value)
-    : dimSize_(dimSize)
-    {
-        int size = 1;
-        for (int i=0; i<netdim; ++i)
-             size*=dimSize_[i];
-        values_.resize(size);
-        std::fill(values_.begin(), values_.end(), value);
-    }
-
-	/** \brief sets a value at the multiindex */
-	void set (std::array<unsigned int, netdim> multiIndex, FieldVector<double,dimworld> value)
-	{
-		int index = this->index(multiIndex);
-		values_[index] = value;
-	}
-
-	/** \brief returns the value at the multiindex */
-	FieldVector<double, dimworld> get (std::array<unsigned int, netdim> multiIndex) const
-	{
-		int index = this->index(multiIndex);
-		return values_[index];
-	}
-
-	/** \brief returns a value at an index (unmapped)
-	  * \note only to be used when the mapping is known
-	 */
-	FieldVector<double, dimworld> directGet (int index) const
-	{
-		return values_[index];
-	}
-
-	/** \brief returns a multiindex for a scalar index */
-	std::array<unsigned int,netdim> directToMultiIndex (unsigned int index) const
-	{
-		std::array<unsigned int, netdim> multiIndex;
-
-		unsigned int help = index ;
-		int temp;
-		for (int i=0; i<netdim; ++i)
-		{
-				temp = help%(dimSize_[netdim-(i+1)]);
-				multiIndex[netdim-(i+1)] = temp;
-				help -= temp;
-				help = help/dimSize_[netdim-(i+1)];
-		}
-
-
-		return multiIndex;
-	}
-
-	/** \brief returns an array with the size of each dimension */
-	std::array<unsigned int,netdim> size() const
-	{
-		return dimSize_;
-	}
-
-	unsigned int directSize () const
-	{
-		return values_.size();
-	}
-private:
-	int index (std::array<unsigned int, netdim> multiIndex)const
-	{
-		int index,help ;
-		index = 0;
-		for (int i=0; i<netdim; ++i)
-		{
-			help = 1;
-			for (int j=(i+1); j<netdim ;++j)
-				help *= dimSize_[j];
-
-			index += help*multiIndex[i];
-		}
-		return index;
-	}
-
-private:
-
-	std::array<unsigned int,netdim> dimSize_;
-	std::vector<FieldVector<double,dimworld> > values_;
-};
-
 namespace IGA
 {
 
-/** \brief class that holds all data regarding the B-Spline stucture */
+/** \brief class that holds all data regarding the NURBS structure */
 template<int dim, int dimworld>
-class BsplinePatchData
+class NURBSPatchData
 {
 public:
-	/** \brief default Constructor
-	 *
-	 * \param[in] knotSpans vector of knotSpans for each dimension
-	 * \param[in] controlPoints a n-dimensional net of Control controlPoints
-	 * \param[in] order orde of the B-Spline structure for each dimension
-	 */
-    BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
+    /** \brief default Constructor
+     *
+     * \param[in] knotSpans vector of knotSpans for each dimension
+     * \param[in] controlPoints a n-dimensional net of Control controlPoints
+     * \param[in] order order of the NURBS structure for each dimension
+     */
+    NURBSPatchData(const std::array<std::vector<double>,dim>& knotSpans,
                const MultiDimensionNet<dim,dimworld> controlPoints,
+               const MultiDimensionNet<dim,1> weights,
                const std::array<int,dim> order)
     : knotSpans_(knotSpans)
     , controlPoints_(controlPoints)
+    , weights_(weights)
     , order_(order)
     {
     }
@@ -179,6 +43,12 @@ public:
         return controlPoints_;
     }
 
+    /** \brief returns the weights*/
+    const MultiDimensionNet<dim,1> & getweights() const
+    {
+        return weights_;
+    }
+
     /** \brief returns the order*/
     const std::array<int,dim> & getorder() const
     {
@@ -190,47 +60,55 @@ private:
 
   const MultiDimensionNet<dim,dimworld>  controlPoints_;
 
+  const MultiDimensionNet<dim,1>  weights_;
+
   const std::array<int,dim> order_;
 
 };
 
 /** \brief */
 template <int dim, int dimworld>
-class BSplineGeometry
+class NURBSGeometry
 {
 public:
   /** \brief default Constructor
    *
-   * \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
-   * \param[in] corner Pointer (for each dimension) to the Knot span where the Geometry object is supposed to operate
+   * \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
+   * \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
    */
-  BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<std::vector<double>::const_iterator,dim> corner)
+  NURBSGeometry(std::shared_ptr <NURBSPatchData<dim,dimworld>> Patchdata, std::array<std::vector<double>::const_iterator,dim> corner)
   : Patchdata_(Patchdata)
   , corner_(corner)
   {
-	  // note it`s maybe not such a good a idea to store all of that!
+      //* only order+1 basis functions are needed for each dimension*/
       std::array<std::vector<double>,dim> _basis;
   }
 
-  /** \brief evaluates the B-Spline mapping
+  /** \brief evaluates the NURBS mapping
    *
    * \param[in] local local coordinates for each dimension
    */
-  FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+    FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
   {
 
     const auto& knotSpans = Patchdata_->getknots();
     const auto& controlPoints = Patchdata_->getcontrolPoints();
+    const auto& weights = Patchdata_->getweights();
     const auto& order = Patchdata_->getorder();
     const auto& basis  = this->getbasis(local);
+
+    FieldVector<double,dimworld> denominator, numerator;
     FieldVector<double,dimworld> glob;
     std::fill(glob.begin(), glob.end(), 0.0);
+    std::fill(denominator.begin(), denominator.end(), 0.0);
+    std::fill(numerator.begin(), numerator.end(), 0.0);
+
     std::array<unsigned int,dim> multiIndex_Basisfucntion, multiIndex_ControlNet;
     double temp;
     std::array<unsigned int,dim> dimsize;
     std::array<unsigned int,dim> cornerIdx;
     for (unsigned int d=0; d<dim; ++d)
-	{
+    {
         dimsize[d] = order[d]+1;
         cornerIdx[d] = corner_[d]-knotSpans[d].begin();
     }
@@ -246,9 +124,15 @@ public:
             multiIndex_ControlNet[d] = multiIndex_Basisfucntion[d]+cornerIdx[d]-order[d];
         }
         auto cp = controlPoints.get(multiIndex_ControlNet);
-		for (unsigned int k=0; k<dimworld; ++k)
-			glob[k] += cp[k]*temp;
-	}
+        auto w = weights.get(multiIndex_ControlNet);
+        for (unsigned int k=0; k<dimworld; ++k)
+        {
+            numerator[k] += cp[k]*w[0]*temp;
+            denominator[k] += w[0]*temp;
+        }
+    }
+    for (unsigned int k=0; k<dimworld; ++k)
+        glob[k] = numerator[k] / denominator[k];
 
     return glob;
 
@@ -300,7 +184,7 @@ public:
 
 private:
 
-    std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata_;
+    std::shared_ptr <NURBSPatchData<dim,dimworld>> Patchdata_;
 
     std::array<std::vector<double>::const_iterator,dim> corner_;
 
@@ -310,29 +194,29 @@ private:
 
 /** \brief class */
 template <int dim, int dimworld>
-class BSplinePatch
+class NURBSPatch
 {
 public:
-	/** \brief default Constructor
-	 *
-	 * \param[in] knotSpans vector of knotSpans for each dimension
-	 * \param[in] controlPoints a n-dimensional net of Control controlPoints
-	 * \param[in] order orde of the B-Spline structure for each dimension
-	 */
-  BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
+    /** \brief default Constructor
+     * \param[in] knotSpans vector of knotSpans for each dimension
+     * \param[in] controlPoints a n-dimensional net of Control controlPoints
+     * \param[in] order orde of the NURBS structure for each dimension
+     */
+  NURBSPatch(const std::array<std::vector<double>,dim>& knotSpans,
                const MultiDimensionNet<dim,dimworld> controlPoints,
+               const MultiDimensionNet<dim,1> weights,
                const std::array<int,dim> order)
-  : Patchdata_(new BsplinePatchData<dim,dimworld>(knotSpans, controlPoints, order))
+  : Patchdata_(new NURBSPatchData<dim,dimworld>(knotSpans, controlPoints, weights, order))
   {
   }
 
-  /** \brief creates a BSplineGeometry object
+  /** \brief creates a NURBSGeometry object
    *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimesion
    *  and generates a Geometry object
    *
    * \param[in] ijk array of indecies for each dimension
    */
-  BSplineGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
+  NURBSGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
   {
 
         const auto & knotSpans = Patchdata_->getknots();
@@ -358,7 +242,7 @@ public:
             }
         }
 
-        /*the pointer on each dim-knotspan for geometry ijk is stored in an array named corners*/
+        /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<std::vector<double>::const_iterator,dim> corners;
         for(int i=0; i<dim; ++i)
         {
@@ -366,7 +250,7 @@ public:
         }
 
 
-    return BSplineGeometry<dim,dimworld>(Patchdata_,corners);
+    return NURBSGeometry<dim,dimworld>(Patchdata_,corners);
   }
 
   /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
@@ -390,7 +274,7 @@ public:
 
 private:
 
-  std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata_;
+  std::shared_ptr <NURBSPatchData<dim,dimworld>> Patchdata_;
 
 };
 
@@ -399,4 +283,4 @@ private:
 
 }
 
-#endif  // DUNE_IGA_BSPLINEPATCH_HH
+#endif  // DUNE_IGA_NURBSPATCH_HH

@@ -12,8 +12,96 @@
 #include <dune/common/fvector.hh>
 
 #include <dune/iga/bsplinepatch.hh>
+#include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/vtkfile.hh>
 using namespace Dune;
+
+void testNURBSSurface()
+{
+  //parameters
+  unsigned int subSampling = 5;
+
+  //////////////////////////////////////////////////////////////
+  // Create a 2d NURBS surface in 3d
+  //////////////////////////////////////////////////////////////
+
+  const int dim      = 2;
+  const int dimworld = 3;
+  const std::array<int,dim> order = {2,2};
+
+  const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,1},{0,0,0,1,1,1}}};
+  const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints = {{{{0,0,1},{1,0,1},{2,0,2}}, {{0,1,0},{1,1,0},{2,1,0}}, {{0,2,1},{1,2,2},{2,2,2}} }};
+  std::array<unsigned int,dim> dimsize = {controlPoints.size(),controlPoints[0].size()};
+  //
+  const std::vector<std::vector<FieldVector<double,1> > > weight = {{{1},{2},{1}}, {{1},{4},{1}}, {{1},{2},{1}}};
+  auto weightNet = MultiDimensionNet<dim,1>(dimsize,weight);
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+  //weightNet.disp();
+  //controlNet.disp();
+
+  IGA::NURBSPatch<dim,dimworld> patch(knotSpans, controlNet, weightNet, order);
+
+  ////////////////////////////////////////////////////////////////
+  //  Write to a VTK file.
+  //  The higher-order geometry is captured by subsampling.
+  ////////////////////////////////////////////////////////////////
+
+  IGA::VTKFile vtkFile;
+
+  //  The number of vertices that have been inserted so far
+  std::size_t offset = 0;
+
+const auto validknotes = patch.validknotsize();
+
+for (unsigned int j=0; j<validknotes[1]; ++j){
+  for (unsigned int i=0; i<validknotes[0]; i++)
+  {
+      auto geometry = patch.geometry({i,j});
+
+      //Add vertex coordinates to the VTK file
+      for (int iy=0; iy<=(1<<subSampling); iy++)
+      {
+        FieldVector<double,dim> localPos;
+        localPos[1] = ((double)iy)/(1<<subSampling);
+
+        // Add vertex coordinates to the VTK file
+        for (int ix=0; ix<=(1<<subSampling); ix++)
+        {
+          localPos[0] = ((double)ix)/(1<<subSampling);
+
+          vtkFile.points_.push_back(geometry.global(localPos));
+        }
+      }
+
+      // Add elements to the VTK file
+      for (int k=0; k<(1<<subSampling); k++)
+      {
+        for (int l=0; l<(1<<subSampling); l++)
+        {
+          vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
+          vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
+          vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
+          vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
+
+          // 4 corners per element
+          if (vtkFile.cellOffsets_.size()==0)
+            vtkFile.cellOffsets_.push_back(4);
+          else
+            vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
+
+          // Element type: a 4-node quadrilateral
+          vtkFile.cellTypes_.push_back(9);
+        }
+      }
+
+      offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
+     }
+   }
+
+
+  // Actually write the VTK file
+  vtkFile.write("NURBSsurface");
+ }
 
 void testBSplineSurface()
 {
@@ -181,11 +269,14 @@ int main(int argc, char** argv) try
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-  testBSplineCurve();
-  std::cout<< "done with curve" << std::endl;
+  //testBSplineCurve();
+  //std::cout<< "done with curve" << std::endl;
 
   testBSplineSurface();
   std::cout<< "done with surface" << std::endl;
+
+  testNURBSSurface();
+  std::cout<< "done with NURBS surface" << std::endl;
 
   return 0;
 }
