@@ -4,7 +4,7 @@
 #define DUNE_IGA_BSPLINEPATCH_HH
 
 #include <memory>
-
+#include <dune/geometry/type.hh>
 
 namespace Dune
 {
@@ -199,6 +199,22 @@ template <int dim, int dimworld>
 class BSplineGeometry
 {
 public:
+
+  //! coordinate type
+  typedef double ctype;
+
+  /** \brief Dimension of the cube element */
+  enum {mydimension = dim};
+
+  /** \brief Dimension of the world space that the cube element is embedded in*/
+  enum {coorddimension = dimworld};
+
+  /** \brief Type used for a vector of element coordinates */
+  typedef FieldVector<ctype,dim> LocalCoordinate;
+
+  /** \brief Type used for a vector of world coordinates */
+  typedef FieldVector<ctype,dimworld> GlobalCoordinate;
+
   /** \brief default Constructor
    *
    * \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
@@ -212,18 +228,51 @@ public:
       std::array<std::vector<double>,dim> _basis;
   }
 
+  /** \brief Map the center of the element to the geometry */
+  GlobalCoordinate center() const
+  {
+      LocalCoordinate l_center;
+      std::fill(l_center.begin(), l_center.end(), 0.5);
+      return global(l_center);
+  }
+
+  /** \brief Return the number of corners of the element */
+  int corners() const
+  {
+      return 1<<dim;
+  }
+
+  /** \brief Return world coordinates of the k-th corner of the element */
+  GlobalCoordinate corner(int k) const
+  {
+      LocalCoordinate l_corner;
+      for (size_t i=0; i<dim; i++) {
+          l_corner[i] = (k & (1<<i)) ? 0 : 1;
+      }
+      return global(l_corner);
+  }
+
+  /** \brief I think it is not an affine mapping */
+  bool affine () const { return false; }
+
+  /** \brief Type of the element: a hypercube of the correct dimension */
+  GeometryType type() const
+  {
+      return GeometryType(GeometryType::cube,dim);
+  }
+
   /** \brief evaluates the B-Spline mapping
    *
    * \param[in] local local coordinates for each dimension
    */
-  FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+  GlobalCoordinate global(const LocalCoordinate& local)
   {
 
     const auto& knotSpans = Patchdata_->getknots();
     const auto& controlPoints = Patchdata_->getcontrolPoints();
     const auto& order = Patchdata_->getorder();
     const auto& basis  = this->getbasis(local);
-    FieldVector<double,dimworld> glob;
+    GlobalCoordinate glob;
     std::fill(glob.begin(), glob.end(), 0.0);
     std::array<unsigned int,dim> multiIndex_Basisfucntion, multiIndex_ControlNet;
     double temp;
@@ -259,7 +308,7 @@ public:
    *
    * \param[in] local loacal coordinates for each dimension
    */
-  const std::array<std::vector<double>,dim > & getbasis (const FieldVector<double,dim>& local)
+  const std::array<std::vector<double>,dim > & getbasis (const LocalCoordinate& local)
   {
     for (int i=0; i<dim;++i)
       if (local[i]<0 || local[i]>1)
