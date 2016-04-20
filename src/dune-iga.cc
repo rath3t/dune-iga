@@ -51,7 +51,7 @@ void testNURBSSurface()
   //  The number of vertices that have been inserted so far
   std::size_t offset = 0;
 
-const auto validknotes = patch.validknotsize();
+const auto validknotes = patch.validKnotSize();
 
 for (unsigned int j=0; j<validknotes[1]; ++j){
   for (unsigned int i=0; i<validknotes[0]; i++)
@@ -137,7 +137,7 @@ void testBSplineSurface()
   //  The number of vertices that have been inserted so far
   std::size_t offset = 0;
 
-const auto validknotes = patch.validknotsize();
+const auto validknotes = patch.validKnotSize();
 
 for (unsigned int j=0; j<validknotes[1]; ++j){
   for (unsigned int i=0; i<validknotes[0]; i++)
@@ -224,7 +224,7 @@ void testBSplineCurve()
  //  The number of vertices that have been inserted so far
  std::size_t offset = 0;
 
-  const auto validknots = patch.validknotsize();
+  const auto validknots = patch.validKnotSize();
 
   for (unsigned int i=0; i<validknots[0]; i++)
   {
@@ -269,8 +269,8 @@ int main(int argc, char** argv) try
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-  //testBSplineCurve();
-  //std::cout<< "done with curve" << std::endl;
+  testBSplineCurve();
+  std::cout<< "done with curve" << std::endl;
 
   testBSplineSurface();
   std::cout<< "done with surface" << std::endl;
