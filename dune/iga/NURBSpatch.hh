@@ -73,6 +73,33 @@ namespace Dune
     {
     public:
 
+      /** coordinate type */
+      typedef double ctype;
+
+      /** \brief Dimension of the cube element */
+      enum {mydimension = dim};
+
+      /** \brief Dimension of the world space that the cube element is embedded in*/
+      enum {coorddimension = dimworld};
+
+      /** \brief Type used for a vector of element coordinates */
+      typedef FieldVector<ctype,dim> LocalCoordinate;
+
+      /** \brief Type used for a vector of world coordinates */
+      typedef FieldVector<ctype,dimworld> GlobalCoordinate;
+
+      /** \brief Type for the transposed Jacobian matrix */
+      typedef FieldMatrix< ctype, mydimension, coorddimension > JacobianTransposed;
+
+      /** \brief Type for the transposed inverse Jacobian matrix */
+      typedef FieldMatrix< ctype, coorddimension, mydimension > JacobianInverseTransposed;
+
+    private:
+      /* Helper class to compute a matrix pseudo inverse */
+      typedef GenericGeometry::MatrixHelper< GenericGeometry::DuneCoordTraits< double > > MatrixHelper;
+
+    public:
+
       /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
        *
        *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
@@ -83,8 +110,48 @@ namespace Dune
       : patchData_(patchData)
       , corner_(corner)
       {
+        const auto& weightedControlPoints = computeWeightedControlPoints();
+        const auto& knotSpans = patchData_->getKnots();
+        const auto& order = patchData_->getOrder();
+
+        const auto& BSplinepatchData = std::make_shared<BsplinePatchData<dim,dimworld+1>>(knotSpans,weightedControlPoints,order);
+        weightedBSpline = std::make_shared<BSplineGeometry<dim,dimworld+1>>(BSplinepatchData,corner_);
+
         /* only order+1 basis functions are needed for each dimension*/
         std::array<std::vector<double>,dim> _basis;
+      }
+
+      /** \brief Map the center of the element to the geometry */
+      GlobalCoordinate center() const
+      {
+        LocalCoordinate localcenter;
+        std::fill(localcenter.begin(), localcenter.end(), 0.5);
+        return global(localcenter);
+      }
+
+      /** \brief Return the number of corners of the element */
+      int corners() const
+      {
+        return 1<<mydimension;
+      }
+
+      /** \brief Return world coordinates of the k-th corner of the element */
+      GlobalCoordinate corner(int k) const
+      {
+        LocalCoordinate localcorner;
+        for (size_t i=0; i<mydimension; i++) {
+            localcorner[i] = (k & (1<<i)) ? 0 : 1;
+        }
+        return global(localcorner);
+      }
+
+      /** \brief I think it is not an affine mapping, but not sure if should be a permanent false here*/
+      bool affine () const { return false; }
+
+      /** \brief Type of the element: a hypercube of the correct dimension */
+      GeometryType type() const
+      {
+        return GeometryType(GeometryType::cube,dim);
       }
 
       /** \brief evaluates the NURBS mapping
@@ -93,93 +160,154 @@ namespace Dune
        */
       FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
       {
+        const auto& weightedGlobal = weightedBSpline->global(local);
+        return reduceDimension(weightedGlobal);
 
-        const auto& knotSpans = patchData_->getKnots();
+      }
+
+//      /** \brief evaluates the NURBS mapping
+//       *
+//       *  \param[in] local local coordinates for each dimension
+//       */
+//      FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+//      {
+//
+//        const auto& knotSpans = patchData_->getKnots();
+//        const auto& controlPoints = patchData_->getControlPoints();
+//        const auto& weights = patchData_->getWeights();
+//        const auto& order = patchData_->getOrder();
+//        const auto& basis  = this->getBasis(local);
+//
+//        FieldVector<double,dimworld> denominator, numerator;
+//        FieldVector<double,dimworld> glob;
+//        std::fill(glob.begin(), glob.end(), 0.0);
+//        std::fill(denominator.begin(), denominator.end(), 0.0);
+//        std::fill(numerator.begin(), numerator.end(), 0.0);
+//
+//        std::array<unsigned int,dim> multiIndexBasisfucntion, multiIndexControlNet;
+//        double temp;
+//        std::array<unsigned int,dim> dimsize;
+//        std::array<unsigned int,dim> cornerIdx;
+//        for (unsigned int d=0; d<dim; ++d)
+//        {
+//          dimsize[d] = order[d]+1;
+//          cornerIdx[d] = corner_[d]-knotSpans[d].begin();
+//        }
+//        /*Index net for valid basis functions*/
+//        auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+//        for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
+//        {
+//          multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
+//          temp = 1;
+//          for (unsigned int d=0; d<dim; ++d)
+//          {
+//            temp *= basis[d][multiIndexBasisfucntion[d]];
+//            multiIndexControlNet[d] = multiIndexBasisfucntion[d]+cornerIdx[d]-order[d];
+//          }
+//          auto cp = controlPoints.get(multiIndexControlNet);
+//          auto w = weights.get(multiIndexControlNet);
+//          for (unsigned int k=0; k<dimworld; ++k)
+//          {
+//            numerator[k] += cp[k]*w[0]*temp;
+//            denominator[k] += w[0]*temp;
+//          }
+//        }
+//        for (unsigned int k=0; k<dimworld; ++k)
+//          glob[k] = numerator[k] / denominator[k];
+//
+//        return glob;
+//      }
+
+//      /** \brief evaluates the basis Functions at the given local coordinates
+//       *
+//       *  \param[in] local local coordinates for each dimension
+//       */
+//      const std::array<std::vector<double>,dim > & getBasis (const FieldVector<double,dim>& local)
+//      {
+//        for (int i=0; i<dim;++i)
+//          if (local[i]<0 || local[i]>1)
+//            DUNE_THROW(RangeError, "Local coordinates have to be in [0,1]^dim!");
+//
+//        const auto & order = patchData_->getOrder();
+//        const auto & knotSpans = patchData_->getKnots();
+//
+//        /*Compute the non-vanishing basis function. See "The NURBS book"*/
+//        for (int d=0; d<dim; ++d)
+//        {
+//          double loc;
+//          loc = local[d]*(*(corner_[d]+1)-*corner_[d]) + *corner_[d];
+//          basis_[d].resize(order[d]+1);
+//          std::vector<double> left, right;
+//          left.resize(order[d]+1);
+//          right.resize(order[d]+1);
+//          basis_[d][0] = 1;
+//          for (int o=1; o<=order[d]; ++o)
+//          {
+//            left[o] = loc-*(corner_[d]+1-o);
+//            right[o] = *(corner_[d]+o)-loc;
+//            double saved = 0;
+//            for (int r=0; r<o; ++r)
+//            {
+//              double temp = basis_[d][r]/(right[r+1]+left[o-r]);
+//              basis_[d][r] = saved+right[r+1]*temp;
+//              saved = left[o-r]*temp;
+//            }
+//            basis_[d][o] = saved;
+//          }
+//        }
+//
+//        return basis_;
+//      }
+
+      /** \brief constructs the homogeneous coordinates
+       *
+       *  \param[in] inPoint input point
+       *  \param[in] weight weight
+       */
+      FieldVector<double,coorddimension+1> liftDimension(const FieldVector<double,coorddimension>& inPoint, ctype weight)
+      {
+        FieldVector<ctype,coorddimension+1> homoCoordinate;
+        for(unsigned int i=0; i<coorddimension; i++)
+        {
+          homoCoordinate[i] = inPoint[i]*weight;
+        }
+        homoCoordinate[coorddimension] = weight;
+        return homoCoordinate;
+      }
+
+      /** \brief get the projected non-homogeneous coordinates in a 1 degree lower dimensional space
+       *
+       *  \param[in] inPoint input point, will be divided by the last element
+       */
+      FieldVector<double,coorddimension> reduceDimension(const FieldVector<double,coorddimension+1>& inPoint)
+      {
+        FieldVector<ctype,coorddimension> oriCoordinate;
+        for(unsigned int i=0; i<coorddimension; i++)
+        {
+          oriCoordinate[i] = inPoint[i]/inPoint[coorddimension];
+        }
+        return oriCoordinate;
+      }
+
+      /** \brief gets weighted control points
+       *
+       */
+      MultiDimensionNet<mydimension,coorddimension+1> computeWeightedControlPoints()
+      {
         const auto& controlPoints = patchData_->getControlPoints();
         const auto& weights = patchData_->getWeights();
-        const auto& order = patchData_->getOrder();
-        const auto& basis  = this->getBasis(local);
-
-        FieldVector<double,dimworld> denominator, numerator;
-        FieldVector<double,dimworld> glob;
-        std::fill(glob.begin(), glob.end(), 0.0);
-        std::fill(denominator.begin(), denominator.end(), 0.0);
-        std::fill(numerator.begin(), numerator.end(), 0.0);
-
-        std::array<unsigned int,dim> multiIndexBasisfucntion, multiIndexControlNet;
-        double temp;
-        std::array<unsigned int,dim> dimsize;
-        std::array<unsigned int,dim> cornerIdx;
-        for (unsigned int d=0; d<dim; ++d)
+        const auto& netSize = controlPoints.size();
+        MultiDimensionNet<mydimension,coorddimension+1> weightedControlPoints(netSize);
+        const auto& pointSize = controlPoints.directSize();
+        for(unsigned int i=0; i<pointSize; ++i)
         {
-          dimsize[d] = order[d]+1;
-          cornerIdx[d] = corner_[d]-knotSpans[d].begin();
+          //auto const& liftedControlPoint = ;
+          weightedControlPoints.directSet(i,liftDimension(controlPoints.directGet(i), weights.directGet(i)));
         }
-        /*Index net for valid basis functions*/
-        auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
-        for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
-        {
-          multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
-          temp = 1;
-          for (unsigned int d=0; d<dim; ++d)
-          {
-            temp *= basis[d][multiIndexBasisfucntion[d]];
-            multiIndexControlNet[d] = multiIndexBasisfucntion[d]+cornerIdx[d]-order[d];
-          }
-          auto cp = controlPoints.get(multiIndexControlNet);
-          auto w = weights.get(multiIndexControlNet);
-          for (unsigned int k=0; k<dimworld; ++k)
-          {
-            numerator[k] += cp[k]*w[0]*temp;
-            denominator[k] += w[0]*temp;
-          }
-        }
-        for (unsigned int k=0; k<dimworld; ++k)
-          glob[k] = numerator[k] / denominator[k];
+        return weightedControlPoints;
 
-        return glob;
       }
 
-      /** \brief evaluates the basis Functions at the given local coordinates
-       *
-       *  \param[in] local local coordinates for each dimension
-       */
-      const std::array<std::vector<double>,dim > & getBasis (const FieldVector<double,dim>& local)
-      {
-        for (int i=0; i<dim;++i)
-          if (local[i]<0 || local[i]>1)
-            DUNE_THROW(RangeError, "Local coordinates have to be in [0,1]^dim!");
-
-        const auto & order = patchData_->getOrder();
-        const auto & knotSpans = patchData_->getKnots();
-
-        /*Compute the non-vanishing basis function. See "The NURBS book"*/
-        for (int d=0; d<dim; ++d)
-        {
-          double loc;
-          loc = local[d]*(*(corner_[d]+1)-*corner_[d]) + *corner_[d];
-          basis_[d].resize(order[d]+1);
-          std::vector<double> left, right;
-          left.resize(order[d]+1);
-          right.resize(order[d]+1);
-          basis_[d][0] = 1;
-          for (int o=1; o<=order[d]; ++o)
-          {
-            left[o] = loc-*(corner_[d]+1-o);
-            right[o] = *(corner_[d]+o)-loc;
-            double saved = 0;
-            for (int r=0; r<o; ++r)
-            {
-              double temp = basis_[d][r]/(right[r+1]+left[o-r]);
-              basis_[d][r] = saved+right[r+1]*temp;
-              saved = left[o-r]*temp;
-            }
-            basis_[d][o] = saved;
-          }
-        }
-
-        return basis_;
-      }
 
     private:
 
@@ -187,7 +315,7 @@ namespace Dune
 
       std::array<std::vector<double>::const_iterator,dim> corner_;
 
-      std::array<std::vector<double>,dim> basis_;
+      std::shared_ptr <BSplineGeometry<dim, dimworld+1>> weightedBSpline;
 
     };
 
