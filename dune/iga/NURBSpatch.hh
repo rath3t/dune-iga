@@ -259,6 +259,31 @@ namespace Dune
 //        return basis_;
 //      }
 
+      /** \brief compute the Jacobian transposed matrix
+       *
+       *  \param[in] local local coordinates for each dimension
+       */
+      const JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
+      {
+        JacobianTransposed result;
+        const auto& BSplineJacobian = weightedBSpline->jacobianTransposed(local);
+        const auto& weightedGlobal = weightedBSpline->global(local);
+        const auto& dividedGlobal = reduceDimension(weightedGlobal);
+        const ctype weight = weightedGlobal[coorddimension];
+
+        //Each row is a partial derivative with respect to one variable
+        for (int i=0; i<mydimension; ++i)
+        {
+           //Iterate the columns except the last one
+           const ctype derWeight = BSplineJacobian[i][coorddimension];
+           for (int j=0; j<coorddimension; ++j)
+           {
+             result[i][j] = (BSplineJacobian[i][j]-derWeight*dividedGlobal[j])/weight;
+           }
+        }
+        return result;
+      }
+
       /** \brief constructs the homogeneous coordinates
        *
        *  \param[in] inPoint input point

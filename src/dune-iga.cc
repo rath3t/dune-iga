@@ -33,7 +33,8 @@ void testNURBSSurface()
   const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints = {{{{0,0,1},{1,0,1},{2,0,2}}, {{0,1,0},{1,1,0},{2,1,0}}, {{0,2,1},{1,2,2},{2,2,2}} }};
   std::array<unsigned int,dim> dimsize = {controlPoints.size(),controlPoints[0].size()};
   //
-  const std::vector<std::vector<FieldVector<double,1> > > weight = {{{1},{2},{1}}, {{1},{4},{1}}, {{1},{2},{1}}};
+  const std::vector<std::vector<FieldVector<double,1> > > weight = {{{2},{2},{1}}, {{1},{4},{1}}, {{1},{2},{4}}};
+  //auto weightNet = MultiDimensionNet<dim,1>(dimsize,FieldVector<double,1>(1));
   auto weightNet = MultiDimensionNet<dim,1>(dimsize,weight);
   auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
   //weightNet.disp();
@@ -189,6 +190,81 @@ for (unsigned int j=0; j<validknotes[1]; ++j){
   vtkFile.write("bsplinesurface");
  }
 
+void testNURBSCurve()
+{
+  // parameters
+  unsigned int subSampling = 5;
+
+  ////////////////////////////////////////////////////////////////
+  //  Create a B-spline curve in 3d
+  ////////////////////////////////////////////////////////////////
+
+  const int dim      = 1;
+  const int dimworld = 3;
+
+  const std::array<int,dim> order = {2};
+  const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,2,3,4,4,5,5,5}}};
+
+  const std::vector<FieldVector<double,dimworld> > controlPoints = {{1,3,4}, {2,2,2}, {3,4,5}, {5,1,7}, {4,7,2}, {8,6,2}, {2,9,9}, {1,4,3},{1,7,1}};
+  std::array<unsigned int,dim> dimsize = {controlPoints.size()};
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+
+  //auto weightNet = MultiDimensionNet<dim,1>(dimsize,FieldVector<double,1>(1));
+  const std::vector<FieldVector<double,1> > weight = {{2},{2},{1},{1},{4},{2},{1},{2},{4}};
+  //auto weightNet = MultiDimensionNet<dim,1>(dimsize,FieldVector<double,1>(1));
+  auto weightNet = MultiDimensionNet<dim,1>(dimsize,weight);
+  //controlNet.disp();
+
+  IGA::NURBSPatch<dim,dimworld> patch(knotSpans, controlNet, weightNet, order);
+
+  ////////////////////////////////////////////////////////////////
+  //  Write to a VTK file.                                      //
+  //  The higher-order geometry is captured by subsampling.     //
+  ////////////////////////////////////////////////////////////////
+
+ IGA::VTKFile vtkFile;
+
+ //  The number of vertices that have been inserted so far
+ std::size_t offset = 0;
+
+  const auto validknots = patch.validKnotSize();
+
+  for (unsigned int i=0; i<validknots[0]; i++)
+  {
+    auto geometry = patch.geometry({i});
+
+    FieldVector<double,dim> localPos;
+
+    // Add vertex coordinates to the VTK file
+    for (int ix=0; ix<=(1<<subSampling); ix++)
+    {
+      localPos[0] = ((double)ix)/(1<<subSampling);
+      vtkFile.points_.push_back(geometry.global(localPos));
+      std::cout << "Jacob transposed:" << geometry.jacobianTransposed(localPos);
+    }
+
+    // Add elements to the VTK file
+    for (int l=0; l<(1<<subSampling); l++)
+    {
+      vtkFile.cellConnectivity_.push_back(offset + l);
+      vtkFile.cellConnectivity_.push_back(offset + l+1);
+
+      // 2 corners per element
+      if (vtkFile.cellOffsets_.size()==0)
+        vtkFile.cellOffsets_.push_back(2);
+      else
+        vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+2);
+
+      // Element type: a line segment
+      vtkFile.cellTypes_.push_back(3);
+    }
+
+    offset += ((1<<subSampling)+1);
+  }
+
+  // Actually write the VTK file
+  vtkFile.write("bsplinecurve");
+}
 
 void testBSplineCurve()
 {
@@ -203,11 +279,9 @@ void testBSplineCurve()
   const int dimworld = 3;
 
   const std::array<int,dim> order = {2};
-
   const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,2,3,4,4,5,5,5}}};
 
   const std::vector<FieldVector<double,dimworld> > controlPoints = {{1,3,4}, {2,2,2}, {3,4,5}, {5,1,7}, {4,7,2}, {8,6,2}, {2,9,9}, {1,4,3},{1,7,1}};
-
   std::array<unsigned int,dim> dimsize = {controlPoints.size()};
   auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
   //controlNet.disp();
@@ -237,6 +311,7 @@ void testBSplineCurve()
     {
       localPos[0] = ((double)ix)/(1<<subSampling);
       vtkFile.points_.push_back(geometry.global(localPos));
+      std::cout << "Jacob transposed:" << geometry.jacobianTransposed(localPos);
     }
 
     // Add elements to the VTK file
@@ -270,13 +345,16 @@ int main(int argc, char** argv) try
   MPIHelper::instance(argc, argv);
 
   testBSplineCurve();
-  std::cout<< "done with curve" << std::endl;
+  std::cout<< "done with B-Spline curve" << std::endl;
 
-  testBSplineSurface();
-  std::cout<< "done with surface" << std::endl;
+  testNURBSCurve();
+  std::cout<< "done with NURBS curve" << std::endl;
+//
+//  testBSplineSurface();
+//  std::cout<< "done with surface" << std::endl;
 
-  testNURBSSurface();
-  std::cout<< "done with NURBS surface" << std::endl;
+//  testNURBSSurface();
+//  std::cout<< "done with NURBS surface" << std::endl;
 
   return 0;
 }

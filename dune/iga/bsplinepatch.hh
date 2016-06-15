@@ -84,6 +84,12 @@ namespace Dune
       values_[index] = value;
     }
 
+    /** \brief sets a value at the multiindex */
+    void directSet (unsigned int index, FieldVector<double,dimworld> value)
+    {
+      values_[index] = value;
+    }
+
     /** \brief returns the value at the multiindex */
     FieldVector<double, dimworld> get (std::array<unsigned int, netdim> multiIndex) const
     {
@@ -226,6 +232,7 @@ namespace Dune
 
       /** \brief Type for the transposed inverse Jacobian matrix */
       typedef FieldMatrix< ctype, coorddimension, mydimension > JacobianInverseTransposed;
+
     private:
       /* Helper class to compute a matrix pseudo inverse */
       typedef GenericGeometry::MatrixHelper< GenericGeometry::DuneCoordTraits< double > > MatrixHelper;
@@ -236,7 +243,8 @@ namespace Dune
        *  \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
        *  \param[in] corner Pointer (for each dimension) to the Knot span where the Geometry object is supposed to operate
        */
-      BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata, std::array<std::vector<double>::const_iterator,dim> corner)
+      BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata,
+                      std::array<std::vector<double>::const_iterator,dim> corner)
       : patchData_(Patchdata)
       , corner_(corner)
       {
@@ -316,6 +324,10 @@ namespace Dune
         return glob;
       }
 
+      /** \brief compute the Jacobian transposed matrix
+       *
+       *  \param[in] local local coordinates for each dimension
+       */
       const JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
       {
         for (int i=0; i<dim;++i)
@@ -383,6 +395,16 @@ namespace Dune
       {
         return MatrixHelper::template sqrtDetAAT< mydimension,coorddimension>(jacobianTransposed(local));
       }
+
+//      /** \brief computes the first-order derivative of the B-Spline with respect to the nth variable
+//       *
+//       *  \param[in] local local coordinates for each dimension
+//       */
+//       const std:std::vector<double>,mydimension> getDerivative(int n)
+//       {
+//
+//
+//       }
 
       /** \brief evaluates the non-zero derivatives of basis functions, order+1 for each dimension
        *
