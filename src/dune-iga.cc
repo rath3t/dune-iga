@@ -11,10 +11,31 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/fvector.hh>
 
+#include <dune/iga/bsplinegrid.hh>
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/vtkfile.hh>
 using namespace Dune;
+
+void testBSplineGrid()
+{
+  //////////////////////////////////////////////////////////////
+  // Create a 2d B-spline grid in 3d
+  //////////////////////////////////////////////////////////////
+  const int dim      = 2;
+  const int dimworld = 3;
+  const std::array<int,dim> order = {2,2};
+  const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,1},{0,0,0,1,1,1}}};
+  const std::vector<std::vector<FieldVector<double,dimworld> > > controlPoints = {{{{0,0,1},{1,0,1},{2,0,2}}, {{0,1,0},{1,1,0},{2,1,0}}, {{0,2,1},{1,2,2},{2,2,2}} }};
+
+  std::array<unsigned int,dim> dimsize = {controlPoints.size(),controlPoints[0].size()};
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+  //controlNet.disp();
+
+  IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
+  auto gridView = grid.leafGridView();
+
+}
 
 void testNURBSSurface()
 {
@@ -343,12 +364,13 @@ int main(int argc, char** argv) try
 
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
+  std::cout<<"test B-Spline gird"<<std::endl;
+  testBSplineGrid();
+//  testBSplineCurve();
+//  std::cout<< "done with B-Spline curve" << std::endl;
 
-  testBSplineCurve();
-  std::cout<< "done with B-Spline curve" << std::endl;
-
-  testNURBSCurve();
-  std::cout<< "done with NURBS curve" << std::endl;
+//  testNURBSCurve();
+//  std::cout<< "done with NURBS curve" << std::endl;
 //
 //  testBSplineSurface();
 //  std::cout<< "done with surface" << std::endl;
