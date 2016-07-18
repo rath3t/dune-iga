@@ -5,6 +5,7 @@
 
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/bsplinegridleafiterator.hh>
+#include <dune/iga/bsplinegridentity.hh>
 
 namespace Dune
 {
@@ -15,12 +16,26 @@ namespace Dune
     class BSplineLeafGridView
     {
     public:
-      typedef BSplineLeafGridView<dim, dimworld> BSplineGridViewImp;
+      //static const int dim = dim;
+      //static const int dimWorld = dimWorld;
+
+      template<int codim, class GridViewImp>
+      friend class BSplineGridEntity;
+
+
+      template<int codim, typename BSplineGridView, typename BSplineEntity>
+      friend class BSplineGridLeafIterator;
+
+
+      typedef BSplineLeafGridView<dim, dimworld> BSplineGridView;
+      typedef BSplineGeometry<dim, dimworld> Geometry;
 
       template<int codim>
       struct Codim
       {
-        typedef BSplineGridLeafIterator<codim,BSplineGridViewImp> Iterator;
+        typedef BSplineGridEntity<codim,BSplineGridView> Entity;
+        typedef BSplineGridLeafIterator<codim,BSplineGridView, Entity> Iterator;
+
       };
 
       /** \brief  constructor
@@ -34,10 +49,47 @@ namespace Dune
                    const std::array<int,dim> order)
       : BSplinepatch_(std::make_shared<BSplinePatch<dim,dimworld>>(knotSpans, controlPoints, order))
       {
+        int elementSize = BSplinepatch_ ->knotElementNet_->directSize();
+        entityVector_.reserve(elementSize);
+
+        //Fill the element vector of codim 0
+        for(unsigned int i=0; i<elementSize; ++i)
+        {
+          entityVector_.push_back(std::make_shared<BSplineGridEntity<0, BSplineGridView>>(*this, i));
+        }
+      }
+
+      template<int codim>
+      typename Codim<codim>::Entity& getEntity(unsigned int directIndex) const
+      {
+        //need to be rewrite for other codims
+        if (codim==0)
+        {
+          return *(entityVector_.at(directIndex));
+        }
+
+      }
+
+//      template<>
+//      typename Codim<0>::Entity getEntity<0>(unsigned int directIndex)
+//      {
+//         return *(entityVector_.at(directIndex));
+//      }
+
+      typename Codim<0>::Iterator begin () const
+      {
+        return BSplineGridLeafIterator<0,BSplineGridView, typename Codim<0>::Entity>(*this, 0);
+      }
+
+      typename Codim<0>::Iterator end () const
+      {
+        int elementSize = entityVector_.size();
+        return BSplineGridLeafIterator<0,BSplineGridView, typename Codim<0>::Entity>(*this, elementSize);
       }
 
     private:
        std::shared_ptr <BSplinePatch<dim,dimworld>> BSplinepatch_;
+       std::vector<std::shared_ptr<BSplineGridEntity<0, BSplineGridView>>> entityVector_;
     };
   }
 }

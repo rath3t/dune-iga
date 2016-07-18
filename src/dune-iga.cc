@@ -17,8 +17,16 @@
 #include <dune/iga/vtkfile.hh>
 using namespace Dune;
 
-void testBSplineGrid()
+void testBSplineGridSurface()
 {
+  ////////////////////////////////////////////////////////////////
+  //  First test
+  //  A B-Spline surface of dimWorld 3
+  ////////////////////////////////////////////////////////////////
+
+  //parameters
+  unsigned int subSampling = 5;
+
   //////////////////////////////////////////////////////////////
   // Create a 2d B-spline grid in 3d
   //////////////////////////////////////////////////////////////
@@ -35,7 +43,132 @@ void testBSplineGrid()
   IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
   auto gridView = grid.leafGridView();
 
+  ////////////////////////////////////////////////////////////////
+  //  Write to a VTK file.
+  //  The higher-order geometry is captured by subsampling.
+  ////////////////////////////////////////////////////////////////
+
+
+  IGA::VTKFile vtkFile;
+
+  //  The number of vertices that have been inserted so far
+  std::size_t offset = 0;
+
+  //Range-based for loop to get each element and its corresponding geometry
+  for (auto const &element:gridView)
+  {
+    auto geometry = element.geometry();
+
+    //Add vertex coordinates to the VTK file
+    for (int iy=0; iy<=(1<<subSampling); iy++)
+    {
+      FieldVector<double,dim> localPos;
+      localPos[1] = ((double)iy)/(1<<subSampling);
+
+      // Add vertex coordinates to the VTK file
+      for (int ix=0; ix<=(1<<subSampling); ix++)
+      {
+        localPos[0] = ((double)ix)/(1<<subSampling);
+
+        vtkFile.points_.push_back(geometry.global(localPos));
+      }
+    }
+
+    // Add elements to the VTK file
+    for (int k=0; k<(1<<subSampling); k++)
+    {
+      for (int l=0; l<(1<<subSampling); l++)
+      {
+        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
+        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
+        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
+        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
+
+        // 4 corners per element
+        if (vtkFile.cellOffsets_.size()==0)
+          vtkFile.cellOffsets_.push_back(4);
+        else
+          vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
+
+        // Element type: a 4-node quadrilateral
+        vtkFile.cellTypes_.push_back(9);
+      }
+    }
+
+    offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
+  }
+  vtkFile.write("BSplineGridTest-Surface");
 }
+
+void testBSplineGridCurve()
+{
+  ////////////////////////////////////////////////////////////////
+  //  Second test
+  //  A B-Spline curve of dimWorld 3
+  ////////////////////////////////////////////////////////////////
+
+  //parameters
+  unsigned int subSampling = 5;
+
+  const int dim      = 1;
+  const int dimworld = 3;
+
+  const std::array<int,dim> order = {2};
+  const std::array<std::vector<double>,dim> knotSpans = {{{0,0,0,1,1,2,3,4,4,5,5,5}}};
+
+  const std::vector<FieldVector<double,dimworld> > controlPoints = {{1,3,4}, {2,2,2}, {3,4,5}, {5,1,7}, {4,7,2}, {8,6,2}, {2,9,9}, {1,4,3},{1,7,1}};
+  std::array<unsigned int,dim> dimsize = {controlPoints.size()};
+  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
+
+  IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
+  auto gridView = grid.leafGridView();
+
+  IGA::VTKFile vtkFile;
+
+  //  The number of vertices that have been inserted so far
+  std::size_t offset = 0;
+
+  //Range-based for loop to get each element and its corresponding geometry
+  for (auto const &element:gridView)
+  {
+    auto geometry = element.geometry();
+    FieldVector<double,dim> localPos;
+
+    // Add vertex coordinates to the VTK file
+    for (int ix=0; ix<=(1<<subSampling); ix++)
+    {
+      localPos[0] = ((double)ix)/(1<<subSampling);
+      vtkFile.points_.push_back(geometry.global(localPos));
+      //std::cout << "Jacob transposed:" << geometry.jacobianTransposed(localPos);
+    }
+
+    // Add elements to the VTK file
+    for (int l=0; l<(1<<subSampling); l++)
+    {
+      vtkFile.cellConnectivity_.push_back(offset + l);
+      vtkFile.cellConnectivity_.push_back(offset + l+1);
+
+      // 2 corners per element
+      if (vtkFile.cellOffsets_.size()==0)
+        vtkFile.cellOffsets_.push_back(2);
+      else
+        vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+2);
+
+      // Element type: a line segment
+      vtkFile.cellTypes_.push_back(3);
+    }
+
+    offset += ((1<<subSampling)+1);
+  }
+
+  // Actually write the VTK file
+  vtkFile.write("BSplineGridTest-Curve");
+
+
+
+}
+
+
 
 void testNURBSSurface()
 {
@@ -73,11 +206,12 @@ void testNURBSSurface()
   //  The number of vertices that have been inserted so far
   std::size_t offset = 0;
 
-const auto validknotes = patch.validKnotSize();
+  const auto validknotes = patch.validKnotSize();
 
-for (unsigned int j=0; j<validknotes[1]; ++j){
-  for (unsigned int i=0; i<validknotes[0]; i++)
+  for (unsigned int j=0; j<validknotes[1]; ++j)
   {
+    for (unsigned int i=0; i<validknotes[0]; i++)
+    {
       auto geometry = patch.geometry({i,j});
 
       //Add vertex coordinates to the VTK file
@@ -117,9 +251,8 @@ for (unsigned int j=0; j<validknotes[1]; ++j){
       }
 
       offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
-     }
-   }
-
+    }
+  }
 
   // Actually write the VTK file
   vtkFile.write("NURBSsurface");
@@ -159,11 +292,12 @@ void testBSplineSurface()
   //  The number of vertices that have been inserted so far
   std::size_t offset = 0;
 
-const auto validknotes = patch.validKnotSize();
+  const auto validknotes = patch.validKnotSize();
 
-for (unsigned int j=0; j<validknotes[1]; ++j){
-  for (unsigned int i=0; i<validknotes[0]; i++)
+  for (unsigned int j=0; j<validknotes[1]; ++j)
   {
+    for (unsigned int i=0; i<validknotes[0]; i++)
+    {
       auto geometry = patch.geometry({i,j});
 
       //Add vertex coordinates to the VTK file
@@ -203,10 +337,8 @@ for (unsigned int j=0; j<validknotes[1]; ++j){
       }
 
       offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
-     }
-   }
-
-
+    }
+  }
   // Actually write the VTK file
   vtkFile.write("bsplinesurface");
  }
@@ -364,10 +496,15 @@ int main(int argc, char** argv) try
 
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
-  std::cout<<"test B-Spline gird"<<std::endl;
-  testBSplineGrid();
-//  testBSplineCurve();
-//  std::cout<< "done with B-Spline curve" << std::endl;
+  std::cout<<"test B-Spline grid Surface"<<std::endl;
+  testBSplineGridSurface();
+  //testBSplineCurve();
+  std::cout<< "done with B-Spline grid Surface" << std::endl;
+
+  std::cout<<"test B-Spline grid Curve"<<std::endl;
+  testBSplineGridCurve();
+  //testBSplineCurve();
+  std::cout<< "done with B-Spline grid Curve" << std::endl;
 
 //  testNURBSCurve();
 //  std::cout<< "done with NURBS curve" << std::endl;
@@ -380,6 +517,7 @@ int main(int argc, char** argv) try
 
   return 0;
 }
-catch (Dune::Exception &e){
+catch (Dune::Exception &e)
+{
     std::cerr << "Dune reported error: " << e << std::endl;
 }

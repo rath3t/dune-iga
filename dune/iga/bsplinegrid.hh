@@ -31,7 +31,7 @@ namespace Dune
 
       BSplineLeafGridView<dim,dimworld> leafGridView()
       {
-        return *(this-> leafGridView_);
+        return *(this->leafGridView_);
       }
 
 

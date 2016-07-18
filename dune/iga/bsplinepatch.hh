@@ -9,6 +9,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/geometry/genericgeometry/geometrytraits.hh>
 #include <dune/geometry/genericgeometry/matrixhelper.hh>
+//#include <dune/iga/bsplineleafgridview.hh>
 
 namespace Dune
 {
@@ -17,6 +18,7 @@ namespace Dune
   class MultiDimensionNet
   {
   public:
+
     /** \brief constructor for a net of a certain size with values unknown.
      *
      *  \param[in] dimSize array of the size of each dimension
@@ -491,46 +493,20 @@ namespace Dune
         std::array<std::vector<std::vector<double>>,dim> basis_;
 
     };
-//
-//    class Iter
-//    {
-//    public:
-//      Iter (const IntVector* p_vec, int pos)
-//          : _pos( pos )
-//          , _p_vec( p_vec )
-//      { }
-//
-//      // these three methods form the basis of an iterator for use with
-//      // a range-based for loop
-//      bool
-//      operator!= (const Iter& other) const
-//      {
-//          return _pos != other._pos;
-//      }
-//
-//      // this method must be defined after the definition of IntVector
-//      // since it needs to use it
-//      int operator* () const;
-//
-//      const Iter& operator++ ()
-//      {
-//          ++_pos;
-//          // although not strictly necessary for a range-based for loop
-//          // following the normal convention of returning a value from
-//          // operator++ is a good idea.
-//          return *this;
-//      }
-//
-//      private:
-//      int _pos;
-//      const IntVector *_p_vec;
-//    };
 
+
+    template<int dim, int dimworld>
+    class BSplineLeafGridView;
     /** \brief Class where the B-Spline geometry can work on  */
     template <int dim, int dimworld>
     class BSplinePatch
     {
     public:
+
+      friend class BSplineLeafGridView<dim, dimworld>;
+      template<int codim, class GridViewImp>
+      friend class BSplineGridEntity;
+
       /** \brief Constructor of BSplinePatch from knots, control points and order
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -542,6 +518,10 @@ namespace Dune
                    const std::array<int,dim> order)
       : patchData_(std::make_shared<BsplinePatchData<dim,dimworld>>(knotSpans, controlPoints, order))
       {
+        validKnotSize_ = this -> validKnotSize();
+        //Build a knot net to make iterator operations easier
+        //Here each "point" of the net is a element(knot span)
+        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
       }
 
       /** \brief creates a BSplineGeometry object
@@ -604,9 +584,12 @@ namespace Dune
         return validknotsize;
       }
 
+
     private:
 
       std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
+      std::array<unsigned int,dim> validKnotSize_;
+      std::shared_ptr <MultiDimensionNet<dim,1>> knotElementNet_;
 
     };
 
