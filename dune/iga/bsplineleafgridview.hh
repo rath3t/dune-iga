@@ -6,6 +6,7 @@
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/bsplinegridleafiterator.hh>
 #include <dune/iga/bsplinegridentity.hh>
+#include <dune/iga/bsplinegridindexsets.hh>
 
 namespace Dune
 {
@@ -29,6 +30,7 @@ namespace Dune
 
       typedef BSplineLeafGridView<dim, dimworld> BSplineGridView;
       typedef BSplineGeometry<dim, dimworld> Geometry;
+      typedef BSplineGridLeafIndexSet<BSplineGridView> IndexSet;
 
       template<int codim>
       struct Codim
@@ -85,6 +87,11 @@ namespace Dune
       {
         int elementSize = entityVector_.size();
         return BSplineGridLeafIterator<0,BSplineGridView, typename Codim<0>::Entity>(*this, elementSize);
+      }
+
+      IndexSet indexSet() const
+      {
+        return BSplineGridLeafIndexSet<BSplineGridView>(*this);
       }
 
     private:

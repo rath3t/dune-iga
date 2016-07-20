@@ -41,8 +41,8 @@ void testBSplineGridSurface()
   //controlNet.disp();
 
   IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
-  auto gridView = grid.leafGridView();
-
+  const auto& gridView = grid.leafGridView();
+  const auto& indexSet = gridView.indexSet();
   ////////////////////////////////////////////////////////////////
   //  Write to a VTK file.
   //  The higher-order geometry is captured by subsampling.
@@ -58,7 +58,7 @@ void testBSplineGridSurface()
   for (auto const &element:gridView)
   {
     auto geometry = element.geometry();
-
+    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
     //Add vertex coordinates to the VTK file
     for (int iy=0; iy<=(1<<subSampling); iy++)
     {
@@ -121,7 +121,8 @@ void testBSplineGridCurve()
   auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
 
   IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
-  auto gridView = grid.leafGridView();
+  const auto& gridView = grid.leafGridView();
+  const auto& indexSet = gridView.indexSet();
 
   IGA::VTKFile vtkFile;
 
@@ -131,6 +132,7 @@ void testBSplineGridCurve()
   //Range-based for loop to get each element and its corresponding geometry
   for (auto const &element:gridView)
   {
+    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
     auto geometry = element.geometry();
     FieldVector<double,dim> localPos;
 
