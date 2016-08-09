@@ -5,6 +5,8 @@
 
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/NURBSgridentity.hh>
+#include <dune/iga/NURBSgridleafiterator.hh>
+#include <dune/iga/NURBSgridindexsets.hh>
 
 namespace Dune
 {
@@ -16,23 +18,22 @@ namespace Dune
     {
     public:
 
-//      template<int codim, class GridViewImp>
-//      friend class BSplineGridEntity;
-//
-//
-//      template<int codim, typename BSplineGridView, typename BSplineEntity>
-//      friend class BSplineGridLeafIterator;
-//
-//
+      template<int codim, class GridViewImp>
+      friend class NURBSGridEntity;
+
+
+      template<int codim, typename NURBSGridView, typename NURBSEntity>
+      friend class NURBSGridLeafIterator;
+
       typedef NURBSLeafGridView<dim, dimworld> NURBSGridView;
       typedef NURBSGeometry<dim, dimworld> Geometry;
-//      typedef BSplineGridLeafIndexSet<BSplineGridView> IndexSet;
+      typedef NURBSGridLeafIndexSet<NURBSGridView> IndexSet;
 
       template<int codim>
       struct Codim
       {
         typedef NURBSGridEntity<codim,NURBSGridView> Entity;
-        //typedef NURBSGridLeafIterator<codim,NURBSGridView, Entity> Iterator;
+        typedef NURBSGridLeafIterator<codim,NURBSGridView, Entity> Iterator;
 
       };
 
@@ -71,21 +72,21 @@ namespace Dune
 
 
 
-//      typename Codim<0>::Iterator begin () const
-//      {
-//        return BSplineGridLeafIterator<0,BSplineGridView, typename Codim<0>::Entity>(*this, 0);
-//      }
-//
-//      typename Codim<0>::Iterator end () const
-//      {
-//        int elementSize = entityVector_.size();
-//        return BSplineGridLeafIterator<0,BSplineGridView, typename Codim<0>::Entity>(*this, elementSize);
-//      }
-//
-//      IndexSet indexSet() const
-//      {
-//        return BSplineGridLeafIndexSet<BSplineGridView>(*this);
-//      }
+      typename Codim<0>::Iterator begin () const
+      {
+        return NURBSGridLeafIterator<0,NURBSGridView, typename Codim<0>::Entity>(*this, 0);
+      }
+
+      typename Codim<0>::Iterator end () const
+      {
+        int elementSize = entityVector_.size();
+        return NURBSGridLeafIterator<0,NURBSGridView, typename Codim<0>::Entity>(*this, elementSize);
+      }
+
+      IndexSet indexSet() const
+      {
+        return NURBSGridLeafIndexSet<NURBSGridView>(*this);
+      }
 
     private:
        std::shared_ptr <NURBSPatch<dim,dimworld>> NURBSpatch_;

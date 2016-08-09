@@ -344,11 +344,19 @@ namespace Dune
 
     };
 
+    template<int dim, int dimworld>
+    class NURBSLeafGridView;
+
     /** \brief Class where the NURBS geometry can work on */
     template <int dim, int dimworld>
     class NURBSPatch
     {
     public:
+
+      friend class NURBSLeafGridView<dim, dimworld>;
+      template<int codim, class GridViewImp>
+      friend class NURBSGridEntity;
+
       /** \brief Constructor of NURBS from knots, control points, weights and order
        *  \param[in] knotSpans vector of knotSpans for each dimension
        *  \param[in] controlPoints a n-dimensional net of control points
@@ -361,6 +369,10 @@ namespace Dune
                    const std::array<int,dim> order)
       : patchData_(std::make_shared<NURBSPatchData<dim,dimworld>>(knotSpans, controlPoints, weights, order))
       {
+        validKnotSize_ = this -> validKnotSize();
+        //Build a knot net to make iterator operations easier
+        //Here each "point" of the net is a element(knot span)
+        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
       }
 
       /** \brief creates a NURBSGeometry object
@@ -426,6 +438,8 @@ namespace Dune
     private:
 
       std::shared_ptr <NURBSPatchData<dim,dimworld>> patchData_;
+      std::array<unsigned int,dim> validKnotSize_;
+      std::shared_ptr <MultiDimensionNet<dim,1>> knotElementNet_;
 
     };
   }
