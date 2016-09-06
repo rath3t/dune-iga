@@ -8,6 +8,8 @@
 #include <dune/common/fvector.hh>
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/bsplineleafgridview.hh>
+#include <dune/grid/common/gridenums.hh>
+
 
 /** \file
  * \brief The BSplineGridEntity class
@@ -47,6 +49,9 @@
     */
     public:
 
+      //typedef BSplineGeometry<dim, dimworld> Geometry;
+      typedef typename GridViewImp::template Codim<codim>::Geometry Geometry;
+
       //! Default Constructor
       BSplineGridEntity ()
         : BSplineGridView_(nullptr)
@@ -56,8 +61,11 @@
         : BSplineGridView_(&gridView), directIndex_(directIndex)
       {}
 
+      //! return the element type identifier (segment)
+      GeometryType type () const {return this->geometry().type();}
+
       //! Geometry of this entity
-      typename GridViewImp::Geometry geometry () const
+      Geometry geometry () const
       {
         auto const &knotElementNet = BSplineGridView_->BSplinepatch_->knotElementNet_;
         auto const &multiIndex = knotElementNet->directToMultiIndex(0);
@@ -67,6 +75,16 @@
       unsigned int  getIndex() const
       {
         return directIndex_;
+      }
+
+      //! only interior entities
+      PartitionType partitionType () const { return InteriorEntity; }
+
+      //! Return the number of subentities of codimension codim
+      unsigned int subEntities (unsigned int cd) const
+      {
+        assert(cd==0 || cd==1);
+        return (cd==0) ? 1 : 4;
       }
 
 

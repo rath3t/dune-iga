@@ -7,6 +7,7 @@
 #include <dune/iga/bsplinegridleafiterator.hh>
 #include <dune/iga/bsplinegridentity.hh>
 #include <dune/iga/bsplinegridindexsets.hh>
+#include <dune/common/parallel/collectivecommunication.hh>
 
 namespace Dune
 {
@@ -23,20 +24,35 @@ namespace Dune
       template<int codim, class GridViewImp>
       friend class BSplineGridEntity;
 
-
       template<int codim, typename BSplineGridView, typename BSplineEntity>
       friend class BSplineGridLeafIterator;
 
+
+      enum {dimension = dim};
+      enum {dimensionworld = dimworld};
 
       typedef BSplineLeafGridView<dim, dimworld> BSplineGridView;
       typedef BSplineGeometry<dim, dimworld> Geometry;
       typedef BSplineGridLeafIndexSet<BSplineGridView> IndexSet;
 
+      typedef BSplineGridView Grid;
+      typedef typename Geometry::ctype ctype;
+
       template<int codim>
       struct Codim
       {
+         /** \brief Define types needed to iterate over entities of a given partition type */
+
         typedef BSplineGridEntity<codim,BSplineGridView> Entity;
         typedef BSplineGridLeafIterator<codim,BSplineGridView, Entity> Iterator;
+        typedef BSplineGeometry<dim, dimworld> Geometry;
+
+        template< PartitionIteratorType pit >
+        struct Partition
+        {
+          /** \brief iterator over a given codim and partition type */
+          typedef BSplineGridLeafIterator<codim,BSplineGridView, Entity> Iterator;
+        };
 
       };
 
@@ -92,6 +108,12 @@ namespace Dune
       IndexSet indexSet() const
       {
         return BSplineGridLeafIndexSet<BSplineGridView>(*this);
+      }
+
+      CollectiveCommunication<BSplineGridView> ccobj;
+      const CollectiveCommunication<BSplineGridView> &comm () const
+      {
+        return ccobj;
       }
 
     private:

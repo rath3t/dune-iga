@@ -14,6 +14,7 @@ namespace Dune
     class BSplineGridLeafIndexSet
     {
     public:
+      typedef int IndexType;
       //! constructor
       BSplineGridLeafIndexSet (const GridImp& g) : grid_(g)
       {}

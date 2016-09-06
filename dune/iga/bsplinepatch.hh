@@ -291,7 +291,7 @@ namespace Dune
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const GlobalCoordinate global(const LocalCoordinate& local)
+      const GlobalCoordinate global(const LocalCoordinate& local) const
       {
         const auto& knotSpans = patchData_->getKnots();
         const auto& controlPoints = patchData_->getControlPoints();
@@ -440,7 +440,7 @@ namespace Dune
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const std::array<std::vector<std::vector<double>>,mydimension > & getBasis (const LocalCoordinate& local)
+      const std::array<std::vector<std::vector<double>>,mydimension > & getBasis (const LocalCoordinate& local) const
       {
         for (int i=0; i<dim; ++i)
           if (local[i]<0 || local[i]>1)
@@ -490,7 +490,7 @@ namespace Dune
 
         std::array<std::vector<double>::const_iterator,dim> corner_;
 
-        std::array<std::vector<std::vector<double>>,dim> basis_;
+        mutable std::array<std::vector<std::vector<double>>,dim> basis_;
 
     };
 

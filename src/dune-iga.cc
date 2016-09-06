@@ -16,6 +16,10 @@
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/NURBSgrid.hh>
 #include <dune/iga/vtkfile.hh>
+
+
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+
 using namespace Dune;
 
 void testBSplineGridSurface()
@@ -42,63 +46,70 @@ void testBSplineGridSurface()
   //controlNet.disp();
 
   IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
-  const auto& gridView = grid.leafGridView();
+  const auto gridView = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
   ////////////////////////////////////////////////////////////////
   //  Write to a VTK file.
   //  The higher-order geometry is captured by subsampling.
   ////////////////////////////////////////////////////////////////
 
+  ////////////////////////////////////////////////////////////////
+  //! Test code for VTKWriter, please uncomment to inspect the remaining errors
+  //  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView,subSampling);
+  //  vtkWriter.write("foo");
+  ////////////////////////////////////////////////////////////////
 
-  IGA::VTKFile vtkFile;
+  //! Original manual VTK writer, it works fine. Uncomment to have a working version
+//  IGA::VTKFile vtkFile;
+//
+//  //  The number of vertices that have been inserted so far
+//  std::size_t offset = 0;
+//
+//  //Range-based for loop to get each element and its corresponding geometry
+//  for (auto const &element:gridView)
+//  {
+//    auto geometry = element.geometry();
+//    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
+//    //Add vertex coordinates to the VTK file
+//    for (int iy=0; iy<=(1<<subSampling); iy++)
+//    {
+//      FieldVector<double,dim> localPos;
+//      localPos[1] = ((double)iy)/(1<<subSampling);
+//
+//      // Add vertex coordinates to the VTK file
+//      for (int ix=0; ix<=(1<<subSampling); ix++)
+//      {
+//        localPos[0] = ((double)ix)/(1<<subSampling);
+//
+//        vtkFile.points_.push_back(geometry.global(localPos));
+//      }
+//    }
+//
+//    // Add elements to the VTK file
+//    for (int k=0; k<(1<<subSampling); k++)
+//    {
+//      for (int l=0; l<(1<<subSampling); l++)
+//      {
+//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
+//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
+//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
+//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
+//
+//        // 4 corners per element
+//        if (vtkFile.cellOffsets_.size()==0)
+//          vtkFile.cellOffsets_.push_back(4);
+//        else
+//          vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
+//
+//        // Element type: a 4-node quadrilateral
+//        vtkFile.cellTypes_.push_back(9);
+//      }
+//    }
+//
+//    offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
+//  }
+//  vtkFile.write("BSplineGridTest-Surface");
 
-  //  The number of vertices that have been inserted so far
-  std::size_t offset = 0;
-
-  //Range-based for loop to get each element and its corresponding geometry
-  for (auto const &element:gridView)
-  {
-    auto geometry = element.geometry();
-    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
-    //Add vertex coordinates to the VTK file
-    for (int iy=0; iy<=(1<<subSampling); iy++)
-    {
-      FieldVector<double,dim> localPos;
-      localPos[1] = ((double)iy)/(1<<subSampling);
-
-      // Add vertex coordinates to the VTK file
-      for (int ix=0; ix<=(1<<subSampling); ix++)
-      {
-        localPos[0] = ((double)ix)/(1<<subSampling);
-
-        vtkFile.points_.push_back(geometry.global(localPos));
-      }
-    }
-
-    // Add elements to the VTK file
-    for (int k=0; k<(1<<subSampling); k++)
-    {
-      for (int l=0; l<(1<<subSampling); l++)
-      {
-        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
-        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
-        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
-        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
-
-        // 4 corners per element
-        if (vtkFile.cellOffsets_.size()==0)
-          vtkFile.cellOffsets_.push_back(4);
-        else
-          vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
-
-        // Element type: a 4-node quadrilateral
-        vtkFile.cellTypes_.push_back(9);
-      }
-    }
-
-    offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
-  }
-  vtkFile.write("BSplineGridTest-Surface");
 }
 
 void testBSplineGridCurve()
@@ -660,19 +671,19 @@ int main(int argc, char** argv) try
   //testBSplineCurve();
   std::cout<< "done with B-Spline grid Surface" << std::endl;
 
-  std::cout<<"test B-Spline grid Curve"<<std::endl;
-  testBSplineGridCurve();
-  //testBSplineCurve();
-  std::cout<< "done with B-Spline grid Curve" << std::endl;
-
-  std::cout<<"test NURBS grid surface" <<std::endl;
-  testNURBSGridSurface();
-  std::cout<< "done with NURBS grid surface" << std::endl;
-
-  std::cout<<"test NURBS grid Curve"<<std::endl;
-  testNURBSGridCurve();
-  //testBSplineCurve();
-  std::cout<< "done with NURBS grid Curve" << std::endl;
+//  std::cout<<"test B-Spline grid Curve"<<std::endl;
+//  testBSplineGridCurve();
+//  //testBSplineCurve();
+//  std::cout<< "done with B-Spline grid Curve" << std::endl;
+//
+//  std::cout<<"test NURBS grid surface" <<std::endl;
+//  testNURBSGridSurface();
+//  std::cout<< "done with NURBS grid surface" << std::endl;
+//
+//  std::cout<<"test NURBS grid Curve"<<std::endl;
+//  testNURBSGridCurve();
+//  //testBSplineCurve();
+//  std::cout<< "done with NURBS grid Curve" << std::endl;
 
 //  testNURBSCurve();
 //  std::cout<< "done with NURBS curve" << std::endl;
