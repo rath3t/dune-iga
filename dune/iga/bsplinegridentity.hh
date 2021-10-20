@@ -62,7 +62,7 @@
       {}
 
       //! return the element type identifier (segment)
-      GeometryType type () const {return this->geometry().type();}
+      [[nodiscard]] GeometryType type () const {return this->geometry().type();}
 
       //! Geometry of this entity
       Geometry geometry () const
@@ -72,13 +72,13 @@
         return BSplineGridView_->BSplinepatch_->geometry(multiIndex);
       }
 
-      unsigned int  getIndex() const
+      [[nodiscard]] unsigned int  getIndex() const
       {
         return directIndex_;
       }
 
       //! only interior entities
-      PartitionType partitionType () const { return InteriorEntity; }
+      [[nodiscard]] PartitionType partitionType () const { return InteriorEntity; }
 
       //! Return the number of subentities of codimension codim
       unsigned int subEntities (unsigned int cd) const

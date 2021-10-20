@@ -7,8 +7,9 @@
 #include <dune/geometry/type.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
-#include <dune/geometry/genericgeometry/geometrytraits.hh>
-#include <dune/geometry/genericgeometry/matrixhelper.hh>
+#include <dune/geometry/multilineargeometry.hh>
+//#include <dune/geometry/genericgeometry/geometrytraits.hh>
+//#include <dune/geometry/genericgeometry/matrixhelper.hh>
 //#include <dune/iga/bsplineleafgridview.hh>
 
 namespace Dune
@@ -23,7 +24,7 @@ namespace Dune
      *
      *  \param[in] dimSize array of the size of each dimension
      */
-    MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
+    explicit MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
     : dimSize_(dimSize)
     {
       int size = 1;
@@ -237,7 +238,7 @@ namespace Dune
 
     private:
       /* Helper class to compute a matrix pseudo inverse */
-      typedef GenericGeometry::MatrixHelper< GenericGeometry::DuneCoordTraits< double > > MatrixHelper;
+      typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
 
     public:
       /** \brief Constructor of BSplineGeometry from BSplinePatchData and an iterator to a specific knot
@@ -284,14 +285,14 @@ namespace Dune
       /** \brief Type of the element: a hypercube of the correct dimension */
       GeometryType type() const
       {
-        return GeometryType(GeometryType::cube,dim);
+        return {GeometryType::cube,dim};
       }
 
       /** \brief evaluates the B-Spline mapping
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const GlobalCoordinate global(const LocalCoordinate& local) const
+      GlobalCoordinate global(const LocalCoordinate& local) const
       {
         const auto& knotSpans = patchData_->getKnots();
         const auto& controlPoints = patchData_->getControlPoints();
@@ -330,7 +331,7 @@ namespace Dune
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
+      JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
       {
         for (int i=0; i<dim;++i)
           if (local[i]<0 || local[i]>1)
@@ -412,7 +413,7 @@ namespace Dune
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const std::array<std::vector<double>,mydimension> getDerBasis()
+      std::array<std::vector<double>,mydimension> getDerBasis()
       {
         const auto & order = patchData_->getOrder();
         const auto & knotSpans = patchData_->getKnots();

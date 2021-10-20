@@ -13,9 +13,7 @@
  * \brief The NURBSGridEntity class
  */
 
-namespace Dune
-{
-  namespace IGA
+namespace Dune::IGA
   {
   /** \brief
   *.
@@ -25,6 +23,7 @@ namespace Dune
   {
   public:
 
+      using Geometry = NURBSGeometry<GridViewImp::dimension,GridViewImp::dimensionworld>;
       //! Default Constructor
       NURBSGridEntity ()
         : NURBSGridView_(nullptr)
@@ -42,7 +41,7 @@ namespace Dune
         return NURBSGridView_->NURBSpatch_->geometry(multiIndex);
       }
 
-      unsigned int  getIndex() const
+      [[nodiscard]] unsigned int  getIndex() const
       {
         return directIndex_;
       }
@@ -63,6 +62,5 @@ namespace Dune
 
     }; // end of OneDGridEntity codim = 0
   }
-}
 
 #endif  //DUNE_IGA_NURBSGRIDENTITY_HH

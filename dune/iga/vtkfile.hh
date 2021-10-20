@@ -8,9 +8,7 @@
 
 #include <dune/grid/io/file/vtk/dataarraywriter.hh>
 
-namespace Dune {
-
-  namespace IGA {
+namespace Dune::IGA {
 
     /** \brief A class representing a VTK file, but independent from the Dune grid interface
      *
@@ -32,38 +30,38 @@ namespace Dune {
 
         // Write header
         outFile << "<?xml version=\"1.0\"?>" << std::endl;
-        outFile << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << std::endl;
+        outFile << R"(<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">)" << std::endl;
         outFile << "  <UnstructuredGrid>" << std::endl;
         outFile << "    <Piece NumberOfCells=\"" << cellOffsets_.size() << "\" NumberOfPoints=\"" << points_.size() << "\">" << std::endl;
 
         // Write vertex coordinates
         outFile << "      <Points>" << std::endl;
         {  // extra parenthesis to control destruction of the pointsWriter object
-          Dune::VTK::AsciiDataArrayWriter<float> pointsWriter(outFile, "Coordinates", 3, Dune::Indent(4));
-          for (size_t i=0; i<points_.size(); i++)
+          Dune::VTK::AsciiDataArrayWriter pointsWriter(outFile, "Coordinates", 3, Dune::Indent(4),VTK::Precision::float32);
+          for (const auto & point : points_)
             for (int j=0; j<3; j++)
-              pointsWriter.write(points_[i][j]);
+              pointsWriter.write(point[j]);
         }  // destructor of pointsWriter objects writes trailing </DataArray> to file
         outFile << "      </Points>" << std::endl;
 
         // Write elements
         outFile << "      <Cells>" << std::endl;
         {  // extra parenthesis to control destruction of the cellConnectivityWriter object
-          Dune::VTK::AsciiDataArrayWriter<int> cellConnectivityWriter(outFile, "connectivity", 1, Dune::Indent(4));
-          for (size_t i=0; i<cellConnectivity_.size(); i++)
-            cellConnectivityWriter.write(cellConnectivity_[i]);
+          Dune::VTK::AsciiDataArrayWriter cellConnectivityWriter(outFile, "connectivity", 1, Dune::Indent(4),VTK::Precision::int32);
+          for (int i : cellConnectivity_)
+            cellConnectivityWriter.write(i);
         }
 
         {  // extra parenthesis to control destruction of the writer object
-          Dune::VTK::AsciiDataArrayWriter<int> cellOffsetsWriter(outFile, "offsets", 1, Dune::Indent(4));
-          for (size_t i=0; i<cellOffsets_.size(); i++)
-            cellOffsetsWriter.write(cellOffsets_[i]);
+          Dune::VTK::AsciiDataArrayWriter cellOffsetsWriter(outFile, "offsets", 1, Dune::Indent(4),VTK::Precision::int32);
+          for (int cellOffset : cellOffsets_)
+            cellOffsetsWriter.write(cellOffset);
         }
 
         {  // extra parenthesis to control destruction of the writer object
-          Dune::VTK::AsciiDataArrayWriter<unsigned int> cellTypesWriter(outFile, "types", 1, Dune::Indent(4));
-          for (size_t i=0; i<cellTypes_.size(); i++)
-            cellTypesWriter.write(cellTypes_[i]);
+          Dune::VTK::AsciiDataArrayWriter cellTypesWriter(outFile, "types", 1, Dune::Indent(4),VTK::Precision::uint32);
+          for (int cellType : cellTypes_)
+            cellTypesWriter.write(cellType);
         }
 
         outFile << "      </Cells>" << std::endl;
@@ -89,7 +87,5 @@ namespace Dune {
     };
 
   }
-
-}
 
 #endif

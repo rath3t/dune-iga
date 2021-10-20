@@ -6,16 +6,14 @@
 #include <dune/grid/common/indexidset.hh>
 #include <dune/iga/NURBSgridentity.hh>
 
-namespace Dune
-{
-  namespace IGA
+namespace Dune::IGA
   {
     template<class GridImp>
     class NURBSGridLeafIndexSet
     {
     public:
       //! constructor
-      NURBSGridLeafIndexSet (const GridImp& g) : grid_(g)
+      explicit NURBSGridLeafIndexSet (const GridImp& g) : grid_(g)
       {}
 
       //! get index of an entity, need to change the type to a property from GridImp
@@ -30,6 +28,5 @@ namespace Dune
       const GridImp& grid_;
     };
   }
-}
 
 #endif

@@ -12,8 +12,7 @@
  * \brief The NURBSGridIterator class
  */
 
- namespace Dune {
-  namespace IGA
+ namespace Dune::IGA
   {
     /** \brief NURBS gird leaf iterator */
     template<int codim, typename NURBSGridView, typename NURBSEntity>
@@ -66,6 +65,5 @@
 
     };
   }
-}
 
 #endif  // DUNE_IGA_NURBSGRID_LEAFITERATOR_HH

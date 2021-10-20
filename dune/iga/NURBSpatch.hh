@@ -4,9 +4,8 @@
 #include <memory>
 #include <dune/iga/bsplinepatch.hh>
 
-namespace Dune
-{
-  namespace IGA
+
+namespace Dune::IGA
   {
 
     /** \brief class that holds all data regarding the NURBS structure */
@@ -96,7 +95,7 @@ namespace Dune
 
     private:
       /* Helper class to compute a matrix pseudo inverse */
-      typedef GenericGeometry::MatrixHelper< GenericGeometry::DuneCoordTraits< double > > MatrixHelper;
+      typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
 
     public:
 
@@ -130,7 +129,7 @@ namespace Dune
       }
 
       /** \brief Return the number of corners of the element */
-      int corners() const
+      [[nodiscard]] int corners() const
       {
         return 1<<mydimension;
       }
@@ -149,9 +148,9 @@ namespace Dune
       bool affine () const { return false; }
 
       /** \brief Type of the element: a hypercube of the correct dimension */
-      GeometryType type() const
+      [[nodiscard]] GeometryType type() const
       {
-        return GeometryType(GeometryType::cube,dim);
+        return {GeometryType::cube,dim};
       }
 
       /** \brief evaluates the NURBS mapping
@@ -263,7 +262,7 @@ namespace Dune
        *
        *  \param[in] local local coordinates for each dimension
        */
-      const JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
+      JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
       {
         JacobianTransposed result;
         const auto& BSplineJacobian = weightedBSpline->jacobianTransposed(local);
@@ -344,8 +343,11 @@ namespace Dune
 
     };
 
-    template<int dim, int dimworld>
+    template<typename Grid>
     class NURBSLeafGridView;
+
+    template<int dim, int dimworld>
+    class NURBSGrid;
 
     /** \brief Class where the NURBS geometry can work on */
     template <int dim, int dimworld>
@@ -353,7 +355,7 @@ namespace Dune
     {
     public:
 
-      friend class NURBSLeafGridView<dim, dimworld>;
+      friend class NURBSLeafGridView<NURBSGrid<dim,dimworld>>;
       template<int codim, class GridViewImp>
       friend class NURBSGridEntity;
 
@@ -443,6 +445,5 @@ namespace Dune
 
     };
   }
-}
 
 #endif  // DUNE_IGA_NURBSPATCH_HH

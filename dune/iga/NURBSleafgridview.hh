@@ -8,12 +8,65 @@
 #include <dune/iga/NURBSgridleafiterator.hh>
 #include <dune/iga/NURBSgridindexsets.hh>
 
+
 namespace Dune
 {
   namespace IGA
   {
+
+
+      /** \brief Collect several types associated to OneDGrid LeafGridViews */
+      template< class GridImp>
+      struct NurbsLeafGridViewTraits
+      {
+          typedef NurbsLeafGridViewTraits< GridImp > GridViewImp;
+
+          /** \brief type of the grid */
+          typedef typename std::remove_const<GridImp>::type Grid;
+
+//          /** \brief type of the index set */
+//          typedef typename GridImpl :: Traits :: LeafIndexSet IndexSet;
+//
+//          /** \brief type of the intersection */
+//          typedef typename GridImpl :: Traits :: LeafIntersection Intersection;
+//
+//          /** \brief type of the intersection iterator */
+//          typedef typename GridImpl :: Traits :: LeafIntersectionIterator IntersectionIterator;
+//
+//          /** \brief type of the collective communication */
+//          typedef typename GridImpl :: Traits :: CollectiveCommunication CollectiveCommunication;
+
+          template< int cd >
+          struct Codim
+          {
+              typedef typename Grid :: Traits
+              :: template Codim< cd > :: template Partition< All_Partition > :: LeafIterator
+                      Iterator;
+
+              typedef typename Grid :: Traits :: template Codim< cd > :: Entity Entity;
+
+              typedef typename Grid :: Traits:: template Codim< cd > :: Geometry Geometry;
+              typedef typename Grid :: Traits :: template Codim< cd > :: Geometry LocalGeometry;
+
+              /** \brief Define types needed to iterate over entities of a given partition type */
+              template <PartitionIteratorType pit >
+              struct Partition
+              {
+                  /** \brief iterator over a given codim and partition type */
+                  typedef typename Grid :: Traits :: template Codim< cd >
+                  :: template Partition< pit > :: LeafIterator
+                          Iterator;
+              };
+          };
+
+          enum { conforming = true };
+      };
+
+
+
+
     /** \brief NURBS grid manager */
-    template<int dim, int dimworld>
+    template<typename GridImpl>
     class NURBSLeafGridView
     {
     public:
@@ -21,21 +74,22 @@ namespace Dune
       template<int codim, class GridViewImp>
       friend class NURBSGridEntity;
 
+      using Traits = NurbsLeafGridViewTraits<GridImpl>;
+
+      using ctype = double;
+      static constexpr int dimension = GridImpl::dimension;
+      static constexpr int dimensionworld = GridImpl::dimensionworld;
 
       template<int codim, typename NURBSGridView, typename NURBSEntity>
       friend class NURBSGridLeafIterator;
 
-      typedef NURBSLeafGridView<dim, dimworld> NURBSGridView;
-      typedef NURBSGeometry<dim, dimworld> Geometry;
+      using Grid = typename Traits::Grid;
+      typedef NURBSLeafGridView<GridImpl> NURBSGridView;
+      typedef NURBSGeometry<dimension, dimensionworld> Geometry;
       typedef NURBSGridLeafIndexSet<NURBSGridView> IndexSet;
 
-      template<int codim>
-      struct Codim
-      {
-        typedef NURBSGridEntity<codim,NURBSGridView> Entity;
-        typedef NURBSGridLeafIterator<codim,NURBSGridView, Entity> Iterator;
-
-      };
+        template< int cd >
+        struct Codim : public Traits :: template Codim<cd> {};
 
       /** \brief  constructor
        *
@@ -43,11 +97,11 @@ namespace Dune
        *  \param[in] controlPoints a n-dimensional net of control points
        *  \param[in] order order of the B-Spline structure for each dimension
        */
-      NURBSLeafGridView(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNet<dim,dimworld> controlPoints,
-                   const MultiDimensionNet<dim,1> weights,
-                   const std::array<int,dim> order)
-      : NURBSpatch_(std::make_shared<NURBSPatch<dim,dimworld>>(knotSpans, controlPoints, weights, order))
+      NURBSLeafGridView(const std::array<std::vector<double>,dimension>& knotSpans,
+                   const MultiDimensionNet<dimensionworld,dimensionworld> controlPoints,
+                   const MultiDimensionNet<dimensionworld,1> weights,
+                   const std::array<int,dimension> order)
+      : NURBSpatch_(std::make_shared<NURBSPatch<dimension,dimensionworld>>(knotSpans, controlPoints, weights, order))
       {
         int elementSize = NURBSpatch_ ->knotElementNet_->directSize();
         entityVector_.reserve(elementSize);
@@ -70,7 +124,11 @@ namespace Dune
 
       }
 
-
+        /** \brief obtain collective communication object */
+        const CollectiveCommunication &comm () const
+        {
+            return grid().comm();
+        }
 
       typename Codim<0>::Iterator begin () const
       {
@@ -89,11 +147,11 @@ namespace Dune
       }
 
     private:
-       std::shared_ptr <NURBSPatch<dim,dimworld>> NURBSpatch_;
+       std::shared_ptr <NURBSPatch<dimension,dimensionworld>> NURBSpatch_;
        std::vector<std::shared_ptr<NURBSGridEntity<0, NURBSGridView>>> entityVector_;
     };
   }
 }
 
 
-#endif  // DUNE_IGA_NURBSGRIDVIEW_HH
+#endif  // DUNE_IGA_NURBSGRID_LEAFGRIDVIEW_HH

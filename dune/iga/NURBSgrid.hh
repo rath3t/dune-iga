@@ -1,20 +1,49 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_IGA_NURBSGRID_HH
-#define DUNE_IGA_NURBSGRID_HH
+#pragma once
 
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/NURBSleafgridview.hh>
 
-namespace Dune
-{
-  namespace IGA
+namespace Dune::IGA
   {
     /** \brief NURBS grid manager */
     template<int dim, int dimworld>
     class NURBSGrid
     {
     public:
+
+        static constexpr int dimension = dim;
+        static constexpr int dimensionworld = dimworld;
+        using ctype = double;
+
+        using Comm = Communication<No_Comm>;
+        struct Traits{
+            template< int cd >
+            struct Codim {
+
+
+
+                using Entity =  NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim,dimworld>>>;
+                using Geometry = typename Entity :: Geometry;
+                template <PartitionIteratorType pitype>
+                struct Partition
+                {
+                    /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
+                    using  LeafIterator = NURBSGridLeafIterator<cd, NURBSLeafGridView<NURBSGrid<dim,dimworld>>,Entity>;
+                    /** \brief The type of the iterator over the level entities of this codim on this partition. */
+                    using LevelIterator = LeafIterator;
+
+                };
+            };
+        };
+
+
+
+        void globalRefine(int refinementevel)
+        {
+
+        }
       /** \brief  constructor
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -26,20 +55,22 @@ namespace Dune
                    const MultiDimensionNet<dim,dimworld> controlPoints,
                    const MultiDimensionNet<dim,1> weights,
                    const std::array<int,dim> order)
-      : leafGridView_(std::make_shared<NURBSLeafGridView<dim,dimworld>>(knotSpans, controlPoints, weights, order))
+      : leafGridView_(std::make_shared<NURBSLeafGridView<NURBSGrid<dim,dimworld>>>(knotSpans, controlPoints, weights, order))
       {
       }
 
-      NURBSLeafGridView<dim,dimworld>& leafGridView()
+      NURBSLeafGridView<NURBSGrid<dim,dimworld>>& leafGridView()
       {
         return *(this->leafGridView_);
       }
 
+        [[nodiscard]] const Comm& comm() const
+        {
+            return ccobj;
+        }
     private:
-
-      std::shared_ptr <NURBSLeafGridView<dim,dimworld>> leafGridView_;
+      Comm ccobj;
+      std::shared_ptr <NURBSLeafGridView<NURBSGrid<dim,dimworld>>> leafGridView_;
     };
   }
-}
 
-#endif  // DUNE_IGA_BSPLINEGRID_HH

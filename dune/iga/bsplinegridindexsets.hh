@@ -6,9 +6,7 @@
 #include <dune/grid/common/indexidset.hh>
 #include <dune/iga/bsplinegridentity.hh>
 
-namespace Dune
-{
-  namespace IGA
+namespace Dune::IGA
   {
     template<class GridImp>
     class BSplineGridLeafIndexSet
@@ -16,7 +14,7 @@ namespace Dune
     public:
       typedef int IndexType;
       //! constructor
-      BSplineGridLeafIndexSet (const GridImp& g) : grid_(g)
+      explicit BSplineGridLeafIndexSet (const GridImp& g) : grid_(g)
       {}
 
       //! get index of an entity, need to change the type to a property from GridImp
@@ -31,6 +29,5 @@ namespace Dune
       const GridImp& grid_;
     };
   }
-}
 
 #endif

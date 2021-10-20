@@ -12,8 +12,7 @@
  * \brief The BSplineIterator class
  */
 
-namespace Dune {
-  namespace IGA
+namespace Dune::IGA
   {
     /** \brief b-spline leaf iterator */
     template<int codim, typename BSplineGridView, typename BSplineEntity>
@@ -66,6 +65,5 @@ namespace Dune {
 
     };
   }
-}
 
 #endif  // DUNE_IGA_BSPLINEGRID_LEAFITERATOR_HH

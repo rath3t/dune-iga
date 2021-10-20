@@ -6,9 +6,7 @@
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/bsplineleafgridview.hh>
 
-namespace Dune
-{
-  namespace IGA
+namespace Dune::IGA
   {
     /** \brief b-spline grid manager */
     template<int dim, int dimworld>
@@ -27,6 +25,7 @@ namespace Dune
                    const std::array<int,dim> order)
       : leafGridView_(std::make_shared<BSplineLeafGridView<dim,dimworld>>(knotSpans, controlPoints, order))
       {
+
       }
 
       BSplineLeafGridView<dim,dimworld> leafGridView()
@@ -41,6 +40,5 @@ namespace Dune
       std::shared_ptr <BSplineLeafGridView<dim,dimworld>> leafGridView_;
     };
   }
-}
 
 #endif  // DUNE_IGA_BSPLINEGRID_HH
