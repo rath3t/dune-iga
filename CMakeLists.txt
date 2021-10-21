@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.6)
 project(dune-iga CXX)
 
+set (CMAKE_CXX_STANDARD 20)
+
 if(NOT (dune-common_DIR OR dune-common_ROOT OR
       "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*"))
     string(REPLACE  ${CMAKE_PROJECT_NAME} dune-common dune-common_DIR

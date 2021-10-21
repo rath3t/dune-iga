@@ -8,158 +8,10 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 #include <dune/geometry/multilineargeometry.hh>
-//#include <dune/geometry/genericgeometry/geometrytraits.hh>
-//#include <dune/geometry/genericgeometry/matrixhelper.hh>
-//#include <dune/iga/bsplineleafgridview.hh>
+#include <dune/iga/multidimensionNet.hh>
 
-namespace Dune
-{
-  /** \brief class holds a n-dim net */
-  template <int netdim, int dimworld>
-  class MultiDimensionNet
-  {
-  public:
 
-    /** \brief constructor for a net of a certain size with values unknown.
-     *
-     *  \param[in] dimSize array of the size of each dimension
-     */
-    explicit MultiDimensionNet (std::array<unsigned int, netdim> dimSize)
-    : dimSize_(dimSize)
-    {
-      int size = 1;
-      for (int i=0; i<netdim; ++i)
-        size*=dimSize_[i];
-
-      values_.resize(size);
-    }
-
-    /** \brief constructor intended for the 1-D if the values are already in a vector
-     *  \note can also be used if the values are already mapped
-     *
-     *  \param[in] dimSize array of the size of each dimension
-     *  \param[in] values vector with values
-     */
-    MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<FieldVector<double, dimworld>> values)
-    : values_(values)
-    , dimSize_(dimSize)
-    {}
-
-    /** \brief constructor intended for the 2-D if the values are already in a matrix
-     *
-     *  \param[in] dimSize array of the size of each dimension
-     *  \param[in] values matrix with values
-     */
-    MultiDimensionNet (std::array<unsigned int, netdim> dimSize, std::vector<std::vector<FieldVector<double, dimworld> > > values)
-    : dimSize_(dimSize)
-    {
-      values_.resize(values.size()*values[0].size());
-
-      for (unsigned int i=0; i<values.size(); ++i)
-      {
-        for(unsigned int j=0; j<values[0].size(); ++j)
-        {
-          std::array<unsigned int,netdim> multiIndex = {i,j};
-          this->set(multiIndex, values[i][j]);
-        }
-      }
-    }
-
-    /** \brief constructor for a grid of the same value
-     *
-     *  \param[in] dimSize array of the size of each dimension
-     *  \param[in] value a common value to fill the grid
-     */
-    MultiDimensionNet (std::array<unsigned int, netdim> dimSize, FieldVector<double, dimworld> value)
-    : dimSize_(dimSize)
-    {
-      int size = 1;
-      for (int i=0; i<netdim; ++i)
-           size*=dimSize_[i];
-      values_.resize(size);
-      std::fill(values_.begin(), values_.end(), value);
-    }
-
-    /** \brief sets a value at the multiindex */
-    void set (std::array<unsigned int, netdim> multiIndex, FieldVector<double,dimworld> value)
-    {
-      int index = this->index(multiIndex);
-      values_[index] = value;
-    }
-
-    /** \brief sets a value at the multiindex */
-    void directSet (unsigned int index, FieldVector<double,dimworld> value)
-    {
-      values_[index] = value;
-    }
-
-    /** \brief returns the value at the multiindex */
-    FieldVector<double, dimworld> get (std::array<unsigned int, netdim> multiIndex) const
-    {
-      int index = this->index(multiIndex);
-      return values_[index];
-    }
-
-    /** \brief returns a value at an index (unmapped)
-      * \note only to be used when the mapping is known
-     */
-    FieldVector<double, dimworld> directGet (int index) const
-    {
-      return values_[index];
-    }
-
-    /** \brief returns a multiindex for a scalar index */
-    std::array<unsigned int,netdim> directToMultiIndex (unsigned int index) const
-    {
-      std::array<unsigned int, netdim> multiIndex;
-
-      unsigned int help = index ;
-      int temp;
-      for (int i=0; i<netdim; ++i)
-      {
-        temp = help%(dimSize_[netdim-(i+1)]);
-        multiIndex[netdim-(i+1)] = temp;
-        help -= temp;
-        help = help/dimSize_[netdim-(i+1)];
-      }
-
-      return multiIndex;
-    }
-
-    /** \brief returns an array with the size of each dimension */
-    std::array<unsigned int,netdim> size() const
-    {
-      return dimSize_;
-    }
-
-    unsigned int directSize () const
-    {
-      return values_.size();
-    }
-
-  private:
-    int index (std::array<unsigned int, netdim> multiIndex)const
-    {
-      int index,help ;
-      index = 0;
-      for (int i=0; i<netdim; ++i)
-      {
-        help = 1;
-        for (int j=(i+1); j<netdim ;++j)
-          help *= dimSize_[j];
-
-        index += help*multiIndex[i];
-      }
-      return index;
-    }
-
-  private:
-
-    std::array<unsigned int,netdim> dimSize_;
-    std::vector<FieldVector<double,dimworld> > values_;
-  };
-
-  namespace IGA
+  namespace Dune::IGA
   {
 
     /** \brief class that holds all data regarding the B-Spline stucture */
@@ -211,8 +63,7 @@ namespace Dune
 
     /** \brief a geometry implementation for B-Splines */
     template <int dim, int dimworld>
-    class BSplineGeometry
-    {
+    class BSplineElementGeometry {
     public:
 
       /** coordinate type */
@@ -241,12 +92,12 @@ namespace Dune
       typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
 
     public:
-      /** \brief Constructor of BSplineGeometry from BSplinePatchData and an iterator to a specific knot
+      /** \brief Constructor of BSplineElementGeometry from BSplinePatchData and an iterator to a specific knot
        *
        *  \param[in] Patchdata shared pointer to an object where the all the data of the BSplinePatch is stored
        *  \param[in] corner Pointer (for each dimension) to the Knot span where the Geometry object is supposed to operate
        */
-      BSplineGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata,
+      BSplineElementGeometry(std::shared_ptr <BsplinePatchData<dim,dimworld>> Patchdata,
                       std::array<std::vector<double>::const_iterator,dim> corner)
       : patchData_(Patchdata)
       , corner_(corner)
@@ -300,7 +151,7 @@ namespace Dune
         const auto& basis  = this->getBasis(local);
         GlobalCoordinate glob;
         std::fill(glob.begin(), glob.end(), 0.0);
-        std::array<unsigned int,dim> multiIndexBasisfucntion, multiIndexControlNet;
+        std::array<unsigned int,dim> multiIndexBasisfunction, multiIndexControlNet;
         std::array<unsigned int,dim> dimsize;
         std::array<unsigned int,dim> cornerIdx;
         for (unsigned int d=0; d<dim; ++d)
@@ -312,12 +163,12 @@ namespace Dune
         auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
         for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
         {
-          multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
+            multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
           double temp = 1;
           for (unsigned int d=0; d<dim; ++d)
           {
-              temp *= basis[d][multiIndexBasisfucntion[d]][order[d]];
-              multiIndexControlNet[d] = multiIndexBasisfucntion[d]+cornerIdx[d]-order[d];
+              temp *= basis[d][multiIndexBasisfunction[d]][order[d]];
+              multiIndexControlNet[d] = multiIndexBasisfunction[d] + cornerIdx[d] - order[d];
           }
           auto cp = controlPoints.get(multiIndexControlNet);
           for (unsigned int k=0; k<dimworld; ++k)
@@ -345,7 +196,7 @@ namespace Dune
 
         //const auto& basis = (basis_.empty())?this->getBasis(local):basis_;
         const auto& derBasis = this->getDerBasis();
-        std::array<unsigned int,mydimension> multiIndexBasisfucntion, multiIndexControlNet;
+        std::array<unsigned int,mydimension> multiIndexBasisfunction, multiIndexControlNet;
         std::array<unsigned int,mydimension> dimsize;
         std::array<unsigned int,mydimension> cornerIdx;
         for (unsigned int d=0; d<mydimension; ++d)
@@ -362,13 +213,13 @@ namespace Dune
           /*Iterate the non-vanishing basis function grid*/
           for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
           {
-            multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
+              multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
             double product = 1;
             for (unsigned int d=0; d<mydimension; ++d)
             {
-              double temp = (d == r)? derBasis[d][multiIndexBasisfucntion[d]]:basis[d][multiIndexBasisfucntion[d]][order[d]];
+              double temp = (d == r) ? derBasis[d][multiIndexBasisfunction[d]] : basis[d][multiIndexBasisfunction[d]][order[d]];
               product *= temp;
-              multiIndexControlNet[d] = multiIndexBasisfucntion[d]+cornerIdx[d]-order[d];
+              multiIndexControlNet[d] = multiIndexBasisfunction[d] + cornerIdx[d] - order[d];
             }
             auto cp = controlPoints.get(multiIndexControlNet);
             /* Fill the matrix row */
@@ -488,11 +339,8 @@ namespace Dune
     private:
 
         std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
-
         std::array<std::vector<double>::const_iterator,dim> corner_;
-
         mutable std::array<std::vector<std::vector<double>>,dim> basis_;
-
     };
 
 
@@ -505,8 +353,6 @@ namespace Dune
     public:
 
       friend class BSplineLeafGridView<dim, dimworld>;
-      template<int codim, class GridViewImp>
-      friend class BSplineGridEntity;
 
       /** \brief Constructor of BSplinePatch from knots, control points and order
        *
@@ -525,30 +371,28 @@ namespace Dune
         knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
       }
 
-      /** \brief creates a BSplineGeometry object
+      /** \brief creates a BSplineElementGeometry object
        *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
        *  and generates a Geometry object
        *
        * \param[in] ijk array of indices for each dimension
        */
-      BSplineGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
+      BSplineElementGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
       {
         const auto & knotSpans = patchData_->getKnots();
 
-        unsigned int count = 0;
         std::array<unsigned int,dim> index;
         std::fill(index.begin(), index.end(), 0);
 
         /*finds the working geometry object ijk
          *(working geometry objects are defined between 2 knots, where knot[i]<knot[i+1])*/
-        for (int j=0; j<dim; ++j)
+        for (int count, j=0; j<dim; ++j)
         {
           count = 0;
           while(count <= ijk[j])
           {
             if (index[j] == knotSpans[j].size())
                 break;
-
             if (knotSpans[j][index[j]+1] > knotSpans[j][index[j]])
                 count++;
 
@@ -559,11 +403,9 @@ namespace Dune
         /*the pointer on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<std::vector<double>::const_iterator,dim> corners;
         for(int i=0; i<dim; ++i)
-        {
-          corners[i] = (knotSpans[i]).begin()+index[i]-1;
-        }
+          corners[i] = (knotSpans[i]).begin()+index[i]-1; //get starting span for each dim of element
 
-        return BSplineGeometry<dim,dimworld>(patchData_,corners);
+        return BSplineElementGeometry<dim,dimworld>(patchData_,corners);
       }
 
       /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
@@ -571,30 +413,22 @@ namespace Dune
       {
         const auto & knotSpans = patchData_->getKnots();
         std::array<unsigned int,dim> validknotsize;
-        std::fill(validknotsize.begin(), validknotsize.end(), 0);
+        validknotsize.fill(0);
 
         for (int j=0; j<dim; ++j)
-        {
           for (int i=0; i<knotSpans[j].size()-1; ++i)
-          {
             if (knotSpans[j][i+1] > knotSpans[j][i])
               ++validknotsize[j];
-          }
-        }
 
         return validknotsize;
       }
-
 
     private:
 
       std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
       std::array<unsigned int,dim> validKnotSize_;
       std::shared_ptr <MultiDimensionNet<dim,1>> knotElementNet_;
-
     };
-
-  }
 
 }
 

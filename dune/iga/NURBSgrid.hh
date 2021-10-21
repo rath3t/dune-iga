@@ -22,23 +22,19 @@ namespace Dune::IGA
             template< int cd >
             struct Codim {
 
-
-
                 using Entity =  NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim,dimworld>>>;
                 using Geometry = typename Entity :: Geometry;
                 template <PartitionIteratorType pitype>
                 struct Partition
                 {
                     /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
-                    using  LeafIterator = NURBSGridLeafIterator<cd, NURBSLeafGridView<NURBSGrid<dim,dimworld>>,Entity>;
+                    using  LeafIterator = NURBSGridLeafIterator<Entity>;
                     /** \brief The type of the iterator over the level entities of this codim on this partition. */
                     using LevelIterator = LeafIterator;
 
                 };
             };
         };
-
-
 
         void globalRefine(int refinementevel)
         {
@@ -52,16 +48,17 @@ namespace Dune::IGA
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       NURBSGrid(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNet<dim,dimworld> controlPoints,
-                   const MultiDimensionNet<dim,1> weights,
-                   const std::array<int,dim> order)
-      : leafGridView_(std::make_shared<NURBSLeafGridView<NURBSGrid<dim,dimworld>>>(knotSpans, controlPoints, weights, order))
+                   const MultiDimensionNet<dim,dimworld>& controlPoints,
+                   const MultiDimensionNet<dim,1>& weights,
+                   const std::array<int,dim>& order)
+      :        coarsestPatchRepresentation_{NURBSPatchData<dim,dimworld>(knotSpans, controlPoints, weights, order)}
       {
+          currentPatchRepresentation_=coarsestPatchRepresentation_;
       }
 
-      NURBSLeafGridView<NURBSGrid<dim,dimworld>>& leafGridView()
+      auto leafGridView()
       {
-        return *(this->leafGridView_);
+        return NURBSLeafGridView<NURBSGrid<dim,dimworld>>(currentPatchRepresentation_,*this);
       }
 
         [[nodiscard]] const Comm& comm() const
@@ -70,7 +67,9 @@ namespace Dune::IGA
         }
     private:
       Comm ccobj;
-      std::shared_ptr <NURBSLeafGridView<NURBSGrid<dim,dimworld>>> leafGridView_;
+//      std::shared_ptr <NURBSLeafGridView<NURBSGrid<dim,dimworld>>> leafGridView_;
+      NURBSPatchData<dim,dimworld> coarsestPatchRepresentation_;
+      NURBSPatchData<dim,dimworld> currentPatchRepresentation_;
     };
   }
 

@@ -7,7 +7,7 @@
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/NURBSleafgridview.hh>
 #include <dune/common/iteratorfacades.hh>
-
+#include <span>
 /** \file
  * \brief The NURBSGridIterator class
  */
@@ -15,40 +15,51 @@
  namespace Dune::IGA
   {
     /** \brief NURBS gird leaf iterator */
-    template<int codim, typename NURBSGridView, typename NURBSEntity>
-    class NURBSGridLeafIterator:
-      public ForwardIteratorFacade<NURBSGridLeafIterator<codim, NURBSGridView, NURBSEntity>,NURBSEntity,NURBSEntity&, int>
+    template<typename NURBSEntity>
+  class NURBSGridLeafIterator : public std::vector<NURBSEntity>::iterator
     {
     public:
       //typedef typename NURBSGridView::template Codim<codim>::Entity Entity;
 
-      NURBSGridLeafIterator(const NURBSGridView& GridView, int index)
-        : NURBSGridView_(&GridView), directIndex_(index)
-      {
-      }
-
-      NURBSEntity& dereference() const
-      {
-        return NURBSGridView_-> template getEntity<codim>(directIndex_);
-      }
-
-      bool equals(const NURBSGridLeafIterator<codim,typename std::remove_const<NURBSGridView>::type, typename std::remove_const<NURBSEntity>::type>& other) const
-      {
-        return directIndex_ == other.directIndex_ && NURBSGridView_->NURBSpatch_ == other.NURBSGridView_->NURBSpatch_;
-      }
-
-      void increment()
-      {
-        ++directIndex_;
-      }
-
-      void advance(int n)
-      {
-        directIndex_=directIndex_+n;
-      }
-
-
-
+      using Reference =  NURBSEntity;
+      explicit NURBSGridLeafIterator(const typename std::vector<NURBSEntity>::iterator& spanIter)
+      :  std::vector<NURBSEntity>::iterator(spanIter)
+      {}
+//      NURBSGridLeafIterator(const NURBSGridView& GridView, int index)
+//        : NURBSGridView_(&GridView), directIndex_(index)
+//      {
+//      }
+//
+//      NURBSEntity& dereference() const
+//      {
+//        return NURBSGridView_-> template getEntity<codim>(directIndex_);
+//      }
+//
+//        NURBSEntity& operator*() const
+//        {
+//            return  dereference();
+//        }
+//
+//      bool operator==(const NURBSGridLeafIterator<codim,typename std::remove_const<NURBSGridView>::type, typename std::remove_const<NURBSEntity>::type>& other) const
+//      {
+//        return directIndex_ == other.directIndex_ && NURBSGridView_->NURBSpatch_ == other.NURBSGridView_->NURBSpatch_;
+//      }
+//
+//      void operator++()
+//      {
+//        ++directIndex_;
+//      }
+//
+//      void advance(int n)
+//      {
+//        directIndex_=directIndex_+n;
+//      }
+//
+//
+//        auto operator->()
+//        {
+//          return &NURBSGridView_-> template getEntity<codim>(directIndex_);
+//        }
 
 
     // /////////////////////////////////////
@@ -57,9 +68,9 @@
 
     // B-Spline patch
     private:
-      const NURBSGridView* NURBSGridView_;
+//      const NURBSGridView* NURBSGridView_;
       //Global index of the knot span, can be transferred into multidimensional indices
-      unsigned int directIndex_;
+//      unsigned int directIndex_;
       //std::array<unsigned int,dim> multiIndex;
 
 

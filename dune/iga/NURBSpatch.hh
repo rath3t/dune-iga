@@ -21,15 +21,17 @@ namespace Dune::IGA
        *  \param[in] order order of the NURBS structure for each dimension
        */
       NURBSPatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                     const MultiDimensionNet<dim,dimworld> controlPoints,
-                     const MultiDimensionNet<dim,1> weights,
-                     const std::array<int,dim> order)
+                     const MultiDimensionNet<dim,dimworld>& controlPoints,
+                     const MultiDimensionNet<dim,1>& weights,
+                     const std::array<int,dim>& order)
       : knotSpans_(knotSpans)
       , controlPoints_(controlPoints)
       , weights_(weights)
       , order_(order)
       {
       }
+
+//      void  knotInsertion
 
       /** \brief returns the Knot Span*/
       const std::array<std::vector<double>, dim> & getKnots() const
@@ -56,13 +58,13 @@ namespace Dune::IGA
       }
     private:
 
-      const std::array<std::vector<double>,dim>& knotSpans_;
+       std::array<std::vector<double>,dim> knotSpans_;
 
-      const MultiDimensionNet<dim,dimworld>  controlPoints_;
+       MultiDimensionNet<dim,dimworld>  controlPoints_;
 
-      const MultiDimensionNet<dim,1>  weights_;
+       MultiDimensionNet<dim,1>  weights_;
 
-      const std::array<int,dim> order_;
+       std::array<int,dim> order_;
 
     };
 
@@ -114,10 +116,10 @@ namespace Dune::IGA
         const auto& order = patchData_->getOrder();
 
         const auto& BSplinepatchData = std::make_shared<BsplinePatchData<dim,dimworld+1>>(knotSpans,weightedControlPoints,order);
-        weightedBSpline = std::make_shared<BSplineGeometry<dim,dimworld+1>>(BSplinepatchData,corner_);
+        weightedBSpline = std::make_shared<BSplineElementGeometry<dim,dimworld+1>>(BSplinepatchData,corner_);
 
         /* only order+1 basis functions are needed for each dimension*/
-        std::array<std::vector<double>,dim> _basis;
+//        std::array<std::vector<double>,dim> _basis;
       }
 
       /** \brief Map the center of the element to the geometry */
@@ -157,12 +159,36 @@ namespace Dune::IGA
        *
        *  \param[in] local local coordinates for each dimension
        */
-      FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+      FieldVector<double,dimworld> global(const FieldVector<double,dim>& local) const
       {
         const auto& weightedGlobal = weightedBSpline->global(local);
         return reduceDimension(weightedGlobal);
 
       }
+
+//      auto getControlPointsForSpan()
+//      {
+//          const auto& knotSpans = this->getKnots();
+//          const auto& order = this->getOrder();
+//          const auto& controlPoints = this->getControlPoints();
+//          std::array<unsigned int,dim> multiIndexControlNet,multiIndexBasisfunction;
+//          std::array<unsigned int,dim> cornerIdx;
+//          std::array<unsigned int,dim> dimsize;
+//          for (unsigned int d=0; d<dim; ++d) {
+//              dimsize[d] = order[d] + 1;
+//              cornerIdx[d] = corner_[d] - knotSpans[d].begin();
+//          }
+//              /*Index net for valid basis functions*/
+//              auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+//              for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
+//              {
+//                  multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
+//                  for (unsigned int d=0; d<dim; ++d)
+//                      multiIndexControlNet[d] = multiIndexBasisfunction[d] + cornerIdx[d] - order[d];
+//                  auto cp = controlPoints.get(multiIndexControlNet);
+//              }
+//          }
+//      }
 
 //      /** \brief evaluates the NURBS mapping
 //       *
@@ -292,9 +318,8 @@ namespace Dune::IGA
       {
         FieldVector<ctype,coorddimension+1> homoCoordinate;
         for(unsigned int i=0; i<coorddimension; i++)
-        {
           homoCoordinate[i] = inPoint[i]*weight;
-        }
+
         homoCoordinate[coorddimension] = weight;
         return homoCoordinate;
       }
@@ -303,13 +328,12 @@ namespace Dune::IGA
        *
        *  \param[in] inPoint input point, will be divided by the last element
        */
-      FieldVector<double,coorddimension> reduceDimension(const FieldVector<double,coorddimension+1>& inPoint)
+      FieldVector<double,coorddimension> reduceDimension(const FieldVector<double,coorddimension+1>& inPoint) const
       {
         FieldVector<ctype,coorddimension> oriCoordinate;
         for(unsigned int i=0; i<coorddimension; i++)
-        {
           oriCoordinate[i] = inPoint[i]/inPoint[coorddimension];
-        }
+
         return oriCoordinate;
       }
 
@@ -339,7 +363,7 @@ namespace Dune::IGA
 
       std::array<std::vector<double>::const_iterator,dim> corner_;
 
-      std::shared_ptr <BSplineGeometry<dim, dimworld+1>> weightedBSpline;
+      std::shared_ptr <BSplineElementGeometry<dim, dimworld+1>> weightedBSpline;
 
     };
 
@@ -365,6 +389,10 @@ namespace Dune::IGA
        *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
        *  \param[in] order order of the NURBS structure for each dimension
        */
+      explicit NURBSPatch(const NURBSPatchData<dim,dimworld>& patchData)
+              : NURBSPatch(patchData.getKnots(),patchData.getControlPoints(),patchData.getWeights(),patchData.getOrder())
+      {}
+
       NURBSPatch(const std::array<std::vector<double>,dim>& knotSpans,
                    const MultiDimensionNet<dim,dimworld> controlPoints,
                    const MultiDimensionNet<dim,1> weights,
@@ -377,6 +405,70 @@ namespace Dune::IGA
         knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
       }
 
+      int size(int codim)
+      {
+          assert(codim<= dim);
+
+          if (codim==0)
+              return knotElementNet_->directSize();
+          else if (codim==dim)
+              return patchData_->getControlPoints().directSize();
+          else if (codim==1)
+          {
+              int sizeOfEntitiesWithCodim1 = 1;
+              for (const auto& validKnotSizeSingleDim : validKnotSize_)
+                  sizeOfEntitiesWithCodim1*=validKnotSizeSingleDim+1;
+
+              return sizeOfEntitiesWithCodim1;
+          }
+
+      }
+
+      const auto&  getPatchData()
+      {
+          return patchData_;
+      }
+
+      //this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
+      auto findSpanIndex(const std::array<unsigned int,dim>& ijk) const
+      {
+          const auto & knotSpans = patchData_->getKnots();
+
+          std::array<unsigned int,dim> index;
+          std::fill(index.begin(), index.end(), 0);
+
+          /*finds the working geometry object ijk
+           *(working geometry objects are defined between 2 knots, where knot[i]<knot[i+1])*/
+          for ( int count, j=0; j<dim; ++j)
+          {
+              count = 0;
+              while(count <= ijk[j])
+              {
+                  if (index[j] == knotSpans[j].size())
+                      break;
+
+                  if (knotSpans[j][index[j]+1] > knotSpans[j][index[j]])
+                      count++;
+
+                  ++index[j];
+              }
+          }
+          return index;
+      }
+
+      bool isBorderElement(const unsigned int & id)
+      {
+          auto const &knotElementNet = this->knotElementNet_;
+          auto const &multiIndex = knotElementNet->directToMultiIndex(id);
+
+          for(int i= 0; i< dim; ++i)
+              if (multiIndex[i] ==  knotElementNet->size()[i]-1)
+                  return true;
+          return false;
+      }
+
+
+
       /** \brief creates a NURBSGeometry object
        *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
        *  and generates a Geometry object
@@ -387,33 +479,12 @@ namespace Dune::IGA
       {
         const auto & knotSpans = patchData_->getKnots();
 
-        unsigned int count = 0;
-        std::array<unsigned int,dim> index;
-        std::fill(index.begin(), index.end(), 0);
-
-        /*finds the working geometry object ijk
-         *(working geometry objects are defined between 2 knots, where knot[i]<knot[i+1])*/
-        for (int j=0; j<dim; ++j)
-        {
-          count = 0;
-          while(count <= ijk[j])
-          {
-            if (index[j] == knotSpans[j].size())
-              break;
-
-            if (knotSpans[j][index[j]+1] > knotSpans[j][index[j]])
-              count++;
-
-            ++index[j];
-          }
-        }
+        std::array<unsigned int,dim> index = findSpanIndex(ijk);
 
         /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<std::vector<double>::const_iterator,dim> corners;
         for(int i=0; i<dim; ++i)
-        {
           corners[i] = (knotSpans[i]).begin()+index[i]-1;
-        }
 
         return NURBSGeometry<dim,dimworld>(patchData_,corners);
       }
