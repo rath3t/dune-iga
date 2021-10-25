@@ -6,7 +6,7 @@
 
 namespace Dune::IGA {
   /** \brief class holds a n-dim net */
-  template <int netdim, int dimworld, typename ValueType = FieldVector<double, dimworld>>
+  template <int netdim, typename ValueType>
   class MultiDimensionNet {
   public:
     /** \brief constructor for a net of a certain size with values unknown.
@@ -67,10 +67,28 @@ namespace Dune::IGA {
     }
 
     /** \brief sets a value at the multiindex */
-    void directSet(unsigned int index, FieldVector<double, dimworld> value) { values_[index] = value; }
+    void directSet(unsigned int index, ValueType value) { values_[index] = value; }
+
+    template<typename... Args>
+    auto& operator()(const Args... args)
+    {
+        return  get({args...});
+    }
+
+    template<typename... Args>
+    const auto& operator()(const Args... args) const
+    {
+      return  get({args...});
+    }
 
     /** \brief returns the value at the multiindex */
-    FieldVector<double, dimworld> get(std::array<unsigned int, netdim> multiIndex) const {
+    ValueType& get(const std::array<unsigned int, netdim>& multiIndex)  {
+      int index = this->index(multiIndex);
+      return values_[index];
+    }
+
+    /** \brief returns the value at the multiindex */
+    const ValueType& get(const std::array<unsigned int, netdim>& multiIndex) const {
       int index = this->index(multiIndex);
       return values_[index];
     }
@@ -78,10 +96,10 @@ namespace Dune::IGA {
     /** \brief returns a value at an index (unmapped)
      * \note only to be used when the mapping is known
      */
-    FieldVector<double, dimworld> directGet(int index) const { return values_[index]; }
+    ValueType directGet(const int index) const { return values_[index]; }
 
     /** \brief returns a multiindex for a scalar index */
-    std::array<unsigned int, netdim> directToMultiIndex(unsigned int index) const {
+    std::array<unsigned int, netdim> directToMultiIndex(const unsigned int index) const {
       std::array<unsigned int, netdim> multiIndex;
 
       unsigned int help = index;
@@ -102,7 +120,7 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int directSize() const { return values_.size(); }
 
   private:
-    int index(std::array<unsigned int, netdim> multiIndex) const {
+    int index(const std::array<unsigned int, netdim>& multiIndex) const {
       int index, help;
       index = 0;
       for (int i = 0; i < netdim; ++i) {
@@ -119,4 +137,9 @@ namespace Dune::IGA {
     std::array<unsigned int, netdim> dimSize_;
     std::vector<ValueType> values_;
   };
+
+
+  template<int dim,int dimworld>
+  using MultiDimensionNetFVd =  MultiDimensionNet<dim,FieldVector<double,dimworld>>;
 }
+

@@ -26,7 +26,7 @@
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                       const MultiDimensionNet<dim,dimworld> controlPoints,
+                       const MultiDimensionNetFVd<dim,dimworld> controlPoints,
                        const std::array<int,dim> order)
       : knotSpans_(knotSpans)
       , controlPoints_(controlPoints)
@@ -41,7 +41,7 @@
       }
 
       /** \brief returns the Control Point*/
-      const MultiDimensionNet<dim,dimworld> & getControlPoints () const
+      const MultiDimensionNetFVd<dim,dimworld> & getControlPoints () const
       {
         return controlPoints_;
       }
@@ -55,7 +55,7 @@
 
       const std::array<std::vector<double>,dim>& knotSpans_;
 
-      const MultiDimensionNet<dim,dimworld>  controlPoints_;
+      const MultiDimensionNet<dim,FieldVector<double,dimworld>>  controlPoints_;
 
       const std::array<int,dim> order_;
 
@@ -160,7 +160,7 @@
           cornerIdx[d] = corner_[d]-knotSpans[d].begin();
         }
         /*Index net for valid basis functions*/
-        auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+        auto basisFunctionNet = MultiDimensionNet<dim,FieldVector<double,dimworld>>(dimsize);
         for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
         {
             multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
@@ -205,7 +205,7 @@
           cornerIdx[d] = corner_[d]-knotSpans[d].begin();
         }
         /*Index net for valid basis functions*/
-        auto basisFunctionNet = MultiDimensionNet<mydimension,coorddimension>(dimsize);
+        auto basisFunctionNet = MultiDimensionNetFVd<mydimension,coorddimension>(dimsize);
         /*Iterate the matrix row*/
         for (unsigned int r=0; r<mydimension; ++r)
         {
@@ -361,14 +361,14 @@
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNet<dim,dimworld> controlPoints,
+                   const MultiDimensionNetFVd<dim,dimworld> controlPoints,
                    const std::array<int,dim> order)
       : patchData_(std::make_shared<BsplinePatchData<dim,dimworld>>(knotSpans, controlPoints, order))
       {
         validKnotSize_ = this -> validKnotSize();
         //Build a knot net to make iterator operations easier
         //Here each "point" of the net is a element(knot span)
-        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
+        knotElementNet_ = std::make_shared<MultiDimensionNetFVd<dim,1>>(validKnotSize_);
       }
 
       /** \brief creates a BSplineElementGeometry object
@@ -427,7 +427,7 @@
 
       std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
       std::array<unsigned int,dim> validKnotSize_;
-      std::shared_ptr <MultiDimensionNet<dim,1>> knotElementNet_;
+      std::shared_ptr <MultiDimensionNetFVd<dim,1>> knotElementNet_;
     };
 
 }

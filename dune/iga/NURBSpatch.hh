@@ -13,6 +13,9 @@ namespace Dune::IGA
     class NURBSPatchData
     {
     public:
+      using ControlPointNet = MultiDimensionNet<dim,FieldVector<double,dimworld>>;
+      using WeightNet = MultiDimensionNetFVd<dim,1>;
+
       /** \brief constructor for a NURBSPatchData from knots, control points, weights and order
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -21,8 +24,8 @@ namespace Dune::IGA
        *  \param[in] order order of the NURBS structure for each dimension
        */
       NURBSPatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                     const MultiDimensionNet<dim,dimworld>& controlPoints,
-                     const MultiDimensionNet<dim,1>& weights,
+                     const ControlPointNet& controlPoints,
+                     const MultiDimensionNetFVd<dim,1>& weights,
                      const std::array<int,dim>& order)
       : knotSpans_(knotSpans)
       , controlPoints_(controlPoints)
@@ -40,13 +43,13 @@ namespace Dune::IGA
       }
 
       /** \brief returns the Control Point*/
-      const MultiDimensionNet<dim,dimworld> & getControlPoints () const
+      const ControlPointNet & getControlPoints () const
       {
         return controlPoints_;
       }
 
       /** \brief returns the weights*/
-      const MultiDimensionNet<dim,1> & getWeights() const
+      const WeightNet & getWeights() const
       {
         return weights_;
       }
@@ -60,9 +63,9 @@ namespace Dune::IGA
 
        std::array<std::vector<double>,dim> knotSpans_;
 
-       MultiDimensionNet<dim,dimworld>  controlPoints_;
+       ControlPointNet  controlPoints_;
 
-       MultiDimensionNet<dim,1>  weights_;
+       WeightNet  weights_;
 
        std::array<int,dim> order_;
 
@@ -179,7 +182,7 @@ namespace Dune::IGA
 //              cornerIdx[d] = corner_[d] - knotSpans[d].begin();
 //          }
 //              /*Index net for valid basis functions*/
-//              auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+//              auto basisFunctionNet = ControlPointNet(dimsize);
 //              for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
 //              {
 //                  multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
@@ -219,7 +222,7 @@ namespace Dune::IGA
 //          cornerIdx[d] = corner_[d]-knotSpans[d].begin();
 //        }
 //        /*Index net for valid basis functions*/
-//        auto basisFunctionNet = MultiDimensionNet<dim,dimworld>(dimsize);
+//        auto basisFunctionNet = ControlPointNet(dimsize);
 //        for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
 //        {
 //          multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
@@ -340,12 +343,12 @@ namespace Dune::IGA
       /** \brief gets weighted control points
        *
        */
-      MultiDimensionNet<mydimension,coorddimension+1> computeWeightedControlPoints()
+      auto computeWeightedControlPoints()
       {
         const auto& controlPoints = patchData_->getControlPoints();
         const auto& weights = patchData_->getWeights();
         const auto& netSize = controlPoints.size();
-        MultiDimensionNet<mydimension,coorddimension+1> weightedControlPoints(netSize);
+        MultiDimensionNet<mydimension,FieldVector<double,coorddimension+1>> weightedControlPoints(netSize);
         const auto& pointSize = controlPoints.directSize();
         for(unsigned int i=0; i<pointSize; ++i)
         {
@@ -394,15 +397,15 @@ namespace Dune::IGA
       {}
 
       NURBSPatch(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNet<dim,dimworld> controlPoints,
-                   const MultiDimensionNet<dim,1> weights,
+                   const typename NURBSPatchData<dim,dimworld>::ControlPointNet controlPoints,
+                   const typename NURBSPatchData<dim,dimworld>::WeightNet weights,
                    const std::array<int,dim> order)
       : patchData_(std::make_shared<NURBSPatchData<dim,dimworld>>(knotSpans, controlPoints, weights, order))
       {
         validKnotSize_ = this -> validKnotSize();
         //Build a knot net to make iterator operations easier
         //Here each "point" of the net is a element(knot span)
-        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,1>>(validKnotSize_);
+        knotElementNet_ = std::make_shared<MultiDimensionNetFVd<dim,1>>(validKnotSize_);
       }
 
       int size(int codim)
@@ -512,7 +515,7 @@ namespace Dune::IGA
 
       std::shared_ptr <NURBSPatchData<dim,dimworld>> patchData_;
       std::array<unsigned int,dim> validKnotSize_;
-      std::shared_ptr <MultiDimensionNet<dim,1>> knotElementNet_;
+      std::shared_ptr <MultiDimensionNetFVd<dim,1>> knotElementNet_;
 
     };
   }

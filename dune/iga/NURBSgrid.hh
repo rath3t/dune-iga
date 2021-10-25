@@ -4,6 +4,7 @@
 
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/NURBSleafgridview.hh>
+#include <dune/iga/igaalgorithms.hh>
 
 namespace Dune::IGA
   {
@@ -36,10 +37,7 @@ namespace Dune::IGA
             };
         };
 
-        void globalRefine(int refinementevel)
-        {
 
-        }
       /** \brief  constructor
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -48,12 +46,55 @@ namespace Dune::IGA
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       NURBSGrid(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNet<dim,dimworld>& controlPoints,
-                   const MultiDimensionNet<dim,1>& weights,
+                   const MultiDimensionNetFVd<dim,dimworld>& controlPoints,
+                   const MultiDimensionNetFVd<dim,1>& weights,
                    const std::array<int,dim>& order)
-      :        coarsestPatchRepresentation_{NURBSPatchData<dim,dimworld>(knotSpans, controlPoints, weights, order)}
+      :        coarsestPatchRepresentation_{NURBSPatchData<dim,dimworld>(knotSpans, controlPoints, weights, order)},
+              currentPatchRepresentation_{coarsestPatchRepresentation_}
       {
-          currentPatchRepresentation_=coarsestPatchRepresentation_;
+      }
+
+      void globalRefine(int refinementLevel)
+      {
+        if (refinementLevel==0)
+          return;
+        const int newKnotsSizeForEachSpan = Dune::power(2,refinementLevel);
+        const auto& knotSpans = coarsestPatchRepresentation_.getKnots();
+        auto unique_Knots = knotSpans;
+        std::array<std::vector<double>,dim> additionalKnots;
+        for(int curdim=0; curdim<dim; ++curdim)
+        {
+          auto& unique_KnotPerDim = unique_Knots[curdim];
+          unique_KnotPerDim.erase(std::unique(unique_KnotPerDim.begin(), unique_KnotPerDim.end()),
+                                  unique_KnotPerDim.end());
+          for (int i= 0; i<unique_KnotPerDim.size()-1;++i)
+          {
+            const double spanLength = unique_KnotPerDim[i+1] - unique_KnotPerDim[i];
+            const double increment = spanLength/newKnotsSizeForEachSpan;
+            for (int j=1; j<newKnotsSizeForEachSpan; ++j)
+            {
+              additionalKnots[curdim].emplace_back(unique_KnotPerDim[i]+increment*j);
+            }
+          }
+        }
+        for(int curdim=0; curdim<dim; ++curdim)
+        { std::cerr<<std::endl;
+        for(auto& addKnot : additionalKnots[curdim])
+            std::cerr << addKnot << " ";
+          }
+          std::cerr<<"======================="<<std::endl;
+        //        std::cerr<<additionalKnots[1]<<std::endl;
+        if constexpr (dim==1)
+        {
+//
+currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
+////          std::vector<double> additionalKnots;
+////          currentPatchRepresentation_ = curveKnotInsertion(coarsestPatchRepresentation_, additionalKnots);
+        }
+        else if constexpr (dim==2)
+        {
+//currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
+        }
       }
 
       auto leafGridView()

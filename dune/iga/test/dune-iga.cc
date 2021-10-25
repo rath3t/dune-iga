@@ -27,7 +27,7 @@ void testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
 
   // parameters
-  int subSampling = 5;
+  int subSampling = 20;
 
   const int dim      = 1;
   const int dimworld = 3;
@@ -37,19 +37,25 @@ void testNURBSGridCurve() {
 
   const std::vector<FieldVector<double, dimworld> > controlPoints
       = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
+
+
+//    const std::vector<FieldVector<double, dimworld> > controlPoints
+//        = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0}, {8, 0, 0}};
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = Dune::IGA::MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = Dune::IGA::MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   const std::vector<FieldVector<double, 1> > weight = {{2}, {2}, {1}, {1}, {4}, {2}, {1}, {2}, {4}};
-  auto weightNet                                    = MultiDimensionNet<dim, 1>(dimsize, weight);
+//  const std::vector<FieldVector<double, 1> > weight = {{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}};
+  auto weightNet                                    = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
+  grid.globalRefine(1);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  vtkWriter.write("NURBSGridTest-Curve");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
 }
 
 void testNURBSGridSurface() {
@@ -70,8 +76,8 @@ void testNURBSGridSurface() {
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
   //
   const std::vector<std::vector<FieldVector<double, 1> > > weight = {{{2}, {2}, {1}}, {{1}, {4}, {1}}, {{1}, {2}, {4}}};
-  auto weightNet                                                  = MultiDimensionNet<dim, 1>(dimsize, weight);
-  auto controlNet = MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto weightNet                                                  = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
+  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
   auto gridView        = grid.leafGridView();
@@ -103,8 +109,8 @@ void testNURBSSurface() {
   //
   const std::vector<std::vector<FieldVector<double, 1> > > weight = {{{2}, {2}, {1}}, {{1}, {4}, {1}}, {{1}, {2}, {4}}};
 
-  auto weightNet  = MultiDimensionNet<dim, 1>(dimsize, weight);
-  auto controlNet = MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto weightNet  = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
+  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, weightNet, order);
 
@@ -131,11 +137,11 @@ void testNURBSCurve() {
   const std::vector<FieldVector<double, dimworld> > controlPoints
       = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   const std::vector<FieldVector<double, 1> > weight = {{2}, {2}, {1}, {1}, {4}, {2}, {1}, {2}, {4}};
 
-  auto weightNet = MultiDimensionNet<dim, 1>(dimsize, weight);
+  auto weightNet = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, weightNet, order);
 
@@ -161,7 +167,7 @@ void testBSplineCurve() {
   const std::vector<FieldVector<double, dimworld> > controlPoints
       = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   IGA::BSplinePatch<dim, dimworld> patch(knotSpans, controlNet, order);
 }
@@ -173,7 +179,7 @@ void testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
 
   // parameters
-  int subSampling = 16;
+  int subSampling = 1;
 
   //////////////////////////////////////////////////////////////
   // Create a 2d B-spline grid in 3d
@@ -193,10 +199,10 @@ void testNurbsGridCylinder() {
 
   std::array<unsigned int, dim> dimsize
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
-  auto controlNet = MultiDimensionNet<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
   const std::vector<std::vector<FieldVector<double, 1> > > weight = {{{1}, {1}}, {{invsqr2}, {invsqr2}}, {{1}, {1}}};
-  auto weightNet = MultiDimensionNet<dim, 1>(dimsize, weight);
+  auto weightNet = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
 
@@ -221,6 +227,15 @@ void testNurbsGridCylinder() {
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("foo");
+
+  grid.globalRefine(2);
+
+  auto gridViewRefined  = grid.leafGridView();
+
+  SubsamplingVTKWriter<decltype(gridViewRefined)> vtkWriter2(gridViewRefined, refinementIntervals1);
+  vtkWriter.write("fooRefine");
+
+
   ////////////////////////////////////////////////////////////////
 }
 
