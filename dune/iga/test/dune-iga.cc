@@ -47,7 +47,7 @@ void testNURBSGridCurve() {
   auto controlNet                       = Dune::IGA::MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
 //  const std::vector<FieldVector<double, 1> > weight = {{1}, {1}};
-  const std::vector<double > weight = {{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}};
+  const std::vector<double > weight = {{1}, {3}, {1}, {2}, {1}, {1}, {7}, {1}, {5}};
   auto weightNet                                    = MultiDimensionNet<dim, double>(dimsize, weight);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
