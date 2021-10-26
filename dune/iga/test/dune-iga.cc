@@ -32,19 +32,21 @@ void testNURBSGridCurve() {
   const int dim      = 1;
   const int dimworld = 3;
 
-  const std::array<int, dim> order                     = {2};
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
+  const std::array<int, dim> order                     = {1};
+//  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
+  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
 
+//  const std::vector<FieldVector<double, dimworld> > controlPoints
+//      = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
   const std::vector<FieldVector<double, dimworld> > controlPoints
-      = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
+      = {{-1, 0, 0}, {1, 0, 0},};
 
-
-//    const std::vector<FieldVector<double, dimworld> > controlPoints
+          //    const std::vector<FieldVector<double, dimworld> > controlPoints
 //        = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0}, {8, 0, 0}};
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
   auto controlNet                       = Dune::IGA::MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
-  const std::vector<FieldVector<double, 1> > weight = {{2}, {2}, {1}, {1}, {4}, {2}, {1}, {2}, {4}};
+  const std::vector<FieldVector<double, 1> > weight = {{1}, {1}};
 //  const std::vector<FieldVector<double, 1> > weight = {{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}};
   auto weightNet                                    = MultiDimensionNetFVd<dim, 1>(dimsize, weight);
 
@@ -55,7 +57,8 @@ void testNURBSGridCurve() {
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+//  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
 }
 
 void testNURBSGridSurface() {
