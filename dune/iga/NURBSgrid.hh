@@ -47,7 +47,7 @@ namespace Dune::IGA
        */
       NURBSGrid(const std::array<std::vector<double>,dim>& knotSpans,
                    const MultiDimensionNetFVd<dim,dimworld>& controlPoints,
-                   const MultiDimensionNetFVd<dim,1>& weights,
+                   const MultiDimensionNet<dim,double>& weights,
                    const std::array<int,dim>& order)
       :        coarsestPatchRepresentation_{NURBSPatchData<dim,dimworld>(knotSpans, controlPoints, weights, order)},
               currentPatchRepresentation_{coarsestPatchRepresentation_}

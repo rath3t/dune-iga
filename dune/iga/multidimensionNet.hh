@@ -141,5 +141,76 @@ namespace Dune::IGA {
 
   template<int dim,int dimworld>
   using MultiDimensionNetFVd =  MultiDimensionNet<dim,FieldVector<double,dimworld>>;
+
+
+  template <typename... Args>
+  struct At {
+    std::array<int,sizeof...(Args)> args;
+  };
+
+  template <typename... Args>
+  auto at(Args &&...args) {
+    return At<Args &&...>{std::forward<Args>(args)...};
+  }
+
+  template<int dir, int netdim, typename ValueType,typename... Args>
+  auto line(MultiDimensionNet<netdim,ValueType>& net, const At<Args...> &at)
+  {
+    static_assert(sizeof...(Args) ==netdim-1);
+
+    std::array<unsigned int, netdim> multiIndex;
+      for(int i = 0; i < netdim; ++i) {
+        if (i==dir) continue;
+          multiIndex[i] = at.args[i];
+    }
+
+    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[dir])};
+
+    auto objectExtractor = [&](const auto& i) ->auto& {
+
+      multiIndex[dir]=i;
+      return net.get(multiIndex);
+    };
+
+    return std::ranges::transform_view(indices,objectExtractor);
+  }
+
+  template<int dir, int netdim, typename ValueType,typename... Args>
+  auto line(MultiDimensionNet<netdim,ValueType> const& net, const At<Args...> &at)
+  {
+    static_assert(sizeof...(Args) ==netdim-1);
+
+    std::array<unsigned int, netdim> multiIndex;
+    for(int i = 0; i < netdim; ++i) {
+      if (i==dir) continue;
+      multiIndex[i] = at.args[i];
+    }
+
+    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[dir])};
+
+    auto objectExtractor = [&](const auto& i) -> const auto& {
+
+      multiIndex[dir]=i;
+      return net.get(multiIndex);
+    };
+
+    return std::ranges::transform_view(indices,objectExtractor);
+  }
+
+  template< typename ValueType>
+  auto line(MultiDimensionNet<1,ValueType>& net)
+  {
+    return line<0>(net,at());
+  }
+
+  template<typename ValueType>
+   auto line(MultiDimensionNet<1,ValueType> const & net)
+  {
+    return line<0>(net,at());
+  }
+
+
 }
+
+
 

@@ -368,7 +368,7 @@
         validKnotSize_ = this -> validKnotSize();
         //Build a knot net to make iterator operations easier
         //Here each "point" of the net is a element(knot span)
-        knotElementNet_ = std::make_shared<MultiDimensionNetFVd<dim,1>>(validKnotSize_);
+        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,double>>(validKnotSize_);
       }
 
       /** \brief creates a BSplineElementGeometry object
@@ -427,7 +427,7 @@
 
       std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
       std::array<unsigned int,dim> validKnotSize_;
-      std::shared_ptr <MultiDimensionNetFVd<dim,1>> knotElementNet_;
+      std::shared_ptr <MultiDimensionNet<dim,double>> knotElementNet_;
     };
 
 }

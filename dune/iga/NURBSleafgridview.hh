@@ -107,7 +107,7 @@ namespace Dune::IGA {
 
         NURBSLeafGridView(const std::array<std::vector<double>, dimension> &knotSpans,
                           const MultiDimensionNetFVd<dimension, dimensionworld> controlPoints,
-                          const MultiDimensionNetFVd<dimension, 1> weights,
+                          const MultiDimensionNet<dimension, double> weights,
                           const std::array<int, dimension> order, const Grid &grid)
                 : NURBSpatch_(
                 std::make_shared<NURBSPatch<dimension, dimensionworld>>(knotSpans, controlPoints, weights, order)),
