@@ -7,111 +7,94 @@
 #include <dune/iga/NURBSpatch.hh>
 namespace Dune::IGA {
 
-  auto findLowerSpanIndex(const int p, const double u, const std::vector<double>& U) {
-    auto it = std::lower_bound(U.begin() + p, U.end() - p, u);
-    return std::distance(U.begin(), it) - 1;
-  }
-
   auto findUpperSpanIndex(const int p, const double u, const std::vector<double>& U) {
     auto it = std::upper_bound(U.begin() + p, U.end() - p, u);
     return std::distance(U.begin(), it) - 1;
   }
 
-  // see https://link.springer.com/book/10.1007/978-3-642-59223-2 A5.1
-  template <int dimworld>
-  auto curveKnotRefinement(const NURBSPatchData<1, dimworld>& oldData,
-                           const std::array<std::vector<double>, 1>& additionalKnots) {
-    auto oldKnots = oldData.getKnots()[0];
-    oldKnots.erase(oldKnots.begin());
-    oldKnots.erase(oldKnots.end() - 1);
+
+  template <int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  auto curveKnotRefinement(const NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
+                           const std::array<std::vector<double>, 1>& newKnots) {
+    using NurbsPatchData = NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
+    using namespace std::ranges;
+    auto oldKnotVec = oldData.getKnots()[0];
+    oldKnotVec.erase(oldKnotVec.begin());
+    oldKnotVec.erase(oldKnotVec.end() - 1);
 
     std::array<std::vector<double>, 1> newKnotsArray;
-    auto& newKnots = newKnotsArray[0];
-    newKnots.reserve(oldKnots.size() + additionalKnots[0].size());
-    std::set_un(oldKnots.begin(), oldKnots.end(), additionalKnots[0].begin(), additionalKnots[0].end(),
-               std::back_inserter(newKnots));
+    auto& newKnotVec = newKnotsArray[0];
+    newKnotVec.reserve(oldKnotVec.size() + newKnots[0].size());
+    merge(oldKnotVec, newKnots[0], std::back_inserter(newKnotVec));
 
     const auto& oldCPs     = line(oldData.getControlPoints());
-    const auto& oldweights = line(oldData.getWeights());
+    const auto& oldweights = oldCPs | views::transform([](auto& cp) -> auto& { return cp.w; });
 
-    const int newKSize            = additionalKnots[0].size();
-    const int p                   = oldData.getOrder()[0];
+    const auto newKSize = newKnots[0].size();
+    const int p         = oldData.getOrder()[0];
 
-    const int a = findUpperSpanIndex(p, additionalKnots[0].front(), oldKnots);
-    const int b = findUpperSpanIndex(p, additionalKnots[0].back(), oldKnots);
+    const int a = findUpperSpanIndex(p, newKnots[0].front(), oldKnotVec);
+    const int b = findUpperSpanIndex(p, newKnots[0].back(), oldKnotVec);
 
-    const int numberOfnewControlPoints = oldData.getControlPoints().directSize() + newKSize;
+    const unsigned int numberOfnewControlPoints = oldData.getControlPoints().directSize() + newKSize;
 
-    MultiDimensionNetFVd<1, dimworld> newCPv({numberOfnewControlPoints});
-    MultiDimensionNet<1, double> newWeightsv({numberOfnewControlPoints});
+    typename NurbsPatchData::ControlPointNetType newCPv({numberOfnewControlPoints});
 
-    auto newCPs     = line(newCPv);
-    auto newWeights = line(newWeightsv);
+    auto newCPs = line(newCPv);
 
-    std::ranges::transform((oldCPs | std::views::take(a)), oldweights, newCPs.begin(), std::multiplies());
-    std::ranges::copy_n(oldweights.begin(), a, newWeights.begin());
+    using ControlPoint = typename NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
 
-    std::transform(oldCPs.begin() + b + p - 1, oldCPs.end(), oldweights.begin() + b + p - 1,
-                   newCPs.begin() + newKSize + b + p - 1, std::multiplies());
-    std::copy(oldweights.begin() + b + p - 1, oldweights.end(), newWeights.begin() + newKSize + b + p - 1);
+    auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
+    std::ranges::transform(oldCPs | views::take(a), newCPs.begin(), scaleCPWithW);
 
-    auto newCp     = newCPs.begin() + b + newKSize ;
-    auto newWeight = newWeights.begin() + b  + newKSize;
-    auto oldCp     = oldCPs.begin() + b;
-    auto oldWeight = oldweights.begin() + b;
+    std::ranges::transform(oldCPs.begin() + b + p - 1, oldCPs.end(), reverse_view(newCPs).begin(), scaleCPWithW);
 
-    auto currentNewKnot = newKnots.end();
-    auto currentOldKnot = oldKnots.end();
+    auto newCp = newCPs.begin() + b + newKSize;
+    auto oldCp = oldCPs.begin() + b;
 
-    for (auto const& currentAdditionalKnot : std::ranges::reverse_view(additionalKnots[0])) {
-      while (currentAdditionalKnot <= *(currentOldKnot-1) && std::distance(oldKnots.begin(),currentOldKnot) > a + 1) {
-        *newCp     = *(oldCp) * (*oldWeight);
-        *newWeight = *oldWeight;
+    auto currentNewKnot = newKnotVec.end();
+    auto currentOldKnot = oldKnotVec.end();
+
+    for (auto const& currentAdditionalKnot : reverse_view(newKnots[0])) {
+      while (currentAdditionalKnot <= *(currentOldKnot - 1)
+             && std::distance(oldKnotVec.begin(), currentOldKnot) > a + 1) {
+        (*newCp).p = (*oldCp).p * (*oldCp).w;
+        (*newCp).w = (*oldCp).w;
         --currentNewKnot;
         --currentOldKnot;
         --newCp;
-        --newWeight;
         --oldCp;
-        --oldWeight;
       }
 
-      *newCp     = *(newCp + 1);
-      *newWeight = *(newWeight + 1);
-
+      *newCp = *(newCp + 1);
       ++newCp;
-      ++newWeight;
-      currentOldKnot -= p ;
-      for (int jj : std::ranges::iota_view{0, p}) {
+      currentOldKnot -= p;
+      for ([[maybe_unused]] int _ : iota_view{0, p}) {
         ++newCp;
-        ++newWeight;
-        auto& curCPValue           = *newCp;
-        auto& leftOfcurCPValue     = *(newCp - 1);
-        auto& curWeightValue       = *newWeight;
-        auto& leftOfcurWeightValue = *(newWeight - 1);
+        auto& curCPValue       = *newCp;
+        auto& leftOfcurCPValue = *(newCp - 1);
 
         auto alpha = *currentNewKnot - currentAdditionalKnot;
-        if (std::abs(alpha) < 1e-7) {
-          leftOfcurCPValue     = curCPValue;
-          leftOfcurWeightValue = curWeightValue;
-        } else {
-          alpha                = alpha / (*currentNewKnot - *(currentOldKnot));
-          leftOfcurCPValue     = alpha * leftOfcurCPValue + curCPValue * (1.0 - alpha);
-          leftOfcurWeightValue = alpha * leftOfcurWeightValue + curWeightValue * (1 - alpha);
+        using std::abs;
+        if (abs(alpha) < 1e-7)
+          leftOfcurCPValue = curCPValue;
+        else {
+          alpha            = alpha / (*currentNewKnot - *(currentOldKnot));
+          leftOfcurCPValue = alpha * leftOfcurCPValue + curCPValue * (1.0 - alpha);
         }
         ++currentOldKnot;
         ++currentNewKnot;
       }
 
-      currentNewKnot-=p+1;
+      currentNewKnot -= p + 1;
       newCp -= p + 2;
-      newWeight -= p + 2;
     }
 
-    std::ranges::transform(newCPs, newWeights, newCPs.begin(), std::divides());
+    transform(newCPs, newCPs.begin(), [](auto& cp) -> ControlPoint { return {.p = cp.p / cp.w}; });
 
     newKnotsArray[0].insert(newKnotsArray[0].begin(), newKnotsArray[0].front());
     newKnotsArray[0].push_back(newKnotsArray[0].back());
 
-    return NURBSPatchData<1, dimworld>(newKnotsArray, newCPv, newWeightsv, oldData.getOrder());
+    return NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.getOrder());
   }
 }  // namespace Dune::IGA

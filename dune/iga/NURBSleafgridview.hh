@@ -70,6 +70,14 @@ namespace Dune::IGA {
     class NURBSLeafGridView {
     public:
 
+        using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
+        using GlobalCoordinateType = typename GridImpl::GlobalCoordinateType;
+        using LocalCoordinateType = typename GridImpl::LocalCoordinateType;
+        using JacobianTransposedType = typename GridImpl::JacobianTransposedType;
+        using JacobianInverseTransposed = typename GridImpl::JacobianInverseTransposed;
+
+        using ControlPointNetType = typename GridImpl::ControlPointNetType;
+
         template<int codim, class GridViewImp>
         friend
         class NURBSGridEntity;
@@ -86,7 +94,7 @@ namespace Dune::IGA {
 
         using Grid = typename Traits::Grid;
         typedef NURBSLeafGridView<GridImpl> NURBSGridView;
-        typedef NURBSGeometry<dimension, dimensionworld> Geometry;
+        typedef NURBSGeometry<dimension, dimensionworld,typename GridImpl::NurbsGridLinearAlgebraTraits> Geometry;
         typedef NURBSGridLeafIndexSet<NURBSGridView> IndexSet;
 
         template<int cd>
@@ -100,17 +108,16 @@ namespace Dune::IGA {
          *  \param[in] order order of the B-Spline structure for each dimension
          */
 
-        NURBSLeafGridView(const NURBSPatchData<dimension, dimensionworld> &patchData, const Grid &grid)
-                : NURBSLeafGridView(patchData.getKnots(), patchData.getControlPoints(), patchData.getWeights(),
+        NURBSLeafGridView(const NURBSPatchData<dimension, dimensionworld,NurbsGridLinearAlgebraTraits> &patchData, const Grid &grid)
+                : NURBSLeafGridView(patchData.getKnots(), patchData.getControlPoints(),
                                     patchData.getOrder(), grid) {
         }
 
         NURBSLeafGridView(const std::array<std::vector<double>, dimension> &knotSpans,
-                          const MultiDimensionNetFVd<dimension, dimensionworld> controlPoints,
-                          const MultiDimensionNet<dimension, double> weights,
+                          const ControlPointNetType& controlPoints,
                           const std::array<int, dimension> order, const Grid &grid)
                 : NURBSpatch_(
-                std::make_shared<NURBSPatch<dimension, dimensionworld>>(knotSpans, controlPoints, weights, order)),
+                std::make_shared<NURBSPatch<dimension, dimensionworld,NurbsGridLinearAlgebraTraits>>(knotSpans, controlPoints, order)),
                   grid_{&grid}, entityVector_{std::make_shared<decltype(gridEntityTupleGenerator<NURBSLeafGridView>(
                         std::make_integer_sequence<int, dimension + 1>()))>()}
                         ,indexSet_{*this}
@@ -188,7 +195,7 @@ namespace Dune::IGA {
 
     private:
         friend auto elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
-        std::shared_ptr<NURBSPatch<dimension, dimensionworld>> NURBSpatch_;
+        std::shared_ptr<NURBSPatch<dimension, dimensionworld,NurbsGridLinearAlgebraTraits>> NURBSpatch_;
         NURBSGridLeafIndexSet<NURBSGridView> indexSet_;
         const Grid * grid_;
         using EntityVectorType = decltype(gridEntityTupleGenerator<NURBSLeafGridView>(

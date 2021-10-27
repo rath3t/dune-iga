@@ -30,7 +30,7 @@ namespace Dune::IGA
   {
   public:
 
-      using Geometry = NURBSGeometry<GridViewImp::dimension,GridViewImp::dimensionworld>;
+      using Geometry = NURBSGeometry<GridViewImp::dimension,GridViewImp::dimensionworld,typename GridViewImp::NurbsGridLinearAlgebraTraits>;
       //! Default Constructor
       NURBSGridEntity ()
         : NURBSGridView_(nullptr)

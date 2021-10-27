@@ -9,16 +9,30 @@
 #include <dune/common/fvector.hh>
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/iga/multidimensionNet.hh>
+#include <dune/iga/concepts.hh>
+#include <dune/iga/traits.hh>
+#include <dune/iga/controlpoint.hh>
 
 
   namespace Dune::IGA
   {
 
     /** \brief class that holds all data regarding the B-Spline stucture */
-    template<int dim, int dimworld>
+    template<int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits=LinearAlgebraTraits<double,dim,dimworld>>
     class BsplinePatchData
     {
     public:
+      using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
+      using LocalCoordinateType = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
+      using JacobianTransposedType = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
+      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
+
+      using ControlPointType = GlobalCoordinateType;
+
+
+      using ControlPointNetType = MultiDimensionNet<dim,ControlPointType>;
+
+
       /** \brief  constructor for a BSplinePatchData from knots, control points and order
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -26,7 +40,7 @@
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       BsplinePatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                       const MultiDimensionNetFVd<dim,dimworld> controlPoints,
+                       const ControlPointNetType& controlPoints,
                        const std::array<int,dim> order)
       : knotSpans_(knotSpans)
       , controlPoints_(controlPoints)
@@ -41,7 +55,7 @@
       }
 
       /** \brief returns the Control Point*/
-      const MultiDimensionNetFVd<dim,dimworld> & getControlPoints () const
+      const ControlPointNetType & getControlPoints () const
       {
         return controlPoints_;
       }
@@ -55,7 +69,7 @@
 
       const std::array<std::vector<double>,dim>& knotSpans_;
 
-      const MultiDimensionNet<dim,FieldVector<double,dimworld>>  controlPoints_;
+      const ControlPointNetType  controlPoints_;
 
       const std::array<int,dim> order_;
 
@@ -347,10 +361,17 @@
     template<int dim, int dimworld>
     class BSplineLeafGridView;
     /** \brief Class where the B-Spline geometry can work on  */
-    template <int dim, int dimworld>
+    template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits=LinearAlgebraTraits<double,dim,dimworld>>
     class BSplinePatch
     {
     public:
+      using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
+      using LocalCoordinateType = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
+      using JacobianTransposedType = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
+      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
+
+      using ControlPointType = GlobalCoordinateType;
+      using ControlPointNetType = MultiDimensionNet<dim,ControlPointType>;
 
       friend class BSplineLeafGridView<dim, dimworld>;
 
@@ -361,7 +382,7 @@
        *  \param[in] order order of the B-Spline structure for each dimension
        */
       BSplinePatch(const std::array<std::vector<double>,dim>& knotSpans,
-                   const MultiDimensionNetFVd<dim,dimworld> controlPoints,
+                   const ControlPointNetType controlPoints,
                    const std::array<int,dim> order)
       : patchData_(std::make_shared<BsplinePatchData<dim,dimworld>>(knotSpans, controlPoints, order))
       {

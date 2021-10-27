@@ -8,6 +8,7 @@ namespace Dune::IGA {
   /** \brief class holds a n-dim net */
   template <int netdim, typename ValueType>
   class MultiDimensionNet {
+    using value_type = ValueType;
   public:
     /** \brief constructor for a net of a certain size with values unknown.
      *
@@ -137,11 +138,6 @@ namespace Dune::IGA {
     std::array<unsigned int, netdim> dimSize_;
     std::vector<ValueType> values_;
   };
-
-
-  template<int dim,int dimworld>
-  using MultiDimensionNetFVd =  MultiDimensionNet<dim,FieldVector<double,dimworld>>;
-
 
   template <typename... Args>
   struct At {

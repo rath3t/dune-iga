@@ -2,19 +2,36 @@
 #define DUNE_IGA_NURBSPATCH_HH
 
 #include <memory>
-#include <dune/iga/bsplinepatch.hh>
 
+#include <dune/iga/bsplinepatch.hh>
+#include <dune/iga/concepts.hh>
+#include <dune/iga/traits.hh>
+#include <dune/iga/controlpoint.hh>
 
 namespace Dune::IGA
   {
 
+
+
+  template<int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits= LinearAlgebraTraits<double,dim,dimworld>>
+  class NURBSGrid;
+
+
+
     /** \brief class that holds all data regarding the NURBS structure */
-    template<int dim, int dimworld>
+    template<int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits=LinearAlgebraTraits<double,dim,dimworld>>
     class NURBSPatchData
     {
     public:
-      using ControlPointNet = MultiDimensionNet<dim,FieldVector<double,dimworld>>;
-      using WeightNet = MultiDimensionNet<dim,double>;
+      using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
+      using LocalCoordinateType = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
+      using JacobianTransposedType = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
+      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
+
+      using ControlPointType = ControlPoint<GlobalCoordinateType>;
+
+
+      using ControlPointNetType = MultiDimensionNet<dim,ControlPointType>;
 
       /** \brief constructor for a NURBSPatchData from knots, control points, weights and order
        *
@@ -24,12 +41,10 @@ namespace Dune::IGA
        *  \param[in] order order of the NURBS structure for each dimension
        */
       NURBSPatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                     const ControlPointNet& controlPoints,
-                     const MultiDimensionNet<dim,double>& weights,
+                     const ControlPointNetType& controlPoints,
                      const std::array<int,dim>& order)
       : knotSpans_(knotSpans)
       , controlPoints_(controlPoints)
-      , weights_(weights)
       , order_(order)
       {
       }
@@ -43,16 +58,11 @@ namespace Dune::IGA
       }
 
       /** \brief returns the Control Point*/
-      const ControlPointNet & getControlPoints () const
+      const ControlPointNetType & getControlPoints () const
       {
         return controlPoints_;
       }
 
-      /** \brief returns the weights*/
-      const WeightNet & getWeights() const
-      {
-        return weights_;
-      }
 
       /** \brief returns the order*/
       const std::array<int,dim> & getOrder() const
@@ -63,16 +73,14 @@ namespace Dune::IGA
 
        std::array<std::vector<double>,dim> knotSpans_;
 
-       ControlPointNet  controlPoints_;
-
-       WeightNet  weights_;
+       ControlPointNetType  controlPoints_;
 
        std::array<int,dim> order_;
 
     };
 
     /** \brief a geometry implementation for NURBS*/
-    template <int dim, int dimworld>
+    template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
     class NURBSGeometry
     {
     public:
@@ -87,17 +95,19 @@ namespace Dune::IGA
       enum {coorddimension = dimworld};
 
       /** \brief Type used for a vector of element coordinates */
-      typedef FieldVector<ctype,dim> LocalCoordinate;
+      using LocalCoordinate       = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
 
       /** \brief Type used for a vector of world coordinates */
-      typedef FieldVector<ctype,dimworld> GlobalCoordinate;
+      using GlobalCoordinate =  typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
 
       /** \brief Type for the transposed Jacobian matrix */
-      typedef FieldMatrix< ctype, mydimension, coorddimension > JacobianTransposed;
+      using JacobianTransposed    = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
 
       /** \brief Type for the transposed inverse Jacobian matrix */
-      typedef FieldMatrix< ctype, coorddimension, mydimension > JacobianInverseTransposed;
+      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
 
+      using ControlPointType = typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointType;
+      using ControlPointNetType = typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointNetType;
     private:
       /* Helper class to compute a matrix pseudo inverse */
       typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
@@ -109,7 +119,7 @@ namespace Dune::IGA
        *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
        *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
        */
-      NURBSGeometry(std::shared_ptr <NURBSPatchData<dim,dimworld>> patchData,
+      NURBSGeometry(std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData,
                     std::array<std::vector<double>::const_iterator,dim> corner)
       : patchData_(patchData)
       , corner_(corner)
@@ -118,8 +128,8 @@ namespace Dune::IGA
         const auto& knotSpans = patchData_->getKnots();
         const auto& order = patchData_->getOrder();
 
-        const auto& BSplinepatchData = std::make_shared<BsplinePatchData<dim,dimworld+1>>(knotSpans,weightedControlPoints,order);
-        weightedBSpline = std::make_shared<BSplineElementGeometry<dim,dimworld+1>>(BSplinepatchData,corner_);
+        const auto& bSplinepatchData = std::make_shared<BsplinePatchData<dim,dimworld+1>>(knotSpans,weightedControlPoints,order);
+        weightedBSpline = std::make_shared<BSplineElementGeometry<dim,dimworld+1>>(bSplinepatchData,corner_);
 
         /* only order+1 basis functions are needed for each dimension*/
 //        std::array<std::vector<double>,dim> _basis;
@@ -162,7 +172,7 @@ namespace Dune::IGA
        *
        *  \param[in] local local coordinates for each dimension
        */
-      FieldVector<double,dimworld> global(const FieldVector<double,dim>& local) const
+      GlobalCoordinate global(const LocalCoordinate& local) const
       {
         const auto& weightedGlobal = weightedBSpline->global(local);
         return reduceDimension(weightedGlobal);
@@ -197,7 +207,7 @@ namespace Dune::IGA
 //       *
 //       *  \param[in] local local coordinates for each dimension
 //       */
-//      FieldVector<double,dimworld> global(const FieldVector<double,dim>& local)
+//      FieldVector<double,dimworld> global(const LocalCoordinate& local)
 //      {
 //
 //        const auto& knotSpans = patchData_->getKnots();
@@ -250,7 +260,7 @@ namespace Dune::IGA
 //       *
 //       *  \param[in] local local coordinates for each dimension
 //       */
-//      const std::array<std::vector<double>,dim > & getBasis (const FieldVector<double,dim>& local)
+//      const std::array<std::vector<double>,dim > & getBasis (const LocalCoordinate& local)
 //      {
 //        for (int i=0; i<dim;++i)
 //          if (local[i]<0 || local[i]>1)
@@ -346,14 +356,13 @@ namespace Dune::IGA
       auto computeWeightedControlPoints()
       {
         const auto& controlPoints = patchData_->getControlPoints();
-        const auto& weights = patchData_->getWeights();
         const auto& netSize = controlPoints.size();
         MultiDimensionNet<mydimension,FieldVector<double,coorddimension+1>> weightedControlPoints(netSize);
         const auto& pointSize = controlPoints.directSize();
         for(unsigned int i=0; i<pointSize; ++i)
         {
           //auto const& liftedControlPoint = ;
-          weightedControlPoints.directSet(i,liftDimension(controlPoints.directGet(i), weights.directGet(i)));
+          weightedControlPoints.directSet(i,liftDimension(controlPoints.directGet(i).p,controlPoints.directGet(i).w));
         }
         return weightedControlPoints;
 
@@ -362,7 +371,7 @@ namespace Dune::IGA
 
     private:
 
-      std::shared_ptr <NURBSPatchData<dim,dimworld>> patchData_;
+      std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData_;
 
       std::array<std::vector<double>::const_iterator,dim> corner_;
 
@@ -373,11 +382,10 @@ namespace Dune::IGA
     template<typename Grid>
     class NURBSLeafGridView;
 
-    template<int dim, int dimworld>
-    class NURBSGrid;
+
 
     /** \brief Class where the NURBS geometry can work on */
-    template <int dim, int dimworld>
+    template <int dim, int dimworld,NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits= LinearAlgebraTraits<double,dim,dimworld> >
     class NURBSPatch
     {
     public:
@@ -392,15 +400,14 @@ namespace Dune::IGA
        *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
        *  \param[in] order order of the NURBS structure for each dimension
        */
-      explicit NURBSPatch(const NURBSPatchData<dim,dimworld>& patchData)
+      explicit NURBSPatch(const NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>& patchData)
               : NURBSPatch(patchData.getKnots(),patchData.getControlPoints(),patchData.getWeights(),patchData.getOrder())
       {}
 
       NURBSPatch(const std::array<std::vector<double>,dim>& knotSpans,
-                   const typename NURBSPatchData<dim,dimworld>::ControlPointNet controlPoints,
-                   const typename NURBSPatchData<dim,dimworld>::WeightNet weights,
+                   const typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
                    const std::array<int,dim> order)
-      : patchData_(std::make_shared<NURBSPatchData<dim,dimworld>>(knotSpans, controlPoints, weights, order))
+      : patchData_(std::make_shared<NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>>(knotSpans, controlPoints, order))
       {
         validKnotSize_ = this -> validKnotSize();
         //Build a knot net to make iterator operations easier
@@ -478,7 +485,7 @@ namespace Dune::IGA
        *
        *  \param[in] ijk array of indices for each dimension
        */
-      NURBSGeometry<dim,dimworld> geometry(const std::array<unsigned int,dim>& ijk ) const
+      NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits> geometry(const std::array<unsigned int,dim>& ijk ) const
       {
         const auto & knotSpans = patchData_->getKnots();
 
@@ -489,7 +496,7 @@ namespace Dune::IGA
         for(int i=0; i<dim; ++i)
           corners[i] = (knotSpans[i]).begin()+index[i]-1;
 
-        return NURBSGeometry<dim,dimworld>(patchData_,corners);
+        return NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits>(patchData_,corners);
       }
 
       /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
@@ -513,11 +520,14 @@ namespace Dune::IGA
 
     private:
 
-      std::shared_ptr <NURBSPatchData<dim,dimworld>> patchData_;
+      std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData_;
       std::array<unsigned int,dim> validKnotSize_;
       std::shared_ptr <MultiDimensionNet<dim,double>> knotElementNet_;
 
     };
+
+
+
   }
 
 #endif  // DUNE_IGA_NURBSPATCH_HH

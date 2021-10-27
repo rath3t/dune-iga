@@ -27,7 +27,7 @@ void testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
 
   // parameters
-  int subSampling = 20;
+  int subSampling = 40;
 
   const int dim      = 1;
   const int dimworld = 3;
@@ -35,30 +35,32 @@ void testNURBSGridCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
 
-  const std::vector<FieldVector<double, dimworld> > controlPoints
-      = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
-//  const std::vector<FieldVector<double, dimworld> > controlPoints
-//      = {{-1, 0, 0}, {1, 0, 0},};
+  const std::vector<ControlPoint > controlPoints
+      = {{.p = {1, 3, 4}, .w = 1},
+         {.p = {2, 2, 2}, .w = 3},
+         {.p = {3, 4, 5}, .w = 1},
+         {.p = {5, 1, 7}, .w = 2},
+         {.p = {4, 7, 2}, .w = 1},
+         {.p = {8, 6, 2}, .w = 1},
+         {.p = {2, 9, 9}, .w = 7},
+         {.p = {1, 4, 3}, .w = 1},
+         {.p = {1, 7, 1}, .w = 5}};
 
-          //    const std::vector<FieldVector<double, dimworld> > controlPoints
-//        = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0}, {8, 0, 0}};
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = Dune::IGA::MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-//  const std::vector<FieldVector<double, 1> > weight = {{1}, {1}};
-  const std::vector<double > weight = {{1}, {3}, {1}, {2}, {1}, {1}, {7}, {1}, {5}};
-  auto weightNet                                    = MultiDimensionNet<dim, double>(dimsize, weight);
-
-  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
+  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
   grid.globalRefine(1);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
+
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-//  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
-  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+//  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
 }
 
 void testNURBSGridSurface() {
@@ -73,16 +75,21 @@ void testNURBSGridSurface() {
   const std::array<int, dim> order = {2, 2};
 
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPoints
-      = {{{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}}};
+//  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
+//      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
+ using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint >> controlPoints
+      =  {{{.p = {0, 0, 1}, .w = 2},        {.p = {1, 0, 1}, .w = 2},     {.p = {2, 0, 2}, .w = 1}},
+          {{.p = {0, 1, 0}, .w = 1},        {.p = {1, 1, 0}, .w = 4},     {.p = {2, 1, 0}, .w = 1}},
+          {{.p = {0, 2, 1}, .w = 1},        {.p = {1, 2, 2}, .w = 2},     {.p = {2, 2, 2}, .w = 4}}};
+
   std::array<unsigned int, dim> dimsize
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
-  //
-  const std::vector<std::vector<double > > weight = {{{2}, {2}, {1}}, {{1}, {4}, {1}}, {{1}, {2}, {4}}};
-  auto weightNet                                                  = MultiDimensionNet<dim, double>(dimsize, weight);
-  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
 
-  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -105,17 +112,22 @@ void testNURBSSurface() {
   const std::array<int, dim> order = {2, 2};
 
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPoints
-      = {{{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint >> controlPoints
+      =  {{{.p = {0, 0, 1}, .w = 2},        {.p = {1, 0, 1}, .w = 2},     {.p = {2, 0, 2}, .w = 1}},
+         {{.p = {0, 1, 0}, .w = 1},        {.p = {1, 1, 0}, .w = 4},     {.p = {2, 1, 0}, .w = 1}},
+         {{.p = {0, 2, 1}, .w = 1},        {.p = {1, 2, 2}, .w = 2},     {.p = {2, 2, 2}, .w = 4}}};
+
+
   std::array<unsigned int, dim> dimsize
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
   //
-  const std::vector<std::vector<double > > weight = {{{2}, {2}, {1}}, {{1}, {4}, {1}}, {{1}, {2}, {4}}};
 
-  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
-  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
+//  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, weightNet, order);
+  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
 
   TestSuite testSuite;
   testSuite.check(patch.size(0) == 1);
@@ -137,16 +149,23 @@ void testNURBSCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  const std::vector<FieldVector<double, dimworld> > controlPoints
-      = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
+  const std::vector<ControlPoint > controlPoints
+      = {{.p = {1, 3, 4}, .w = 2},
+         {.p = {2, 2, 2}, .w = 2},
+         {.p = {3, 4, 5}, .w = 1},
+         {.p = {5, 1, 7}, .w = 1},
+         {.p = {4, 7, 2}, .w = 4},
+         {.p = {8, 6, 2}, .w = 2},
+         {.p = {2, 9, 9}, .w = 1},
+         {.p = {1, 4, 3}, .w = 2},
+         {.p = {1, 7, 1}, .w = 4}};
+
+
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  const std::vector<double > weight = {{2}, {2}, {1}, {1}, {4}, {2}, {1}, {2}, {4}};
-
-  auto weightNet = MultiDimensionNet<dim, double>(dimsize, weight);
-
-  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, weightNet, order);
+  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
 
   TestSuite testSuite;
   testSuite.check(patch.size(0) == 5);
@@ -167,10 +186,20 @@ void testBSplineCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  const std::vector<FieldVector<double, dimworld> > controlPoints
-      = {{1, 3, 4}, {2, 2, 2}, {3, 4, 5}, {5, 1, 7}, {4, 7, 2}, {8, 6, 2}, {2, 9, 9}, {1, 4, 3}, {1, 7, 1}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::GlobalCoordinateType;
+  const std::vector<ControlPoint > controlPoints
+      = {{ {1, 3, 4}},
+         { {2, 2, 2}},
+         { {3, 4, 5}},
+         { {5, 1, 7}},
+         { {4, 7, 2}},
+         { {8, 6, 2}},
+         { {2, 9, 9}},
+         { {1, 4, 3}},
+         { {1, 7, 1}}};
+
   std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
-  auto controlNet                       = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet                       = MultiDimensionNet<dim,typename Dune::IGA::NURBSPatchData<dim,dimworld>::GlobalCoordinateType>(dimsize, controlPoints);
 
   IGA::BSplinePatch<dim, dimworld> patch(knotSpans, controlNet, order);
 }
@@ -192,29 +221,28 @@ void testNurbsGridCylinder() {
   const std::array<int, dim> order = {2, 1};
   constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
   // quarter cylindrical surface
-  const double cylLength                               = 10;
-  const double cylRadius                               = 5;
+  const double l                                       = 10;
+  const double rad                                     = 5;
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
-  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPoints
-      = {{{0, 0, cylRadius}, {0, cylLength, cylRadius}},
-         {{cylRadius, 0, cylRadius}, {cylRadius, cylLength, cylRadius}},
-         {{cylRadius, 0, 0}, {cylRadius, cylLength, 0}}};
+
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
+  const std::vector<std::vector<ControlPoint >> controlPoints
+      =  {{{.p = {0,   0, rad}, .w = 1},        {.p = {0, l, rad}, .w = 1},     {.p = {rad, 0, rad}, .w = invsqr2}},
+          {{.p = {rad, l, rad}, .w = invsqr2},         {.p = {rad, 0, 0}, .w = 1}},  {{.p = {rad, l, 0}, .w = 1}}};
 
   std::array<unsigned int, dim> dimsize
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
-  auto controlNet = MultiDimensionNetFVd<dim, dimworld>(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  const std::vector<std::vector<double > > weight = {{{1}, {1}}, {{invsqr2}, {invsqr2}}, {{1}, {1}}};
-  auto weightNet = MultiDimensionNet<dim, double>(dimsize, weight);
-
-  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, weightNet, order);
+  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
 
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
   TestSuite testSuite;
 
-  IGA::NURBSPatch<dim, dimworld> nurbsPatch(knotSpans, controlNet, weightNet, order);
+  IGA::NURBSPatch<dim, dimworld> nurbsPatch(knotSpans, controlNet, order);
 
   testSuite.check(nurbsPatch.size(0) == 1);
   testSuite.check(nurbsPatch.size(1) == 4);
