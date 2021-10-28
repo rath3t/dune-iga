@@ -74,13 +74,7 @@ namespace Dune::IGA {
           }
         }
       }
-      for (int curdim = 0; curdim < dim; ++curdim) {
-        std::cerr << std::endl;
-        for (auto& addKnot : additionalKnots[curdim])
-          std::cerr << addKnot << " ";
-      }
-      std::cerr << "=======================" << std::endl;
-      //        std::cerr<<additionalKnots[1]<<std::endl;
+
       if constexpr (dim == 1) {
         //
         currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);

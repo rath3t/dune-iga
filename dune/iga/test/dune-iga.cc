@@ -324,6 +324,7 @@ void testNurbsGridCylinder() {
   // quarter cylindrical surface
   const double l                                       = 10;
   const double rad                                     = 5;
+//  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
 
@@ -331,6 +332,7 @@ void testNurbsGridCylinder() {
   const std::vector<std::vector<ControlPoint >> controlPoints
       =  {{{.p = {0,   0, rad}, .w =       1},  {.p = {0,   l, rad}, .w = 1      }},
           {{.p = {rad, 0, rad}, .w = invsqr2},  {.p = {rad, l, rad}, .w = invsqr2}},
+//          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
           {{.p = {rad, 0,   0}, .w =       1},  {.p = {rad, l,   0}, .w = 1      }}};
 
   std::array<unsigned int, dim> dimsize
@@ -338,7 +340,7 @@ void testNurbsGridCylinder() {
   auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
-  grid.globalRefine(2);
+  grid.globalRefine(4);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -350,77 +352,11 @@ void testNurbsGridCylinder() {
   testSuite.check(nurbsPatch.size(1) == 4);
   testSuite.check(nurbsPatch.size(2) == 6);
 
-  ////////////////////////////////////////////////////////////////
-  //  Write to a VTK file.
-  //  The higher-order geometry is captured by subsampling.
-  ////////////////////////////////////////////////////////////////
-
-  ////////////////////////////////////////////////////////////////
   //! Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
 
-//  vtkWriter.write("Zyl");
   vtkWriter.write("ZylRefine");
-
-
-//  auto gridViewRefined  = grid.leafGridView();
-//
-//  SubsamplingVTKWriter<decltype(gridViewRefined)> vtkWriter2(gridViewRefined, refinementIntervals1);
-//  vtkWriter2.write("ZylRefine");
-
-
-//  IGA::VTKFile vtkFile;
-//
-//  //  The number of vertices that have been inserted so far
-//  std::size_t offset = 0;
-//
-//  //Range-based for loop to get each element and its corresponding geometry
-//  for (auto const &element: elements(gridView))
-//  {
-//    auto geometry = element.geometry();
-//    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
-//    //Add vertex coordinates to the VTK file
-//    for (int iy=0; iy<=(1<<subSampling); iy++)
-//    {
-//      FieldVector<double,dim> localPos;
-//      localPos[1] = ((double)iy)/(1<<subSampling);
-//
-//
-//      // Add vertex coordinates to the VTK file
-//      for (int ix=0; ix<=(1<<subSampling); ix++)
-//      {
-//        localPos[0] = ((double)ix)/(1<<subSampling);
-//        std::cout<<"localPos: "<<localPos<<std::endl;
-//        vtkFile.points_.push_back(geometry.global(localPos));
-//        std::cout<<"localPos: "<<geometry.global(localPos)<<std::endl;
-//      }
-//    }
-//
-//    // Add elements to the VTK file
-//    for (int k=0; k<(1<<subSampling); k++)
-//    {
-//      for (int l=0; l<(1<<subSampling); l++)
-//      {
-//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
-//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
-//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
-//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
-//
-//        // 4 corners per element
-//        if (vtkFile.cellOffsets_.empty())
-//          vtkFile.cellOffsets_.push_back(4);
-//        else
-//          vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
-//
-//        // Element type: a 4-node quadrilateral
-//        vtkFile.cellTypes_.push_back(9);
-//      }
-//    }
-//
-//    offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
-//  }
-//  vtkFile.write("ZylByHand");
 
   ////////////////////////////////////////////////////////////////
 }

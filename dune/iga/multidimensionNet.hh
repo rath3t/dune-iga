@@ -122,6 +122,16 @@ namespace Dune::IGA {
 
     [[nodiscard]] unsigned int directSize() const { return values_.size(); }
 
+
+    void enlarge (std::array<unsigned int, netdim> dimSize)  {
+      dimSize_ = dimSize;
+      int size = 1;
+      for (int i = 0; i < netdim; ++i)
+        size *= dimSize_[i];
+
+      values_.resize(size);
+    }
+
   private:
     int index(const std::array<unsigned int, netdim>& multiIndex) const {
       int index, help;
@@ -159,9 +169,9 @@ namespace Dune::IGA {
     static_assert(sizeof...(Args) ==netdim-1);
 
     std::array<unsigned int, netdim> multiIndex;
-      for(int i = 0; i < 1+at.args.size(); ++i) {
+      for(int argCounter=0, i = 0; i < 1+at.args.size(); ++i) {
         if (i==direction) continue;
-          multiIndex[i] = at.args[i];
+          multiIndex[i] = at.args[argCounter++];
     }
 
     auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[direction])};
@@ -181,9 +191,9 @@ namespace Dune::IGA {
     static_assert(sizeof...(Args) ==netdim-1);
 
     std::array<unsigned int, netdim> multiIndex;
-    for(int i = 0; i < 1+at.args.size(); ++i) {
+    for(int argCounter=0, i = 0; i < 1+at.args.size(); ++i) {
       if (i==direction) continue;
-      multiIndex[i] = at.args[i];
+      multiIndex[i] = at.args[argCounter++];
     }
 
     auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[direction])};
