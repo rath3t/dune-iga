@@ -99,6 +99,8 @@ namespace Dune::IGA {
      */
     ValueType directGet(const int index) const { return values_[index]; }
 
+    auto& directGetAll()  { return values_; }
+
     /** \brief returns a multiindex for a scalar index */
     std::array<unsigned int, netdim> directToMultiIndex(const unsigned int index) const {
       std::array<unsigned int, netdim> multiIndex;
@@ -141,7 +143,7 @@ namespace Dune::IGA {
 
   template <typename... Args>
   struct At {
-    std::array<int,sizeof...(Args)> args;
+    std::array<unsigned int,sizeof...(Args)> args;
   };
 
   template <typename... Args>
@@ -149,44 +151,45 @@ namespace Dune::IGA {
     return At<Args &&...>{std::forward<Args>(args)...};
   }
 
-  template<int dir, int netdim, typename ValueType,typename... Args>
-  auto line(MultiDimensionNet<netdim,ValueType>& net, const At<Args...> &at)
+
+
+  template< int netdim, typename ValueType,typename... Args>
+  auto line(MultiDimensionNet<netdim,ValueType>& net,const int direction, const At<Args...> &at)
   {
     static_assert(sizeof...(Args) ==netdim-1);
 
     std::array<unsigned int, netdim> multiIndex;
-      for(int i = 0; i < netdim; ++i) {
-        if (i==dir) continue;
+      for(int i = 0; i < 1+at.args.size(); ++i) {
+        if (i==direction) continue;
           multiIndex[i] = at.args[i];
     }
 
-    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[dir])};
+    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[direction])};
 
-    auto objectExtractor = [&](const auto& i) ->auto& {
-
-      multiIndex[dir]=i;
+    auto objectExtractor = [multiIndex,&net,direction] (auto i)mutable ->auto& {
+      multiIndex[direction]=i;
       return net.get(multiIndex);
     };
 
     return std::ranges::transform_view(indices,objectExtractor);
   }
 
-  template<int dir, int netdim, typename ValueType,typename... Args>
-  auto line(MultiDimensionNet<netdim,ValueType> const& net, const At<Args...> &at)
+
+  template< int netdim, typename ValueType,typename... Args>
+  auto line(MultiDimensionNet<netdim,ValueType> const& net,const int direction, At<Args...> const& at)
   {
     static_assert(sizeof...(Args) ==netdim-1);
 
     std::array<unsigned int, netdim> multiIndex;
-    for(int i = 0; i < netdim; ++i) {
-      if (i==dir) continue;
+    for(int i = 0; i < 1+at.args.size(); ++i) {
+      if (i==direction) continue;
       multiIndex[i] = at.args[i];
     }
 
-    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[dir])};
+    auto indices = std::ranges::iota_view{0,static_cast<int>( net.size()[direction])};
 
-    auto objectExtractor = [&](const auto& i) -> const auto& {
-
-      multiIndex[dir]=i;
+    auto objectExtractor = [multiIndex,&net, direction](const auto i) mutable -> const auto& {
+      multiIndex[direction]=i;
       return net.get(multiIndex);
     };
 
@@ -196,13 +199,13 @@ namespace Dune::IGA {
   template< typename ValueType>
   auto line(MultiDimensionNet<1,ValueType>& net)
   {
-    return line<0>(net,at());
+    return line(net,0,at());
   }
 
   template<typename ValueType>
    auto line(MultiDimensionNet<1,ValueType> const & net)
   {
-    return line<0>(net,at());
+    return line(net,0,at());
   }
 
 

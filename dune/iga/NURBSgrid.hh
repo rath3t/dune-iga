@@ -84,10 +84,8 @@ namespace Dune::IGA {
       if constexpr (dim == 1) {
         //
         currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
-        ////          std::vector<double> additionalKnots;
-        ////          currentPatchRepresentation_ = curveKnotInsertion(coarsestPatchRepresentation_, additionalKnots);
       } else if constexpr (dim == 2) {
-        // currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
+         currentPatchRepresentation_ = surfaceKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
       }
     }
 

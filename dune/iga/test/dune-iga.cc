@@ -20,6 +20,107 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
+
+
+#ifndef DUNE_IGA_VTKFILE_HH
+#define DUNE_IGA_VTKFILE_HH
+
+#include <vector>
+#include <fstream>
+
+#include <dune/common/fvector.hh>
+
+#include <dune/grid/io/file/vtk/dataarraywriter.hh>
+
+namespace Dune::IGA {
+
+  /** \brief A class representing a VTK file, but independent from the Dune grid interface
+     *
+     * This file is supposed to represent an abstraction layer in between the pure XML used for VTK files,
+     * and the VTKWriter from dune-grid, which knows about grids.  In theory, the dune-grid VTKWriter
+     * could use this class to simplify its own code.  More importantly, the VTKFile class allows to
+     * write files containing second-order geometries, which is currently not possible with the dune-grid
+     * VTKWriter.
+   */
+  class VTKFile
+  {
+
+  public:
+
+    /** \brief Write the file to disk */
+    void write(const std::string& filename) const
+    {
+      std::ofstream outFile(filename + ".vtu");
+
+      // Write header
+      outFile << "<?xml version=\"1.0\"?>" << std::endl;
+      outFile << R"(<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">)" << std::endl;
+      outFile << "  <UnstructuredGrid>" << std::endl;
+      outFile << "    <Piece NumberOfCells=\"" << cellOffsets_.size() << "\" NumberOfPoints=\"" << points_.size() << "\">" << std::endl;
+
+      // Write vertex coordinates
+      outFile << "      <Points>" << std::endl;
+      {  // extra parenthesis to control destruction of the pointsWriter object
+        Dune::VTK::AsciiDataArrayWriter pointsWriter(outFile, "Coordinates", 3, Dune::Indent(4),VTK::Precision::float32);
+        for (const auto & point : points_)
+          for (int j=0; j<3; j++)
+            pointsWriter.write(point[j]);
+      }  // destructor of pointsWriter objects writes trailing </DataArray> to file
+      outFile << "      </Points>" << std::endl;
+
+      // Write elements
+      outFile << "      <Cells>" << std::endl;
+      {  // extra parenthesis to control destruction of the cellConnectivityWriter object
+        Dune::VTK::AsciiDataArrayWriter cellConnectivityWriter(outFile, "connectivity", 1, Dune::Indent(4),VTK::Precision::int32);
+        for (int i : cellConnectivity_)
+          cellConnectivityWriter.write(i);
+      }
+
+      {  // extra parenthesis to control destruction of the writer object
+        Dune::VTK::AsciiDataArrayWriter cellOffsetsWriter(outFile, "offsets", 1, Dune::Indent(4),VTK::Precision::int32);
+        for (int cellOffset : cellOffsets_)
+          cellOffsetsWriter.write(cellOffset);
+      }
+
+      {  // extra parenthesis to control destruction of the writer object
+        Dune::VTK::AsciiDataArrayWriter cellTypesWriter(outFile, "types", 1, Dune::Indent(4),VTK::Precision::uint32);
+        for (int cellType : cellTypes_)
+          cellTypesWriter.write(cellType);
+      }
+
+      outFile << "      </Cells>" << std::endl;
+
+      //////////////////////////////////////////////////
+      //   Write footer
+      //////////////////////////////////////////////////
+      outFile << "    </Piece>" << std::endl;
+      outFile << "  </UnstructuredGrid>" << std::endl;
+      outFile << "</VTKFile>" << std::endl;
+
+
+    }
+
+    std::vector<Dune::FieldVector<double,3> > points_;
+
+    std::vector<int> cellConnectivity_;
+
+    std::vector<int> cellOffsets_;
+
+    std::vector<int> cellTypes_;
+
+  };
+
+}
+
+#endif
+
+
+
+
+
+
+
+
 void testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   //  Second test
@@ -27,7 +128,7 @@ void testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
 
   // parameters
-  int subSampling = 40;
+  int subSampling = 80;
 
   const int dim      = 1;
   const int dimworld = 3;
@@ -52,15 +153,15 @@ void testNURBSGridCurve() {
   auto controlNet                       = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
-  grid.globalRefine(1);
+  grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
-//  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+//  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
 }
 
 void testNURBSGridSurface() {
@@ -228,15 +329,16 @@ void testNurbsGridCylinder() {
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
   const std::vector<std::vector<ControlPoint >> controlPoints
-      =  {{{.p = {0,   0, rad}, .w = 1},        {.p = {0, l, rad}, .w = 1},     {.p = {rad, 0, rad}, .w = invsqr2}},
-          {{.p = {rad, l, rad}, .w = invsqr2},         {.p = {rad, 0, 0}, .w = 1}},  {{.p = {rad, l, 0}, .w = 1}}};
+      =  {{{.p = {0,   0, rad}, .w =       1},  {.p = {0,   l, rad}, .w = 1      }},
+          {{.p = {rad, 0, rad}, .w = invsqr2},  {.p = {rad, l, rad}, .w = invsqr2}},
+          {{.p = {rad, 0,   0}, .w =       1},  {.p = {rad, l,   0}, .w = 1      }}};
 
   std::array<unsigned int, dim> dimsize
       = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
   auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
-
+  grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -257,15 +359,68 @@ void testNurbsGridCylinder() {
   //! Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  vtkWriter.write("foo");
 
-  grid.globalRefine(2);
+//  vtkWriter.write("Zyl");
+  vtkWriter.write("ZylRefine");
 
-  auto gridViewRefined  = grid.leafGridView();
 
-  SubsamplingVTKWriter<decltype(gridViewRefined)> vtkWriter2(gridViewRefined, refinementIntervals1);
-  vtkWriter.write("fooRefine");
+//  auto gridViewRefined  = grid.leafGridView();
+//
+//  SubsamplingVTKWriter<decltype(gridViewRefined)> vtkWriter2(gridViewRefined, refinementIntervals1);
+//  vtkWriter2.write("ZylRefine");
 
+
+//  IGA::VTKFile vtkFile;
+//
+//  //  The number of vertices that have been inserted so far
+//  std::size_t offset = 0;
+//
+//  //Range-based for loop to get each element and its corresponding geometry
+//  for (auto const &element: elements(gridView))
+//  {
+//    auto geometry = element.geometry();
+//    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
+//    //Add vertex coordinates to the VTK file
+//    for (int iy=0; iy<=(1<<subSampling); iy++)
+//    {
+//      FieldVector<double,dim> localPos;
+//      localPos[1] = ((double)iy)/(1<<subSampling);
+//
+//
+//      // Add vertex coordinates to the VTK file
+//      for (int ix=0; ix<=(1<<subSampling); ix++)
+//      {
+//        localPos[0] = ((double)ix)/(1<<subSampling);
+//        std::cout<<"localPos: "<<localPos<<std::endl;
+//        vtkFile.points_.push_back(geometry.global(localPos));
+//        std::cout<<"localPos: "<<geometry.global(localPos)<<std::endl;
+//      }
+//    }
+//
+//    // Add elements to the VTK file
+//    for (int k=0; k<(1<<subSampling); k++)
+//    {
+//      for (int l=0; l<(1<<subSampling); l++)
+//      {
+//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l);
+//        vtkFile.cellConnectivity_.push_back(offset + k    *((1<<subSampling)+1) + l+1);
+//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l+1);
+//        vtkFile.cellConnectivity_.push_back(offset + (k+1)*((1<<subSampling)+1) + l);
+//
+//        // 4 corners per element
+//        if (vtkFile.cellOffsets_.empty())
+//          vtkFile.cellOffsets_.push_back(4);
+//        else
+//          vtkFile.cellOffsets_.push_back(vtkFile.cellOffsets_.back()+4);
+//
+//        // Element type: a 4-node quadrilateral
+//        vtkFile.cellTypes_.push_back(9);
+//      }
+//    }
+//
+//    offset += ((1<<subSampling)+1) * ((1<<subSampling)+1);
+//  }
+//  vtkFile.write("ZylByHand");
 
   ////////////////////////////////////////////////////////////////
 }

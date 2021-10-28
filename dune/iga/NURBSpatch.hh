@@ -489,7 +489,7 @@ namespace Dune::IGA
       {
         const auto & knotSpans = patchData_->getKnots();
 
-        std::array<unsigned int,dim> index = findSpanIndex(ijk);
+        std::array<unsigned int,dim> index =   findSpanIndex(ijk);
 
         /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<std::vector<double>::const_iterator,dim> corners;
