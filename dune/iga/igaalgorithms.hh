@@ -170,15 +170,8 @@ namespace Dune::IGA {
 
     if (endAngle < startAngle) endAngle += 360.0;
     const ScalarType theta = endAngle - startAngle;
-    int narcs{};
-    if (theta <= 90.0)
-      narcs = 1;
-    else if (theta <= 180.0)
-      narcs = 2;
-    else if (theta <= 270.0)
-      narcs = 3;
-    else
-      narcs = 4;
+    const int narcs = std::ceil(theta / 90);
+
     typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs({2 * narcs + 1});
     const ScalarType dtheta
         = theta / narcs
@@ -251,22 +244,15 @@ namespace Dune::IGA {
     newKnotsArray[1]          = generatrix.getKnots()[0];
     auto& U                   = newKnotsArray[0];
 
-    int narcs{};
+    const int narcs = std::ceil(revolutionAngle / 90);
+    U.resize(2 * (narcs + 2));
     if (revolutionAngle <= 90.0) {
-      narcs = 1;
-      U.resize(2 * narcs + 4);
     } else if (revolutionAngle <= 180.0) {
-      narcs = 2;
-      U.resize(2 * (narcs + 2));
       U[3] = U[4] = 0.5;
     } else if (revolutionAngle <= 270.0) {
-      narcs = 3;
-      U.resize(2 * (narcs + 2));
       U[3] = U[4] = 1.0 / 3.0;
       U[5] = U[6] = 2.0 / 3.0;
     } else {
-      narcs = 4;
-      U.resize(2 * (narcs + 2));
       U[3] = U[4] = 0.25;
       U[5] = U[6] = 0.5;
       U[7] = U[8] = 0.75;
