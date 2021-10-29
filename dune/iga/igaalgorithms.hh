@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <numbers>
+
 #include <dune/iga/NURBSpatch.hh>
 namespace Dune::IGA {
 
@@ -12,143 +14,59 @@ namespace Dune::IGA {
     return std::distance(U.begin(), it) - 1;
   }
 
-  template <int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto curveKnotRefinement(const NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
-                           const std::array<std::vector<double>, 1>& newKnots) {
-    using NurbsPatchData = NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
-    using namespace std::ranges;
-    auto oldKnotVec = oldData.getKnots()[0];
-    //    oldKnotVec.erase(oldKnotVec.begin());
-    //    oldKnotVec.erase(oldKnotVec.end() - 1);
-
-    std::array<std::vector<double>, 1> newKnotsArray;
-    auto& newKnotVec = newKnotsArray[0];
-    newKnotVec.reserve(oldKnotVec.size() + newKnots[0].size());
-    merge(oldKnotVec, newKnots[0], std::back_inserter(newKnotVec));
-
-    auto oldCPs = line(oldData.getControlPoints());
-
-    const auto newKSize = newKnots[0].size();
-
-    const unsigned int numberOfnewControlPoints = oldData.getControlPoints().directSize() + newKSize;
-    typename NurbsPatchData::ControlPointNetType newCPv({numberOfnewControlPoints});
-
-    using ControlPoint = typename NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
-
-    auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
-
-    auto newCPs = line(newCPv);
-
-    const int p = oldData.getOrder()[0];
-    const int a = findUpperSpanIndex(p, newKnots[0].front(), oldKnotVec);
-    const int b = findUpperSpanIndex(p, newKnots[0].back(), oldKnotVec);
-    std::ranges::transform(oldCPs | views::take(a - p + 2), newCPs.begin(), scaleCPWithW);
-
-    std::ranges::transform(oldCPs.begin() + b + 1, oldCPs.end(), newCPs.begin() + newKSize + b + 1, scaleCPWithW);
-
-    auto newCp = newCPs.begin() + b + newKSize;
-    auto oldCp = oldCPs.begin() + b;
-
-    auto currentNewKnot = newKnotVec.end();
-    auto currentOldKnot = oldKnotVec.end();
-
-    for (auto const& currentAdditionalKnot : reverse_view(newKnots[0])) {
-      while (currentAdditionalKnot <= *(currentOldKnot - 1)
-             && std::distance(oldKnotVec.begin(), currentOldKnot) > a + 1) {
-        (*newCp).p = (*oldCp).p * (*oldCp).w;
-        (*newCp).w = (*oldCp).w;
-        --currentNewKnot;
-        --currentOldKnot;
-        --newCp;
-        --oldCp;
-      }
-
-      *newCp = *(newCp + 1);
-      ++newCp;
-      currentOldKnot -= p;
-      for ([[maybe_unused]] int _ : iota_view{0, p}) {
-        ++newCp;
-        const auto& curCPValue = *newCp;
-        auto& leftOfcurCPValue = *(newCp - 1);
-
-        auto alpha = *currentNewKnot - currentAdditionalKnot;
-        using std::abs;
-        if (abs(alpha) < 1e-7)
-          leftOfcurCPValue = curCPValue;
-        else {
-          alpha            = alpha / (*currentNewKnot - *(currentOldKnot));
-          leftOfcurCPValue = alpha * leftOfcurCPValue + curCPValue * (1.0 - alpha);
-        }
-        ++currentOldKnot;
-        ++currentNewKnot;
-      }
-
-      currentNewKnot -= p + 1;
-      newCp -= p + 2;
-    }
-
-    transform(newCPs, newCPs.begin(), [](auto& cp) -> ControlPoint { return {.p = cp.p / cp.w}; });
-
-    std::ranges::for_each(newCPs, [](auto& cp) {
-      std::cout << "cp.p: " << cp.p << " "
-                << "cp.w: " << cp.w << std::endl;
-    });
-    std::ranges::for_each(newKnotsArray[0], [](auto& kn) { std::cout << kn << " "; });
-    //    newKnotsArray[0].insert(newKnotsArray[0].begin(), newKnotsArray[0].front());
-    //    newKnotsArray[0].push_back(newKnotsArray[0].back());
-
-    return NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.getOrder());
+  template <Vector VectorType>
+  requires(VectorType::dimension == 3) VectorType cross(const VectorType& a, const VectorType& b) {
+    return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
   }
 
-  template <int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto surfaceKnotRefinement(const NURBSPatchData<2, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
-                             const std::array<std::vector<double>, 2>& newKnots) {
-    using NurbsPatchData = NURBSPatchData<2, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
+  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  auto surfaceKnotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
+                             const std::array<std::vector<double>, dim>& newKnots) {
+    using NurbsPatchData = NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
     using namespace std::ranges;
-    std::array<std::vector<double>, 2> newKnotsArray;
+    std::array<std::vector<double>, dim> newKnotsArray;
     typename NurbsPatchData::ControlPointNetType newCPv(oldData.getControlPoints().size());
 
     auto oldCPv = oldData.getControlPoints();
-    for (int refDirection = 0; refDirection < 2; ++refDirection) {
+    for (int refDirection = 0; refDirection < dim; ++refDirection) {
       auto oldKnotVec  = oldData.getKnots()[refDirection];
       auto& newKnotVec = newKnotsArray[refDirection];
 
       newKnotVec.reserve(oldKnotVec.size() + newKnots[refDirection].size());
       merge(oldKnotVec, newKnots[refDirection], std::back_inserter(newKnotVec));
 
-      const auto newKSize = newKnots[refDirection].size();
-      std::array<unsigned int, 2> numberOfCPperDir{};
+      const auto newKSize                            = newKnots[refDirection].size();
+      std::array<unsigned int, dim> numberOfCPperDir = oldCPv.size();
 
       numberOfCPperDir[refDirection] = oldCPv.size()[refDirection] + newKSize;
 
-      for (int i = 0; i < 2; ++i) {
-        if (i == refDirection) continue;
-        numberOfCPperDir[i] = oldCPv.size()[i];
-      }
-      newCPv.enlarge(numberOfCPperDir);
+      newCPv.resize(numberOfCPperDir);
 
-      using ControlPoint = typename NURBSPatchData<1, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
-
-      auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
+      using ControlPoint = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+      auto scaleCPWithW  = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
 
       const int degree = oldData.getOrder()[refDirection];
       const int a      = findUpperSpanIndex(degree, newKnots[refDirection].front(), oldKnotVec);
       const int b      = findUpperSpanIndex(degree, newKnots[refDirection].back(), oldKnotVec);
 
-      const int otherLine = (refDirection == 0) ? 1 : 0;
+      auto otherDirections = std::views::iota(0, dim) | std::views::filter([&refDirection](const int i) {
+                               return (dim == 1) || (refDirection != i);
+                             });
+
       for (unsigned int i = 0; i < a - degree + 1; ++i)
-        std::ranges::transform(line(oldCPv, otherLine, at(i)), line(newCPv, otherLine, at(i)).begin(), scaleCPWithW);
+        for (auto directionLine : otherDirections)
+          std::ranges::transform(line(oldCPv, directionLine, at(i)), line(newCPv, directionLine, at(i)).begin(),
+                                 scaleCPWithW);
 
       for (unsigned int i = b; i < oldCPv.size()[refDirection]; ++i)
-        std::ranges::transform(line(oldCPv, otherLine, at(i)), line(newCPv, otherLine, at(i + newKSize)).begin(),
-                               scaleCPWithW);
+        for (auto directionLine : otherDirections)
+          std::ranges::transform(line(oldCPv, directionLine, at(i)),
+                                 line(newCPv, directionLine, at(i + newKSize)).begin(), scaleCPWithW);
 
       int k           = b + newKSize;
       int i           = b;
-      auto newVLineAt = [&newCPv, &otherLine](const int index) { return line(newCPv, otherLine, at(index)); };
-      auto oldVLineAt = [&oldCPv, &otherLine](const int index) { return line(oldCPv, otherLine, at(index)); };
-      auto newCpLine  = newVLineAt(k);
-      auto oldCpLine  = oldVLineAt(i);
+      auto newVLineAt = [&newCPv](const int index, const int otherDir) { return line(newCPv, otherDir, at(index)); };
+      auto oldVLineAt = [&oldCPv](const int index, const int otherDir) { return line(oldCPv, otherDir, at(index)); };
 
       auto currentNewKnot = newKnotVec.end();
       auto currentOldKnot = oldKnotVec.end();
@@ -156,35 +74,38 @@ namespace Dune::IGA {
       for (auto const& currentAdditionalKnot : reverse_view(newKnots[refDirection])) {
         while (currentAdditionalKnot <= *(currentOldKnot - 1)
                && std::distance(oldKnotVec.begin(), currentOldKnot) > a + 1) {
-          std::ranges::transform(oldCpLine, newCpLine.begin(), scaleCPWithW);
+          for (auto directionLine : otherDirections)
+            std::ranges::transform(oldVLineAt(i, directionLine), newVLineAt(k, directionLine).begin(), scaleCPWithW);
           --currentNewKnot;
           --currentOldKnot;
-          newCpLine = newVLineAt(--k);
-          oldCpLine = oldVLineAt(--i);
+          --k;
+          --i;
         }
 
-        std::ranges::copy(newVLineAt(k + 1), newCpLine.begin());
-        newCpLine = newVLineAt(++k);
+        for (auto directionLine : otherDirections)
+          std::ranges::copy(newVLineAt(k + 1, directionLine), newVLineAt(k, directionLine).begin());
+        ++k;
         currentOldKnot -= degree;
         for ([[maybe_unused]] int _ : iota_view{0, degree}) {
-          newCpLine = newVLineAt(++k);
+          ++k;
 
           auto alpha = *currentNewKnot - currentAdditionalKnot;
           using std::abs;
           if (abs(alpha) < 1e-7)
-            std::ranges::copy(newCpLine, newVLineAt(k - 1).begin());
+            for (auto directionLine : otherDirections)
+              std::ranges::copy(newVLineAt(k, directionLine), newVLineAt(k - 1, directionLine).begin());
           else {
             alpha = alpha / (*currentNewKnot - *(currentOldKnot));
-            std::ranges::transform(newCpLine, newVLineAt(k - 1), newVLineAt(k - 1).begin(),
-                                   [&alpha](auto& cp, auto& cpL) { return alpha * cpL + cp * (1.0 - alpha); });
+            for (auto directionLine : otherDirections)
+              std::ranges::transform(newVLineAt(k, directionLine), newVLineAt(k - 1, directionLine),
+                                     newVLineAt(k - 1, directionLine).begin(),
+                                     [&alpha](auto& cp, auto& cpL) { return alpha * cpL + cp * (1.0 - alpha); });
           }
           ++currentOldKnot;
           ++currentNewKnot;
         }
-
         currentNewKnot -= degree + 1;
         k -= degree + 2;
-        newCpLine = newVLineAt(k);
       }
 
       std::ranges::transform(newCPv.directGetAll(), newCPv.directGetAll().begin(),
@@ -192,11 +113,209 @@ namespace Dune::IGA {
 
       oldCPv = newCPv;
     }
-    //    std::ranges::for_each(newCPv.directGetAll(), [](auto& cp) {
-    //      std::cout << "cp.p: " << cp.p << " "
-    //                << "cp.w: " << cp.w << std::endl;
-    //    });
-    return NURBSPatchData<2, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.getOrder());
+    return NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.getOrder());
+  }
+
+  namespace Impl {
+    template <Vector VectorType>
+    auto projectPointOntoLine(const VectorType basepoint, const VectorType revolutionaxis, const VectorType point) {
+      const VectorType e1 = basepoint + revolutionaxis - basepoint;
+      const VectorType e2 = point - basepoint;
+      using Dune::dot;
+      const typename VectorType::value_type angle = dot(e1, e2);
+      const typename VectorType::value_type len2  = e1.two_norm();
+
+      VectorType p = basepoint + angle * e1 / len2;
+      return p;
+    }
+
+    template <Vector VectorType>
+    auto Intersect3DLines(const VectorType basepoint1, const VectorType direction1, const VectorType basepoint2,
+                          const VectorType direction2) {
+      using ScalarType                     = typename VectorType::value_type;
+      const ScalarType tol                 = 1e-8;
+      const VectorType basePointDifference = basepoint1 - basepoint2;
+      using Dune::dot;
+      const ScalarType dir1squaredLength = dot(direction1, direction1);
+      const ScalarType angle             = dot(direction1, direction2);
+      const ScalarType dir2squaredLength = dot(direction2, direction2);
+      const ScalarType dir1BasePdiff     = dot(direction1, basePointDifference);
+      const ScalarType dir2BasePdiff     = dot(direction2, basePointDifference);
+      const ScalarType D                 = dir1squaredLength * dir2squaredLength - angle * angle;
+
+      if (std::abs(D) < tol) throw std::logic_error("The two lines are almost parallel.");
+
+      const ScalarType parameter1 = (angle * dir2BasePdiff - dir2squaredLength * dir1BasePdiff) / D;
+      const ScalarType parameter2 = (dir1squaredLength * dir2BasePdiff - angle * dir1BasePdiff) / D;
+
+      VectorType c1 = basepoint1 + parameter1 * direction1;
+      assert(dot(c1 - (basepoint2 + parameter2 * direction2), c1 - (basepoint2 + parameter2 * direction2)) < 1e-8
+             && "Both calculated points do not coincide");
+      return c1;
+    }
+  }  // namespace Impl
+
+  // Algo A7.1
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3> >
+  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType origin,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType X,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type radius = 1.0,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type startAngle
+                       = 0.0,
+                       typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type endAngle = 360.0) {
+    using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
+    using GlobalCoordinateType = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
+    using ControlPoint         = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+
+    if (endAngle < startAngle) endAngle += 360.0;
+    const ScalarType theta = endAngle - startAngle;
+    int narcs{};
+    if (theta <= 90.0)
+      narcs = 1;
+    else if (theta <= 180.0)
+      narcs = 2;
+    else if (theta <= 270.0)
+      narcs = 3;
+    else
+      narcs = 4;
+    typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs({2 * narcs + 1});
+    const ScalarType dtheta
+        = theta / narcs
+          * std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type> / 180;
+    const int n = 2 * narcs;
+    /* n+l control points */
+    const ScalarType w1      = cos(dtheta / 2.0);
+    GlobalCoordinateType PO  = origin + radius * cos(startAngle) * X + radius * sin(startAngle) * Y;
+    GlobalCoordinateType TO  = -sin(startAngle) * X + cos(startAngle) * Y;
+    circleCPs.directGet(0).p = PO;
+    ScalarType angle         = startAngle;
+    for (int index = 0, i = 0; i < narcs; ++i)
+    /* create narcs segments */
+    {
+      angle += dtheta;
+      const GlobalCoordinateType P2    = origin + radius * cos(angle) * X + radius * sin(angle) * Y;
+      circleCPs.directGet(index + 2).p = P2;
+      const GlobalCoordinateType T2    = -sin(angle) * X + cos(angle) * Y;
+      const GlobalCoordinateType P1    = Impl::Intersect3DLines(PO, TO, P2, T2);
+      circleCPs.directGet(index + 1)   = {.p = P1, .w = w1};
+      index += 2;
+      if (i < narcs - 1) {
+        PO = P2;
+        TO = T2;
+      }
+    }
+
+    auto knotVec = std::array<std::vector<double>, 1>{};
+    auto& U      = knotVec[0];
+    if (narcs == 1)
+      U.resize(2 * narcs + 4);
+    else if (narcs == 2) {
+      narcs = 2;
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 0.5;
+    } else if (narcs == 3) {
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 1.0 / 3.0;
+      U[5] = U[6] = 2.0 / 3.0;
+    } else {
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 0.25;
+      U[5] = U[6] = 0.5;
+      U[7] = U[8] = 0.75;
+    }
+
+    std::ranges::fill_n(U.begin(), 3, 0.0);
+    std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
+    return NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
+  }
+
+  //  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  //  auto surfaceOrderElevation(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
+  //                             const std::array<int, dim>& newDegrees) {}
+
+  // Algo 8.1
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3> >
+  auto makeSurfaceOfRevolution(
+      const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType point,
+      const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType revolutionaxisi,
+      const NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
+      const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type revolutionAngle = 360.0) {
+    const auto& genCP          = generatrix.getControlPoints();
+    using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
+    using ControlPoint         = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+    using GlobalCoordinateType = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
+
+    const auto revolutionaxis = revolutionaxisi / revolutionaxisi.two_norm();
+    auto newKnotsArray        = std::array<std::vector<double>, 2>();
+    newKnotsArray[1]          = generatrix.getKnots()[0];
+    auto& U                   = newKnotsArray[0];
+
+    int narcs{};
+    if (revolutionAngle <= 90.0) {
+      narcs = 1;
+      U.resize(2 * narcs + 4);
+    } else if (revolutionAngle <= 180.0) {
+      narcs = 2;
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 0.5;
+    } else if (revolutionAngle <= 270.0) {
+      narcs = 3;
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 1.0 / 3.0;
+      U[5] = U[6] = 2.0 / 3.0;
+    } else {
+      narcs = 4;
+      U.resize(2 * (narcs + 2));
+      U[3] = U[4] = 0.25;
+      U[5] = U[6] = 0.5;
+      U[7] = U[8] = 0.75;
+    }
+    const ScalarType dtheta
+        = revolutionAngle / narcs
+          * std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type> / 180;
+    int jj = 3 + 2 * (narcs - 1);
+    std::ranges::fill_n(U.begin(), 3, 0.0);
+    std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
+
+    typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType surfaceCP(
+        {2 * narcs + 1, generatrix.getControlPoints().size()[0]});
+    using std::cos;
+    using std::sin;
+    const ScalarType wm = cos(dtheta / 2.0);
+    std::vector<ScalarType> cosines(narcs);
+    std::vector<ScalarType> sines(narcs);
+    ScalarType angle = 0.0;
+    for (int i = 0; i < narcs; i++) {
+      angle += dtheta;
+      cosines[i] = cos(angle);
+      sines[i]   = sin(angle);
+    }
+    ControlPoint PO = genCP.directGet(0);
+    for (int j = 0; j < genCP.size()[0]; j++) {
+      const GlobalCoordinateType Om = Impl::projectPointOntoLine(point, revolutionaxis, genCP.directGet(j).p);
+      GlobalCoordinateType X        = genCP.directGet(j).p - Om;
+      const ScalarType r            = X.two_norm();
+      X /= r;
+      const GlobalCoordinateType Y = cross(revolutionaxis, X);
+      surfaceCP.get({0, j}) = PO = genCP.directGet(j);
+      GlobalCoordinateType TO    = Y;
+      for (int index = 0, i = 0; i < narcs; ++i) {
+        const GlobalCoordinateType P2 = Om + r * cosines[i] * X + r * sines[i] * Y;
+        surfaceCP.get({index + 2, j}) = {.p = P2, .w = genCP.directGet(j).w};
+
+        const GlobalCoordinateType T2   = -sines[i] * X + cosines[i] * Y;
+        surfaceCP.get({index + 1, j}).p = Impl::Intersect3DLines(PO.p, TO, P2, T2);
+        surfaceCP.get({index + 1, j}).w = wm * genCP.directGet(j).w;
+        index += 2;
+        if (i < narcs - 1) {
+          PO.p = P2;
+          TO   = T2;
+        }
+      }
+    }
+    return NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, surfaceCP,
+                                                                  {2, generatrix.getOrder()[0]});
   }
 
 }  // namespace Dune::IGA

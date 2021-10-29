@@ -23,7 +23,7 @@ namespace Dune::IGA {
     static constexpr int dimensionworld = dimworld;
     using ctype = typename GlobalCoordinateType::value_type;
 
-    using ControlPointNetType = NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType;
+    using ControlPointNetType = typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType;
 
 
     using Comm = Communication<No_Comm>;
@@ -77,9 +77,9 @@ namespace Dune::IGA {
 
       if constexpr (dim == 1) {
         //
-        currentPatchRepresentation_ = curveKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
+        currentPatchRepresentation_ = surfaceKnotRefinement<1>(coarsestPatchRepresentation_, additionalKnots);
       } else if constexpr (dim == 2) {
-         currentPatchRepresentation_ = surfaceKnotRefinement(coarsestPatchRepresentation_, additionalKnots);
+         currentPatchRepresentation_ = surfaceKnotRefinement<2>(coarsestPatchRepresentation_, additionalKnots);
       }
     }
 

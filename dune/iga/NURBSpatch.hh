@@ -32,7 +32,7 @@ namespace Dune::IGA
 
 
       using ControlPointNetType = MultiDimensionNet<dim,ControlPointType>;
-
+      NURBSPatchData()= default;
       /** \brief constructor for a NURBSPatchData from knots, control points, weights and order
        *
        *  \param[in] knotSpans vector of knotSpans for each dimension
@@ -68,6 +68,11 @@ namespace Dune::IGA
       const std::array<int,dim> & getOrder() const
       {
         return order_;
+      }
+
+      void setOrder(const std::array<int,dim>& order)
+      {
+         order_=order;
       }
     private:
 
