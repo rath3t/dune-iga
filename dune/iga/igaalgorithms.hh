@@ -167,25 +167,21 @@ namespace Dune::IGA {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
     using GlobalCoordinateType = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     using ControlPoint         = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+    const auto pi = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type>;
 
     if (endAngle < startAngle) endAngle += 360.0;
     const ScalarType theta = endAngle - startAngle;
-    const int narcs = std::ceil(theta / 90);
+    const int narcs        = std::ceil(theta / 90);
 
     typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs({2 * narcs + 1});
-    const ScalarType dtheta
-        = theta / narcs
-          * std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type> / 180;
-    const int n = 2 * narcs;
-    /* n+l control points */
+    const ScalarType dtheta  = theta / narcs * pi / 180;
+    const int n              = 2 * narcs;
     const ScalarType w1      = cos(dtheta / 2.0);
     GlobalCoordinateType PO  = origin + radius * cos(startAngle) * X + radius * sin(startAngle) * Y;
     GlobalCoordinateType TO  = -sin(startAngle) * X + cos(startAngle) * Y;
     circleCPs.directGet(0).p = PO;
     ScalarType angle         = startAngle;
-    for (int index = 0, i = 0; i < narcs; ++i)
-    /* create narcs segments */
-    {
+    for (int index = 0, i = 0; i < narcs; ++i) {
       angle += dtheta;
       const GlobalCoordinateType P2    = origin + radius * cos(angle) * X + radius * sin(angle) * Y;
       circleCPs.directGet(index + 2).p = P2;
@@ -201,21 +197,17 @@ namespace Dune::IGA {
 
     auto knotVec = std::array<std::vector<double>, 1>{};
     auto& U      = knotVec[0];
-    if (narcs == 1)
-      U.resize(2 * narcs + 4);
-    else if (narcs == 2) {
-      narcs = 2;
-      U.resize(2 * (narcs + 2));
-      U[3] = U[4] = 0.5;
+    U.resize(2 * (narcs + 2));
+    if (narcs == 1) {
+    } else if (narcs == 2) {
+      U[3] = U[4] = 1.0 / 2.0;
     } else if (narcs == 3) {
-      U.resize(2 * (narcs + 2));
       U[3] = U[4] = 1.0 / 3.0;
       U[5] = U[6] = 2.0 / 3.0;
     } else {
-      U.resize(2 * (narcs + 2));
-      U[3] = U[4] = 0.25;
-      U[5] = U[6] = 0.5;
-      U[7] = U[8] = 0.75;
+      U[3] = U[4] = 1.0 / 4.0;
+      U[5] = U[6] = 2.0 / 4.0;
+      U[7] = U[8] = 3.0 / 4.0;
     }
 
     std::ranges::fill_n(U.begin(), 3, 0.0);
@@ -238,6 +230,7 @@ namespace Dune::IGA {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
     using ControlPoint         = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
     using GlobalCoordinateType = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
+    const auto pi = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type>;
 
     const auto revolutionaxis = revolutionaxisi / revolutionaxisi.two_norm();
     auto newKnotsArray        = std::array<std::vector<double>, 2>();
@@ -257,10 +250,7 @@ namespace Dune::IGA {
       U[5] = U[6] = 0.5;
       U[7] = U[8] = 0.75;
     }
-    const ScalarType dtheta
-        = revolutionAngle / narcs
-          * std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type> / 180;
-    int jj = 3 + 2 * (narcs - 1);
+    const ScalarType dtheta = revolutionAngle / narcs * pi / 180;
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
 
