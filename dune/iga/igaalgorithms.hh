@@ -5,14 +5,11 @@
 #pragma once
 
 #include <numbers>
-
+#include <ranges>
+#include <concepts>
 #include <dune/iga/NURBSpatch.hh>
+#include <dune/iga/bsplinealgorithms.hh>
 namespace Dune::IGA {
-
-  auto findUpperSpanIndex(const int p, const double u, const std::vector<double>& U) {
-    auto it = std::upper_bound(U.begin() + p, U.end() - p, u);
-    return std::distance(U.begin(), it) - 1;
-  }
 
   template <Vector VectorType>
   requires(VectorType::dimension == 3) VectorType cross(const VectorType& a, const VectorType& b) {
@@ -55,18 +52,18 @@ namespace Dune::IGA {
 
       for (unsigned int i = 0; i < a - degree + 1; ++i)
         for (auto directionLine : otherDirections)
-          std::ranges::transform(line(oldCPv, directionLine, at(i)), line(newCPv, directionLine, at(i)).begin(),
+          std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i).begin(),
                                  scaleCPWithW);
 
       for (unsigned int i = b; i < oldCPv.size()[refDirection]; ++i)
         for (auto directionLine : otherDirections)
-          std::ranges::transform(line(oldCPv, directionLine, at(i)),
-                                 line(newCPv, directionLine, at(i + newKSize)).begin(), scaleCPWithW);
+          std::ranges::transform(line(oldCPv, directionLine, i),
+                                 line(newCPv, directionLine, i + newKSize).begin(), scaleCPWithW);
 
       int k           = b + newKSize;
       int i           = b;
-      auto newVLineAt = [&newCPv](const int index, const int otherDir) { return line(newCPv, otherDir, at(index)); };
-      auto oldVLineAt = [&oldCPv](const int index, const int otherDir) { return line(oldCPv, otherDir, at(index)); };
+      auto newVLineAt = [&newCPv](const int index, const int otherDir) { return line(newCPv, otherDir, {index}); };
+      auto oldVLineAt = [&oldCPv](const int index, const int otherDir) { return line(oldCPv, otherDir, {index}); };
 
       auto currentNewKnot = newKnotVec.end();
       auto currentOldKnot = oldKnotVec.end();
@@ -171,7 +168,7 @@ namespace Dune::IGA {
 
     if (endAngle < startAngle) endAngle += 360.0;
     const ScalarType theta = endAngle - startAngle;
-    const int narcs        = std::ceil(theta / 90);
+    const unsigned int narcs        = std::ceil(theta / 90);
 
     typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs({2 * narcs + 1});
     const ScalarType dtheta  = theta / narcs * pi / 180;
@@ -237,7 +234,7 @@ namespace Dune::IGA {
     newKnotsArray[1]          = generatrix.getKnots()[0];
     auto& U                   = newKnotsArray[0];
 
-    const int narcs = std::ceil(revolutionAngle / 90);
+    const unsigned int narcs = std::ceil(revolutionAngle / 90);
     U.resize(2 * (narcs + 2));
     if (revolutionAngle <= 90.0) {
     } else if (revolutionAngle <= 180.0) {
@@ -268,7 +265,7 @@ namespace Dune::IGA {
       sines[i]   = sin(angle);
     }
     ControlPoint PO = genCP.directGet(0);
-    for (int j = 0; j < genCP.size()[0]; j++) {
+    for (unsigned int j = 0; j < genCP.size()[0]; j++) {
       const GlobalCoordinateType Om = Impl::projectPointOntoLine(point, revolutionaxis, genCP.directGet(j).p);
       GlobalCoordinateType X        = genCP.directGet(j).p - Om;
       const ScalarType r            = X.two_norm();
@@ -276,7 +273,7 @@ namespace Dune::IGA {
       const GlobalCoordinateType Y = cross(revolutionaxis, X);
       surfaceCP.get({0, j}) = PO = genCP.directGet(j);
       GlobalCoordinateType TO    = Y;
-      for (int index = 0, i = 0; i < narcs; ++i) {
+      for (unsigned int index = 0, i = 0; i < narcs; ++i) {
         const GlobalCoordinateType P2 = Om + r * cosines[i] * X + r * sines[i] * Y;
         surfaceCP.get({index + 2, j}) = {.p = P2, .w = genCP.directGet(j).w};
 
@@ -293,5 +290,4 @@ namespace Dune::IGA {
     return NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, surfaceCP,
                                                                   {2, generatrix.getOrder()[0]});
   }
-
 }  // namespace Dune::IGA

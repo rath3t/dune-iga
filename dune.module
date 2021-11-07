@@ -5,6 +5,6 @@
 #Name of the module
 Module: dune-iga
 Version: 1.0
-Maintainer: sander@igpm.rwth-aachen.de,eugen.salzmann@rwth-aachen.de
+Maintainer: mueller@ibb.uni-stuttgart.de
 #depending on
-Depends: dune-grid
+Depends: dune-grid dune-functions

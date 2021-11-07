@@ -41,6 +41,7 @@ namespace Dune::IGA {
     typename LinearAlgebraTraits::JacobianInverseTransposed;
     typename LinearAlgebraTraits::GlobalCoordinateType;
     typename LinearAlgebraTraits::LocalCoordinateType;
+    typename LinearAlgebraTraits::value_type;
   };
 
 

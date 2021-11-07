@@ -15,7 +15,15 @@
 //#include <dune/iga/vtkfile.hh>
 
 #include <dune/common/test/testsuite.hh>
+#include <dune/functions/functionspacebases/bsplinebasis.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/iga/nurbsbasis.hh>
+
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
+#include <dune/common/float_cmp.hh>
+
+
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -262,8 +270,8 @@ void testNurbsGridCylinder() {
   //////////////////////////////////////////////////////////////
   // Create a 2d B-spline grid in 3d
   //////////////////////////////////////////////////////////////
-  const int dim                    = 2;
-  const int dimworld               = 3;
+  constexpr int dim                    = 2;
+  constexpr int dimworld               = 3;
   const std::array<int, dim> order = {2, 1};
   constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
   // quarter cylindrical surface
@@ -303,8 +311,127 @@ void testNurbsGridCylinder() {
 
   vtkWriter.write("ZylRefine");
 
+
   ////////////////////////////////////////////////////////////////
 }
+
+//template <int dim>
+void testNurbsBasis() {
+  ////////////////////////////////////////////////////////////////
+  //  First test
+  //  A B-Spline surface of dimWorld 3
+  ////////////////////////////////////////////////////////////////
+
+  // parameters
+  int subSampling = 1;
+
+  //////////////////////////////////////////////////////////////
+  // Create a 2d B-spline grid in 3d
+  //////////////////////////////////////////////////////////////
+  constexpr int dim                    = 2;
+  constexpr int dimworld               = 3;
+  const std::array<int, dim> order = {2, 1};
+  constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
+  // quarter cylindrical surface
+  const double l                                       = 10;
+  const double rad                                     = 5;
+  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointType;
+  const std::vector<std::vector<ControlPoint >> controlPoints
+      =  {{{.p = {0,   0, rad}, .w =       1},  {.p = {0,   l, rad}, .w = 1      }},
+         {{.p = {rad, 0, rad}, .w = invsqr2},  {.p = {rad, l, rad}, .w = invsqr2}},
+         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+         {{.p = {rad, 0,   0}, .w =       1},  {.p = {rad, l,   0}, .w = 1      }}};
+
+  std::array<unsigned int, dim> dimsize
+      = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
+  auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
+//  grid.globalRefine(5);
+  auto gridView        = grid.leafGridView();
+  const auto& indexSet = gridView.indexSet();
+
+  TestSuite test;
+
+  IGA::NURBSPatch<dim, dimworld> nurbsPatch(knotSpans, controlNet, order);
+
+  //! Test code for VTKWriter, please uncomment to inspect the remaining errors
+  Dune::RefinementIntervals refinementIntervals1(subSampling);
+  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
+
+  vtkWriter.write("ZylRefine");
+  using GridView = decltype(gridView);
+  //  Dune::Functions::BasisFactory::nurbs<2>(knotSpans,order);
+  Dune::Functions::NurbsBasis<GridView> basis(gridView, knotSpans, order);
+
+    // Test open knot vectors
+    std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
+
+      {
+        // Check basis created via its constructor
+        Functions::NurbsBasis<GridView> basis2(gridView, knotSpans, order);
+//        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+
+      }
+
+      {
+        // Check basis created via makeBasis
+        using namespace Functions::BasisFactory;
+        auto basis2 = makeBasis(gridView, nurbs<dim>(knotSpans, order));
+//          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+      }
+
+      {
+        // Check whether a B-Spline basis can be combined with other bases.
+        using namespace Functions::BasisFactory;
+        auto basis2 = makeBasis(gridView,
+                               power<2>(
+                                   nurbs<dim>(knotSpans, order)
+                                       ));
+//          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
+          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+      }
+}
+
+void testBsplineBasisFunctions()
+{
+  std::vector<double> knots = {0,0,0,0.5,0.5,2,2,3,3,3};
+  int order = 2;
+//std::vector<double> N;
+
+TestSuite test;
+
+auto N = Dune::IGA::Bspline<double,2>::basisFunctions(0.3,order,knots);
+using Dune::FloatCmp::eq;
+test.check(eq(N[0], 0.16) );
+test.check(eq(N[1], 0.48) );
+test.check(eq(N[2], 0.36) );
+
+N = Dune::IGA::Bspline<double,2>::basisFunctions(0.5,order,knots); //try knot span boundary
+
+test.check(eq(N[0], 1.0));
+test.check(eq(N[1], 0.0));
+test.check(eq(N[2], 0.0));
+
+N = Dune::IGA::Bspline<double,2>::basisFunctions(0.0,order,knots); //try left end
+
+test.check(eq(N[0], 1.0));
+test.check(eq(N[1], 0.0));
+test.check(eq(N[2], 0.0));
+
+N = Dune::IGA::Bspline<double,2>::basisFunctions(3.0,order,knots); //try right end
+
+test.check(eq(N[0], 0.0));
+test.check(eq(N[1], 0.0));
+test.check(eq(N[2], 1.0));
+}
+
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
@@ -330,6 +457,11 @@ int main(int argc, char** argv) try {
 
   testNURBSGridSurfaceOfRevolution();
   std::cout << "done with NURBS surface cylinder" << std::endl;
+
+  testNurbsBasis();
+  std::cout << "done with NURBS basis test "<< std::endl;
+
+  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

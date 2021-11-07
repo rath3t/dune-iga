@@ -64,8 +64,8 @@ namespace Dune::IGA {
       std::array<std::vector<double>, dim> additionalKnots;
       for (int curdim = 0; curdim < dim; ++curdim) {
         auto& unique_KnotPerDim = unique_Knots[curdim];
-        unique_KnotPerDim.erase(std::unique(unique_KnotPerDim.begin(), unique_KnotPerDim.end()),
-                                unique_KnotPerDim.end());
+        unique_KnotPerDim.erase(std::ranges::begin(std::ranges::unique(unique_KnotPerDim)), std::end(unique_KnotPerDim));
+
         for (int i = 0; i < unique_KnotPerDim.size() - 1; ++i) {
           const double spanLength = unique_KnotPerDim[i + 1] - unique_KnotPerDim[i];
           const double increment  = spanLength / newKnotsSizeForEachSpan;
