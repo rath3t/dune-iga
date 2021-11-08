@@ -402,34 +402,91 @@ void testNurbsBasis() {
 void testBsplineBasisFunctions()
 {
   std::vector<double> knots = {0,0,0,0.5,0.5,2,2,3,3,3};
-  int order = 2;
+  int degree = 2;
 //std::vector<double> N;
 
 TestSuite test;
 
-auto N = Dune::IGA::Bspline<double,2>::basisFunctions(0.3,order,knots);
+auto N = Dune::IGA::Bspline<double>::basisFunctions(0.3,knots,degree);
 using Dune::FloatCmp::eq;
-test.check(eq(N[0], 0.16) );
-test.check(eq(N[1], 0.48) );
-test.check(eq(N[2], 0.36) );
+test.check(eq(N[0], 0.16) ,"P=2,N0,u=0.3");
+test.check(eq(N[1], 0.48) ,"P=2,N1,u=0.3");
+test.check(eq(N[2], 0.36) ,"P=2,N2,u=0.3");
 
-N = Dune::IGA::Bspline<double,2>::basisFunctions(0.5,order,knots); //try knot span boundary
+N = Dune::IGA::Bspline<double>::basisFunctions(0.5,knots,degree); //try knot span boundary
 
-test.check(eq(N[0], 1.0));
-test.check(eq(N[1], 0.0));
-test.check(eq(N[2], 0.0));
+test.check(eq(N[0], 1.0),"P=2,N0,u=0.5");
+test.check(eq(N[1], 0.0),"P=2,N1,u=0.5");
+test.check(eq(N[2], 0.0),"P=2,N2,u=0.5");
 
-N = Dune::IGA::Bspline<double,2>::basisFunctions(0.0,order,knots); //try left end
+N = Dune::IGA::Bspline<double>::basisFunctions(0.0,knots,degree); //try left end
 
-test.check(eq(N[0], 1.0));
-test.check(eq(N[1], 0.0));
-test.check(eq(N[2], 0.0));
+test.check(eq(N[0], 1.0),"P=2,N0,u=0.0");
+test.check(eq(N[1], 0.0),"P=2,N1,u=0.0");
+test.check(eq(N[2], 0.0),"P=2,N2,u=0.0");
 
-N = Dune::IGA::Bspline<double,2>::basisFunctions(3.0,order,knots); //try right end
+N = Dune::IGA::Bspline<double>::basisFunctions(3.0,knots,degree); //try right end
 
-test.check(eq(N[0], 0.0));
-test.check(eq(N[1], 0.0));
-test.check(eq(N[2], 1.0));
+test.check(eq(N[0], 0.0),"P=2,N0,u=3");
+test.check(eq(N[1], 0.0),"P=2,N1,u=3");
+test.check(eq(N[2], 1.0),"P=2,N2,u=3");
+
+knots = {0,0,0,0.5,1,1,1};
+degree = 2;
+
+N = Dune::IGA::Bspline<double>::basisFunctions(0.1,knots,degree);
+test.check(eq(N[0], 0.64),"P=2,N0,u=0.1");
+test.check(eq(N[1], 0.34),"P=2,N1,u=0.1");
+test.check(eq(N[2], 0.02),"P=2,N2,u=0.1");
+
+N = Dune::IGA::Bspline<double>::basisFunctions(0.01,knots,degree);
+test.check(eq(N[0], 0.9604),"P=2,N0,u=0.01");
+test.check(eq(N[1], 0.0394),"P=2,N1,u=0.01");
+test.check(eq(N[2], 0.0002),"P=2,N2,u=0.01");
+
+knots = {0,0,0,0,0.5,1,1,2,2,2,2};
+degree = 3;
+
+auto N2 = Dune::IGA::Bspline<double>::basisFunctions(1.45,knots,degree);
+test.check(eq(N2[0], 0.1109166666666667),"P=3,N0,u=1.45");
+test.check(eq(N2[1], 0.4638333333333333),"P=3,N1,u=1.45");
+test.check(eq(N2[2], 0.334125),"P=3,N2,u=1.45");
+test.check(eq(N2[3], 0.091125),"P=3,N3,u=1.45");
+
+
+auto dN = Dune::IGA::Bspline<double>::basisFunctionsDerivatives(1.45,knots,degree,3);
+//check values
+test.check(eq(dN[0][0], 0.1109166666666667),"P=3,dN00,u=1.45");
+test.check(eq(dN[0][1], 0.4638333333333333),"P=3,dN01,u=1.45");
+test.check(eq(dN[0][2], 0.334125),"P=3,dN02,u=1.45");
+test.check(eq(dN[0][3], 0.091125),"P=3,dN03,u=1.45");
+
+//check first derivatives
+test.check(eq(dN[1][0], -0.605),"P=3,dN10,u=1.45");
+test.check(eq(dN[1][1], -0.88),"P=3,dN11,u=1.45");
+test.check(eq(dN[1][2], 0.8775),"P=3,dN12,u=1.45");
+test.check(eq(dN[1][3], 0.6075),"P=3,dN13,u=1.45");
+
+//check second derivatives
+test.check(eq(dN[2][0], 2.2),"P=3,dN20,u=1.45");
+test.check(eq(dN[2][1], -2.8),"P=3,dN21,u=1.45");
+test.check(eq(dN[2][2], -2.1),"P=3,dN22,u=1.45");
+test.check(eq(dN[2][3], 2.7),"P=3,dN23,u=1.45");
+
+//check third derivatives
+test.check(eq(dN[3][0], -4.0),"P=3,dN30,u=1.45");
+test.check(eq(dN[3][1], 16.0),"P=3,dN31,u=1.45");
+test.check(eq(dN[3][2], -18.0),"P=3,dN32,u=1.45");
+test.check(eq(dN[3][3], 6.0),"P=3,dN33,u=1.45");
+
+auto Nf = Dune::IGA::Bspline<double>(knots,degree);
+std::vector<double> evalPoints={1, 0.1714677640603567, 0.001371742112482855,
+                                  0.0740740740740741, 0.00274348422496571,
+                                  0.4682213077274805, 0.1975308641975309, 0.05852766346593506,
+                                  0.007315957933241894, 0};
+for(int i = 0; i<evalPoints.size() ; ++i) {
+  test.check(eq(Nf(i / (evalPoints.size() - 1.0) * 2.0)[0], evalPoints[i]));
+}
 }
 
 
@@ -437,26 +494,26 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-  std::cout << "test NURBS grid surface" << std::endl;
-  testNURBSGridSurface();
-  std::cout << "done with NURBS grid surface" << std::endl;
-
-  std::cout << "test NURBS grid Curve" << std::endl;
-  testNURBSGridCurve();
-  std::cout << "done with NURBS grid Curve" << std::endl;
-
-  std::cout << "test NURBS grid Curve" << std::endl;
-  testNURBSCurve();
-  std::cout << "done with NURBS curve" << std::endl;
-
-  testNURBSSurface();
-  std::cout << "done with NURBS surface" << std::endl;
-
-  testNurbsGridCylinder();
-  std::cout << "done with NURBS surface cylinder" << std::endl;
-
-  testNURBSGridSurfaceOfRevolution();
-  std::cout << "done with NURBS surface cylinder" << std::endl;
+//  std::cout << "test NURBS grid surface" << std::endl;
+//  testNURBSGridSurface();
+//  std::cout << "done with NURBS grid surface" << std::endl;
+//
+//  std::cout << "test NURBS grid Curve" << std::endl;
+//  testNURBSGridCurve();
+//  std::cout << "done with NURBS grid Curve" << std::endl;
+//
+//  std::cout << "test NURBS grid Curve" << std::endl;
+//  testNURBSCurve();
+//  std::cout << "done with NURBS curve" << std::endl;
+//
+//  testNURBSSurface();
+//  std::cout << "done with NURBS surface" << std::endl;
+//
+//  testNurbsGridCylinder();
+//  std::cout << "done with NURBS surface cylinder" << std::endl;
+//
+//  testNURBSGridSurfaceOfRevolution();
+//  std::cout << "done with NURBS surface cylinder" << std::endl;
 
   testNurbsBasis();
   std::cout << "done with NURBS basis test "<< std::endl;

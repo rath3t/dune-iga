@@ -3,60 +3,155 @@
 //
 
 #pragma once
-#include <dune/iga/traits.hh>
+#include <algorithm>
 #include <concepts>
 #include <ranges>
-#include <algorithm>
 
-namespace Dune::IGA
-{
+#include <dune/iga/traits.hh>
+
+#include <dune/common/dynmatrix.hh>
+
+namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
   auto findUpperSpanIndex(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U) {
     if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p-1, U.end() - p-1, u);
+    auto it = std::upper_bound(U.begin() + p - 1, U.end() - p - 1, u);
     return std::distance(U.begin(), it) - 1;
   }
 
-
-  template<typename ContainerType>
-  void resize(ContainerType&& c, int size)
-  {
-    if constexpr (requires (ContainerType c2 ){  c2.resize(size);})
-        c.resize(size);
+  template <typename ContainerType>
+  void resize(ContainerType&& c, int size) {
+    if constexpr (requires(ContainerType c2) { c2.resize(size); }) c.resize(size);
   }
 
-  template <std::floating_point ScalarType, int degreeT= 0>
-  struct Bspline{
+  template <std::floating_point ScalarType>
+  class Bspline {
+  public:
 
-//    static constexpr long unsigned int degree = (degreeT==-1 ) ? 0 : degreeT;
+    Bspline(const std::vector<ScalarType>& knots, const int degree)
+      :  knots_{knots}, degree_{degree}
+    {}
 
-// The Nurbs Book Algorithm A2.2
-template<typename ContainerType= std::array<double,degreeT+1>>
-  static auto basisFunctions(     ScalarType u,
-      int degree,  const std::span<ScalarType>& knots
-  )
-  {
-    ContainerType N;
-    const int p = degree;
-    resize(N,p+1);
-    const int i = findUpperSpanIndex( degree,u, knots);
-
-    auto lDiff = std::ranges::transform_view(std::ranges::reverse_view(std::views::counted(knots.begin()+i+1-p,p)) ,[&u](auto& knot){return u-knot;}) ;
-    auto rDiff = std::ranges::transform_view(std::views::counted(knots.begin()+i+1,p) ,[&u](auto& knot){return knot-u;}) ;
-
-    N[0] = ScalarType(1);
-    for (int j=1; j<=p; ++j)
-    {
-      ScalarType saved = ScalarType(0);
-      for (int r=0; r<j; r++)
-      {
-        const ScalarType tmp = N[r]/(rDiff[r]+lDiff[j-r-1]);
-        N[r] = saved + rDiff[r]*tmp;
-        saved = lDiff[j-r-1]*tmp;
-      }
-      N[j] = saved;
+    template <typename ContainerType = std::vector<ScalarType>>
+    auto operator()(ScalarType u) {
+      return basisFunctions<ContainerType>(u,knots_,degree_);
     }
-    return N;
-  }
+
+    // The Nurbs Book Algorithm A2.2
+    template <typename ContainerType = std::vector<ScalarType>>
+    static auto basisFunctions(ScalarType u, const std::span<const ScalarType>& knots,const int degree) {
+      ContainerType N;
+      const int p = degree;
+      resize(N, p + 1);
+      const int spanIndex = findUpperSpanIndex(p, u, knots);
+      using namespace std::ranges;
+      auto lDiff
+          = transform_view(reverse_view(std::views::counted(knots.begin() + spanIndex + 1 - p, p)),
+                                        [&u](auto& knot) { return u - knot; });
+      auto rDiff = transform_view(std::views::counted(knots.begin() + spanIndex + 1, p),
+                                               [&u](auto& knot) { return knot - u; });
+
+      N[0] = ScalarType(1);
+
+      int j = 0;
+      for (auto lDp = lDiff.begin(); lDp != lDiff.end(); lDp += j + 2, ++j) {
+        ScalarType saved{};
+        for (int r = 0; auto&& rD : rDiff | std::views::take(j + 1)) {
+          const auto& lD       = (*lDp);
+          const ScalarType tmp = N[r] / (rD + lD);
+          N[r++]               = saved + rD * tmp;
+          saved                = lD * tmp;
+          --lDp;
+        }
+        N[j + 1] = saved;
+      }
+      return N;
+    }
+
+    // The Nurbs Book Algorithm A2.3
+    static auto basisFunctionsDerivatives(ScalarType u, const std::span<const ScalarType>& knots,const int degree, const int derivativeOrder) {
+      const int order = degree + 1;
+      int p = degree;
+      const int spanIndex = findUpperSpanIndex(p, u, knots);
+      using namespace std::ranges;
+      auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + spanIndex + 1 - p, p)),
+                                        [&u](auto& knot) { return u - knot; });
+      auto rDiff = transform_view(std::views::counted(begin(knots) + spanIndex + 1, p), [&u](auto& knot) { return knot - u; });
+
+      DynamicMatrix<ScalarType> dN(p+1,derivativeOrder+1);
+
+      std::vector<ScalarType> left(p + 1);
+      std::vector<ScalarType> right(p + 1);
+
+      DynamicMatrix<ScalarType> ndu(order,order);
+
+      ndu[0][0] = 1.0;
+      {
+        int j = 0;
+        for (auto lDp = lDiff.begin(); lDp != lDiff.end(); lDp += j + 2, ++j) {
+          ScalarType saved{};
+          for (int r = 0; auto&& rD : rDiff | std::views::take(j + 1)) {
+            const auto& lD = (*lDp);
+            /* Lower triangle */
+            ndu[j + 1][r] = rD + lD;
+            ScalarType tmp = ndu[r][j] / ndu[j + 1][r];
+            /* Upper triangle */
+            ndu[r++][j + 1] = saved + rD * tmp;
+            saved           = lD * tmp;
+            --lDp;
+          }
+          ndu[j + 1][j + 1] = saved;
+        }
+      }
+      for (int j = p; j >= 0; --j)
+        dN[0][j] = ndu[j][p];
+
+      // Compute the derivatives
+      DynamicMatrix<ScalarType> a(2, p + 1);
+      auto& a1Row    = a[0];
+      auto& a2Row    = a[1];
+      for (int r = 0; r <= p; ++r) {
+        a[0][0] = 1.0;
+
+        // Compute the k-th derivative
+        for (int k = 1; k <=derivativeOrder; ++k) {
+          const int rk = r - k;
+          const int pk = p - k;
+
+          auto& nduRowpk1 = ndu[pk + 1];
+          auto& dNcur     = dN[k][r];
+
+          if (r >= k) {
+            a2Row[0] = a1Row[0] / nduRowpk1[rk];
+            dNcur     = a2Row[0] * ndu[rk][pk];
+          }
+
+          const int j1 = (rk >= -1) ? 1 : -rk;
+          const int j2 = (r - 1 <= pk) ? k - 1 : p - r;
+
+          for (int j = j1; j <= j2; ++j) {
+            a2Row[j] = (a1Row[j] - a1Row[j - 1]) / nduRowpk1[rk + j];
+            dNcur += a2Row[j] * ndu[rk + j][pk];
+          }
+
+          if (r <= pk) {
+            a2Row[k] = -a1Row[k - 1] / nduRowpk1[r];
+            dNcur += a2Row[k] * ndu[r][pk];
+          }
+          std::swap(a2Row, a1Row);  // Switch rows
+        }
+      }
+      /* Multiply through by the correct factors */
+      /* (Eq. [2.9])                             */
+      for (int r = p, k = 1; k <= derivativeOrder; ++k) {
+        for (int j = p; j >= 0; --j)
+          dN[k][j] *= r;
+        r *= p - k;
+      }
+      return dN;
+    }
+  private:
+    std::vector<ScalarType> knots_;
+    int degree_;
   };
-}
+}  // namespace Dune::IGA

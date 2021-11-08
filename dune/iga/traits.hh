@@ -14,6 +14,9 @@ namespace Dune::IGA {
     using JacobianTransposedType    = FieldMatrix<ScalarType, dim, dimworld>;
     using JacobianInverseTransposed = FieldMatrix<ScalarType, dimworld, dim>;
     using value_type = typename FieldMatrix<ScalarType, dimworld, dim>::value_type;
+    template<int rows,int cols>
+    using FixedMatrixType = FieldMatrix<ScalarType, rows, cols>;
+
   };
 
   template<std::floating_point ScalarType,template<std::floating_point> typename DynamicType,template<std::floating_point, int> typename FixedType, int degreeT= -1>

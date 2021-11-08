@@ -4,16 +4,49 @@
 
 #pragma once
 
+#include <concepts>
 #include <numbers>
 #include <ranges>
-#include <concepts>
+
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/bsplinealgorithms.hh>
+#include <dune/iga/multidimensionNet.hh>
 namespace Dune::IGA {
 
   template <Vector VectorType>
   requires(VectorType::dimension == 3) VectorType cross(const VectorType& a, const VectorType& b) {
     return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+  }
+
+//  template <int... degree>
+//  struct Degree : public std::std::array< {} ;
+
+  template <std::floating_point ScalarType, int dim>
+  class Nurbs {
+  public:
+
+    Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
+          const std::span<const ScalarType>& weights)
+        : knots_{knots}, degree_{degree}, weights_{weights} {}
+
+    template <typename ContainerType = std::vector<ScalarType>>
+    auto operator()(const std::array<ScalarType, dim>& u) {
+
+      std::array<
+      return basisFunctions<ContainerType>(u, knots_,degree_);
+    }
+
+
+
+
+    // The Nurbs Book Algorithm A2.2
+
+    static auto basisFunctions(ScalarType u, const std::span<const ScalarType>& knots) {}
+
+  private:
+    std::array<std::vector<ScalarType>, dim> knots_;
+    std::array<ScalarType, dim> degree_;
+    std::vector<ScalarType> weights_;
   }
 
   template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -52,13 +85,12 @@ namespace Dune::IGA {
 
       for (unsigned int i = 0; i < a - degree + 1; ++i)
         for (auto directionLine : otherDirections)
-          std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i).begin(),
-                                 scaleCPWithW);
+          std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i).begin(), scaleCPWithW);
 
       for (unsigned int i = b; i < oldCPv.size()[refDirection]; ++i)
         for (auto directionLine : otherDirections)
-          std::ranges::transform(line(oldCPv, directionLine, i),
-                                 line(newCPv, directionLine, i + newKSize).begin(), scaleCPWithW);
+          std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i + newKSize).begin(),
+                                 scaleCPWithW);
 
       int k           = b + newKSize;
       int i           = b;
@@ -153,7 +185,7 @@ namespace Dune::IGA {
   }  // namespace Impl
 
   // Algo A7.1
-  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3> >
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3>>
   auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType origin,
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType X,
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y,
@@ -167,8 +199,8 @@ namespace Dune::IGA {
     const auto pi = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type>;
 
     if (endAngle < startAngle) endAngle += 360.0;
-    const ScalarType theta = endAngle - startAngle;
-    const unsigned int narcs        = std::ceil(theta / 90);
+    const ScalarType theta   = endAngle - startAngle;
+    const unsigned int narcs = std::ceil(theta / 90);
 
     typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs({2 * narcs + 1});
     const ScalarType dtheta  = theta / narcs * pi / 180;
@@ -217,7 +249,7 @@ namespace Dune::IGA {
   //                             const std::array<int, dim>& newDegrees) {}
 
   // Algo 8.1
-  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3> >
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2, 3>>
   auto makeSurfaceOfRevolution(
       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType point,
       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType revolutionaxisi,

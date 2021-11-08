@@ -31,17 +31,32 @@ namespace Dune::IGA {
     { A/=a } -> std::same_as<MatrixType&>;
   };
 
-  template< typename LinearAlgebraTraits>
+//  template< template<std::floating_point,int,int> typename MatrixType, typename ScalarType, int rows, int cols>
+//  concept FixedMatrix =  Matrix<MatrixType<ScalarType,rows,cols>>;
+//
+//  template < class > struct checkFixedMatrixtemplate : std::false_type {};
+//
+//  // Specialize for template classes
+//  template <template<std::floating_point,int,int> typename MatrixType, typename ScalarType, int rows, int cols>
+//  struct checkFixedMatrixtemplate< MatrixType<ScalarType,rows,cols> > : std::true_type {};
+
+
+  template< typename LinearAlgebraTraits, int a=1>
   concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::JacobianTransposedType> &&
       Matrix<typename LinearAlgebraTraits::JacobianInverseTransposed> &&
       Vector<typename LinearAlgebraTraits::GlobalCoordinateType> &&
-      Vector<typename LinearAlgebraTraits::LocalCoordinateType> && requires()
+      Vector<typename LinearAlgebraTraits::LocalCoordinateType>
+     && requires()
   {
     typename LinearAlgebraTraits::JacobianTransposedType;
     typename LinearAlgebraTraits::JacobianInverseTransposed;
     typename LinearAlgebraTraits::GlobalCoordinateType;
     typename LinearAlgebraTraits::LocalCoordinateType;
     typename LinearAlgebraTraits::value_type;
+
+    typename LinearAlgebraTraits::template FixedMatrixType<a,a>;
+
+
   };
 
 
