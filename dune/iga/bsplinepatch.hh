@@ -165,10 +165,10 @@
         const auto& basis  = this->getBasis(local);
         GlobalCoordinate glob;
         std::fill(glob.begin(), glob.end(), 0.0);
-        std::array<unsigned int,dim> multiIndexBasisfunction, multiIndexControlNet;
-        std::array<unsigned int,dim> dimsize;
-        std::array<unsigned int,dim> cornerIdx;
-        for (unsigned int d=0; d<dim; ++d)
+        std::array< int,dim> multiIndexBasisfunction, multiIndexControlNet;
+        std::array< int,dim> dimsize;
+        std::array< int,dim> cornerIdx;
+        for ( int d=0; d<dim; ++d)
         {
           dimsize[d] = order[d]+1;
           cornerIdx[d] = corner_[d]-knotSpans[d].begin();
@@ -430,10 +430,10 @@
       }
 
       /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
-      std::array<unsigned int,dim> validKnotSize() const
+      std::array< int,dim> validKnotSize() const
       {
         const auto & knotSpans = patchData_->getKnots();
-        std::array<unsigned int,dim> validknotsize;
+        std::array< int,dim> validknotsize;
         validknotsize.fill(0);
 
         for (int j=0; j<dim; ++j)
@@ -447,7 +447,7 @@
     private:
 
       std::shared_ptr <BsplinePatchData<dim,dimworld>> patchData_;
-      std::array<unsigned int,dim> validKnotSize_;
+      std::array< int,dim> validKnotSize_;
       std::shared_ptr <MultiDimensionNet<dim,double>> knotElementNet_;
     };
 

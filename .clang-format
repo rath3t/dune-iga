@@ -6,7 +6,7 @@
   AlwaysBreakTemplateDeclarations: 'Yes'
   AllowShortLoopsOnASingleLine: false
   BreakBeforeBraces: Attach
-  ColumnLimit: 120
+  ColumnLimit: 140
   ConstructorInitializerAllOnOneLineOrOnePerLine: true
   SortIncludes: true
   IndentPPDirectives: AfterHash

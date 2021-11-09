@@ -64,7 +64,7 @@ void testNURBSGridCurve() {
          {.p = {1, 4, 3}, .w = 1},
          {.p = {1, 7, 1}, .w = 5}};
 
-  std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet                       = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
@@ -100,8 +100,8 @@ void testNURBSGridSurface() {
           {{.p = {0, 1, 0}, .w = 1},        {.p = {1, 1, 0}, .w = 4},     {.p = {2, 1, 0}, .w = 1}},
           {{.p = {0, 2, 1}, .w = 1},        {.p = {1, 2, 2}, .w = 2},     {.p = {2, 2, 2}, .w = 4}}};
 
-  std::array<unsigned int, dim> dimsize
-      = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
+  std::array< int, dim> dimsize
+      = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
   auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
@@ -174,8 +174,8 @@ void testNURBSSurface() {
          {{.p = {0, 2, 1}, .w = 1},        {.p = {1, 2, 2}, .w = 2},     {.p = {2, 2, 2}, .w = 4}}};
 
 
-  std::array<unsigned int, dim> dimsize
-      = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
+  std::array< int, dim> dimsize
+      = {static_cast< int>(controlPoints.size()), static_cast< int>(controlPoints[0].size())};
   //
 
 //  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
@@ -216,7 +216,7 @@ void testNURBSCurve() {
          {.p = {1, 7, 1}, .w = 4}};
 
 
-  std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
+  std::array< int, dim> dimsize = {static_cast< int>(controlPoints.size())};
   auto controlNet                       = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
@@ -252,7 +252,7 @@ void testBSplineCurve() {
          { {1, 4, 3}},
          { {1, 7, 1}}};
 
-  std::array<unsigned int, dim> dimsize = {static_cast<unsigned int>(controlPoints.size())};
+  std::array< int, dim> dimsize = {static_cast< int>(controlPoints.size())};
   auto controlNet                       = MultiDimensionNet<dim,typename Dune::IGA::NURBSPatchData<dim,dimworld>::GlobalCoordinateType>(dimsize, controlPoints);
 
   IGA::BSplinePatch<dim, dimworld> patch(knotSpans, controlNet, order);
@@ -288,8 +288,8 @@ void testNurbsGridCylinder() {
 //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
           {{.p = {rad, 0,   0}, .w =       1},  {.p = {rad, l,   0}, .w = 1      }}};
 
-  std::array<unsigned int, dim> dimsize
-      = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
+  std::array< int, dim> dimsize
+      = {static_cast< int>(controlPoints.size()), static_cast< int>(controlPoints[0].size())};
   auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
@@ -346,8 +346,8 @@ void testNurbsBasis() {
          //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
          {{.p = {rad, 0,   0}, .w =       1},  {.p = {rad, l,   0}, .w = 1      }}};
 
-  std::array<unsigned int, dim> dimsize
-      = {static_cast<unsigned int>(controlPoints.size()), static_cast<unsigned int>(controlPoints[0].size())};
+  std::array< int, dim> dimsize
+      = {static_cast< int>(controlPoints.size()), static_cast< int>(controlPoints[0].size())};
   auto controlNet = Dune::IGA::NURBSPatchData<dim,dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
@@ -454,7 +454,7 @@ test.check(eq(N2[2], 0.334125),"P=3,N2,u=1.45");
 test.check(eq(N2[3], 0.091125),"P=3,N3,u=1.45");
 
 
-auto dN = Dune::IGA::Bspline<double>::basisFunctionsDerivatives(1.45,knots,degree,3);
+auto dN = Dune::IGA::Bspline<double>::basisFunctionDerivatives(1.45, knots, degree, 3);
 //check values
 test.check(eq(dN[0][0], 0.1109166666666667),"P=3,dN00,u=1.45");
 test.check(eq(dN[0][1], 0.4638333333333333),"P=3,dN01,u=1.45");
@@ -478,7 +478,7 @@ test.check(eq(dN[3][0], -4.0),"P=3,dN30,u=1.45");
 test.check(eq(dN[3][1], 16.0),"P=3,dN31,u=1.45");
 test.check(eq(dN[3][2], -18.0),"P=3,dN32,u=1.45");
 test.check(eq(dN[3][3], 6.0),"P=3,dN33,u=1.45");
-
+//https://godbolt.org/z/Ta3fzW553
 auto Nf = Dune::IGA::Bspline<double>(knots,degree);
 std::vector<double> evalPoints={1, 0.1714677640603567, 0.001371742112482855,
                                   0.0740740740740741, 0.00274348422496571,
@@ -487,6 +487,47 @@ std::vector<double> evalPoints={1, 0.1714677640603567, 0.001371742112482855,
 for(int i = 0; i<evalPoints.size() ; ++i) {
   test.check(eq(Nf(i / (evalPoints.size() - 1.0) * 2.0)[0], evalPoints[i]));
 }
+
+std::array<double,2> xieta{0.2,0.25};
+std::array<std::vector<double>,2> knots2 = {{{0,0,0,0.5,0.5,2,2,3,3,3},{0,0,0,2,2,2}}};
+std::array<int,2> degree2{2,2};
+const std::vector<std::vector<double >> weights2
+    = {{{1,2,3,4,5,6,7 },{8,9,10,11,12,13,14},{15,16,17,18,19,20,21}}};
+std::array< int, 2> dimsize
+    = {static_cast< int>(weights2.size()), static_cast< int>(weights2[0].size())};
+MultiDimensionNet<2,double> weightNet(dimsize,weights2);
+
+auto N_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctions(xieta,knots2,degree2,weightNet);
+
+test.check(N_Nurbs.size() == (degree2[0]+1)*(degree2[0]+1) );
+
+test.check(eq(N_Nurbs[0], 0.04023722627737226),"Nurbs2d P=2,N0"); //check ansatzfunctions in domain
+test.check(eq(N_Nurbs[1], 0.4291970802919708),"Nurbs2d P=2,N1");
+test.check(eq(N_Nurbs[2], 0.2682481751824818),"Nurbs2d P=2,N2");
+test.check(eq(N_Nurbs[3], 0.02299270072992701),"Nurbs2d P=2,N3");
+test.check(eq(N_Nurbs[4], 0.137956204379562),"Nurbs2d P=2,N4");
+test.check(eq(N_Nurbs[5],0.08175182481751825),"Nurbs2d P=2,N5");
+test.check(eq(N_Nurbs[6], 0.002463503649635036),"Nurbs2d P=2,N6");
+test.check(eq(N_Nurbs[7], 0.01094890510948905),"Nurbs2d P=2,N7");
+test.check(eq(N_Nurbs[8], 0.006204379562043796),"Nurbs2d P=2,N8");
+test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity in domain"); //partition of unity in domain
+
+xieta={0,0.1};
+N_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctions(xieta,knots2,degree2,weightNet);
+test.check(eq(N_Nurbs[0], 0.8204545454545455),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(N_Nurbs[1], 0.0),"Nurbs P=2,N1");
+test.check(eq(N_Nurbs[2], 0.0),"Nurbs P=2,N2");
+test.check(eq(N_Nurbs[3], 0.1727272727272728),"Nurbs P=2,N3");
+test.check(eq(N_Nurbs[4], 0.0),"Nurbs P=2,N4");
+test.check(eq(N_Nurbs[5],0.0),"Nurbs P=2,N5");
+test.check(eq(N_Nurbs[6], 0.00681818181818182),"Nurbs P=2,N6");
+test.check(eq(N_Nurbs[7], 0.0),"Nurbs P=2,N7");
+test.check(eq(N_Nurbs[8], 0.0),"Nurbs P=2,N8");
+
+test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity on boundary"); //partition of unity on boundary
+
+//std::ranges::for_each(N_Nurbs,[](auto& Ni){std::cout<<Ni<<" ";});
+
 }
 
 

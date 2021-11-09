@@ -335,7 +335,7 @@ namespace Dune::IGA
       FieldVector<double,coorddimension+1> liftDimension(const FieldVector<double,coorddimension>& inPoint, ctype weight)
       {
         FieldVector<ctype,coorddimension+1> homoCoordinate;
-        for(unsigned int i=0; i<coorddimension; i++)
+        for( int i=0; i<coorddimension; i++)
           homoCoordinate[i] = inPoint[i]*weight;
 
         homoCoordinate[coorddimension] = weight;
@@ -445,11 +445,11 @@ namespace Dune::IGA
       }
 
       //this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
-      auto findSpanIndex(const std::array<unsigned int,dim>& ijk) const
+      auto findSpanIndex(const std::array<int,dim>& ijk) const
       {
           const auto & knotSpans = patchData_->getKnots();
 
-          std::array<unsigned int,dim> index;
+          std::array<int,dim> index;
           std::fill(index.begin(), index.end(), 0);
 
           /*finds the working geometry object ijk
@@ -471,7 +471,7 @@ namespace Dune::IGA
           return index;
       }
 
-      bool isBorderElement(const unsigned int & id)
+      bool isBorderElement(const int & id)
       {
           auto const &knotElementNet = this->knotElementNet_;
           auto const &multiIndex = knotElementNet->directToMultiIndex(id);
@@ -490,11 +490,11 @@ namespace Dune::IGA
        *
        *  \param[in] ijk array of indices for each dimension
        */
-      NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits> geometry(const std::array<unsigned int,dim>& ijk ) const
+      NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits> geometry(const std::array<int,dim>& ijk ) const
       {
         const auto & knotSpans = patchData_->getKnots();
 
-        std::array<unsigned int,dim> index =   findSpanIndex(ijk);
+        std::array<int,dim> index =   findSpanIndex(ijk);
 
         /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
         std::array<std::vector<double>::const_iterator,dim> corners;
@@ -505,10 +505,10 @@ namespace Dune::IGA
       }
 
       /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
-      std::array<unsigned int,dim> validKnotSize() const
+      std::array< int,dim> validKnotSize() const
       {
         const auto & knotSpans = patchData_->getKnots();
-        std::array<unsigned int,dim> validknotsize;
+        std::array< int,dim> validknotsize;
         std::fill(validknotsize.begin(), validknotsize.end(), 0);
 
         for (int j=0; j<dim; ++j)
@@ -526,7 +526,7 @@ namespace Dune::IGA
     private:
 
       std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData_;
-      std::array<unsigned int,dim> validKnotSize_;
+      std::array<int,dim> validKnotSize_;
       std::shared_ptr <MultiDimensionNet<dim,double>> knotElementNet_;
 
     };
