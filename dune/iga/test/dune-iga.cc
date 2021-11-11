@@ -480,12 +480,12 @@ test.check(eq(dN[3][2], -18.0),"P=3,dN32,u=1.45");
 test.check(eq(dN[3][3], 6.0),"P=3,dN33,u=1.45");
 //https://godbolt.org/z/Ta3fzW553
 auto Nf = Dune::IGA::Bspline<double>(knots,degree);
-std::vector<double> evalPoints={1, 0.1714677640603567, 0.001371742112482855,
+std::vector<double> NAtEvalPoints={1, 0.1714677640603567, 0.001371742112482855,
                                   0.0740740740740741, 0.00274348422496571,
                                   0.4682213077274805, 0.1975308641975309, 0.05852766346593506,
                                   0.007315957933241894, 0};
-for(int i = 0; i<evalPoints.size() ; ++i) {
-  test.check(eq(Nf(i / (evalPoints.size() - 1.0) * 2.0)[0], evalPoints[i]));
+for(int i = 0; i<NAtEvalPoints.size() ; ++i) {
+  test.check(eq(Nf(i / (NAtEvalPoints.size() - 1.0) * 2.0)[0], NAtEvalPoints[i]));
 }
 
 std::array<double,2> xieta{0.2,0.25};
@@ -499,7 +499,7 @@ MultiDimensionNet<2,double> weightNet(dimsize,weights2);
 
 auto N_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctions(xieta,knots2,degree2,weightNet);
 
-test.check(N_Nurbs.size() == (degree2[0]+1)*(degree2[0]+1) );
+test.check(N_Nurbs.size() == (degree2[0]+1)*(degree2[1]+1) );
 
 test.check(eq(N_Nurbs[0], 0.04023722627737226),"Nurbs2d P=2,N0"); //check ansatzfunctions in domain
 test.check(eq(N_Nurbs[1], 0.4291970802919708),"Nurbs2d P=2,N1");
@@ -510,7 +510,7 @@ test.check(eq(N_Nurbs[5],0.08175182481751825),"Nurbs2d P=2,N5");
 test.check(eq(N_Nurbs[6], 0.002463503649635036),"Nurbs2d P=2,N6");
 test.check(eq(N_Nurbs[7], 0.01094890510948905),"Nurbs2d P=2,N7");
 test.check(eq(N_Nurbs[8], 0.006204379562043796),"Nurbs2d P=2,N8");
-test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity in domain"); //partition of unity in domain
+test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity in domain");
 
 xieta={0,0.1};
 N_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctions(xieta,knots2,degree2,weightNet);
@@ -524,9 +524,9 @@ test.check(eq(N_Nurbs[6], 0.00681818181818182),"Nurbs P=2,N6");
 test.check(eq(N_Nurbs[7], 0.0),"Nurbs P=2,N7");
 test.check(eq(N_Nurbs[8], 0.0),"Nurbs P=2,N8");
 
-test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity on boundary"); //partition of unity on boundary
-
-//std::ranges::for_each(N_Nurbs,[](auto& Ni){std::cout<<Ni<<" ";});
+test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity on boundary");
+xieta={0,0.1};
+auto dN_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctionDerivatives(xieta,knots2,degree2,weightNet,2);
 
 }
 

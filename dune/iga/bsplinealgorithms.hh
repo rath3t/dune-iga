@@ -82,10 +82,10 @@ namespace Dune::IGA {
           = transform_view(reverse_view(std::views::counted(begin(knots) + spanIndex + 1 - p, p)), [&u](auto& kn) { return u - kn; });
       auto rDiff = transform_view(std::views::counted(begin(knots) + spanIndex + 1, p), [&u](auto& kn) { return kn - u; });
 
-      DynamicMatrix<ScalarType> dN(p + 1, derivativeOrder + 1);
+      DynamicMatrix<ScalarType> dN(derivativeOrder + 1,order);
 
-      std::vector<ScalarType> left(p + 1);
-      std::vector<ScalarType> right(p + 1);
+      std::vector<ScalarType> left(order);
+      std::vector<ScalarType> right(order);
 
       DynamicMatrix<ScalarType> ndu(order, order);
 

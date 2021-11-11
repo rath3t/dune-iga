@@ -63,6 +63,17 @@ namespace Dune::IGA {
   concept MultiplyAble = requires (L x, R y) { x * y; };
 
   template<typename L,typename R>
+  concept AddAble = requires (L x, R y) { x + y; };
+
+  template<typename L,typename R>
+  concept SubstractAble = requires (L x, R y) { x - y; };
+
+  template<typename L,typename R>
   concept MultiplyAssignAble = requires (L x, R y) { x *= y; };
 
+  template<typename L,typename R>
+  concept DivideAssignAble = requires (L x, R y) { x /= y; };
+
+  template<typename L,typename R>
+  concept DivideAble = requires (L x, R y) { x / y; };
 }
