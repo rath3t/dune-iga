@@ -18,30 +18,27 @@ namespace Dune::IGA {
     return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
   }
 
-  template < std::size_t dim>
-  auto ordersFromDegrees(const std::span<int, dim>& degree)
-  {
+  template <std::size_t dim>
+  auto ordersFromDegrees(const std::span<int, dim>& degree) {
     std::array<int, dim> order;
     std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
     return order;
   }
 
-  template <std::floating_point ScalarType, std::size_t  dim>
+  template <std::floating_point ScalarType, std::size_t dim>
   auto weightsOfSpan(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                     const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights)
-  {
+                     const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights) {
     std::array<int, dim> order = ordersFromDegrees(degree);
-    auto subNetStart = findSpan(degree, u, knots);
-    for (std::size_t  i = 0; i < dim; ++i)
+    auto subNetStart           = findSpan(degree, u, knots);
+    for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
 
     return weights.subNet(subNetStart, order);
   }
 
-  template < int dim>
-  auto createPartialSubDerivativPermutations(const FieldVector<int,dim>& v)
-  {
-  https://godbolt.org/z/EG1EfWK9q
+  template <int dim>
+  auto createPartialSubDerivativPermutations(const FieldVector<int, dim>& v) {
+  https:  // godbolt.org/z/EG1EfWK9q
     std::vector<FieldVector<int, dim>> perm;
     for (int i = 1; i < std::pow(2, v.size()); ++i) {
       FieldVector<int, dim> x{};
@@ -56,13 +53,13 @@ namespace Dune::IGA {
     return perm;
   }
 
-  template < int dim>
-  int binomialVec(const FieldVector<int,dim>& n,const FieldVector<int,dim>& k)
-  {
-    return std::inner_product(n.begin(),n.end(),k.begin(),1,std::multiplies{}, [](auto& ni,auto& ki){return Dune::binomial(ni,ki);});
+  template <int dim>
+  int binom(const FieldVector<int, dim>& n, const FieldVector<int, dim>& k) {
+    return std::inner_product(n.begin(), n.end(), k.begin(), 1, std::multiplies{},
+                              [](auto& ni, auto& ki) { return Dune::binomial(ni, ki); });
   }
 
-  template <std::floating_point ScalarType, std::size_t  dim>
+  template <std::floating_point ScalarType, std::size_t dim>
   class Nurbs {
   public:
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
@@ -79,12 +76,12 @@ namespace Dune::IGA {
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
-      for (std::size_t  i = 0; i < dim; ++i)
+      for (std::size_t i = 0; i < dim; ++i)
         bSplines[i] = Bspline<ScalarType>::basisFunctions(u[i], knots[i], degree[i]);
 
       auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
 
-      const auto subNetWeights = weightsOfSpan<ScalarType,dim>(u,knots,degree,weights);
+      const auto subNetWeights = weightsOfSpan<ScalarType, dim>(u, knots, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
       Nnet *= subNetWeights;
@@ -92,92 +89,57 @@ namespace Dune::IGA {
       return Nnet.directGetAll();
     }
 
+    // \brief This function return the basis function and the corresponding derivatives
+    // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
     static auto basisFunctionDerivatives(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                                         const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,const int derivativeOrder)
-    {
-      std::array<int, dim> order = ordersFromDegrees(degree);
-      std::array<DynamicMatrix<ScalarType>,dim> bSplineDerivatives;
-
+                                         const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
+                                         const int derivativeOrder, const bool triangleDerivatives = false) {
+      std::array<DynamicMatrix<ScalarType>, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
         bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(u[i], knots[i], degree[i], derivativeOrder);
 
-      std::array<std::vector<ScalarType>,dim> dimArrayOfVectors;
-      FieldVector<int,dim> dimSize(derivativeOrder+1);
-//      dimSize.fill(derivativeOrder+1);
-      MultiDimensionNet<dim,MultiDimensionNet<dim, ScalarType>> netsOfDerivativeNets(dimSize);
-        for (int j = 0; j < netsOfDerivativeNets.directSize(); ++j) {
-          auto multiIndex = netsOfDerivativeNets.directToMultiIndex(j);
-          for (int i=0; i<multiIndex.size();++i)
-            dimArrayOfVectors[i] = bSplineDerivatives[i][multiIndex[i]].container();
-          netsOfDerivativeNets.directSet(j,MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors));
+      std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
+      FieldVector<int, dim> dimSize(derivativeOrder + 1);
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netsOfDerivativeNets(dimSize);
+
+      for (int j = 0; auto& derivNet : netsOfDerivativeNets.directGetAll()) {
+        auto multiIndex = netsOfDerivativeNets.directToMultiIndex(j++);
+        for (int i = 0; i < multiIndex.size(); ++i)
+          dimArrayOfVectors[i] = bSplineDerivatives[i][multiIndex[i]].container();
+        derivNet = MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors);
       }
 
-      for (int i = 0; i < dim; ++i)
-         dimArrayOfVectors[i] = Bspline<ScalarType>::basisFunctions(u[i], knots[i], degree[i]);
-
-      auto Nnet = MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors);
-      const auto subNetWeights = weightsOfSpan<ScalarType,dim>(u,knots,degree,weights);
-
-      MultiDimensionNet<dim,MultiDimensionNet<dim, ScalarType>> A = netsOfDerivativeNets;
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netsOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
-
-      for (int j = 0; j < A.directSize(); ++j) {
-        A.directGet(j) *= subNetWeights;
-        netsOfWeightfunctions.directSet(j, dot(netsOfDerivativeNets.directGet(j),subNetWeights)) ;
-      }
-      auto R = A;
+      const auto subNetWeights = weightsOfSpan<ScalarType, dim>(u, knots, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
-        const auto derivOrders = R.template directToMultiIndex<FieldVector<int,dim>>(j);
-        const auto perms = createPartialSubDerivativPermutations(derivOrders);
-        for(const auto& perm : perms)
-        {
-          auto permp1 = perm;
-          for(int i=0; i< dim; ++i)
-            permp1[i]+=1;
-          MultiDimensionNet<dim,int> kNet(permp1);
-          auto startMultiIndex = perm;
-          for(int i=0; i< dim; ++i)
-            if(startMultiIndex[i]>0)  startMultiIndex[i]=1;
-
-          for(int kk=kNet.index(startMultiIndex) ;kk< kNet.directSize(); ++kk)
-          {
-            const auto k = kNet.template directToMultiIndex<FieldVector<int,dim>>(kk);
-//            auto binom = binomial(perm, k);
-//            auto diff = derivOrders;
-//            for(int i=0; i< dim; ++i)
-//              diff[i]-= k[i];
-            R.directGet(j) -=  binomialVec(perm, k)* (R.get(derivOrders-k) * netsOfWeightfunctions.get(k) );
-          }
-        }
-        R.directGet(j) /=netsOfWeightfunctions.directGet(0);
+        R.directGet(j) *= subNetWeights;
+        netsOfWeightfunctions.directGet(j) = dot(netsOfDerivativeNets.directGet(j), subNetWeights);
       }
 
-      auto test11 = A.get({1,1})-netsOfWeightfunctions.get({1,1})*R.get({0,0})
-                              -netsOfWeightfunctions.get({1,0})*R.get({0,1})
-                              -netsOfWeightfunctions.get({0,1})*R.get({1,0}) ;
-      test11/=netsOfWeightfunctions.directGet(0);
+      for (int j = 0; j < R.directSize(); ++j) {
+        const auto derivOrders = R.template directToMultiIndex<FieldVector<int, dim>>(j);
+        if (triangleDerivatives)
+          if (std::accumulate(derivOrders.begin(), derivOrders.end(), derivativeOrder)) continue;
+        const auto perms = createPartialSubDerivativPermutations(derivOrders);
 
-      auto test12 = A.get({1,2})-Dune::binomial(1,1)*netsOfWeightfunctions.get({1,0})*R.get({0,2})
-                    -Dune::binomial(2,1)*netsOfWeightfunctions.get({0,1})*R.get({1,1})
-                    -Dune::binomial(2,2)*netsOfWeightfunctions.get({0,2})*R.get({1,0})
-                    -Dune::binomial(2,1)*netsOfWeightfunctions.get({1,1})*R.get({0,1})
-                    -Dune::binomial(2,2)*netsOfWeightfunctions.get({1,2})*R.get({0,0});
-      test12/=netsOfWeightfunctions.directGet(0);
+        for (const auto& perm : perms) {
+          MultiDimensionNet<dim, int> kNet(perm + FieldVector<int, dim>(1));
+          auto startMultiIndex = perm;
+          std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](auto& v) { return (v != 0); });
 
-      auto test21 = A.get({2,1})-Dune::binomial(1,1)*netsOfWeightfunctions.get({0,1})*R.get({2,0})
-                    -Dune::binomial(2,1)*netsOfWeightfunctions.get({1,0})*R.get({1,1})
-                    -Dune::binomial(2,2)*netsOfWeightfunctions.get({2,0})*R.get({0,1})
-                    -Dune::binomial(2,1)*netsOfWeightfunctions.get({1,1})*R.get({1,0})
-                    -Dune::binomial(2,2)*netsOfWeightfunctions.get({2,1})*R.get({0,0});
-      test21/=netsOfWeightfunctions.directGet(0);
+          for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
+            const auto k = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
+            R.directGet(j) -= binom(perm, k) * (R.get(derivOrders - k) * netsOfWeightfunctions.get(k));  // generalized Piegl Tiller (4.20)
+          }
+        }
+        R.directGet(j) /= netsOfWeightfunctions.directGet(0);
+      }
 
-      const ScalarType invSumWeight = dot(Nnet, subNetWeights);
-      Nnet *= subNetWeights;
-      Nnet /= invSumWeight;
-      auto Net2 = Nurbs<ScalarType,dim>::basisFunctions(u, knots, degree,weights);
 
-      return 0.0;
+
+      return R;
     }
 
   private:
@@ -202,7 +164,7 @@ namespace Dune::IGA {
       newKnotVec.reserve(oldKnotVec.size() + newKnots[refDirection].size());
       merge(oldKnotVec, newKnots[refDirection], std::back_inserter(newKnotVec));
 
-      const auto newKSize                            = newKnots[refDirection].size();
+      const auto newKSize                   = newKnots[refDirection].size();
       std::array<int, dim> numberOfCPperDir = oldCPv.size();
 
       numberOfCPperDir[refDirection] = oldCPv.size()[refDirection] + newKSize;
@@ -332,8 +294,8 @@ namespace Dune::IGA {
     const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type>;
 
     if (endAngle < startAngle) endAngle += 360.0;
-    const ScalarType theta   = endAngle - startAngle;
-    const int narcs = std::ceil(theta / 90);
+    const ScalarType theta = endAngle - startAngle;
+    const int narcs        = std::ceil(theta / 90);
 
     typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs(2 * narcs + 1);
     const ScalarType dtheta  = theta / narcs * pi / 180;
@@ -415,8 +377,8 @@ namespace Dune::IGA {
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
 
-    typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType surfaceCP(
-        2 * narcs + 1, generatrix.getControlPoints().size()[0]);
+    typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType surfaceCP(2 * narcs + 1,
+                                                                                                   generatrix.getControlPoints().size()[0]);
     using std::cos;
     using std::sin;
     const ScalarType wm = cos(dtheta / 2.0);
@@ -429,7 +391,7 @@ namespace Dune::IGA {
       sines[i]   = sin(angle);
     }
     ControlPoint PO = genCP.directGet(0);
-    for ( int j = 0; j < genCP.size()[0]; j++) {
+    for (int j = 0; j < genCP.size()[0]; j++) {
       const GlobalCoordinateType Om = Impl::projectPointOntoLine(point, revolutionaxis, genCP.directGet(j).p);
       GlobalCoordinateType X        = genCP.directGet(j).p - Om;
       const ScalarType r            = X.two_norm();
@@ -437,7 +399,7 @@ namespace Dune::IGA {
       const GlobalCoordinateType Y = cross(revolutionaxis, X);
       surfaceCP.get({0, j}) = PO = genCP.directGet(j);
       GlobalCoordinateType TO    = Y;
-      for ( int index = 0, i = 0; i < narcs; ++i) {
+      for (int index = 0, i = 0; i < narcs; ++i) {
         const GlobalCoordinateType P2 = Om + r * cosines[i] * X + r * sines[i] * Y;
         surfaceCP.get({index + 2, j}) = {.p = P2, .w = genCP.directGet(j).w};
 

@@ -526,8 +526,146 @@ test.check(eq(N_Nurbs[8], 0.0),"Nurbs P=2,N8");
 
 test.check(eq(std::accumulate(N_Nurbs.begin(),N_Nurbs.end(),0.0), 1.0),"partition of unity on boundary");
 xieta={0,0.1};
-auto dN_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctionDerivatives(xieta,knots2,degree2,weightNet,2);
+auto dN_Nurbs = Dune::IGA::Nurbs<double,2>::basisFunctionDerivatives(xieta,knots2,degree2,weightNet,5);
 
+for(int j= 0; j<dN_Nurbs.directSize() ;++j) {
+  auto multiIndex = dN_Nurbs.directToMultiIndex(j);
+  for (int i = 0; i < 2; ++i)
+    std::cout<<multiIndex[i]<<" ";
+  std::cout<<std::endl;
+}
+
+test.check(eq(dN_Nurbs.get({0,0}).get({0,0}), 0.8204545454545455),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,0}).get({1,0}), 0.0),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,0}).get({2,0}), 0.0),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,0}).get({0,1}), 0.1727272727272728),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,0}).get({1,1}), 0.0),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,0}).get({2,1}),0.0),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,0}).get({0,2}), 0.00681818181818182),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,0}).get({1,2}), 0.0),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,0}).get({2,2}), 0.0),"Nurbs P=2,N8");
+
+//first derivative in u dir
+test.check(eq(dN_Nurbs.get({1,0}).get({0,0}), -24.166115702479335),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({1,0}).get({1,0}), 26.25454545454545),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({1,0}).get({2,0}), 0.0),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({1,0}).get({0,1}), -5.0876033057851231),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({1,0}).get({1,1}), 3.1090909090909089),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({1,0}).get({2,1}),0.0),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({1,0}).get({0,2}), -0.20082644628099172),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({1,0}).get({1,2}), 0.090909090909090925),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({1,0}).get({2,2}), 0.0),"Nurbs P=2,N8");
+
+//second derivative in u dir
+test.check(eq(dN_Nurbs.get({2,0}).get({0,0}), 1236.8386175807659),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({2,0}).get({1,0}), -1441.6132231404956),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({2,0}).get({2,0}), 98.454545454545439),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({2,0}).get({0,1}), 260.38707738542439),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({2,0}).get({1,1}), -170.71735537190079),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({2,0}).get({2,1}),11.054545454545453),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({2,0}).get({0,2}), 10.278437265214125),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({2,0}).get({1,2}), -4.9917355371900829),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({2,0}).get({2,2}), 0.30909090909090914),"Nurbs P=2,N8");
+
+//third derivative in u dir
+test.check(eq(dN_Nurbs.get({3,0}).get({0,0}), -94449.494433440283),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({3,0}).get({1,0}), 110086.82794891056),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({3,0}).get({2,0}), -7518.3471074380141),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({3,0}).get({0,1}), -19884.104091250589),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({3,0}).get({1,1}), 13036.598046581514),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({3,0}).get({2,1}),-844.16528925619821),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({3,0}).get({0,2}), -784.89884570726042),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({3,0}).get({1,2}), 381.18707738542452),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({3,0}).get({2,2}), -23.603305785123968),"Nurbs P=2,N8");
+
+//fourth derivative in u dir
+test.check(eq(dN_Nurbs.get({4,0}).get({0,0}), 9616675.7968593743),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({4,0}).get({1,0}), -11208840.663889075),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({4,0}).get({2,0}), 765504.432757325),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({4,0}).get({0,1}), 2024563.3256546052),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({4,0}).get({1,1}), -1327362.7101973905),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({4,0}).get({2,1}),85951.374906085635),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({4,0}).get({0,2}), 79916.973381102871),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({4,0}).get({1,2}), -38811.775151970498),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({4,0}).get({2,2}), 2403.2456799398947),"Nurbs P=2,N8");
+
+//fifth derivative in u dir
+test.check(eq(dN_Nurbs.get({5,0}).get({0,0}), -1223940555.9639204),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({5,0}).get({1,0}), 1426579720.8586094),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({5,0}).get({2,0}), -97427836.896386802),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({5,0}).get({0,1}), -257671695.99240425),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({5,0}).get({1,1}), 168937072.20694059),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({5,0}).get({2,1}),-10939265.897138171),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({5,0}).get({0,2}), -10171251.15759491),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({5,0}).get({1,2}), 4939680.4738871539),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({5,0}).get({2,2}),-305867.63199235022),"Nurbs P=2,N8");
+
+
+//first derivative in v dir
+test.check(eq(dN_Nurbs.get({0,1}).get({0,0}), -1.609504132231405),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,1}).get({1,0}), 0.0),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,1}).get({2,0}), 0.0),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,1}).get({0,1}), 1.479338842975206),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,1}).get({1,1}), 0.0),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,1}).get({2,1}), 0.0),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,1}).get({0,2}), 0.1301652892561984),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,1}).get({1,2}), 0.0),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,1}).get({2,2}), 0.0),"Nurbs P=2,N8");
+
+//second derivative in v dir
+std::cout<<std::setprecision(16)<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({0,0})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({1,0})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({2,0})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({0,1})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({1,1})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({2,1})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({0,2})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({1,2})<<std::endl;
+std::cout<<dN_Nurbs.get({0,2}).get({2,2})<<std::endl;
+
+test.check(eq(dN_Nurbs.get({0,2}).get({0,0}), 1236.8386175807659),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,2}).get({1,0}), -1441.6132231404956),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,2}).get({2,0}), 98.454545454545439),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,2}).get({0,1}), 260.38707738542439),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,2}).get({1,1}), -170.71735537190079),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,2}).get({2,1}),11.054545454545453),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,2}).get({0,2}), 10.278437265214125),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,2}).get({1,2}), -4.9917355371900829),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,2}).get({2,2}), 0.30909090909090914),"Nurbs P=2,N8");
+
+//third derivative in v dir
+test.check(eq(dN_Nurbs.get({0,3}).get({0,0}), -94449.494433440283),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,3}).get({1,0}), 110086.82794891056),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,3}).get({2,0}), -7518.3471074380141),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,3}).get({0,1}), -19884.104091250589),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,3}).get({1,1}), 13036.598046581514),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,3}).get({2,1}),-844.16528925619821),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,3}).get({0,2}), -784.89884570726042),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,3}).get({1,2}), 381.18707738542452),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,3}).get({2,2}), -23.603305785123968),"Nurbs P=2,N8");
+
+//fourth derivative in v dir
+test.check(eq(dN_Nurbs.get({0,4}).get({0,0}), 9616675.7968593743),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,4}).get({1,0}), -11208840.663889075),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,4}).get({2,0}), 765504.432757325),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,4}).get({0,1}), 2024563.3256546052),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,4}).get({1,1}), -1327362.7101973905),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,4}).get({2,1}),85951.374906085635),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,4}).get({0,2}), 79916.973381102871),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,4}).get({1,2}), -38811.775151970498),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,4}).get({2,2}), 2403.2456799398947),"Nurbs P=2,N8");
+
+//fifth derivative in v dir
+test.check(eq(dN_Nurbs.get({0,5}).get({0,0}), -1223940555.9639204),"Nurbs P=2,N0"); //check ansatzfunctions on boundaries
+test.check(eq(dN_Nurbs.get({0,5}).get({1,0}), 1426579720.8586094),"Nurbs P=2,N1");
+test.check(eq(dN_Nurbs.get({0,5}).get({2,0}), -97427836.896386802),"Nurbs P=2,N2");
+test.check(eq(dN_Nurbs.get({0,5}).get({0,1}), -257671695.99240425),"Nurbs P=2,N3");
+test.check(eq(dN_Nurbs.get({0,5}).get({1,1}), 168937072.20694059),"Nurbs P=2,N4");
+test.check(eq(dN_Nurbs.get({0,5}).get({2,1}),-10939265.897138171),"Nurbs P=2,N5");
+test.check(eq(dN_Nurbs.get({0,5}).get({0,2}), -10171251.15759491),"Nurbs P=2,N6");
+test.check(eq(dN_Nurbs.get({0,5}).get({1,2}), 4939680.4738871539),"Nurbs P=2,N7");
+test.check(eq(dN_Nurbs.get({0,5}).get({2,2}),-305867.63199235022),"Nurbs P=2,N8");
 }
 
 
