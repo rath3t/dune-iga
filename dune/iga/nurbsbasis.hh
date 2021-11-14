@@ -315,13 +315,13 @@ namespace Dune::Functions {
       }
 
       //! number of coefficients
-      std::size_t size () const
+      [[nodiscard]] std::size_t size () const
       {
-        return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<unsigned int>());
+        return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<>());
       }
 
       //! get i'th index
-      const LocalKey& localKey (std::size_t i) const
+      [[nodiscard]] const LocalKey& localKey (std::size_t i) const
       {
         return li_[i];
       }
@@ -456,7 +456,7 @@ namespace Dune::Functions {
 
       /** \brief Return the reference element that the local finite element is defined on (here, a hypercube)
        */
-      GeometryType type () const
+      [[nodiscard]] GeometryType type () const
       {
         return GeometryTypes::cube(dim);
       }
@@ -464,7 +464,7 @@ namespace Dune::Functions {
       //private:
 
       /** \brief Number of degrees of freedom for one coordinate direction */
-      unsigned int size(int i) const
+      [[nodiscard]] unsigned int size(int i) const
       {
         const auto& order = preBasis_.order_;
         unsigned int r = order[i]+1;   // The 'normal' value
@@ -723,6 +723,8 @@ namespace Dune::Functions {
                             std::vector<FieldVector<R,1> >& out,
                             const std::array<unsigned,dim>& currentKnotSpan) const
       {
+//        auto N = Nurbs<dim>::basisFunctions(in,)
+        out
         // Evaluate
         std::array<std::vector<R>, dim> oneDValues;
 

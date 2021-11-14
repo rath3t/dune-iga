@@ -72,7 +72,7 @@ namespace Dune::IGA {
     }
 
     static auto basisFunctions(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                               const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights) {
+                               const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights, ) {
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
@@ -136,8 +136,6 @@ namespace Dune::IGA {
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);
       }
-
-
 
       return R;
     }
