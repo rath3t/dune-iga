@@ -19,7 +19,7 @@ namespace Dune::IGA {
   }
 
   template <std::size_t dim,typename ValueType>
-  auto findSpan(const std::span<int,dim>& p, const std::span<ValueType,dim>& u, const std::array<std::vector<ValueType>,dim>& U) {
+  auto findSpan(const std::array<int,dim>& p, const std::array<ValueType,dim>& u, const std::array<std::vector<ValueType>,dim>& U) {
     std::array<int,dim> res;
     for(auto i = 0 ; i<dim; ++i)
       res[i] =findSpan(p[i],u[i],U[i]);
@@ -43,7 +43,7 @@ namespace Dune::IGA {
 
     // The Nurbs Book Algorithm A2.2
     template <typename ContainerType = std::vector<ScalarType>>
-    static auto basisFunctions(ScalarType u, const std::span<const ScalarType>& knots, const int degree) {
+    static auto basisFunctions(ScalarType u, const std::vector<ScalarType>& knots, const int degree) {
       assert(std::ranges::count(knots.begin(), knots.begin()+degree+1, knots.front())== degree+1);
       assert(std::ranges::count(knots.end()-degree-1, knots.end(), knots.back())== degree+1);
       ContainerType N;
@@ -72,7 +72,7 @@ namespace Dune::IGA {
     }
 
     // The Nurbs Book Algorithm A2.3
-    static auto basisFunctionDerivatives(ScalarType u, const std::span<const ScalarType>& knots, const int degree,
+    static auto basisFunctionDerivatives(ScalarType u, const std::vector<ScalarType>& knots, const int degree,
                                           const int derivativeOrder) {
       const int order     = degree + 1;
       int p               = degree;

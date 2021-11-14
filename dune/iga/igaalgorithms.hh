@@ -19,15 +19,15 @@ namespace Dune::IGA {
   }
 
   template <std::size_t dim>
-  auto ordersFromDegrees(const std::span<int, dim>& degree) {
+  auto ordersFromDegrees(const std::array<int, dim>& degree) {
     std::array<int, dim> order;
     std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
     return order;
   }
 
   template <std::floating_point ScalarType, std::size_t dim>
-  auto weightsOfSpan(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                     const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights) {
+  auto weightsOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+                     const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights) {
     std::array<int, dim> order = ordersFromDegrees(degree);
     auto subNetStart           = findSpan(degree, u, knots);
     for (std::size_t i = 0; i < dim; ++i)
@@ -63,7 +63,7 @@ namespace Dune::IGA {
   class Nurbs {
   public:
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
-          const std::span<const ScalarType>& weights)
+          const std::vector< ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
     template <typename ContainerType = std::vector<ScalarType>>
@@ -71,8 +71,8 @@ namespace Dune::IGA {
       return basisFunctions<ContainerType>(u, knots_, degree_, weights_);
     }
 
-    static auto basisFunctions(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                               const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights, ) {
+    static auto basisFunctions(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+                               const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights) {
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
@@ -91,8 +91,8 @@ namespace Dune::IGA {
 
     // \brief This function return the basis function and the corresponding derivatives
     // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
-    static auto basisFunctionDerivatives(const std::span<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                                         const std::span<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
+    static auto basisFunctionDerivatives(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+                                         const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
                                          const int derivativeOrder, const bool triangleDerivatives = false) {
       std::array<DynamicMatrix<ScalarType>, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)

@@ -723,28 +723,17 @@ namespace Dune::Functions {
                             std::vector<FieldVector<R,1> >& out,
                             const std::array<unsigned,dim>& currentKnotSpan) const
       {
-//        auto N = Nurbs<dim>::basisFunctions(in,)
-        out
-        // Evaluate
-        std::array<std::vector<R>, dim> oneDValues;
-
-        for (size_t i=0; i<dim; i++)
-          evaluateFunction(in[i], oneDValues[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
-
-        std::array<unsigned int, dim> limits;
-        for (int i=0; i<dim; i++)
-          limits[i] = oneDValues[i].size();
-
-        MultiDigitCounter ijkCounter(limits);
-
-        out.resize(ijkCounter.cycle());
-
-        for (size_t i=0; i<out.size(); i++, ++ijkCounter)
-        {
-          out[i] = R(1.0);
-          for (size_t j=0; j<dim; j++)
-            out[i] *= oneDValues[j][ijkCounter[j]];
-        }
+        std::array<int,dim> realOrder = order_;
+        for(int i = 0; i<dim ; ++i)
+          realOrder[i]+=1;
+        IGA::MultiDimensionNet<dim, R> weights(realOrder);
+        std::ranges::fill(weights.directGetAll(),1.0);
+        std::array<typename GV::ctype,dim> inArray;
+        std::ranges::copy(in,inArray.begin());
+        assert(weights.directSize()==std::accumulate(realOrder.begin(),realOrder.end(),1,std::multiplies{}) && "Weights have wrong size");
+        auto N = IGA::Nurbs<R,dim>::basisFunctions(inArray,knotVectors_,order_,weights);
+        out.resize(N.size());
+        std::ranges::copy(N,out.begin());
       }
 
       /** \brief Evaluate Jacobian of all B-spline basis functions
@@ -756,98 +745,20 @@ namespace Dune::Functions {
                             std::vector<FieldMatrix<R,1,dim> >& out,
                             const std::array<unsigned,dim>& currentKnotSpan) const
       {
-        // How many shape functions to we have in each coordinate direction?
-        std::array<unsigned int, dim> limits;
-        for (int i=0; i<dim; i++)
-        {
-          limits[i] = order_[i]+1;  // The 'standard' value away from the boundaries of the knot vector
-          if (currentKnotSpan[i]<order_[i])
-            limits[i] -= (order_[i] - currentKnotSpan[i]);
-          if ( order_[i] > (knotVectors_[i].size() - currentKnotSpan[i] - 2) )
-            limits[i] -= order_[i] - (knotVectors_[i].size() - currentKnotSpan[i] - 2);
+        std::array<int,dim> realOrder =order_;
+        for(int i = 0; i<dim ; ++i)
+          realOrder[i]+=1;
+        IGA::MultiDimensionNet<dim, R> weights(realOrder);
+        std::ranges::fill(weights.directGetAll(),1.0);
+        std::array<typename GV::ctype,dim> inArray;
+        std::ranges::copy(in,inArray.begin());
+        auto dN = IGA::Nurbs<R,dim>::basisFunctionDerivatives(inArray,knotVectors_,order_,weights,1);
+        out.resize(dN.get(1,0).directSize());
+        for ( int i = 0; i< dN.get(1,0).directSize(); ++i) {
+          out[i][0][0] = dN.get(1, 0).directGet(i);
+          out[i][0][1] = dN.get(0, 1).directGet(i);
         }
-
-        // The lowest knot spans that we need values from
-        std::array<unsigned int, dim> offset;
-        for (int i=0; i<dim; i++)
-          offset[i] = std::max((int)(currentKnotSpan[i] - order_[i]),0);
-
-        // Evaluate 1d function values (needed for the product rule)
-        std::array<std::vector<R>, dim> oneDValues;
-
-        // Evaluate 1d function values of one order lower (needed for the derivative formula)
-        std::array<std::vector<R>, dim> lowOrderOneDValues;
-
-        std::array<DynamicMatrix<R>, dim> values;
-
-        for (size_t i=0; i<dim; i++)
-        {
-          evaluateFunctionFull(in[i], values[i], knotVectors_[i], order_[i], currentKnotSpan[i]);
-          oneDValues[i].resize(knotVectors_[i].size()-order_[i]-1);
-          for (size_t j=0; j<oneDValues[i].size(); j++)
-            oneDValues[i][j] = values[i][order_[i]][j];
-
-          if (order_[i]!=0)
-          {
-            lowOrderOneDValues[i].resize(knotVectors_[i].size()-(order_[i]-1)-1);
-            for (size_t j=0; j<lowOrderOneDValues[i].size(); j++)
-              lowOrderOneDValues[i][j] = values[i][order_[i]-1][j];
-          }
-        }
-
-
-        // Evaluate 1d function derivatives
-        std::array<std::vector<R>, dim> oneDDerivatives;
-        for (size_t i=0; i<dim; i++)
-        {
-          oneDDerivatives[i].resize(limits[i]);
-
-          if (order_[i]==0)  // order-zero functions are piecewise constant, hence all derivatives are zero
-            std::fill(oneDDerivatives[i].begin(), oneDDerivatives[i].end(), R(0.0));
-          else
-          {
-            for (size_t j=offset[i]; j<offset[i]+limits[i]; j++)
-            {
-              R derivativeAddend1 = lowOrderOneDValues[i][j] / (knotVectors_[i][j+order_[i]]-knotVectors_[i][j]);
-              R derivativeAddend2 = lowOrderOneDValues[i][j+1] / (knotVectors_[i][j+order_[i]+1]-knotVectors_[i][j+1]);
-              // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
-              if (std::isnan(derivativeAddend1))
-                derivativeAddend1 = 0;
-              if (std::isnan(derivativeAddend2))
-                derivativeAddend2 = 0;
-              oneDDerivatives[i][j-offset[i]] = order_[i] * ( derivativeAddend1 - derivativeAddend2 );
-            }
-          }
-        }
-
-        // Working towards computing only the parts that we really need:
-        // Let's copy them out into a separate array
-        std::array<std::vector<R>, dim> oneDValuesShort;
-
-        for (int i=0; i<dim; i++)
-        {
-          oneDValuesShort[i].resize(limits[i]);
-
-          for (size_t j=0; j<limits[i]; j++)
-            oneDValuesShort[i][j]      = oneDValues[i][offset[i] + j];
-        }
-
-
-
-        // Set up a multi-index to go from consecutive indices to integer coordinates
-        MultiDigitCounter ijkCounter(limits);
-
-        out.resize(ijkCounter.cycle());
-
-        // Complete Jacobian is given by the product rule
-        for (size_t i=0; i<out.size(); i++, ++ijkCounter)
-          for (int j=0; j<dim; j++)
-          {
-            out[i][0][j] = 1.0;
-            for (int k=0; k<dim; k++)
-              out[i][0][j] *= (j==k) ? oneDDerivatives[k][ijkCounter[k]]
-                                       : oneDValuesShort[k][ijkCounter[k]];
-          }
+        std::cout<<"evaluateJacobian"<<std::endl;
 
       }
 

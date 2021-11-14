@@ -375,7 +375,7 @@ void testNurbsBasis() {
         // Check basis created via its constructor
         Functions::NurbsBasis<GridView> basis2(gridView, knotSpans, order);
 //        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+        test.subTest(checkBasis(basis2));
 
       }
 
@@ -384,7 +384,7 @@ void testNurbsBasis() {
         using namespace Functions::BasisFactory;
         auto basis2 = makeBasis(gridView, nurbs<dim>(knotSpans, order));
 //          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+          test.subTest(checkBasis(basis2));
       }
 
       {
@@ -395,7 +395,7 @@ void testNurbsBasis() {
                                    nurbs<dim>(knotSpans, order)
                                        ));
 //          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions()));
+          test.subTest(checkBasis(basis2));
       }
 
 
