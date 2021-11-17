@@ -5,12 +5,13 @@
 #pragma once
 
 #include <ranges>
+#include <concepts>
 #include <numeric>
 #include <dune/iga/concepts.hh>
 
 namespace Dune::IGA {
   /** \brief class holds a n-dim net */
-  template <int netdim, typename ValueType>
+  template <std::integral auto netdim, typename ValueType>
   class MultiDimensionNet {
     using value_type = ValueType;
 
@@ -18,6 +19,15 @@ namespace Dune::IGA {
     MultiDimensionNet() = default;
 
 
+    MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>>  values)
+{
+      std::vector<std::vector<ValueType>> vals;
+      for( auto& val : values)
+        vals.push_back(val);
+        std::array< int, netdim> dimsize
+            = {static_cast< int>(vals.size()), static_cast< int>(values.begin()->size())};
+      *this = MultiDimensionNet{dimsize,vals};
+    }
 
     /** \brief constructor for a net of a certain size with values unknown.
      *
@@ -86,8 +96,12 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values vector with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<ValueType> values)
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<ValueType>& values)
         : values_(values), dimSize_{dimSize} {}
+
+
+    MultiDimensionNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
+        : values_(values.begin(),values.end()), dimSize_{dimSize} {}
 
     /** \brief constructor intended for the 2-D if the values are already in a matrix
      *
@@ -175,6 +189,7 @@ namespace Dune::IGA {
 
       return MultiDimensionNet<netdim,ValueType>(size,subValues);
     }
+
 
     /** \brief returns a value at an index (unmapped)
      * \note only to be used when the mapping is known
@@ -294,7 +309,7 @@ namespace Dune::IGA {
 //    return At<Args&&...>{std::forward<Args>(args)...};
 //  }
 
-  template <int netdim, typename ValueType>
+  template <std::integral auto  netdim, typename ValueType>
   auto line(MultiDimensionNet<netdim, ValueType>& net, const int direction, const int at) {
 
       std::array<int, netdim> multiIndex;
@@ -313,7 +328,7 @@ namespace Dune::IGA {
       return std::ranges::transform_view(indices, objectExtractor);
   }
 
-  template <int netdim, typename ValueType>
+  template <std::integral auto  netdim, typename ValueType>
   auto line(MultiDimensionNet<netdim, ValueType> const& net, const int direction, const int at) {
       std::array<int, netdim> multiIndex;
 
@@ -351,14 +366,16 @@ namespace Dune::IGA {
 //    return res;
 //  }
 
-  template<int netdim,typename lValueType,typename rValueType> requires MultiplyAble<lValueType,rValueType>
+  template<std::integral auto netdim,typename lValueType,typename rValueType> requires MultiplyAble<lValueType,rValueType>
   auto dot(const MultiDimensionNet<netdim,lValueType>& lnet,const MultiDimensionNet<netdim,rValueType>& rnet)
   {
+//    using ResultType = decltype(operator*(std::declval<lValueType>(),std::declval<rValueType>()));
+    using ResultType = decltype(lnet.directGetAll()[0]*rnet.directGetAll()[0]);
     assert(lnet.size()== rnet.size() && "The net dimensions need to match in each direction!");
-    return std::inner_product(lnet.directGetAll().begin(),lnet.directGetAll().end(),rnet.directGetAll().begin(),0.0);
+    return std::inner_product(lnet.directGetAll().begin(),lnet.directGetAll().end(),rnet.directGetAll().begin(),ResultType(0.0));
   }
 
-  template<int netdim,typename lValueType,typename rValueType> requires MultiplyAble<lValueType,rValueType>
+  template<std::integral auto  netdim,typename lValueType,typename rValueType> requires MultiplyAble<lValueType,rValueType>
   auto operator-(const MultiDimensionNet<netdim,lValueType>& lnet,const MultiDimensionNet<netdim,rValueType>& rnet)
   {
     assert(lnet.size()== rnet.size() && "The net dimensions need to match in each direction!");
@@ -367,7 +384,7 @@ namespace Dune::IGA {
     return res;
   }
 
-  template<int netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
+  template<std::integral auto  netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
       MultiDimensionNet<netdim,lValueType> operator/(const MultiDimensionNet<netdim,lValueType>& lnet,const rValueType& div)
   {
     MultiDimensionNet<netdim,lValueType> res = lnet;
@@ -375,7 +392,7 @@ namespace Dune::IGA {
     return res;
   }
 
-  template<int netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
+  template<std::integral auto  netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
       MultiDimensionNet<netdim,lValueType> operator*(const MultiDimensionNet<netdim,lValueType>& lnet,const rValueType& fac)
   {
     MultiDimensionNet<netdim,lValueType> res = lnet;
@@ -386,7 +403,7 @@ namespace Dune::IGA {
 
 
 
-  template<int netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
+  template<std::integral auto  netdim,typename lValueType,typename rValueType> requires DivideAble<lValueType,rValueType>
       MultiDimensionNet<netdim,lValueType> operator*(const rValueType& fac,const MultiDimensionNet<netdim,lValueType>& lnet)
   {
     return lnet*fac;

@@ -1,538 +1,229 @@
-#ifndef DUNE_IGA_NURBSPATCH_HH
-#define DUNE_IGA_NURBSPATCH_HH
+#pragma once
+
+#include "igaalgorithms.hh"
 
 #include <memory>
 
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/concepts.hh>
-#include <dune/iga/traits.hh>
 #include <dune/iga/controlpoint.hh>
+#include <dune/iga/nurbsgeometry.hh>
+#include <dune/iga/traits.hh>
 
-namespace Dune::IGA
-  {
+namespace Dune::IGA {
 
-
-
-  template<int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits= LinearAlgebraTraits<double,dim,dimworld>>
+  template <std::integral auto dim, std::integral auto dimworld,
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double, dim, dimworld>>
   class NURBSGrid;
 
+  template <typename Grid>
+  class NURBSLeafGridView;
 
+  /** \brief Class where the NURBS geometry can work on */
+  template <std::integral auto dim, std::integral auto dimworld,
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double, dim, dimworld>>
+  class NURBSPatch {
+  public:
+    friend class NURBSLeafGridView<NURBSGrid<dim, dimworld>>;
+    template <std::integral auto codim, class GridViewImp>
+    friend class NURBSGridEntity;
 
-    /** \brief class that holds all data regarding the NURBS structure */
-    template<int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits=LinearAlgebraTraits<double,dim,dimworld>>
-    class NURBSPatchData
-    {
-    public:
-      using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
-      using LocalCoordinateType = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
-      using JacobianTransposedType = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
-      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
+    /** \brief Constructor of NURBS from knots, control points, weights and order
+     *  \param[in] knotSpans vector of knotSpans for each dimension
+     *  \param[in] controlPoints a n-dimensional net of control points
+     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
+     *  \param[in] order order of the NURBS structure for each dimension
+     */
+    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData)
+        : NURBSPatch(patchData.getKnots(), patchData.getControlPoints(), patchData.getWeights(), patchData.getOrder()) {}
 
-      using ControlPointType = ControlPoint<GlobalCoordinateType>;
+    NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
+               const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
+               const std::array<int, dim> order)
+        : patchData_(std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(knotSpans, controlPoints, order)) {
+      validKnotSize_ = this->validKnotSize();
+      // Build a knot net to make iterator operations easier
+      // Here each "point" of the net is a element(knot span)
+      knotElementNet_ = std::make_shared<MultiDimensionNet<dim, double>>(validKnotSize_);
+    }
 
+    int size(int codim) {
+      assert(codim <= dim);
+      assert(codim <= 3);
 
-      using ControlPointNetType = MultiDimensionNet<dim,ControlPointType>;
-      NURBSPatchData()= default;
-      /** \brief constructor for a NURBSPatchData from knots, control points, weights and order
-       *
-       *  \param[in] knotSpans vector of knotSpans for each dimension
-       *  \param[in] controlPoints a n-dimensional net of control points
-       *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-       *  \param[in] order order of the NURBS structure for each dimension
-       */
-      NURBSPatchData(const std::array<std::vector<double>,dim>& knotSpans,
-                     const ControlPointNetType& controlPoints,
-                     const std::array<int,dim>& order)
-      : knotSpans_(knotSpans)
-      , controlPoints_(controlPoints)
-      , order_(order)
+      if (codim == 0)
+        return knotElementNet_->directSize();
+      else if (codim == dim)
+        return patchData_->controlPoints.directSize();
+      else if (codim == 1 && dim == 2)  // edge case
       {
-      }
-
-//      void  knotInsertion
-
-      /** \brief returns the Knot Span*/
-      const std::array<std::vector<double>, dim> & getKnots() const
-      {
-        return knotSpans_;
-      }
-
-      /** \brief returns the Control Point*/
-      const ControlPointNetType & getControlPoints () const
-      {
-        return controlPoints_;
-      }
-
-
-      /** \brief returns the order*/
-      const std::array<int,dim> & getOrder() const
-      {
-        return order_;
-      }
-
-      void setOrder(const std::array<int,dim>& order)
-      {
-         order_=order;
-      }
-    private:
-
-       std::array<std::vector<double>,dim> knotSpans_;
-
-       ControlPointNetType  controlPoints_;
-
-       std::array<int,dim> order_;
-
-    };
-
-    /** \brief a geometry implementation for NURBS*/
-    template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
-    class NURBSGeometry
-    {
-    public:
-
-      /** coordinate type */
-      typedef double ctype;
-
-      /** \brief Dimension of the cube element */
-      enum {mydimension = dim};
-
-      /** \brief Dimension of the world space that the cube element is embedded in*/
-      enum {coorddimension = dimworld};
-
-      /** \brief Type used for a vector of element coordinates */
-      using LocalCoordinate       = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
-
-      /** \brief Type used for a vector of world coordinates */
-      using GlobalCoordinate =  typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
-
-      /** \brief Type for the transposed Jacobian matrix */
-      using JacobianTransposed    = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
-
-      /** \brief Type for the transposed inverse Jacobian matrix */
-      using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
-
-      using ControlPointType = typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointType;
-      using ControlPointNetType = typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointNetType;
-    private:
-      /* Helper class to compute a matrix pseudo inverse */
-      typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
-
-    public:
-
-      /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
-       *
-       *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
-       *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
-       */
-      NURBSGeometry(std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData,
-                    std::array<std::vector<double>::const_iterator,dim> corner)
-      : patchData_(patchData)
-      , corner_(corner)
-      {
-        const auto& weightedControlPoints = computeWeightedControlPoints();
-        const auto& knotSpans = patchData_->getKnots();
-        const auto& order = patchData_->getOrder();
-
-        const auto& bSplinepatchData = std::make_shared<BsplinePatchData<dim,dimworld+1>>(knotSpans,weightedControlPoints,order);
-        weightedBSpline = std::make_shared<BSplineElementGeometry<dim,dimworld+1>>(bSplinepatchData,corner_);
-
-        /* only order+1 basis functions are needed for each dimension*/
-//        std::array<std::vector<double>,dim> _basis;
-      }
-
-      /** \brief Map the center of the element to the geometry */
-      GlobalCoordinate center() const
-      {
-        LocalCoordinate localcenter;
-        std::fill(localcenter.begin(), localcenter.end(), 0.5);
-        return global(localcenter);
-      }
-
-      /** \brief Return the number of corners of the element */
-      [[nodiscard]] int corners() const
-      {
-        return 1<<mydimension;
-      }
-
-      /** \brief Return world coordinates of the k-th corner of the element */
-      GlobalCoordinate corner(int k) const
-      {
-        LocalCoordinate localcorner;
-        for (size_t i=0; i<mydimension; i++) {
-            localcorner[i] = (k & (1<<i)) ? 0 : 1;
+        int edgeSize = 0;
+        for (int j = 0; j < dim; ++j) {
+          int subs = 1;
+          for (int i = 0; i < dim; ++i)
+            subs *= (i == j) ? validKnotSize_[i] - 1 : validKnotSize_[i];
+          edgeSize += subs;
         }
-        return global(localcorner);
-      }
-
-      /** \brief I think it is not an affine mapping, but not sure if should be a permanent false here*/
-      bool affine () const { return false; }
-
-      /** \brief Type of the element: a hypercube of the correct dimension */
-      [[nodiscard]] GeometryType type() const
+        return edgeSize;
+      } else if (codim == 1 && dim == 3)  // surface case
       {
-        return {GeometryType::cube,dim};
+        int surfSize = 0;
+        for (int j = 0; j < dim; ++j) {
+          int subs = 1;
+          for (int i = 0; i < dim; ++i)
+            subs *= (i == j) ? validKnotSize_[i] : validKnotSize_[i] - 1;
+          surfSize += subs;
+        }
+        return surfSize;
       }
+    }
 
-      /** \brief evaluates the NURBS mapping
-       *
-       *  \param[in] local local coordinates for each dimension
-       */
-      GlobalCoordinate global(const LocalCoordinate& local) const
-      {
-        const auto& weightedGlobal = weightedBSpline->global(local);
-        return reduceDimension(weightedGlobal);
+    const auto& getPatchData() { return patchData_; }
 
+    // this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
+    auto findSpanIndex(const std::array<int, dim>& ijk) const {
+      const auto& knotSpans = patchData_->knotSpans;
+
+      std::array<int, dim> index;
+      std::fill(index.begin(), index.end(), 0);
+
+      /*finds the working geometry object ijk
+       *(working geometry objects are defined between 2 knots, where knot[i]<knot[i+1])*/
+      for (int count, j = 0; j < dim; ++j) {
+        count = 0;
+        while (count <= ijk[j]) {
+          if (index[j] == knotSpans[j].size()) break;
+
+          if (knotSpans[j][index[j] + 1] > knotSpans[j][index[j]]) count++;
+
+          ++index[j];
+        }
       }
+      return index;
+    }
 
-//      auto getControlPointsForSpan()
-//      {
-//          const auto& knotSpans = this->getKnots();
-//          const auto& order = this->getOrder();
-//          const auto& controlPoints = this->getControlPoints();
-//          std::array<unsigned int,dim> multiIndexControlNet,multiIndexBasisfunction;
-//          std::array<unsigned int,dim> cornerIdx;
-//          std::array<unsigned int,dim> dimsize;
-//          for (unsigned int d=0; d<dim; ++d) {
-//              dimsize[d] = order[d] + 1;
-//              cornerIdx[d] = corner_[d] - knotSpans[d].begin();
-//          }
-//              /*Index net for valid basis functions*/
-//              auto basisFunctionNet = ControlPointNet(dimsize);
-//              for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
-//              {
-//                  multiIndexBasisfunction =  basisFunctionNet.directToMultiIndex(i);
-//                  for (unsigned int d=0; d<dim; ++d)
-//                      multiIndexControlNet[d] = multiIndexBasisfunction[d] + cornerIdx[d] - order[d];
-//                  auto cp = controlPoints.get(multiIndexControlNet);
-//              }
-//          }
-//      }
+    bool isBorderElement(const int& id) {
+      auto const& knotElementNet = this->knotElementNet_;
+      auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
 
-//      /** \brief evaluates the NURBS mapping
-//       *
-//       *  \param[in] local local coordinates for each dimension
-//       */
-//      FieldVector<double,dimworld> global(const LocalCoordinate& local)
-//      {
+      for (int i = 0; i < dim; ++i)
+        if ((multiIndex[i] == knotElementNet->size()[i] - 1) || (multiIndex[i] == 0)) return true;
+
+      return false;
+    }
+
+    /** \brief creates a NURBSGeometry object
+     *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
+     *  and generates a Geometry object
+     *
+     *  \param[in] ijk array of indices for each dimension
+     */
+    template <std::integral auto entDim = dim>
+    auto geometry(const std::array<int, dim>& ijk, [[maybe_unused]] const int subIndex = 0) const {
+      const auto& knotSpans = patchData_->knotSpans;
+
+      std::array<int, dim> index = findSpanIndex(ijk);
+
+      /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
+      std::array<std::vector<double>::const_iterator, dim> freeSpans;
+      for (int i = 0; i < dim; ++i)
+        freeSpans[i] = (knotSpans[i]).begin() + index[i] - 1;
+
+      std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
+      std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
+      std::array<double, dim - entDim> fixedSpans;
+      if constexpr (entDim == 0) {
+        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
+        switch (subIndex) {
+          case 1:
+            ++freeSpans[0];
+          case 2:
+            ++freeSpans[1];
+          case 3:
+            ++freeSpans[1];
+            ++freeSpans[0];
+          case 4:
+            ++freeSpans[2];
+          case 5:
+            ++freeSpans[2];
+            ++freeSpans[0];
+          case 6:
+            ++freeSpans[2];
+            ++freeSpans[1];
+          case 7:
+            ++freeSpans[2];
+            ++freeSpans[1];
+            ++freeSpans[0];
+          default:
+            assert(subIndex == 0);
+            break;
+        }
+        std::ranges::transform(freeSpans, fixedSpans.begin(), [](auto& vp) { return *vp; });
+      } else if constexpr (entDim == 1 && dim > 1) {
+        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
+        // each direction has dim+1 edges
+        const int freeDirection             = std::floor(subIndex / dim);
+        fixedOrFreeDirection[freeDirection] = Impl::FixedOrFree::free;
+        ++freeSpans[freeDirection];
+        for (int fcounter=0, i = 0; i < dim; ++i) {
+          if (i == freeDirection) continue;
+          fixedSpans[fcounter++] = freeSpans[i];
+        }
+
+        //        }
+        //        switch (subIndex) {
+//          case 0:
 //
-//        const auto& knotSpans = patchData_->getKnots();
-//        const auto& controlPoints = patchData_->getControlPoints();
-//        const auto& weights = patchData_->getWeights();
-//        const auto& order = patchData_->getOrder();
-//        const auto& basis  = this->getBasis(local);
+//          case 1:subIndex
+//            ++freeSpans[freeDirection];
+//          case 2:
 //
-//        FieldVector<double,dimworld> denominator, numerator;
-//        FieldVector<double,dimworld> glob;
-//        std::fill(glob.begin(), glob.end(), 0.0);
-//        std::fill(denominator.begin(), denominator.end(), 0.0);
-//        std::fill(numerator.begin(), numerator.end(), 0.0);
+//          case 3:
+//            ++freeSpans[freeDirection];
+//          case 4:
 //
-//        std::array<unsigned int,dim> multiIndexBasisfucntion, multiIndexControlNet;
-//        double temp;
-//        std::array<unsigned int,dim> dimsize;
-//        std::array<unsigned int,dim> cornerIdx;
-//        for (unsigned int d=0; d<dim; ++d)
-//        {
-//          dimsize[d] = order[d]+1;
-//          cornerIdx[d] = corner_[d]-knotSpans[d].begin();
+//          case 5:
+//            ++freeSpans[freeDirection];
+//          case 6:
+//
+//          case 7:
+//            ++freeSpans[freeDirection];
+//          case 8:
+//
+//          case 9:
+//            ++freeSpans[freeDirection];
+//          case 10:
+//
+//          case 11:
+//            ++freeSpans[freeDirection];
+//          default:
+//            assert(subIndex == 0);
+//            break;
 //        }
-//        /*Index net for valid basis functions*/
-//        auto basisFunctionNet = ControlPointNet(dimsize);
-//        for (unsigned int i=0; i<basisFunctionNet.directSize(); ++i)
-//        {
-//          multiIndexBasisfucntion =  basisFunctionNet.directToMultiIndex(i);
-//          temp = 1;
-//          for (unsigned int d=0; d<dim; ++d)
-//          {
-//            temp *= basis[d][multiIndexBasisfucntion[d]];
-//            multiIndexControlNet[d] = multiIndexBasisfucntion[d]+cornerIdx[d]-order[d];
-//          }
-//          auto cp = controlPoints.get(multiIndexControlNet);
-//          auto w = weights.get(multiIndexControlNet);
-//          for (unsigned int k=0; k<dimworld; ++k)
-//          {
-//            numerator[k] += cp[k]*w[0]*temp;
-//            denominator[k] += w[0]*temp;
-//          }
-//        }
-//        for (unsigned int k=0; k<dimworld; ++k)
-//          glob[k] = numerator[k] / denominator[k];
-//
-//        return glob;
-//      }
+      }
 
-//      /** \brief evaluates the basis Functions at the given local coordinates
-//       *
-//       *  \param[in] local local coordinates for each dimension
-//       */
-//      const std::array<std::vector<double>,dim > & getBasis (const LocalCoordinate& local)
-//      {
-//        for (int i=0; i<dim;++i)
-//          if (local[i]<0 || local[i]>1)
-//            DUNE_THROW(RangeError, "Local coordinates have to be in [0,1]^dim!");
-//
-//        const auto & order = patchData_->getOrder();
-//        const auto & knotSpans = patchData_->getKnots();
-//
-//        /*Compute the non-vanishing basis function. See "The NURBS book"*/
-//        for (int d=0; d<dim; ++d)
-//        {
-//          double loc;
-//          loc = local[d]*(*(corner_[d]+1)-*corner_[d]) + *corner_[d];
-//          basis_[d].resize(order[d]+1);
-//          std::vector<double> left, right;
-//          left.resize(order[d]+1);
-//          right.resize(order[d]+1);
-//          basis_[d][0] = 1;
-//          for (int o=1; o<=order[d]; ++o)
-//          {
-//            left[o] = loc-*(corner_[d]+1-o);
-//            right[o] = *(corner_[d]+o)-loc;
-//            double saved = 0;
-//            for (int r=0; r<o; ++r)
-//            {
-//              double temp = basis_[d][r]/(right[r+1]+left[o-r]);
-//              basis_[d][r] = saved+right[r+1]*temp;
-//              saved = left[o-r]*temp;
-//            }
-//            basis_[d][o] = saved;
-//          }
-//        }
-//
-//        return basis_;
-//      }
+      return NURBSGeometry<entDim, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, freeSpans, fixedSpans, fixedOrFreeDirection);
+    }
 
-      /** \brief compute the Jacobian transposed matrix
-       *
-       *  \param[in] local local coordinates for each dimension
-       */
-      JacobianTransposed jacobianTransposed(const LocalCoordinate &local)
-      {
-        JacobianTransposed result;
-        const auto& BSplineJacobian = weightedBSpline->jacobianTransposed(local);
-        const auto& weightedGlobal = weightedBSpline->global(local);
-        const auto& dividedGlobal = reduceDimension(weightedGlobal);
-        const ctype weight = weightedGlobal[coorddimension];
+    /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
+    std::array<int, dim> validKnotSize() const {
+      const auto& knotSpans = patchData_->knotSpans;
+      std::array<int, dim> validknotsize;
+      std::fill(validknotsize.begin(), validknotsize.end(), 0);
 
-        //Each row is a partial derivative with respect to one variable
-        for (int i=0; i<mydimension; ++i)
-        {
-           //Iterate the columns except the last one
-           const ctype derWeight = BSplineJacobian[i][coorddimension];
-           for (int j=0; j<coorddimension; ++j)
-           {
-             result[i][j] = (BSplineJacobian[i][j]-derWeight*dividedGlobal[j])/weight;
-           }
+      for (int j = 0; j < dim; ++j) {
+        for (int i = 0; i < knotSpans[j].size() - 1; ++i) {
+          if (knotSpans[j][i + 1] > knotSpans[j][i]) ++validknotsize[j];
         }
-        return result;
       }
 
-      /** \brief constructs the homogeneous coordinates
-       *
-       *  \param[in] inPoint input point
-       *  \param[in] weight weight
-       */
-      FieldVector<double,coorddimension+1> liftDimension(const FieldVector<double,coorddimension>& inPoint, ctype weight)
-      {
-        FieldVector<ctype,coorddimension+1> homoCoordinate;
-        for( int i=0; i<coorddimension; i++)
-          homoCoordinate[i] = inPoint[i]*weight;
+      return validknotsize;
+    }
 
-        homoCoordinate[coorddimension] = weight;
-        return homoCoordinate;
-      }
+  private:
+    std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
+    std::array<int, dim> validKnotSize_;
+    std::shared_ptr<MultiDimensionNet<dim, double>> knotElementNet_;
+  };
 
-      /** \brief get the projected non-homogeneous coordinates in a 1 degree lower dimensional space
-       *
-       *  \param[in] inPoint input point, will be divided by the last element
-       */
-      FieldVector<double,coorddimension> reduceDimension(const FieldVector<double,coorddimension+1>& inPoint) const
-      {
-        FieldVector<ctype,coorddimension> oriCoordinate;
-        for(unsigned int i=0; i<coorddimension; i++)
-          oriCoordinate[i] = inPoint[i]/inPoint[coorddimension];
-
-        return oriCoordinate;
-      }
-
-      /** \brief gets weighted control points
-       *
-       */
-      auto computeWeightedControlPoints()
-      {
-        const auto& controlPoints = patchData_->getControlPoints();
-        const auto& netSize = controlPoints.size();
-        MultiDimensionNet<mydimension,FieldVector<double,coorddimension+1>> weightedControlPoints(netSize);
-        const auto& pointSize = controlPoints.directSize();
-        for(unsigned int i=0; i<pointSize; ++i)
-        {
-          //auto const& liftedControlPoint = ;
-          weightedControlPoints.directSet(i,liftDimension(controlPoints.directGet(i).p,controlPoints.directGet(i).w));
-        }
-        return weightedControlPoints;
-
-      }
-
-
-    private:
-
-      std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData_;
-
-      std::array<std::vector<double>::const_iterator,dim> corner_;
-
-      std::shared_ptr <BSplineElementGeometry<dim, dimworld+1>> weightedBSpline;
-
-    };
-
-    template<typename Grid>
-    class NURBSLeafGridView;
-
-
-
-    /** \brief Class where the NURBS geometry can work on */
-    template <int dim, int dimworld,NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits= LinearAlgebraTraits<double,dim,dimworld> >
-    class NURBSPatch
-    {
-    public:
-
-      friend class NURBSLeafGridView<NURBSGrid<dim,dimworld>>;
-      template<int codim, class GridViewImp>
-      friend class NURBSGridEntity;
-
-      /** \brief Constructor of NURBS from knots, control points, weights and order
-       *  \param[in] knotSpans vector of knotSpans for each dimension
-       *  \param[in] controlPoints a n-dimensional net of control points
-       *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-       *  \param[in] order order of the NURBS structure for each dimension
-       */
-      explicit NURBSPatch(const NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>& patchData)
-              : NURBSPatch(patchData.getKnots(),patchData.getControlPoints(),patchData.getWeights(),patchData.getOrder())
-      {}
-
-      NURBSPatch(const std::array<std::vector<double>,dim>& knotSpans,
-                   const typename NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
-                   const std::array<int,dim> order)
-      : patchData_(std::make_shared<NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>>(knotSpans, controlPoints, order))
-      {
-        validKnotSize_ = this -> validKnotSize();
-        //Build a knot net to make iterator operations easier
-        //Here each "point" of the net is a element(knot span)
-        knotElementNet_ = std::make_shared<MultiDimensionNet<dim,double>>(validKnotSize_);
-      }
-
-      int size(int codim)
-      {
-          assert(codim<= dim);
-
-          if (codim==0)
-              return knotElementNet_->directSize();
-          else if (codim==dim)
-              return patchData_->getControlPoints().directSize();
-          else if (codim==1)
-          {
-              int sizeOfEntitiesWithCodim1 = 1;
-              for (const auto& validKnotSizeSingleDim : validKnotSize_)
-                  sizeOfEntitiesWithCodim1*=validKnotSizeSingleDim+1;
-
-              return sizeOfEntitiesWithCodim1;
-          }
-
-      }
-
-      const auto&  getPatchData()
-      {
-          return patchData_;
-      }
-
-      //this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
-      auto findSpanIndex(const std::array<int,dim>& ijk) const
-      {
-          const auto & knotSpans = patchData_->getKnots();
-
-          std::array<int,dim> index;
-          std::fill(index.begin(), index.end(), 0);
-
-          /*finds the working geometry object ijk
-           *(working geometry objects are defined between 2 knots, where knot[i]<knot[i+1])*/
-          for ( int count, j=0; j<dim; ++j)
-          {
-              count = 0;
-              while(count <= ijk[j])
-              {
-                  if (index[j] == knotSpans[j].size())
-                      break;
-
-                  if (knotSpans[j][index[j]+1] > knotSpans[j][index[j]])
-                      count++;
-
-                  ++index[j];
-              }
-          }
-          return index;
-      }
-
-      bool isBorderElement(const int & id)
-      {
-          auto const &knotElementNet = this->knotElementNet_;
-          auto const &multiIndex = knotElementNet->directToMultiIndex(id);
-
-          for(int i= 0; i< dim; ++i)
-              if (multiIndex[i] ==  knotElementNet->size()[i]-1)
-                  return true;
-          return false;
-      }
-
-
-
-      /** \brief creates a NURBSGeometry object
-       *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
-       *  and generates a Geometry object
-       *
-       *  \param[in] ijk array of indices for each dimension
-       */
-      NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits> geometry(const std::array<int,dim>& ijk ) const
-      {
-        const auto & knotSpans = patchData_->getKnots();
-
-        std::array<int,dim> index =   findSpanIndex(ijk);
-
-        /*the iterator on each dim-knotspan for geometry ijk is stored in an array named corners*/
-        std::array<std::vector<double>::const_iterator,dim> corners;
-        for(int i=0; i<dim; ++i)
-          corners[i] = (knotSpans[i]).begin()+index[i]-1;
-
-        return NURBSGeometry<dim,dimworld,NurbsGridLinearAlgebraTraits>(patchData_,corners);
-      }
-
-      /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
-      std::array< int,dim> validKnotSize() const
-      {
-        const auto & knotSpans = patchData_->getKnots();
-        std::array< int,dim> validknotsize;
-        std::fill(validknotsize.begin(), validknotsize.end(), 0);
-
-        for (int j=0; j<dim; ++j)
-        {
-          for (int i=0; i<knotSpans[j].size()-1; ++i)
-          {
-            if (knotSpans[j][i+1] > knotSpans[j][i])
-              ++validknotsize[j];
-          }
-        }
-
-        return validknotsize;
-      }
-
-    private:
-
-      std::shared_ptr <NURBSPatchData<dim,dimworld,NurbsGridLinearAlgebraTraits>> patchData_;
-      std::array<int,dim> validKnotSize_;
-      std::shared_ptr <MultiDimensionNet<dim,double>> knotElementNet_;
-
-    };
-
-
-
-  }
-
-#endif  // DUNE_IGA_NURBSPATCH_HH
+}  // namespace Dune::IGA

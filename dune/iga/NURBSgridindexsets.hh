@@ -23,10 +23,12 @@ namespace Dune::IGA
               entTypes = {GeometryTypes::cube(GridViewImp::dimension - id)};
               ++id;
           }
+      }
 
-
-
-
+      template<class Entity>
+      bool contains(const Entity& e) const
+      {
+        return gridView->contains(e);
       }
 
       //! get index of an entity, need to change the type to a property from GridImp

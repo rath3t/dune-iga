@@ -23,7 +23,7 @@
 
       using Reference =  NURBSEntity;
       explicit NURBSGridLeafIterator(const typename std::vector<NURBSEntity>::iterator& spanIter)
-      :  std::vector<NURBSEntity>::iterator(spanIter)
+          :  std::vector<NURBSEntity>::iterator(spanIter)
       {}
 //      NURBSGridLeafIterator(const NURBSGridView& GridView, int index)
 //        : NURBSGridView_(&GridView), directIndex_(index)

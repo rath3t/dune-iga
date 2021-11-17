@@ -5,9 +5,11 @@
 #pragma once
 
 #include <span>
+#include <dune/common/fvector.hh>
+#include <dune/common/fmatrix.hh>
 
 namespace Dune::IGA {
-  template <typename ScalarType, int dim, int dimworld>
+  template <typename ScalarType, std::integral auto  dim, std::integral auto  dimworld>
   struct LinearAlgebraTraits {
     using GlobalCoordinateType      = FieldVector<ScalarType, dimworld>;
     using LocalCoordinateType       = FieldVector<ScalarType, dim>;
