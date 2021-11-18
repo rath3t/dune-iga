@@ -24,7 +24,8 @@ namespace Dune::IGA
                  int i,
                  unsigned int codim) const
     {
-      throw std::logic_error("subId not implemented!");
+      return indexSet_.subIndex(entity,i,codim);
+//      throw std::logic_error("subId not implemented!");
     }
   private:
     const IgaGridImpl* grid_;

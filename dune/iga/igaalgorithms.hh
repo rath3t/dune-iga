@@ -35,10 +35,11 @@ namespace Dune::IGA {
     c2.size();
     typename Container1::value_type;
   }
-  auto transform01ToKnotSpan(const Container1& local, const Container2 corners) {
+  auto transform01ToKnotSpan(const Container1& loc, const Container2 corners) {
     std::array<typename Container1::value_type, corners.size()> localInSpan;
-    for (int d = 0; d < localInSpan.size(); ++d)
-      localInSpan[d] = local[d] * (*(corners[d] + 1) - *corners[d]) + *corners[d];
+      for (int d = 0; d < localInSpan.size(); ++d)
+        localInSpan[d] = loc[d] * (*(corners[d] + 1) - *corners[d]) + *corners[d];
+
     return localInSpan;
   }
 
@@ -128,20 +129,18 @@ namespace Dune::IGA {
       return Nnet;
     }
 
-
-
-//    template <typename ContainerType = std::vector<ScalarType>>
-//    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const std::array<int, dim>& derivativeOrder)const  {
-//      auto derivativeOrderTotal
-//          = std::accumulate(derivativeOrder.begin(), derivativeOrder.end(), 1, std::multiplies{});  // TODO this is expensive!
-//      return basisFunctionDerivatives<ContainerType>(u, knots_, degree_, weights_, derivativeOrderTotal);
-//    }
+    //    template <typename ContainerType = std::vector<ScalarType>>
+    //    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const std::array<int, dim>& derivativeOrder)const  {
+    //      auto derivativeOrderTotal
+    //          = std::accumulate(derivativeOrder.begin(), derivativeOrder.end(), 1, std::multiplies{});  // TODO this is expensive!
+    //      return basisFunctionDerivatives<ContainerType>(u, knots_, degree_, weights_, derivativeOrderTotal);
+    //    }
 
     // \brief This function return the basis function and the corresponding derivatives
     // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
     static auto basisFunctionDerivatives(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
-                                         const int derivativeOrder, const bool triangleDerivatives = false)  {
+                                         const int derivativeOrder, const bool triangleDerivatives = false) {
       std::array<DynamicMatrix<ScalarType>, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
         bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(u[i], knots[i], degree[i], derivativeOrder);
@@ -337,12 +336,12 @@ namespace Dune::IGA {
 
   // Algo A7.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2UL, 3UL>>
-  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType origin                 = {0, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType X                      = {1, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y                      = {0, 1, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type radius     = 1.0,
+  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type radius     = 1.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type startAngle = 0.0,
-                       typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type endAngle         = 360.0) {
+                       typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type endAngle         = 360.0,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType origin                 = {0, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType X                      = {1, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y                      = {0, 1, 0} ) {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
     using GlobalCoordinateType = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     using ControlPoint         = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;

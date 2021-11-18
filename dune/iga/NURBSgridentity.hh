@@ -29,13 +29,14 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} {}
+              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} //TODO find out if boundary ent
+
+    {}
 
     //! Geometry of this entity
      typename GridViewImp::template Codim<codim>::Geometry geometry() const {
-      auto const& knotElementNet = NURBSGridView_->NURBSpatch_->knotElementNet_;
-      auto const& multiIndex     = knotElementNet->directToMultiIndex(directIndex_);
-      return NURBSGridView_->NURBSpatch_->geometry(multiIndex);
+//      std::cerr<< "Error geometry not implemented yet for geometries of codim!=0"<<std::endl;
+      return NURBSGridView_->NURBSpatch_->template geometry<codim>(directIndex_);
     }
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
@@ -43,11 +44,6 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydim < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydim), codim1) << codim1);
     }
-
-//    template <int codimSub>
-//    requires(codim == 0) typename GridViewImp::template Codim<codimSub>::Entity subEntity(int i) const {
-      //            if constexpr(codimSub==GridViewImp::dimension) //vertices
-//    }
 
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridViewImp::dimension - codim); }
     int level() const{ return 0;}
@@ -62,6 +58,7 @@ namespace Dune::IGA {
     //   Data members
     // /////////////////////////////////////
   private:
+    friend GridViewImp;
     const GridViewImp* NURBSGridView_{nullptr};
     unsigned int directIndex_;
     PartitionType parType_;
@@ -87,9 +84,7 @@ namespace Dune::IGA {
 
     //! Geometry of this entity
     typename GridViewImp::template Codim<0>::Geometry geometry() const {
-      auto const& knotElementNet = NURBSGridView_->NURBSpatch_->knotElementNet_;
-      auto const& multiIndex     = knotElementNet->directToMultiIndex(directIndex_);
-      return NURBSGridView_->NURBSpatch_->template geometry<mydim>(multiIndex);
+      return NURBSGridView_->NURBSpatch_->template geometry<0UL>(directIndex_);
     }
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
@@ -104,6 +99,10 @@ namespace Dune::IGA {
       {
         assert(i==0);
         return *this;
+      }else if(codimSub==mydim)// vertices
+      {
+        auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(directIndex_,i);
+        return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
       }
 
     }
@@ -112,10 +111,6 @@ namespace Dune::IGA {
     int level() const{ return 0;}
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
-
-    // /////////////////////////////////////
-    //   Data members
-    // /////////////////////////////////////
   private:
     friend GridViewImp;
     const GridViewImp* NURBSGridView_{nullptr};

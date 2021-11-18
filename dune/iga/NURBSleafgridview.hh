@@ -112,7 +112,6 @@ namespace Dune::IGA {
       Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
         std::get<i>(*entityVector_.get()).reserve(NURBSpatch_->size(i));
         for (unsigned int j = 0; j < NURBSpatch_->size(i); ++j)
-
           std::get<i>(*entityVector_.get()).emplace_back(*this, j);
       });
     }
@@ -186,6 +185,8 @@ namespace Dune::IGA {
     }
 
   private:
+
+    friend class NURBSGridLeafIndexSet<NURBSLeafGridView<GridImpl>>;
     friend auto elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
     std::shared_ptr<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>> NURBSpatch_;
     NURBSGridLeafIndexSet<NURBSGridView> indexSet_;

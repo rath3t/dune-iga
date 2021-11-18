@@ -55,6 +55,7 @@ namespace Dune::IGA {
     typename LinearAlgebraTraits::value_type;
 
     typename LinearAlgebraTraits::template FixedMatrixType<a,a>;
+    typename LinearAlgebraTraits::template FixedVectorType<a>;
 
 
   };

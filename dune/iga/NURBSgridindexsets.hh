@@ -17,7 +17,7 @@ namespace Dune::IGA
       using IndexType = unsigned int;
 
       //! constructor
-      explicit NURBSGridLeafIndexSet (const GridViewImp& g) : gridView(&g)
+      explicit NURBSGridLeafIndexSet (const GridViewImp& g) : gridView_(&g)
       {
           for(int id= 0;auto& entTypes: types_) {
               entTypes = {GeometryTypes::cube(GridViewImp::dimension - id)};
@@ -28,7 +28,7 @@ namespace Dune::IGA
       template<class Entity>
       bool contains(const Entity& e) const
       {
-        return gridView->contains(e);
+        return gridView_->contains(e);
       }
 
       //! get index of an entity, need to change the type to a property from GridImp
@@ -41,7 +41,12 @@ namespace Dune::IGA
         template<int codimElement>
         int subIndex (const NURBSGridEntity<codimElement, GridViewImp> & e,int i, unsigned int codim) const
         {
-          throw std::logic_error("Test");
+          if(codimElement==0 && NURBSGridEntity<codimElement, GridViewImp>::mydim==codim)
+            return gridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(e.getIndex(),i);
+          else if (i==0 && codim == 0 && codimElement ==0)
+            return this->index(e);
+          else
+          throw std::logic_error("subIndex only defined for vertices");
         }
 
 
@@ -54,13 +59,13 @@ namespace Dune::IGA
 
       auto size(int codim) const
       {
-          return gridView->size(codim);
+          return gridView_->size(codim);
       }
 
         auto size(const GeometryType& gt) const
         {
           const int codim = GridViewImp::dimension - gt.dim();
-            return gridView->size(codim);
+            return gridView_->size(codim);
         }
 
 
@@ -68,6 +73,6 @@ namespace Dune::IGA
     private:
       std::array<std::array<GeometryType ,1>,GridViewImp::dimension+1> types_;
       std::array<std::map<int ,int>,GridViewImp::dimension+1> indices;
-      const GridViewImp* gridView;
+      const GridViewImp* gridView_;
     };
   }

@@ -18,6 +18,8 @@ namespace Dune::IGA {
     using value_type = typename FieldMatrix<ScalarType, dimworld, dim>::value_type;
     template<int rows,int cols>
     using FixedMatrixType = FieldMatrix<ScalarType, rows, cols>;
+    template<int rows>
+    using FixedVectorType = FieldVector<ScalarType, rows>;
 
   };
 

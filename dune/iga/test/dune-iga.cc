@@ -96,44 +96,33 @@ void testNURBSGridSurface() {
   vtkWriter.write("NURBSGridTest-Surface");
 }
 
-void testNURBSGridSurfaceOfRevolution() {
-    auto circle = makeCircularArc();
-    circle.controlPoints.directGet(0).p[1]+=3;
-
-     auto nurbsPatchData = makeSurfaceOfRevolution(circle,{2.0,0,0},{0,1,0},360.0);
-//    for (int i = 0; i < nurbsPatchData.controlPoints.directSize(); ++i) {
-//      nurbsPatchData.controlPoints.directGet(i).w=1;
-//    }
-//  constexpr auto dim               = 2UL;
-//  constexpr auto dimworld          = 3UL;
-//  const std::array<int, dim> order = {2, 1};
-//  // quarter cylindrical surface
-//  const double lx = 1;
-//  const double ly = 1;
-//  const double h = 1;
-//  const double skewfac =1;
-//
-//  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
-//  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
-//
-//  nurbsPatchData.controlPoints = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, ly, 0}, .w = 1}},
-//                                  {{.p = {lx /2 , 0, h}, .w = 1}, {.p = {lx / 2, ly, h}, .w = 1}},
-//                                  {{.p = {lx, 0, 0}, .w = 1}, {.p = {lx, ly, 0}, .w = 1}}};
-//  nurbsPatchData.order         = order;
+void testTorusGeometry() {
+  const double R = 2.0;
+  const double r = 1.0;
+  auto circle    = makeCircularArc(r);
+  auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
 
   IGA::NURBSGrid grid(nurbsPatchData);
-  grid.globalRefine(2);
-  //  grid.globalRefineInDirection(0,2);
+  grid.globalRefine(0);
   auto gridView = grid.leafGridView();
-  //  gridView.getPreBasis()
 
   const int subSampling = 2;
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("NURBSGridTest-SurfaceRevolutionFLAT");
 
+  TestSuite test;
   Dune::GeometryChecker<IGA::NURBSGrid<2UL, 3UL>> geometryChecker;
   geometryChecker.checkGeometry(gridView);
+   Dune::checkIndexSet(grid,gridView,std::cout);
+
+  double vol = 0.0;
+  for (auto& ele : elements(gridView)) {
+    vol += ele.geometry().volume();
+  }
+  const double pi                   = std::numbers::pi_v<double>;
+  const double referenceTorusVolume = 4.0 * pi * pi * r * R;
+  test.check(vol - referenceTorusVolume < 1e-4, "The integrated area of the torus surface is wrong!");
 }
 
 void testNURBSSurface() {
@@ -310,7 +299,7 @@ void testNurbsBasis() {
   nurbsPatchData.order         = order;
 
   IGA::NURBSGrid<dim, dimworld> grid(nurbsPatchData);
-  grid.globalRefine(5);
+  grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -323,7 +312,7 @@ void testNurbsBasis() {
   vtkWriter.write("ZylRefine");
   using GridView = decltype(gridView);
   Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.getPatchData());
-  //  Dune::Functions::NurbsPreBasis<GridView,Dune::Functions::FlatMultiIndex<std::size_t>> basis(gridView, nurbsPatchData);
+  //  Dune::Functions::NurbsPreBasis<GridView,Dune::Functions::FlatMultiIndex<std::size_t>> basis(gridView_, nurbsPatchData);
 
   // Test open knot vectors
   std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
@@ -676,7 +665,7 @@ void gridCheck() {
   //  grid.globalRefineInDirection(0,2);
   auto gridView = grid.leafGridView();
 
-  //  Dune::checkIndexSet(grid,gridView,std::cout);
+  //  Dune::checkIndexSet(grid,gridView_,std::cout);
 }
 
 int main(int argc, char** argv) try {
@@ -701,8 +690,8 @@ int main(int argc, char** argv) try {
   //  testNurbsGridCylinder();
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
-  testNURBSGridSurfaceOfRevolution();
-  std::cout << "done with NURBS surface of revolution " << std::endl;
+  testTorusGeometry();
+  std::cout << "done with NURBS torus " << std::endl;
   //
   testNurbsBasis();
   std::cout << "done with NURBS basis test " << std::endl;

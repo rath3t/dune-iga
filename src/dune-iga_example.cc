@@ -44,8 +44,8 @@ using namespace Dune;
 ////  //controlNet.disp();
 ////
 ////  IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
-////  const auto gridView = grid.leafGridView();
-////  const auto& indexSet = gridView.indexSet();
+////  const auto gridView_ = grid.leafGridView();
+////  const auto& indexSet = gridView_.indexSet();
 ////  ////////////////////////////////////////////////////////////////
 ////  //  Write to a VTK file.
 ////  //  The higher-order geometry is captured by subsampling.
@@ -53,7 +53,7 @@ using namespace Dune;
 ////
 ////  ////////////////////////////////////////////////////////////////
 ////  //! Test code for VTKWriter, please uncomment to inspect the remaining errors
-////  //  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView,subSampling);
+////  //  SubsamplingVTKWriter<decltype(gridView_)> vtkWriter(gridView_,subSampling);
 ////  //  vtkWriter.write("foo");
 ////  ////////////////////////////////////////////////////////////////
 ////
@@ -64,7 +64,7 @@ using namespace Dune;
 //////  std::size_t offset = 0;
 //////
 //////  //Range-based for loop to get each element and its corresponding geometry
-//////  for (auto const &element:gridView)
+//////  for (auto const &element:gridView_)
 //////  {
 //////    auto geometry = element.geometry();
 //////    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
@@ -131,8 +131,8 @@ using namespace Dune;
 ////  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
 ////
 ////  IGA::BSplineGrid<dim,dimworld> grid(knotSpans, controlNet, order);
-////  const auto& gridView = grid.leafGridView();
-////  const auto& indexSet = gridView.indexSet();
+////  const auto& gridView_ = grid.leafGridView();
+////  const auto& indexSet = gridView_.indexSet();
 ////
 ////  IGA::VTKFile vtkFile;
 ////
@@ -140,7 +140,7 @@ using namespace Dune;
 ////  int offset = 0;
 ////
 ////  //Range-based for loop to get each element and its corresponding geometry
-////  for (auto const &element:gridView)
+////  for (auto const &element:gridView_)
 ////  {
 ////    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;
 ////    auto geometry = element.geometry();
@@ -205,8 +205,8 @@ using namespace Dune;
 //  auto weightNet = Dune::IGA::MultiDimensionNet<dim,1>(dimsize,weight);
 //
 //  IGA::NURBSGrid<dim,dimworld> grid(knotSpans, controlNet, weightNet, order);
-//  const auto& gridView = grid.leafGridView();
-//  const auto& indexSet = gridView.indexSet();
+//  const auto& gridView_ = grid.leafGridView();
+//  const auto& indexSet = gridView_.indexSet();
 //
 //
 //
@@ -234,8 +234,8 @@ using namespace Dune;
 //  auto controlNet = MultiDimensionNet<dim,dimworld>(dimsize,controlPoints);
 //
 //  IGA::NURBSGrid<dim,dimworld> grid(knotSpans, controlNet, weightNet, order);
-//  const auto& gridView = grid.leafGridView();
-//  const auto& indexSet = gridView.indexSet();
+//  const auto& gridView_ = grid.leafGridView();
+//  const auto& indexSet = gridView_.indexSet();
 //
 // ////////////////////////////////////////////////////////////////
 //  //  Write to a VTK file.
@@ -249,7 +249,7 @@ using namespace Dune;
 //  std::size_t offset = 0;
 //
 //  //Range-based for loop to get each element and its corresponding geometry
-//  for (auto const &element:elements(gridView))
+//  for (auto const &element:elements(gridView_))
 //  {
 //    auto geometry = element.geometry();
 //    std::cout<<"Element index: "<<indexSet.index(element)<<std::endl;

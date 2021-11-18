@@ -9,17 +9,17 @@
 namespace Dune::Capabilities
 {
 
-  template< std::integral auto  dim, std::integral auto dimworld >
-  struct hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>,0>
+  template< std::integral auto  dim, std::integral auto dimworld,int codim> requires (codim==0 || codim == dim)
+  struct hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>,codim>
   {
     static const bool v = true;
   };
 
 
-  template< std::integral auto dim, std::integral auto dimworld >
-  struct hasEntityIterator<Dune::IGA::NURBSGrid<dim,dimworld>,0>
+  template< std::integral auto dim, std::integral auto dimworld ,int codim> requires (codim==0 || codim == dim)
+  struct hasEntityIterator<Dune::IGA::NURBSGrid<dim,dimworld>,codim>
   {
-    static const bool v = hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>, 0>::v;
+    static const bool v = hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>,codim>::v;
   };
 
 
