@@ -21,7 +21,8 @@ namespace Dune::IGA {
   class NURBSGridEntity {
   public:
     static constexpr auto mydim = GridViewImp::dimension - codim;
-    using Geometry = NURBSGeometry<mydim, GridViewImp::dimensionworld,GridViewImp::dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    using Geometry
+        = NURBSGeometry<mydim, GridViewImp::dimensionworld, GridViewImp::dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
     //! Default Constructor
     NURBSGridEntity() = default;
 
@@ -29,13 +30,14 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} //TODO find out if boundary ent
+              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)}
+    // TODO find out if boundary ent
 
     {}
 
     //! Geometry of this entity
-     typename GridViewImp::template Codim<codim>::Geometry geometry() const {
-//      std::cerr<< "Error geometry not implemented yet for geometries of codim!=0"<<std::endl;
+    typename GridViewImp::template Codim<codim>::Geometry geometry() const {
+      //      std::cerr<< "Error geometry not implemented yet for geometries of codim!=0"<<std::endl;
       return NURBSGridView_->NURBSpatch_->template geometry<codim>(directIndex_);
     }
 
@@ -46,7 +48,7 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridViewImp::dimension - codim); }
-    int level() const{ return 0;}
+    int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
     //    bool equals(const BSplinePatchEntity& other) const
@@ -54,9 +56,8 @@ namespace Dune::IGA {
     //      return target_ == other.target_;
     //    }
 
-    // /////////////////////////////////////
-    //   Data members
-    // /////////////////////////////////////
+    auto operator<=>(const NURBSGridEntity&) const = default;
+
   private:
     friend GridViewImp;
     const GridViewImp* NURBSGridView_{nullptr};
@@ -69,12 +70,18 @@ namespace Dune::IGA {
    *.
    */
   template <typename GridViewImp>
-  class NURBSGridEntity<0,GridViewImp> {
+  class NURBSGridEntity<0, GridViewImp> {
   public:
     static constexpr auto mydim = GridViewImp::dimension;
-    using Geometry = NURBSGeometry<mydim,  GridViewImp::dimensionworld,GridViewImp::dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    using Geometry
+        = NURBSGeometry<mydim, GridViewImp::dimensionworld, GridViewImp::dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
     //! Default Constructor
-    NURBSGridEntity() = default;
+    NURBSGridEntity()                       = default;
+    NURBSGridEntity(const NURBSGridEntity&) = default;             // NURBSGridEntityopy constructor
+    NURBSGridEntity(NURBSGridEntity&&)       noexcept = default;             // Move constructor
+    NURBSGridEntity& operator=(const NURBSGridEntity&) = default;  // NURBSGridEntityopy assignment operator
+    NURBSGridEntity& operator=(NURBSGridEntity&&)  noexcept = default;       // Move assignment operator
+    ~NURBSGridEntity()                          = default;       // Destructor
 
     NURBSGridEntity(const GridViewImp& gridView, unsigned int directIndex)
         : NURBSGridView_(&gridView),
@@ -95,29 +102,36 @@ namespace Dune::IGA {
 
     template <int codimSub>
     typename GridViewImp::template Codim<codimSub>::Entity subEntity(int i) const {
-      if constexpr (codimSub==0)
-      {
-        assert(i==0);
+      if constexpr (codimSub == 0) {
+        assert(i == 0);
         return *this;
-      }else if(codimSub==mydim)// vertices
+      } else if (codimSub == mydim)  // vertices
       {
-        auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(directIndex_,i);
+        auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(directIndex_, i);
         return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
       }
-
     }
 
+    bool isLeaf() const { return true;}
     [[nodiscard]] auto type() const { return GeometryTypes::cube(mydim); }
-    int level() const{ return 0;}
+    int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
+    auto operator<=>(const NURBSGridEntity&) const = default;
   private:
+//    friend bool operator==(const NURBSGridEntity<0,GridViewImp>& l,const NURBSGridEntity<0,GridViewImp>& r) ;
     friend GridViewImp;
     const GridViewImp* NURBSGridView_{nullptr};
     unsigned int directIndex_;
     PartitionType parType_;
 
   };  // end of OneDGridEntity codim = 0
+
+  template <std::integral auto codim, typename GridViewImp>
+  auto referenceElement(const NURBSGridEntity<codim,GridViewImp>& e) {
+    return Dune::ReferenceElements<typename GridViewImp::ctype, NURBSGridEntity<codim,GridViewImp>::mydim>::cube();
+  };
+
 }  // namespace Dune::IGA
 
 #endif  // DUNE_IGA_NURBSGRIDENTITY_HH

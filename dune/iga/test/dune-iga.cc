@@ -22,6 +22,10 @@
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkgeometry.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkjacobians.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/nurbsbasis.hh>
 
 using namespace Dune;
@@ -123,6 +127,16 @@ void testTorusGeometry() {
   const double pi                   = std::numbers::pi_v<double>;
   const double referenceTorusVolume = 4.0 * pi * pi * r * R;
   test.check(vol - referenceTorusVolume < 1e-4, "The integrated area of the torus surface is wrong!");
+
+  checkEntityLifetime(gridView,gridView.size(0));
+//  auto view = std::ranges::transform_view(elements(gridView),[](const auto& ele){return ele.geometry();}; );
+  for (auto&& elegeo :  elements(gridView) | std::views::transform([](const auto& ele){return ele.geometry();}))
+    checkJacobians(elegeo);
+
+  checkIterators(gridView);
+
+//  gridcheck(grid);
+
 }
 
 void testNURBSSurface() {

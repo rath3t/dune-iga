@@ -20,7 +20,7 @@
     {
     public:
       //typedef typename NURBSGridView::template Codim<codim>::Entity Entity;
-
+      NURBSGridLeafIterator()=default;
       using Reference =  NURBSEntity;
       explicit NURBSGridLeafIterator(const typename std::vector<NURBSEntity>::iterator& spanIter)
           :  std::vector<NURBSEntity>::iterator(spanIter)

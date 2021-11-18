@@ -8,6 +8,7 @@
 #include <dune/iga/NURBSgridleafiterator.hh>
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <ranges>
 
 namespace Dune::IGA {
 
@@ -56,7 +57,9 @@ namespace Dune::IGA {
       std::integer_sequence<std::common_type_t<decltype(codim)...>, codim...>);
 
   template <typename GridImpl>
-  auto elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
+  const auto& elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
+  template <typename GridImpl>
+  auto& elements( NURBSLeafGridView<GridImpl> &gridLeafView);
 
   /** \brief NURBS grid manager */
   template <typename GridImpl>
@@ -174,6 +177,7 @@ namespace Dune::IGA {
     const IndexSet &indexSet() const { return indexSet_; }
 
     auto size(int codim) const {
+      assert(codim<=3 && codim>=0);
       if (codim == 0)
         return std::get<0>(*entityVector_.get()).size();
       else if (codim == 1)
@@ -182,12 +186,14 @@ namespace Dune::IGA {
         if (codim == 2) return std::get<2>(*entityVector_.get()).size();
       if constexpr (dimension > 2)
         if (codim == 3) return std::get<3>(*entityVector_.get()).size();
+      __builtin_unreachable();
     }
 
   private:
 
     friend class NURBSGridLeafIndexSet<NURBSLeafGridView<GridImpl>>;
-    friend auto elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
+    friend const auto& elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
+    friend auto& elements<GridImpl>( NURBSLeafGridView<GridImpl> &gridLeafView);
     std::shared_ptr<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>> NURBSpatch_;
     NURBSGridLeafIndexSet<NURBSGridView> indexSet_;
     const Grid *grid_;
@@ -196,7 +202,12 @@ namespace Dune::IGA {
   };
 
   template <typename GridImpl>
-  auto elements(const NURBSLeafGridView<GridImpl> &gridLeafView) {
+  const auto& elements(const NURBSLeafGridView<GridImpl> &gridLeafView) {
+    return std::get<0>(*gridLeafView.entityVector_.get());
+  }
+
+  template <typename GridImpl>
+  auto& elements( NURBSLeafGridView<GridImpl> &gridLeafView) {
     return std::get<0>(*gridLeafView.entityVector_.get());
   }
 }  // namespace Dune::IGA

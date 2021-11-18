@@ -65,9 +65,10 @@ namespace Dune::IGA {
       vertexNet_ = std::make_shared<MultiDimensionNet<dim, double>>(vertexSize);
     }
 
-    int size(int codim) {
+    int size(int codim) const {
       assert(codim <= dim);
       assert(codim <= 3);
+      assert(codim >=0);
 
       if (codim == 0)
         return elementNet_->directSize();
@@ -94,7 +95,7 @@ namespace Dune::IGA {
         }
         return surfSize;
       }
-
+      __builtin_unreachable();
     }
 
     const auto& getPatchData() { return patchData_; }

@@ -12,23 +12,24 @@ namespace Dune::IGA
   public:
     using IdType = std::size_t;
 
-    IgaIdSet(const IgaGridImpl& grid) : grid_{&grid},  indexSet_{grid_->leafGridView().indexSet()}{}
+    explicit IgaIdSet(const IgaGridImpl& grid) :  gridView_{grid.leafGridView()}{}
 
     template<class Entity>
     auto id(const Entity& entity) const
     {
-      return indexSet_.index(entity);
+      return gridView_.indexSet().index(entity);
     }
 
     auto subId(const typename IgaGridImpl::Traits::template Codim<0>::Entity& entity,
                  int i,
                  unsigned int codim) const
     {
-      return indexSet_.subIndex(entity,i,codim);
+      return gridView_.indexSet().subIndex(entity,i,codim);
 //      throw std::logic_error("subId not implemented!");
     }
   private:
-    const IgaGridImpl* grid_;
-    const typename IgaGridImpl::Traits::IndexSet indexSet_;
+//    const IgaGridImpl* grid_;
+    const typename IgaGridImpl::Traits::GridView gridView_;
+//    const typename IgaGridImpl::Traits::IndexSet indexSet_;
   };
 }
