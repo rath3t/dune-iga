@@ -21,10 +21,10 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-#include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
-#include <dune/grid/test/checkjacobians.hh>
+#include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/nurbsbasis.hh>
 
@@ -101,13 +101,13 @@ void testNURBSGridSurface() {
 }
 
 void testTorusGeometry() {
-  const double R = 2.0;
-  const double r = 1.0;
-  auto circle    = makeCircularArc(r);
+  const double R      = 2.0;
+  const double r      = 1.0;
+  auto circle         = makeCircularArc(r);
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
 
   IGA::NURBSGrid grid(nurbsPatchData);
-  grid.globalRefine(0);
+  grid.globalRefine(1);
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;
@@ -118,25 +118,37 @@ void testTorusGeometry() {
   TestSuite test;
   Dune::GeometryChecker<IGA::NURBSGrid<2UL, 3UL>> geometryChecker;
   geometryChecker.checkGeometry(gridView);
-   Dune::checkIndexSet(grid,gridView,std::cout);
+  Dune::checkIndexSet(grid, gridView, std::cout);
 
-  double vol = 0.0;
+  double area = 0.0;
   for (auto& ele : elements(gridView)) {
-    vol += ele.geometry().volume();
+    area += ele.geometry().volume();
   }
   const double pi                   = std::numbers::pi_v<double>;
-  const double referenceTorusVolume = 4.0 * pi * pi * r * R;
-  test.check(vol - referenceTorusVolume < 1e-4, "The integrated area of the torus surface is wrong!");
+  const double referenceTorusSurfaceArea = 4.0 * pi * pi * r * R;
+  test.check(area - referenceTorusSurfaceArea < 1e-4, "The integrated area of the torus surface is wrong!");
 
-  checkEntityLifetime(gridView,gridView.size(0));
-//  auto view = std::ranges::transform_view(elements(gridView),[](const auto& ele){return ele.geometry();}; );
-  for (auto&& elegeo :  elements(gridView) | std::views::transform([](const auto& ele){return ele.geometry();}))
+  double gaussBonnet = 0.0;
+  for (auto& ele : elements(gridView)) {
+    const auto rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), (*std::ranges::max_element(nurbsPatchData.order)));
+    for (auto& gp : rule) {
+      const auto Kinc = ele.geometry().gaussianCurvature(gp.position());
+      const auto Kmax = 1 / (r * (R + r));
+      const auto Kmin = -1 / (r * (R - r));
+      test.check(Kinc < Kmax && Kinc > Kmin,"The Gaussian curvature should be within bounds" );
+      gaussBonnet += Kinc * gp.weight()*ele.geometry().integrationElement(gp.position());
+    }
+  }
+
+  test.check(std::abs(gaussBonnet) < 1e-13, "Gauss-Bonnet theorem dictates a vanishing integrated Gaussian curvature for the torus!");
+  checkEntityLifetime(gridView, gridView.size(0));
+
+  for (auto&& elegeo : elements(gridView) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
     checkJacobians(elegeo);
 
   checkIterators(gridView);
 
-//  gridcheck(grid);
-
+  //  gridcheck(grid);
 }
 
 void testNURBSSurface() {

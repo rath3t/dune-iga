@@ -65,7 +65,7 @@ namespace Dune::IGA {
       vertexNet_ = std::make_shared<MultiDimensionNet<dim, double>>(vertexSize);
     }
 
-    int size(int codim) const {
+    [[nodiscard]] int size(int codim) const {
       assert(codim <= dim);
       assert(codim <= 3);
       assert(codim >=0);

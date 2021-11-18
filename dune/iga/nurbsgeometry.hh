@@ -32,10 +32,10 @@ namespace Dune::IGA {
     using GlobalCoordinate = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
 
     /** \brief Type for the transposed Jacobian matrix */
-    using JacobianTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<mydim,coorddimension>;
+    using JacobianTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
 
     /** \brief Type for the transposed inverse Jacobian matrix */
-    using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<coorddimension,mydim>;
+    using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
 
     using ControlPointType    = typename NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType;
@@ -52,11 +52,11 @@ namespace Dune::IGA {
      */
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData,
                   const std::array<std::vector<double>::const_iterator, griddim>& varyingSpans,
-//                  const std::array<double, griddim - mydimension>& fixedSpans,
+                  //                  const std::array<double, griddim - mydimension>& fixedSpans,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections)
         : patchData_(patchData),
           varyingSpans_(varyingSpans),
-//          fixedSpans_(fixedSpans),
+          //          fixedSpans_(fixedSpans),
           fixedOrVaryingDirections_{fixedOrVaryingDirections},
           nurbs_{*patchData},
           cpCoordinateNet_{netOfSpan(transform01ToKnotSpan(std::array<double, griddim>{}, varyingSpans_), patchData->knotSpans,
@@ -69,10 +69,10 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] double volume() const {
-      const auto rule= Dune::QuadratureRules<ctype,mydimension>::rule(this->type(),(*std::ranges::max_element( patchData_->order)));
-      ctype vol=0.0;
-      for(auto& gp : rule)
-        vol+= integrationElement(gp.position())*gp.weight();
+      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), (*std::ranges::max_element(patchData_->order)));
+      ctype vol       = 0.0;
+      for (auto& gp : rule)
+        vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
 
@@ -93,16 +93,13 @@ namespace Dune::IGA {
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
 
-
-
-    auto transformLocalToSpan(const LocalCoordinate& local) const
-    {
+    auto transformLocalToSpan(const LocalCoordinate& local) const {
       std::array<typename LocalCoordinate::value_type, griddim> localInSpan;
-      if constexpr (local.size()!=0)
+      if constexpr (local.size() != 0)
         localInSpan = transform01ToKnotSpan(local, varyingSpans_);
       else
         for (int i = 0; i < griddim; ++i)
-          localInSpan[i] =  *(varyingSpans_[i]);
+          localInSpan[i] = *(varyingSpans_[i]);
       return localInSpan;
     }
     /** \brief evaluates the NURBS mapping
@@ -110,13 +107,13 @@ namespace Dune::IGA {
      *  \param[in] local local coordinates for each dimension
      */
     GlobalCoordinate global(const LocalCoordinate& local) const {
-      const auto  localInSpan = transformLocalToSpan(local);
+      const auto localInSpan = transformLocalToSpan(local);
 
-//      for (int vcounter = 0, fcounter = 0, i = 0; i < griddim; ++i) {
-//        assert(localInSpan.size() >= vcounter);
-//        assert(fixedSpans_.size() >= fcounter);
-//        posInPatch[i] = fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free ? localInSpan[vcounter++] : fixedSpans_[fcounter++];
-//      }
+      //      for (int vcounter = 0, fcounter = 0, i = 0; i < griddim; ++i) {
+      //        assert(localInSpan.size() >= vcounter);
+      //        assert(fixedSpans_.size() >= fcounter);
+      //        posInPatch[i] = fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free ? localInSpan[vcounter++] : fixedSpans_[fcounter++];
+      //      }
       auto basis       = nurbs_.basisFunctionNet(localInSpan);
       auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
       return dot(basis, cpNetofSpan);
@@ -144,7 +141,7 @@ namespace Dune::IGA {
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       JacobianTransposed result;
-      const auto  localInSpan = transformLocalToSpan(local);
+      const auto localInSpan              = transformLocalToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 1);
       auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
       for (int dir = 0; dir < mydimension; ++dir) {
@@ -166,6 +163,12 @@ namespace Dune::IGA {
       return jacobianInverseTransposed1;
     }
 
+    ctype gaussianCurvature(const LocalCoordinate& local) const {
+      auto metricDet = metric(local).determinant();
+      auto secondF   = secondFundamentalForm(local).determinant();
+      return secondF / metricDet;
+    }
+
     auto metric(const LocalCoordinate& local) const {
       const auto J = jacobianTransposed(local);
       FieldMatrix<ctype, mydimension, mydimension> metric;
@@ -173,31 +176,52 @@ namespace Dune::IGA {
       return metric;
     }
 
-    //    auto secondDerivativeOfPosition(const LocalCoordinate& local) const {
-    //      FieldMatrix<ctype,coorddimension,mydimension*(mydimension+1)/2> result;
-    //      const auto localInSpan              = transform01ToKnotSpan(local, varyingSpans_);
-    //      const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
-    //      auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order,
-    //      extractControlpoints(patchData_->controlPoints)); for (int dir = 0; dir < mydimension; ++dir) {
-    //        std::array<unsigned int, griddim> ithVec{};
-    //        ithVec[dir]           = 2; //second derivative in dir direction
-    //        result[dir] = dot(basisFunctionDerivatives.get(ithVec), cpNetofSpan);
-    //      }
-    //      std::array<int,mydimension> mixeDerivs;
-    //      std::ranges::fill_n(mixeDerivs.begin(),mydimension,1); //first mixed derivatives
-    //      int mixedDireCounter = mydimension;
-    //      do {
-    //        std::cout << mixeDerivs[0] <<" " <<mixeDerivs[1]<< '\n';
-    //        result[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), cpNetofSpan);
-    //      } while(std::ranges::next_permutation(mixeDerivs,std::greater()).found);
-    // *(varyingSpans_[dir]+1)-*varyingSpans_[dir]; //transform back to 0..1!!!!
-    //      return result;
-    //    }
+    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) {
+      auto J = jacobianTransposed(local);
+      auto N = cross(J[0], J[1]);
+      return N / N.two_norm();
+    }
+
+    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) {
+      const auto secDerivatives = secondDerivativeOfPosition(local);
+      const auto unitnormal     = unitNormal(local);
+      FieldMatrix<ctype, mydimension, mydimension> b;
+      b[0][0] = secDerivatives[0] * unitnormal;
+      b[1][1] = secDerivatives[1] * unitnormal;
+      b[0][1] = b[1][0] = secDerivatives[2] * unitnormal;
+      return b;
+    }
+
+    auto secondDerivativeOfPosition(const LocalCoordinate& local) const {
+      FieldMatrix<ctype, coorddimension, mydimension*(mydimension + 1) / 2> result;
+      const auto localInSpan              = transform01ToKnotSpan(local, varyingSpans_);
+      const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
+      auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, griddim> ithVec{};
+        ithVec[dir] = 2;  // second derivative in dir direction
+        result[dir] = dot(basisFunctionDerivatives.get(ithVec), cpNetofSpan);
+        result[dir] *= Dune::power(*(varyingSpans_[dir] + 1) - *varyingSpans_[dir], 2);  // transform back to 0..1
+      }
+      std::array<int, mydimension> mixeDerivs;
+      std::ranges::fill_n(mixeDerivs.begin(), mydimension, 1);  // first mixed derivatives
+      int mixedDireCounter = mydimension;
+      do {
+        result[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), cpNetofSpan);
+        for (int dir = 0; dir < mixeDerivs.size(); ++dir) {
+          if (mixeDerivs[dir] == 0) continue;
+          result[mixedDireCounter - 1] *= *(varyingSpans_[dir] + 1) - *varyingSpans_[dir];
+        }
+      } while (std::ranges::next_permutation(mixeDerivs, std::greater()).found);
+
+      return result;
+    }
+
   private:
     std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
 
     std::array<std::vector<double>::const_iterator, griddim> varyingSpans_;
-//    std::array<double, griddim - mydim> fixedSpans_;
+    //    std::array<double, griddim - mydim> fixedSpans_;
 
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
 
