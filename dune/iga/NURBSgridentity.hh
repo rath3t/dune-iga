@@ -105,11 +105,17 @@ namespace Dune::IGA {
       if constexpr (codimSub == 0) {
         assert(i == 0);
         return *this;
-      } else if (codimSub == mydim)  // vertices
+      } else if constexpr (codimSub == mydim && mydim==2)  // vertices from elements
       {
         auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(directIndex_, i);
         return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
       }
+      else if constexpr (mydim-codimSub == 1)  //edges from elements
+      {
+        auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalEdgeIndexFromElementIndex(directIndex_, i);
+        return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
+      }
+
     }
 
     bool isLeaf() const { return true;}

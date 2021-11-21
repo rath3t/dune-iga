@@ -41,12 +41,14 @@ namespace Dune::IGA
         template<int codimElement>
         int subIndex (const NURBSGridEntity<codimElement, GridViewImp> & e,int i, unsigned int codim) const
         {
-          if(codimElement==0 && NURBSGridEntity<codimElement, GridViewImp>::mydim==codim)
+          if (codimElement==0 && NURBSGridEntity<codimElement, GridViewImp>::mydim==codim)
             return gridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(e.getIndex(),i);
           else if (i==0 && codim == 0 && codimElement ==0)
             return this->index(e);
+          else if (codim == 1 && codimElement ==0)
+            return gridView_->NURBSpatch_->getGlobalEdgeIndexFromElementIndex(e.getIndex(),i);
           else
-          throw std::logic_error("subIndex only defined for vertices");
+            throw std::logic_error("subIndex only defined from element to vertices and edges");
         }
 
 
