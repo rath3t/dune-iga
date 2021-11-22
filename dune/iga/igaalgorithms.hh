@@ -27,21 +27,21 @@ namespace Dune::IGA {
     return order;
   }
 
-  template <typename Container1, typename Container2>
-  requires requires(Container1 c1, Container2 c2, int i) {
-    c1[i];
-    c2[i];
-    *c2[i];
-    c2.size();
-    typename Container1::value_type;
-  }
-  auto transform01ToKnotSpan(const Container1& loc, const Container2 corners) {
-    std::array<typename Container1::value_type, corners.size()> localInSpan;
-      for (int d = 0; d < localInSpan.size(); ++d)
-        localInSpan[d] = loc[d] * (*(corners[d] + 1) - *corners[d]) + *corners[d];
-
-    return localInSpan;
-  }
+//  template <typename Container1, typename Container2>
+//  requires requires(Container1 c1, Container2 c2, int i) {
+//    c1[i];
+//    c2[i];
+//    *c2[i];
+//    c2.size();
+//    typename Container1::value_type;
+//  }
+//  auto transform01ToKnotSpan(const Container1& loc, const Container2 corners) {
+//    std::array<typename Container1::value_type, corners.size()> localInSpan;
+//      for (int d = 0; d < localInSpan.size(); ++d)
+//        localInSpan[d] = loc[d] * (*(corners[d] + 1) - *corners[d]) + *corners[d];
+//
+//    return localInSpan;
+//  }
 
   template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
   auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,

@@ -58,9 +58,10 @@ namespace Dune::IGA {
           varyingSpans_(varyingSpans),
           //          fixedSpans_(fixedSpans),
           fixedOrVaryingDirections_{fixedOrVaryingDirections},
-          nurbs_{*patchData},
-          cpCoordinateNet_{netOfSpan(transform01ToKnotSpan(std::array<double, griddim>{}, varyingSpans_), patchData->knotSpans,
-                                     patchData->order, extractControlpoints(patchData->controlPoints))} {}
+          nurbs_{*patchData}
+//          cpCoordinateNet_{netOfSpan(transform01ToKnotSpan(std::array<double, griddim>{}, varyingSpans_), patchData->knotSpans,
+//                                     patchData->order, extractControlpoints(patchData->controlPoints))}
+    {}
 
     /** \brief Map the center of the element to the geometry */
     GlobalCoordinate center() const {
@@ -96,7 +97,10 @@ namespace Dune::IGA {
     auto transformLocalToSpan(const LocalCoordinate& local) const {
       std::array<typename LocalCoordinate::value_type, griddim> localInSpan;
       if constexpr (local.size() != 0)
-        localInSpan = transform01ToKnotSpan(local, varyingSpans_);
+        for (int loci=0, i = 0; i < griddim; ++i) {
+            localInSpan[i] = (fixedOrVaryingDirections_[i]==Impl::FixedOrFree::free) ? local[loci++] * (*(varyingSpans_[i] + 1) - *varyingSpans_[i]) + *varyingSpans_[i] : *varyingSpans_[i];
+        }
+//      localInSpan = transform01ToKnotSpan(local, varyingSpans_);
       else
         for (int i = 0; i < griddim; ++i)
           localInSpan[i] = *(varyingSpans_[i]);
@@ -121,8 +125,8 @@ namespace Dune::IGA {
 
     LocalCoordinate local(const GlobalCoordinate& global) const {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
-      LocalCoordinate x     = LocalCoordinate(0.0);
-      LocalCoordinate dx;
+      LocalCoordinate x     = LocalCoordinate(0.5);
+      LocalCoordinate dx{};
       do {  // from multilinearGeometry
         // Newton's method: DF^n dx^n = F^n, x^{n+1} -= dx^n
         const GlobalCoordinate dglobal = (*this).global(x) - global;
@@ -141,14 +145,19 @@ namespace Dune::IGA {
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       JacobianTransposed result;
+      std::array<unsigned int, mydim> subDirs;
+      for (int subI=0,i = 0; i < griddim; ++i) {
+        if  (fixedOrVaryingDirections_[i]== Dune::IGA::Impl::FixedOrFree::fixed) continue;
+          subDirs[subI++] = i;
+      }
       const auto localInSpan              = transformLocalToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 1);
       auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
-        ithVec[dir] = 1;
+        ithVec[subDirs[dir]] = 1;
         result[dir] = dot(basisFunctionDerivatives.get(ithVec), cpNetofSpan);
-        result[dir] *= *(varyingSpans_[dir] + 1) - *varyingSpans_[dir];  // transform back to 0..1 domain
+        result[dir] *= *(varyingSpans_[subDirs[dir]] + 1) - *varyingSpans_[subDirs[dir]];  // transform back to 0..1 domain
       }
       return result;
     }
@@ -163,7 +172,7 @@ namespace Dune::IGA {
       return jacobianInverseTransposed1;
     }
 
-    ctype gaussianCurvature(const LocalCoordinate& local) const {
+    ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
       auto metricDet = metric(local).determinant();
       auto secondF   = secondFundamentalForm(local).determinant();
       return secondF / metricDet;
@@ -226,7 +235,7 @@ namespace Dune::IGA {
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
 
     Dune::IGA::Nurbs<double, griddim> nurbs_;
-    MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
+//    MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,

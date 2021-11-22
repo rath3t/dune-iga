@@ -116,6 +116,8 @@ namespace Dune::IGA {
         return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
       }
 
+      std::abort();
+
     }
 
     bool isLeaf() const { return true;}
