@@ -2,10 +2,11 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include <dune/grid/common/indexidset.hh>
-#include <dune/iga/NURBSgridentity.hh>
-#include <span>
 #include <map>
+#include <span>
+
+#include <dune/grid/common/indexidset.hh>
+#include <dune/iga/nurbsgridentity.hh>
 
 namespace Dune::IGA
   {

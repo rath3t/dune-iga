@@ -100,7 +100,6 @@ namespace Dune::IGA {
         for (int loci=0, i = 0; i < griddim; ++i) {
             localInSpan[i] = (fixedOrVaryingDirections_[i]==Impl::FixedOrFree::free) ? local[loci++] * (*(varyingSpans_[i] + 1) - *varyingSpans_[i]) + *varyingSpans_[i] : *varyingSpans_[i];
         }
-//      localInSpan = transform01ToKnotSpan(local, varyingSpans_);
       else
         for (int i = 0; i < griddim; ++i)
           localInSpan[i] = *(varyingSpans_[i]);

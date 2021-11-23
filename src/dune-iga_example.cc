@@ -6,17 +6,13 @@
 
 #include <iostream>
 
-
-#include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/fvector.hh>
-
-#include <dune/iga/bsplinepatch.hh>
-#include <dune/iga/NURBSpatch.hh>
-#include <dune/iga/NURBSgrid.hh>
-
-
+#include <dune/common/parallel/mpihelper.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/iga/NURBSpatch.hh>
+#include <dune/iga/bsplinepatch.hh>
+#include <dune/iga/nurbsgrid.hh>
 
 using namespace Dune;
 

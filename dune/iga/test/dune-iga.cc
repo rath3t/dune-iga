@@ -9,9 +9,9 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
-#include <dune/iga/NURBSgrid.hh>
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/bsplinepatch.hh>
+#include <dune/iga/nurbsgrid.hh>
 //#include <dune/iga/vtkfile.hh>
 
 #include <dune/common/float_cmp.hh>

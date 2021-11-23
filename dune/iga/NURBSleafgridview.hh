@@ -2,13 +2,14 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
+#include <ranges>
+
 #include <dune/common/tuplevector.hh>
-#include <dune/iga/NURBSgridentity.hh>
-#include <dune/iga/NURBSgridindexsets.hh>
 #include <dune/iga/NURBSgridleafiterator.hh>
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/nurbsbasis.hh>
-#include <ranges>
+#include <dune/iga/nurbsgridentity.hh>
+#include <dune/iga/nurbsgridindexsets.hh>
 
 namespace Dune::IGA {
 
