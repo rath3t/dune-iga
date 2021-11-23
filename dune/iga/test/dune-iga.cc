@@ -63,7 +63,7 @@ void testNURBSGridCurve() {
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
   //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
-  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
 }
 
 void testNURBSGridSurface() {
@@ -105,7 +105,7 @@ void test3DGrid()
       constexpr auto dim               = 3UL;
       constexpr auto dimworld          = 3UL;
       const std::array<int, dim> order = {2, 2,2};
-      // quarter cylindrical surface
+      // quarter cylindrical hyperSurface
       const double lx = 2;
       const double ly = 1;
       const double lz = 1;
@@ -121,25 +121,35 @@ void test3DGrid()
         for (int j = 0; j < dimSize[1]; ++j) {
           controlp[i].emplace_back();
           for (int k = 0; k < dimSize[2]; ++k) {
-            controlp[i][j].push_back( {.p = {i*i*lx/(dimSize[0]-1)+1, 4*i*j*k*ly/(dimSize[1]-1)+(k+1)+(j+1), k*k*lz/(dimSize[2]-1)}, .w = 1});
+            controlp[i][j].push_back( {.p = {i*i*lx/(dimSize[0]-1)+1, 2*i*j*k*ly/(dimSize[1]-1)+(k+1)+(j+1), k*k*lz/(dimSize[2]-1)}, .w = 1});
           }
         }
       }
 
-//      nurbsPatchData.controlPoints = MultiDimensionNet(dimSize,controlp);
-//      nurbsPatchData.order         = order;
-//
-//      IGA::NURBSGrid grid(nurbsPatchData);
-//      grid.globalRefine(1);
-//
-//      auto gridView = grid.leafGridView();
-//
-//      const int subSampling = 5;
-//      Dune::RefinementIntervals refinementIntervals1(subSampling);
-//      SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
-//      vtkWriter.write("NURBSGridTest-Solid");
+      nurbsPatchData.controlPoints = MultiDimensionNet(dimSize,controlp);
+      nurbsPatchData.order         = order;
 
+      IGA::NURBSGrid grid(nurbsPatchData);
+      grid.globalRefine(1);
 
+      auto gridView = grid.leafGridView();
+
+      const int subSampling = 10;
+      Dune::RefinementIntervals refinementIntervals1(subSampling);
+      SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
+      vtkWriter.write("NURBSGridTest-Solid");
+
+      TestSuite test;
+      Dune::GeometryChecker<decltype(grid)> geometryChecker;
+      geometryChecker.checkGeometry(gridView);
+      Dune::checkIndexSet(grid, gridView, std::cout);
+
+      checkEntityLifetime(gridView, gridView.size(0));
+
+      for (auto&& elegeo : elements(gridView) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
+        checkJacobians(elegeo);
+
+      checkIterators(gridView);
 
 }
 
@@ -194,23 +204,23 @@ void testTorusGeometry() {
   for (auto& ele : elements(gridView)) {
     area += ele.geometry().volume();
   }
-//  const double pi                   = std::numbers::pi_v<double>;
-//  const double referenceTorusSurfaceArea = 4.0 * pi * pi * r * R;
-//  test.check(area - referenceTorusSurfaceArea < 1e-4, "The integrated area of the torus surface is wrong!");
-//
-//  double gaussBonnet = 0.0;
-//  for (auto& ele : elements(gridView)) {
-//    const auto rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), (*std::ranges::max_element(nurbsPatchData.order)));
-//    for (auto& gp : rule) {
-//      const auto Kinc = ele.geometry().gaussianCurvature(gp.position());
-//      const auto Kmax = 1 / (r * (R + r));
-//      const auto Kmin = -1 / (r * (R - r));
-//      test.check(Kinc < Kmax && Kinc > Kmin,"The Gaussian curvature should be within bounds" );
-//      gaussBonnet += Kinc * gp.weight()*ele.geometry().integrationElement(gp.position());
-//    }
-//  }
+  const double pi                   = std::numbers::pi_v<double>;
+  const double referenceTorusSurfaceArea = 4.0 * pi * pi * r * R;
+  test.check(area - referenceTorusSurfaceArea < 1e-4, "The integrated area of the torus hyperSurface is wrong!");
 
-//  test.check(std::abs(gaussBonnet) < 1e-13, "Gauss-Bonnet theorem dictates a vanishing integrated Gaussian curvature for the torus!");
+  double gaussBonnet = 0.0;
+  for (auto& ele : elements(gridView)) {
+    const auto rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), (*std::ranges::max_element(nurbsPatchData.order)));
+    for (auto& gp : rule) {
+      const auto Kinc = ele.geometry().gaussianCurvature(gp.position());
+      const auto Kmax = 1 / (r * (R + r));
+      const auto Kmin = -1 / (r * (R - r));
+      test.check(Kinc < Kmax && Kinc > Kmin,"The Gaussian curvature should be within bounds" );
+      gaussBonnet += Kinc * gp.weight()*ele.geometry().integrationElement(gp.position());
+    }
+  }
+
+  test.check(std::abs(gaussBonnet) < 1e-13, "Gauss-Bonnet theorem dictates a vanishing integrated Gaussian curvature for the torus!");
   checkEntityLifetime(gridView, gridView.size(0));
 
   for (auto&& elegeo : elements(gridView) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
@@ -767,33 +777,19 @@ void gridCheck() {
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
-  //  gridCheck();
-  //  std::cout << "test NURBS grid surface" << std::endl;
-  //  testNURBSGridSurface();
-  //  std::cout << "done with NURBS grid surface" << std::endl;
-  //
-  //  std::cout << "test NURBS grid Curve" << std::endl;
-  //  testNURBSGridCurve();
-  //  std::cout << "done with NURBS grid Curve" << std::endl;
-  //
-  //  std::cout << "test NURBS grid Curve" << std::endl;
-  //  testNURBSCurve();
-  //  std::cout << "done with NURBS curve" << std::endl;
-  //
-  //  testNURBSSurface();
-  //  std::cout << "done with NURBS surface" << std::endl;
-  //
+
   //  testNurbsGridCylinder();
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
 
+
+  testNURBSGridCurve();
+  std::cout << "done with NURBS grid Curve" << std::endl;
   test3DGrid();
   std::cout << "3dGrid " << std::endl;
   testTorusGeometry();
   std::cout << "done with NURBS torus " << std::endl;
-//  //
-//
-//
+
 //  testNurbsBasis();
 //  std::cout << "done with NURBS basis test " << std::endl;
 //

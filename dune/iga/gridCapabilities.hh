@@ -9,23 +9,11 @@
 #include <dune/grid/test/gridcheck.hh>
 namespace Dune::Capabilities
 {
-
-  template< std::integral auto  dim, std::integral auto dimworld,int codim> requires (codim==0 || codim==1 || codim == dim)
+  template< std::integral auto  dim, std::integral auto dimworld,int codim> requires (codim==0 || (codim==1 && dim<3) || (codim==2 && dim==3) || codim == dim )
   struct hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>,codim>
   {
     static const bool v = true;
   };
-
-
-//  template< std::integral auto dim, std::integral auto dimworld ,int codim> requires (codim==0 || codim == dim)
-//  struct hasEntityIterator<Dune::IGA::NURBSGrid<dim,dimworld>,codim>
-//  {
-//    static const bool v = hasEntity<Dune::IGA::NURBSGrid<dim,dimworld>,codim>::v;
-//  };
-
-
-
-
 }
 template< std::integral auto dim, std::integral auto dimworld >
 struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim,dimworld>>

@@ -105,7 +105,7 @@ namespace Dune::IGA {
       if constexpr (codimSub == 0) {
         assert(i == 0);
         return *this;
-      } else if constexpr (codimSub == mydim && mydim==2)  // vertices from elements
+      } else if constexpr (codimSub == mydim )  // vertices from elements
       {
         auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(directIndex_, i);
         return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
@@ -116,7 +116,7 @@ namespace Dune::IGA {
         return typename GridViewImp::template Codim<codimSub>::Entity(*NURBSGridView_, globalIndex);
       }
 
-      std::abort();
+    throw std::logic_error("The requested subentity codim combination is not supported ");
 
     }
 

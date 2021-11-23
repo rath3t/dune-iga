@@ -203,14 +203,19 @@ namespace Dune::IGA {
 
     auto secondDerivativeOfPosition(const LocalCoordinate& local) const {
       FieldMatrix<ctype, coorddimension, mydimension*(mydimension + 1) / 2> result;
-      const auto localInSpan              = transform01ToKnotSpan(local, varyingSpans_);
+      std::array<unsigned int, mydim> subDirs;
+      for (int subI=0,i = 0; i < griddim; ++i) {
+        if  (fixedOrVaryingDirections_[i]== Dune::IGA::Impl::FixedOrFree::fixed) continue;
+        subDirs[subI++] = i;
+      }
+      const auto localInSpan              = transformLocalToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
       auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
-        ithVec[dir] = 2;  // second derivative in dir direction
+        ithVec[subDirs[dir]] = 2;  // second derivative in dir direction
         result[dir] = dot(basisFunctionDerivatives.get(ithVec), cpNetofSpan);
-        result[dir] *= Dune::power(*(varyingSpans_[dir] + 1) - *varyingSpans_[dir], 2);  // transform back to 0..1
+        result[dir] *= Dune::power(*(varyingSpans_[subDirs[dir]] + 1) - *varyingSpans_[subDirs[dir]], 2);  // transform back to 0..1
       }
       std::array<int, mydimension> mixeDerivs;
       std::ranges::fill_n(mixeDerivs.begin(), mydimension, 1);  // first mixed derivatives
@@ -219,7 +224,7 @@ namespace Dune::IGA {
         result[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), cpNetofSpan);
         for (int dir = 0; dir < mixeDerivs.size(); ++dir) {
           if (mixeDerivs[dir] == 0) continue;
-          result[mixedDireCounter - 1] *= *(varyingSpans_[dir] + 1) - *varyingSpans_[dir];
+          result[mixedDireCounter - 1] *= *(varyingSpans_[subDirs[dir]] + 1) - *varyingSpans_[subDirs[dir]];
         }
       } while (std::ranges::next_permutation(mixeDerivs, std::greater()).found);
 

@@ -71,7 +71,7 @@ namespace Dune::IGA {
         return elementNet_->directSize();
       else if (codim == dim)
         return vertexNet_->directSize();
-      else if (codim == 1 && dim == 2)  // edge case
+      else if (dim-codim == 1)  // edge case
       {
         int edgeSize = 0;
         for (int j = 0; j < dim; ++j) {
@@ -81,7 +81,7 @@ namespace Dune::IGA {
           edgeSize += subs;
         }
         return edgeSize;
-      } else if (codim == 1 && dim == 3)  // surface case
+      } else if (dim-codim == 2 && dim == 3)  // surface case
       {
         int surfSize = 0;
         for (int j = 0; j < dim; ++j) {
@@ -181,6 +181,7 @@ namespace Dune::IGA {
       }
       else if (dim-codim == 2 && dim >2)  // surface case
       {
+        std::abort();
       }
     }
 

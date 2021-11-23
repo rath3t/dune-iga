@@ -26,23 +26,7 @@ namespace Dune::IGA {
     std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
     return order;
   }
-
-//  template <typename Container1, typename Container2>
-//  requires requires(Container1 c1, Container2 c2, int i) {
-//    c1[i];
-//    c2[i];
-//    *c2[i];
-//    c2.size();
-//    typename Container1::value_type;
-//  }
-//  auto transform01ToKnotSpan(const Container1& loc, const Container2 corners) {
-//    std::array<typename Container1::value_type, corners.size()> localInSpan;
-//      for (int d = 0; d < localInSpan.size(); ++d)
-//        localInSpan[d] = loc[d] * (*(corners[d] + 1) - *corners[d]) + *corners[d];
-//
-//    return localInSpan;
-//  }
-
+  
   template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
   auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                  const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
@@ -201,11 +185,14 @@ namespace Dune::IGA {
   auto knotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData, const std::vector<double>& newKnots,
                       const int refinementDirection) {
     using NurbsPatchData = NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
+    using ControlPoint   = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
     using namespace std::ranges;
     std::array<std::vector<double>, dim> newKnotsArray;
-    for (int i = 0; i < dim; ++i) {
+    std::array<int, dim - 1> otherDirections;
+    for (int counter = 0, i = 0; i < dim; ++i) {
       if (i == refinementDirection) continue;
-      newKnotsArray[i] = oldData.knotSpans[i];
+      newKnotsArray[i]           = oldData.knotSpans[i];
+      otherDirections[counter++] = i;
     }
 
     typename NurbsPatchData::ControlPointNetType newCPv(oldData.controlPoints.size());
@@ -220,78 +207,61 @@ namespace Dune::IGA {
 
     const auto newKSize                   = newKnots.size();
     std::array<int, dim> numberOfCPperDir = oldCPv.size();
-
-    numberOfCPperDir[refinementDirection] = oldCPv.size()[refinementDirection] + newKSize;
+    numberOfCPperDir[refinementDirection] += newKSize;
 
     newCPv.resize(numberOfCPperDir);
 
-    using ControlPoint = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
-    auto scaleCPWithW  = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
+    auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
 
-    const int degree = oldData.order[refinementDirection];
-    const int a      = findSpan(degree, newKnots.front(), oldKnotVec);
-    const int b      = findSpan(degree, newKnots.back(), oldKnotVec);
+    const int p = oldData.order[refinementDirection];
+    const int a = findSpan(p, newKnots.front(), oldKnotVec);
+    const int b = findSpan(p, newKnots.back(), oldKnotVec);
 
-    auto otherDirections = std::views::iota(decltype(dim)(0), dim) | std::views::filter([&refinementDirection](const std::integral auto i) {
-                             return (dim == 1) || (refinementDirection != i);
-                           });
+    auto newSurfI = newCPv.hyperSurfBegin(otherDirections);
+    auto oldSurfI = oldCPv.hyperSurfBegin(otherDirections);
 
-    for (unsigned int i = 0; i < a - degree + 1; ++i)
-      for (auto directionLine : otherDirections)
-        std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i).begin(), scaleCPWithW);
+    for (auto hSOld = oldSurfI, hSNew = newSurfI; hSOld != oldCPv.hyperSurfBegin(otherDirections) + (a - p + 1); ++hSOld, ++hSNew)
+      std::ranges::transform(*hSOld, (*hSNew).begin(), scaleCPWithW);
+    for (auto hSOld = oldSurfI + b, hSNew = newSurfI + b; hSOld != oldCPv.hyperSurfEnd(otherDirections); ++hSOld, ++hSNew)
+      std::ranges::transform(*hSOld, (*hSNew).begin(), scaleCPWithW);
 
-    for (unsigned int i = b; i < oldCPv.size()[refinementDirection]; ++i)
-      for (auto directionLine : otherDirections)
-        std::ranges::transform(line(oldCPv, directionLine, i), line(newCPv, directionLine, i + newKSize).begin(), scaleCPWithW);
-
-    int k           = b + newKSize;
-    int i           = b;
-    auto newVLineAt = [&newCPv](const int index, const int otherDir) { return line(newCPv, otherDir, {index}); };
-    auto oldVLineAt = [&oldCPv](const int index, const int otherDir) { return line(oldCPv, otherDir, {index}); };
+    newSurfI = newCPv.hyperSurfEnd(otherDirections)-1;
+    oldSurfI = oldCPv.hyperSurfEnd(otherDirections)-1;
 
     auto currentNewKnot = newKnotVec.end();
     auto currentOldKnot = oldKnotVec.end();
 
     for (auto const& currentAdditionalKnot : reverse_view(newKnots)) {
       while (currentAdditionalKnot <= *(currentOldKnot - 1) && std::distance(oldKnotVec.begin(), currentOldKnot) > a + 1) {
-        for (auto directionLine : otherDirections)
-          std::ranges::transform(oldVLineAt(i, directionLine), newVLineAt(k, directionLine).begin(), scaleCPWithW);
-        --currentNewKnot;
-        --currentOldKnot;
-        --k;
-        --i;
+        std::ranges::transform(*oldSurfI, (*newSurfI).begin(), scaleCPWithW);
+        --currentNewKnot, --currentOldKnot;
+        --newSurfI, --oldSurfI;
       }
 
-      for (auto directionLine : otherDirections)
-        std::ranges::copy(newVLineAt(k + 1, directionLine), newVLineAt(k, directionLine).begin());
-      ++k;
-      currentOldKnot -= degree;
-      for ([[maybe_unused]] int _ : iota_view{0, degree}) {
-        ++k;
+      std::ranges::copy(*(newSurfI + 1), (*newSurfI).begin());
+      ++newSurfI;
+      currentOldKnot -= p;
+      for ([[maybe_unused]] int _ : iota_view{0, p}) {
+        ++newSurfI;
 
         auto alpha = *currentNewKnot - currentAdditionalKnot;
         using std::abs;
         if (abs(alpha) < 1e-7)
-          for (auto directionLine : otherDirections)
-            std::ranges::copy(newVLineAt(k, directionLine), newVLineAt(k - 1, directionLine).begin());
+          std::ranges::copy(*newSurfI, (*(newSurfI - 1)).begin());
         else {
-          alpha = alpha / (*currentNewKnot - *(currentOldKnot));
-          for (auto directionLine : otherDirections)
-            std::ranges::transform(newVLineAt(k, directionLine), newVLineAt(k - 1, directionLine), newVLineAt(k - 1, directionLine).begin(),
-                                   [&alpha](auto& cp, auto& cpL) { return alpha * cpL + cp * (1.0 - alpha); });
+          alpha /= (*currentNewKnot - *(currentOldKnot));
+          std::ranges::transform(*newSurfI, *(newSurfI - 1), (*(newSurfI - 1)).begin(),
+                                 [&alpha](auto& cp, auto& cpL) { return alpha * cpL + cp * (1.0 - alpha); });
         }
-        ++currentOldKnot;
-        ++currentNewKnot;
+        ++currentOldKnot, ++currentNewKnot;
       }
-      currentNewKnot -= degree + 1;
-      k -= degree + 2;
+      currentNewKnot -= p + 1;
+      newSurfI -= p + 2;
     }
 
     std::ranges::transform(newCPv.directGetAll(), newCPv.directGetAll().begin(),
                            [](auto& cp) -> ControlPoint { return {.p = cp.p / cp.w, .w = cp.w}; });
 
-    oldCPv = newCPv;
-    //    }
     return NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.order);
   }
 
@@ -341,7 +311,7 @@ namespace Dune::IGA {
                        typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type endAngle         = 360.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType origin                 = {0, 0, 0},
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType X                      = {1, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y                      = {0, 1, 0} ) {
+                       const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y                      = {0, 1, 0}) {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
     using GlobalCoordinateType = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     using ControlPoint         = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;

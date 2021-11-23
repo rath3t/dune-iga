@@ -11,6 +11,17 @@
 #include <dune/iga/concepts.hh>
 
 namespace Dune::IGA {
+
+  namespace Impl {
+    template <std::integral auto netdim, typename ValueType>
+    class HyperSurfaceIterator;
+
+    template <std::integral auto netdim1, typename ValueType1>
+    HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+    template <std::integral auto netdim1, typename ValueType1>
+    HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+  }  // namespace Impl
+
   /** \brief class holds a n-dim net */
   template <std::integral auto netdim, typename ValueType>
   class MultiDimensionNet {
@@ -114,6 +125,24 @@ namespace Dune::IGA {
       }
     }
 
+    /** \brief constructor intended for the 3-D
+     *
+     *  \param[in] dimSize array of the size of each dimension
+     *  \param[in] values matrix with values
+     */
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>> values) : dimSize_(dimSize) {
+      values_.resize(values.size() * values[0].size() * values[0][0].size());
+
+      for (int i = 0; i < values.size(); ++i) {
+        for (int j = 0; j < values[0].size(); ++j) {
+          for (int k = 0; k < values[0][0].size(); ++k) {
+            std::array<int, netdim> multiIndex = {i, j, k};
+            this->set(multiIndex, values[i][j][k]);
+          }
+        }
+      }
+    }
+
     /** \brief constructor for a grid of the same value
      *
      *  \param[in] dimSize array of the size of each dimension
@@ -195,15 +224,20 @@ namespace Dune::IGA {
     /** \brief returns a multiindex for a scalar index */
     template <typename ReturnType = std::array<int, netdim>>
     ReturnType directToMultiIndex(const int index) const {
+      return directToMultiIndex<ReturnType>(dimSize_, index);
+    }
+
+    template <typename ReturnType = std::array<int, netdim>>
+    static ReturnType directToMultiIndex(const std::array<int, netdim>& dimSize, const int index) {
       ReturnType multiIndex;
 
       int help = index;
       int temp;
       for (int i = 0; i < netdim; ++i) {
-        temp          = help % (dimSize_[i]);
+        temp          = help % (dimSize[i]);
         multiIndex[i] = temp;
         help -= temp;
-        help = help / dimSize_[i];
+        help = help / dimSize[i];
       }
       return multiIndex;
     }
@@ -282,74 +316,131 @@ namespace Dune::IGA {
       return index;
     }
 
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(const std::array<int, netdim - 1>& direction) {
+      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, 0);
+    }
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(const std::array<int, netdim - 1>& direction) {
+      int directionEnd;
+      if constexpr (netdim!=0) {
+        for (int dirI = 0, i = 0; i < netdim; ++i) {
+          if (dirI < direction.size() && i == direction.at(dirI++)) continue;
+          directionEnd = this->size()[i];
+          break;
+        }
+      } else
+          directionEnd = this->size()[0];
+
+      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, directionEnd);
+    }
+
   private:
     std::array<int, netdim> dimSize_;
     std::vector<ValueType> values_;
   };
 
-  //  template <typename... Args>
-  //  struct At {
-  //    std::array< int, sizeof...(Args)> args;
-  //  };
-  //
-  //  template <typename... Args>
-  //  auto at(Args&&... args) {
-  //    return At<Args&&...>{std::forward<Args>(args)...};
-  //  }
+  namespace Impl {
+    template <std::integral auto netdim, typename ValueType>
+    class HyperSurfaceIterator {
+    public:
+      HyperSurfaceIterator(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction, int at)
+          : net_{&net}, direction_{direction}, at_{at} {
+        std::array<int, netdim - 1> indicesSurface;
+        for (int i = 0; i < indicesSurface.size(); ++i)
+          indicesSurface[i] = net.size().at(direction[i]);
 
-  template <std::integral auto netdim, typename ValueType>
-  auto line(MultiDimensionNet<netdim, ValueType>& net, const int direction, const int at) {
-    std::array<int, netdim> multiIndex;
-    for (int argCounter = 0, i = 0; i < netdim; ++i) {
-      if (i == direction && netdim > 1) continue;
-      multiIndex[i] = at;
-    }
-    int indicesEnd = (netdim == 1) ? 1 : static_cast<int>(net.size()[direction]);
-    auto indices   = std::ranges::iota_view{0, indicesEnd};
+        const int cpSize = std::accumulate(indicesSurface.begin(), indicesSurface.end(), 1, std::multiplies{});
+        std::function<std::array<int, netdim - 1>(int)> func = [indicesSurface](auto i) {
+          return MultiDimensionNet<netdim - 1, int>::template directToMultiIndex<std::array<int, netdim - 1>>(indicesSurface, i);
+        };
+        viewOverIndices_ = std::ranges::iota_view(0, cpSize) | std::views::transform(func);
+      }
 
-    auto objectExtractor = [ multiIndex, &net, direction ](auto i) mutable -> auto& {
-      if constexpr (netdim != 1) multiIndex[direction] = i;
-      return net.get(multiIndex);
+      std::ranges::transform_view<std::ranges::iota_view<int, int>, std::function<std::array<int, netdim - 1>(int)>> viewOverIndices_;
+
+      HyperSurfaceIterator& operator++() {
+        ++at_;
+        return *this;
+      }
+
+      HyperSurfaceIterator& operator--() {
+        --at_;
+        return *this;
+      }
+
+      HyperSurfaceIterator operator[](int index) { return HyperSurfaceIterator<netdim, ValueType>(*(this->net_), this->direction_, index); }
+
+      HyperSurfaceIterator& operator-=(int index) {
+        at_ -= index;
+        return *this;
+      }
+
+      bool operator==(const HyperSurfaceIterator& r) const {
+        assert(this->net_->size() == r.net_->size());
+        return this->at_ == r.at_;
+      }
+
+      bool operator!=(const HyperSurfaceIterator& r) const {
+        assert(this->net_->size() == r.net_->size());
+        return this->at_ != r.at_;
+      }
+
+      auto operator*() {
+        std::array<int, netdim> multiIndex;
+        if constexpr (netdim != 1)
+          for (int dirI = 0, i = 0; i < netdim; ++i) {
+            if (dirI < direction_.size() && i == direction_.at(dirI++)) continue;
+            multiIndex[i] = at_;
+            break;
+          }
+        else
+          multiIndex[0] = at_;
+
+        auto objectExtractor = [ multiIndex, this ](auto mI) mutable -> auto& {
+          if constexpr (netdim != 1)
+            for (int i = 0; i < direction_.size(); ++i)
+              multiIndex[direction_[i]] = mI[i];
+
+          return net_->get(multiIndex);
+        };
+        return std::ranges::transform_view(viewOverIndices_, objectExtractor);
+      }
+
+      auto operator->() { return *this; }
+
+    private:
+      //      auto hyperSurface(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction, const int at) {
+      //        std::array<int, netdim> multiIndex;
+      //        if constexpr (netdim != 1)
+      //          for (int dirI = 0, i = 0; i < netdim; ++i)
+      //            if (i != direction[dirI++]) multiIndex[i] = at;
+      //
+      //
+      //        auto objectExtractor = [ multiIndex, &net, direction ](auto mI) mutable -> auto& {
+      //          for (int i = 0; i < direction.size(); ++i)
+      //            multiIndex[direction[i]] = mI[i];
+      //
+      //          return net.get(multiIndex);
+      //        };
+      //        return std::ranges::transform_view(indices, objectExtractor);
+      //      }
+
+      MultiDimensionNet<netdim, ValueType>* net_;
+      std::array<int, netdim - 1> direction_;
+      int at_;
+      template <std::integral auto netdim1, typename ValueType1>
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+      template <std::integral auto netdim1, typename ValueType1>
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
     };
-    return std::ranges::transform_view(indices, objectExtractor);
-  }
-
-  template <std::integral auto netdim, typename ValueType>
-  auto line(MultiDimensionNet<netdim, ValueType> const& net, const int direction, const int at) {
-    std::array<int, netdim> multiIndex;
-
-    for (int argCounter = 0, i = 0; i < netdim - 1; ++i) {
-      if (i == direction && netdim > 1) continue;
-      multiIndex[i] = at;
+    template <std::integral auto netdim, typename ValueType>
+    HyperSurfaceIterator<netdim, ValueType> operator+(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {
+      return HyperSurfaceIterator<netdim, ValueType>(*(l.net_), l.direction_, l.at_ + inc);
     }
-
-    int indicesEnd = (netdim == 1) ? 1 : static_cast<int>(net.size()[direction]);
-    auto indices   = std::ranges::iota_view{0, indicesEnd};
-
-    auto objectExtractor = [ multiIndex, &net, direction ](const auto i) mutable -> const auto& {
-      if constexpr (netdim != 1) multiIndex[direction] = i;
-      return net.get(multiIndex);
-    };
-    return std::ranges::transform_view(indices, objectExtractor);
-  }
-
-  template <typename ValueType>
-  auto line(MultiDimensionNet<1, ValueType>& net) {
-    return line(net, 0, {});
-  }
-
-  template <typename ValueType>
-  auto line(MultiDimensionNet<1, ValueType> const& net) {
-    return line(net, 0, {});
-  }
-
-  //  template<int netdim,typename lValueType,typename rValueType> requires MultiplyAble<lValueType,rValueType>
-  //  auto operator *(const MultiDimensionNet<netdim,lValueType>& lnet,const MultiDimensionNet<netdim,rValueType>& rnet)
-  //  {
-  //    MultiDimensionNet<netdim,lValueType> res (lnet.size());
-  //    std::ranges::transform(lnet.directGetAll(),rnet.directGetAll(),res.directGetAll().begin(),std::multiplies{});
-  //    return res;
-  //  }
+    template <std::integral auto netdim, typename ValueType>
+    HyperSurfaceIterator<netdim, ValueType> operator-(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {
+      return l + (-inc);
+    }
+  }  // namespace Impl
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
   requires MultiplyAble<lValueType, rValueType>
@@ -387,22 +478,5 @@ namespace Dune::IGA {
   template <std::integral auto netdim, typename lValueType, typename rValueType>
   requires DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
   operator*(const rValueType& fac, const MultiDimensionNet<netdim, lValueType>& lnet) { return lnet * fac; }
-
-  //  //! calculate the binomial coefficient n over k for netdim directions and multiplies them and store the in the net
-  //  template<std::size_t netdim>
-  //  auto createBinomialNet(const std::array<int, netdim>& n)
-  //  {
-  //    MultiDimensionNet<netdim,int> binomNet(n);
-  //
-  //    for (int i = 0; i < binomNet.directSize(); ++i) {
-  //      auto multiIndex = binomNet.directToMultiIndex(i);
-  //      int binomialfac = 1;
-  //      for (int j=0 ; j< netdim ; ++j)
-  //        binomialfac*= Dune::binomial(n[j],multiIndex[j]);
-  //      binomNet.directSet(i,binomialfac);
-  //
-  //    }
-  //    return binomNet;
-  //  }
 
 }  // namespace Dune::IGA
