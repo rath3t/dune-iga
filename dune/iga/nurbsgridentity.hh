@@ -3,6 +3,8 @@
 #ifndef DUNE_IGA_NURBSGRIDENTITY_HH
 #define DUNE_IGA_NURBSGRIDENTITY_HH
 
+#include "nurbsintersection.hh"
+
 #include <array>
 #include <numeric>
 
@@ -30,10 +32,7 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)}
-    // TODO find out if boundary ent
-
-    {}
+              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} {}
 
     //! Geometry of this entity
     typename GridViewImp::template Codim<codim>::Geometry geometry() const {
@@ -70,6 +69,8 @@ namespace Dune::IGA {
     static constexpr auto mydim    = GridViewImp::dimension;
     static constexpr auto dimworld = GridViewImp::dimensionworld;
     using Geometry                 = NURBSGeometry<mydim, dimworld, mydim, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    using Intersection             = NURBSintersection<mydim - 1, GridViewImp>;
+    using IntersectionIterator     = typename Intersection::Iterator;
 
     NURBSGridEntity() = default;
 
@@ -77,7 +78,15 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} {}
+              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)}
+    {
+      for (int innerIndex = 0,outerIndex=1; innerIndex < this->subEntities(1); ++innerIndex) {
+
+        intersections_->template emplace_back({innerIndex,outerIndex},*NURBSGridView_);
+        outerIndex += (innerIndex%2) ? -1 : 3;
+      }
+
+    }
 
     //! Geometry of this entity
     typename GridViewImp::template Codim<0>::Geometry geometry() const {
@@ -108,6 +117,10 @@ namespace Dune::IGA {
       throw std::logic_error("The requested subentity codim combination is not supported ");
     }
 
+    IntersectionIterator ibegin([[maybe_unused]] int lvl) const { return IntersectionIterator(intersections_->begin()); }
+
+    IntersectionIterator iend([[maybe_unused]] int lvl) const { return IntersectionIterator(intersections_->end()); }
+
     [[nodiscard]] bool isLeaf() const { return true; }
     [[nodiscard]] auto type() const { return GeometryTypes::cube(mydim); }
     [[nodiscard]] int level() const { return 0; }
@@ -117,7 +130,10 @@ namespace Dune::IGA {
 
   private:
     friend GridViewImp;
+    template <typename GridImpl, typename ElementEntity>
+    friend auto& intersections(const NURBSLeafGridView<GridImpl>& gridLeafView, const ElementEntity& e);
     const GridViewImp* NURBSGridView_{nullptr};
+    std::shared_ptr<std::vector<Intersection>> intersections_;
     unsigned int directIndex_{};
     PartitionType parType_{};
 

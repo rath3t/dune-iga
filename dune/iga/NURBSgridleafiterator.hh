@@ -11,15 +11,29 @@
 /** \file
  * \brief The NURBSGridIterator class
  */
+ namespace Dune::IGA
+  {
+    /** \brief NURBS gird leaf iterator */
+    template<typename NURBSEntity>
+  class NURBSGridLeafIterator : public std::vector<NURBSEntity>::const_iterator
+    {
+    public:
+      NURBSGridLeafIterator()=default;
+      using Reference =  NURBSEntity;
+      explicit NURBSGridLeafIterator(typename std::vector<NURBSEntity>::const_iterator spanIter)
+          :  std::vector<NURBSEntity>::const_iterator(spanIter)
+      {}
+    };
 
-namespace Dune::IGA {
-  /** \brief NURBS gird leaf iterator */
-  template <typename NURBSEntity>
-  class NURBSGridLeafIterator : public std::vector<NURBSEntity>::iterator {
-  public:
-    NURBSGridLeafIterator() = default;
-    using Reference         = NURBSEntity;
-    explicit NURBSGridLeafIterator(const typename std::vector<NURBSEntity>::iterator& spanIter)
-        : std::vector<NURBSEntity>::iterator(spanIter) {}
-  };
-}  // namespace Dune::IGA
+    template<typename NURBSIntersection>
+    class NURBSGridInterSectionIterator : public std::vector<NURBSIntersection>::const_iterator
+    {
+    public:
+      NURBSGridInterSectionIterator()=default;
+      using Reference =  NURBSIntersection;
+      explicit NURBSGridInterSectionIterator(typename std::vector<NURBSIntersection>::const_iterator spanIter)
+          :  std::vector<NURBSIntersection>::const_iterator(spanIter)
+      {}
+    };
+  }
+

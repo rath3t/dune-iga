@@ -401,14 +401,14 @@ void testNurbsBasis() {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, gridView.getPatchData());
     ////        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-    test.subTest(checkBasis(basis2));
+    test.subTest(checkBasis(basis2,EnableContinuityCheck()));
   }
 
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView);
     //        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-    test.subTest(checkBasis(basis2));
+    test.subTest(checkBasis(basis2,EnableContinuityCheck()));
   }
 
   {
@@ -416,7 +416,7 @@ void testNurbsBasis() {
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.getPatchData()));
     //          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-    test.subTest(checkBasis(basis2));
+    test.subTest(checkBasis(basis2,EnableContinuityCheck()));
   }
 
   {
@@ -424,7 +424,7 @@ void testNurbsBasis() {
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(gridView.getPreBasis()));
     //          test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-    test.subTest(checkBasis(basis2));
+    test.subTest(checkBasis(basis2,EnableContinuityCheck()));
   }
 }
 
@@ -757,12 +757,12 @@ int main(int argc, char** argv) try {
   //
 
 
-  testNURBSGridCurve();
-  std::cout << "done with NURBS grid Curve" << std::endl;
-  test3DGrid();
-  std::cout << "3dGrid " << std::endl;
-  testTorusGeometry();
-  std::cout << "done with NURBS torus " << std::endl;
+//  testNURBSGridCurve();
+//  std::cout << "done with NURBS grid Curve" << std::endl;
+//  test3DGrid();
+//  std::cout << "3dGrid " << std::endl;
+//  testTorusGeometry();
+//  std::cout << "done with NURBS torus " << std::endl;
 
   testNurbsBasis();
 //  std::cout << "done with NURBS basis test " << std::endl;

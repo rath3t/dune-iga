@@ -20,5 +20,5 @@ template <std::integral auto dim, std::integral auto dimworld>
 struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld>> : public std::false_type {};
 template <std::integral auto dim, std::integral auto dimworld>
 struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld>> {
-  static const bool v = false;
+  static const bool v = true;
 };

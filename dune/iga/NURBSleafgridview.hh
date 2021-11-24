@@ -24,6 +24,7 @@ namespace Dune::IGA {
     /** \brief type of the intersection iterator */
     typedef typename Grid ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename Grid ::Traits ::IntersectionIterator IntersectionIterator;
+    using LocalGeometryIntersection =  typename Grid ::Traits::LocalGeometryIntersection;
 
     template <int cd>
     struct Codim {
@@ -107,9 +108,14 @@ namespace Dune::IGA {
     template <int codim>
     typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
       // need to be rewrite for other codims
-      if (codim == 0) {
-        return *(entityVector_.get()[Indices::_0]->at(directIndex));
-      }
+      if constexpr (codim == 0)  // elements
+        return (std::get<0>(*entityVector_.get()).at(directIndex));
+      else if constexpr (codim == dimension)  // vertices
+        return (std::get<dimension>(*entityVector_.get()).at(directIndex));
+      else if constexpr (dimension - codim == 1)  // edges
+        return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));
+      else
+        throw std::logic_error("Your requested entity type does not exist.");
     }
 
     /** \brief obtain collective communication object */
@@ -129,21 +135,22 @@ namespace Dune::IGA {
 
     template <int cd>
     typename Codim<cd>::Iterator begin() const {
-      return typename Codim<cd>::Iterator(std::get<cd>(*entityVector_.get()).begin());
+      return typename Codim<cd>::Iterator(std::get<cd>(*entityVector_.get()).cbegin());
     }
 
     template <int cd>
     typename Codim<cd>::Iterator end() const {
-      return typename Codim<cd>::Iterator(std::get<cd>(*entityVector_.get()).end());
+      return typename Codim<cd>::Iterator(std::get<cd>(*entityVector_.get()).cend());
     }
 
-    IntersectionIterator  // TODO these are dummy implemented do not use!
-    ibegin(const typename Codim<0>::Entity &entity) const {
-      return typename Codim<dimension - 1>::Iterator(std::get<dimension - 1>(*entityVector_.get()).begin());
+    IntersectionIterator ibegin(const typename Codim<0>::Entity &entity) const {
+      assert(this->contains(entity) && "The entity you passed to ibegin is not contained in this gridview");
+      return entity.ibegin(level_);
     }
 
     IntersectionIterator iend(const typename Codim<0>::Entity &entity) const {
-      return typename Codim<dimension - 1>::Iterator(std::get<dimension - 1>(*entityVector_.get()).end());
+      assert(this->contains(entity) && "The entity you passed to iend is not contained in this gridview");
+      return entity.iend(level_);
     }
 
     template <int cd, PartitionIteratorType piType>
@@ -181,6 +188,7 @@ namespace Dune::IGA {
     std::shared_ptr<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>> NURBSpatch_;
     NURBSGridLeafIndexSet<NURBSGridView> indexSet_;
     const Grid *grid_;
+    int level_{};
     using EntityVectorType = decltype(gridEntityTupleGenerator<NURBSLeafGridView>(std::make_integer_sequence<int, dimension + 1>()));
     std::shared_ptr<EntityVectorType> entityVector_{};
   };
@@ -193,5 +201,11 @@ namespace Dune::IGA {
   template <typename GridImpl>
   auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView) {
     return std::get<0>(*gridLeafView.entityVector_.get());
+  }
+
+
+  template <typename GridImpl, typename ElementEntity>
+  auto &intersections(const NURBSLeafGridView<GridImpl> &gridLeafView, const ElementEntity& e) {
+    return *e.intersections_.get();
   }
 }  // namespace Dune::IGA

@@ -8,6 +8,7 @@
 #include <dune/iga/gridcapabilities.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/igaidset.hh>
+#include <dune/iga/nurbsintersection.hh>
 
 namespace Dune::IGA {
 
@@ -34,13 +35,13 @@ namespace Dune::IGA {
       using GridView                 = NURBSLeafGridView<NURBSGrid<dim, dimworld>>;
       using IndexSet                 = NURBSGridLeafIndexSet<GridView>;
       using LocalIdSet               = IgaIdSet<NURBSGrid>;
-      using LeafIntersectionIterator = NURBSGridLeafIterator<NURBSGridEntity<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
+      using LeafIntersectionIterator = NURBSGridInterSectionIterator<NURBSintersection<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
+      using IntersectionIterator     = NURBSGridInterSectionIterator<NURBSintersection<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
 
-      using IntersectionIterator = NURBSGridLeafIterator<NURBSGridEntity<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
       template <std::integral auto cd>
       struct Codim {
-        using Entity        = NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>;
-        using Geometry      = NURBSGeometry<dim - cd, dimworld, dim, NurbsGridLinearAlgebraTraitsImpl>;
+        using Entity   = NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>;
+        using Geometry = NURBSGeometry<dim - cd, dimworld, dim, NurbsGridLinearAlgebraTraitsImpl>;
         using LevelIterator = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
         using LeafIterator  = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
         template <PartitionIteratorType pitype>
@@ -52,6 +53,7 @@ namespace Dune::IGA {
           using LevelIterator = LeafIterator;
         };
       };
+      using LocalGeometryIntersection =  NURBSGeometry<dim-1UL, dimworld-1UL, dim, NurbsGridLinearAlgebraTraitsImpl,true>;
     };
     template <int cd>
     using Codim         = typename Traits::template Codim<cd>;
