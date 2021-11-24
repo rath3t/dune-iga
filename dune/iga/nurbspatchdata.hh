@@ -21,13 +21,6 @@ public:
 
   using ControlPointNetType = MultiDimensionNet<dim, ControlPointType>;
   NURBSPatchData()          = default;
-  /** \brief constructor for a NURBSPatchData from knots, control points, weights and order
-     *
-     *  \param[in] knotSpans vector of knotSpans for each dimension
-     *  \param[in] controlPoints a n-dimensional net of control points
-     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-     *  \param[in] order order of the NURBS structure for each dimension
-   */
   NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
                  const std::array<int, dim>& orderI)
       : knotSpans(knotSpansI), controlPoints(controlPointsI), order(orderI) {}

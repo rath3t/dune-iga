@@ -8,73 +8,70 @@
 
 namespace Dune::IGA {
 
-
-  template< typename VectorType>
-  concept Vector =  requires(VectorType v, double a, std::size_t index) {
+  template <typename VectorType>
+  concept Vector = requires(VectorType v, double a, int index) {
     typename VectorType::value_type;
-    { a*v } -> std::same_as<VectorType >;
-    { v*a } -> std::same_as<VectorType >;
-    { v+=v } -> std::same_as<VectorType&>;
-    { v-=v } -> std::same_as<VectorType&>;
-    { v*=a } -> std::same_as<VectorType&>;
-    { v/=a } -> std::same_as<VectorType&>;
+    { v[index] } -> std::same_as<typename VectorType::value_type&>;
+    { v += v } -> std::same_as<VectorType&>;
+    { v -= v } -> std::same_as<VectorType&>;
+    { v *= a } -> std::same_as<VectorType&>;
+    { v /= a } -> std::same_as<VectorType&>;
+    { dot(v,v) } -> std::same_as<typename VectorType::value_type>;
+
   };
 
-  template< typename MatrixType>
-  concept Matrix =  requires(MatrixType A, double a, int index) {
+  template <typename MatrixType>
+  concept Matrix = requires(MatrixType A, double a) {
     typename MatrixType::value_type;
-    { a*A } -> std::same_as<MatrixType >;
-    { A*a } -> std::same_as<MatrixType >;
-    { A+=A } -> std::same_as<MatrixType&>;
-    { A-=A } -> std::same_as<MatrixType&>;
-    { A*=a } -> std::same_as<MatrixType&>;
-    { A/=a } -> std::same_as<MatrixType&>;
+    { A += A } -> std::same_as<MatrixType&>;
+    { A -= A } -> std::same_as<MatrixType&>;
+    { A *= a } -> std::same_as<MatrixType&>;
+    { A /= a } -> std::same_as<MatrixType&>;
   };
 
-//  template< template<std::floating_point,int,int> typename MatrixType, typename ScalarType, int rows, int cols>
-//  concept FixedMatrix =  Matrix<MatrixType<ScalarType,rows,cols>>;
-//
-//  template < class > struct checkFixedMatrixtemplate : std::false_type {};
-//
-//  // Specialize for template classes
-//  template <template<std::floating_point,int,int> typename MatrixType, typename ScalarType, int rows, int cols>
-//  struct checkFixedMatrixtemplate< MatrixType<ScalarType,rows,cols> > : std::true_type {};
-
-
-  template< typename LinearAlgebraTraits, int a=1>
-  concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::JacobianTransposedType> &&
-      Matrix<typename LinearAlgebraTraits::JacobianInverseTransposed> &&
-      Vector<typename LinearAlgebraTraits::GlobalCoordinateType> &&
-      Vector<typename LinearAlgebraTraits::LocalCoordinateType>
-     && requires()
-  {
-    typename LinearAlgebraTraits::JacobianTransposedType;
-    typename LinearAlgebraTraits::JacobianInverseTransposed;
-    typename LinearAlgebraTraits::GlobalCoordinateType;
-    typename LinearAlgebraTraits::LocalCoordinateType;
+  template <typename LinearAlgebraTraits, int a = 1>
+  concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Vector<
+      typename LinearAlgebraTraits::template FixedVectorType<a>> && requires() {
     typename LinearAlgebraTraits::value_type;
-
-    typename LinearAlgebraTraits::template FixedMatrixType<a,a>;
+    typename LinearAlgebraTraits::template FixedMatrixType<a, a>;
     typename LinearAlgebraTraits::template FixedVectorType<a>;
-
-
   };
 
-  template<typename L,typename R>
-  concept MultiplyAble = requires (L x, R y) { x * y; };
+  template <typename ControlPointType>
+  concept ControlPointConcept
+      = Vector < typename ControlPointType::VectorType> && requires(ControlPointType cp){typename ControlPointType::VectorType;
+  typename ControlPointType::VectorType::value_type;
+  { cp.p } -> std::same_as<typename ControlPointType::VectorType&>;
+  { cp.w } -> std::same_as<typename ControlPointType::VectorType::value_type&>;
+};  // namespace Dune::IGA
 
-  template<typename L,typename R>
-  concept AddAble = requires (L x, R y) { x + y; };
+template <typename L, typename R>
+concept MultiplyAble = requires(L x, R y) {
+  x* y;
+};
 
-  template<typename L,typename R>
-  concept SubstractAble = requires (L x, R y) { x - y; };
+template <typename L, typename R>
+concept AddAble = requires(L x, R y) {
+  x + y;
+};
 
-  template<typename L,typename R>
-  concept MultiplyAssignAble = requires (L x, R y) { x *= y; };
+template <typename L, typename R>
+concept SubstractAble = requires(L x, R y) {
+  x - y;
+};
 
-  template<typename L,typename R>
-  concept DivideAssignAble = requires (L x, R y) { x /= y; };
+template <typename L, typename R>
+concept MultiplyAssignAble = requires(L x, R y) {
+  x *= y;
+};
 
-  template<typename L,typename R>
-  concept DivideAble = requires (L x, R y) { x / y; };
-}
+template <typename L, typename R>
+concept DivideAssignAble = requires(L x, R y) {
+  x /= y;
+};
+
+template <typename L, typename R>
+concept DivideAble = requires(L x, R y) {
+  x / y;
+};
+}  // namespace Dune::IGA

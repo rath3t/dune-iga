@@ -10,13 +10,10 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/iga/NURBSpatch.hh>
-#include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/nurbsgrid.hh>
-//#include <dune/iga/vtkfile.hh>
 
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/functions/functionspacebases/bsplinebasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
@@ -294,29 +291,6 @@ void testNURBSCurve() {
   testSuite.check(patch.size(1) == controlPoints.size());
 }
 
-void testBSplineCurve() {
-  // parameters
-  unsigned int subSampling = 5;
-
-  ////////////////////////////////////////////////////////////////
-  //  Create a B-spline curve in 3d
-  ////////////////////////////////////////////////////////////////
-
-  const int dim      = 1;
-  const int dimworld = 3;
-
-  const std::array<int, dim> order                     = {2};
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
-
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::GlobalCoordinateType;
-  const std::vector<ControlPoint> controlPoints
-      = {{{1, 3, 4}}, {{2, 2, 2}}, {{3, 4, 5}}, {{5, 1, 7}}, {{4, 7, 2}}, {{8, 6, 2}}, {{2, 9, 9}}, {{1, 4, 3}}, {{1, 7, 1}}};
-
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet = MultiDimensionNet<dim, typename Dune::IGA::NURBSPatchData<dim, dimworld>::GlobalCoordinateType>(dimsize, controlPoints);
-
-  IGA::BSplinePatch<dim, dimworld> patch(knotSpans, controlNet, order);
-}
 
 void testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
@@ -758,7 +732,7 @@ void testBsplineBasisFunctions() {
 }
 
 #include <dune/grid/test/checkindexset.hh>
-#include <dune/iga/gridCapabilities.hh>
+#include <dune/iga/gridcapabilities.hh>
 void gridCheck() {
   TestSuite test;
 
@@ -790,10 +764,10 @@ int main(int argc, char** argv) try {
   testTorusGeometry();
   std::cout << "done with NURBS torus " << std::endl;
 
-//  testNurbsBasis();
+  testNurbsBasis();
 //  std::cout << "done with NURBS basis test " << std::endl;
 //
-//  testBsplineBasisFunctions();
+  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

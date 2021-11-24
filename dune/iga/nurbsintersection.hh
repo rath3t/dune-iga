@@ -23,13 +23,13 @@ namespace Dune::IGA {
 
     /** \brief Type used for a vector of world coordinates */
     using GlobalCoordinate = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
-    bool boundary() const { return false; }
-    bool neighbor() const { return false; }
-    bool conforming() const { return false; }
+    [[nodiscard]] bool boundary() const { return false; }
+    [[nodiscard]] bool neighbor() const { return false; }
+    [[nodiscard]] bool conforming() const { return false; }
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
-    Entity inside() const {}
-    Entity outside() const {}
-int indexInInside() const{}
+    [[nodiscard]] Entity inside() const {}
+    [[nodiscard]] Entity outside() const {}
+[[nodiscard]] int indexInInside() const{}
 int indexInOutside() const{}
 LocalGeometry geometryInInside() const {}
 LocalGeometry geometryInOutside() const {}

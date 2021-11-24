@@ -5,6 +5,7 @@
 #pragma once
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/igaalgorithms.hh>
+#include <dune/geometry/multilineargeometry.hh>
 
 namespace Dune::IGA {
   namespace Impl {
@@ -56,7 +57,6 @@ namespace Dune::IGA {
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections)
         : patchData_(patchData),
           varyingSpans_(varyingSpans),
-          //          fixedSpans_(fixedSpans),
           fixedOrVaryingDirections_{fixedOrVaryingDirections},
           nurbs_{*patchData}
 //          cpCoordinateNet_{netOfSpan(transform01ToKnotSpan(std::array<double, griddim>{}, varyingSpans_), patchData->knotSpans,
@@ -111,12 +111,6 @@ namespace Dune::IGA {
      */
     GlobalCoordinate global(const LocalCoordinate& local) const {
       const auto localInSpan = transformLocalToSpan(local);
-
-      //      for (int vcounter = 0, fcounter = 0, i = 0; i < griddim; ++i) {
-      //        assert(localInSpan.size() >= vcounter);
-      //        assert(fixedSpans_.size() >= fcounter);
-      //        posInPatch[i] = fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free ? localInSpan[vcounter++] : fixedSpans_[fcounter++];
-      //      }
       auto basis       = nurbs_.basisFunctionNet(localInSpan);
       auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
       return dot(basis, cpNetofSpan);
@@ -232,12 +226,8 @@ namespace Dune::IGA {
 
   private:
     std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
-
     std::array<std::vector<double>::const_iterator, griddim> varyingSpans_;
-    //    std::array<double, griddim - mydim> fixedSpans_;
-
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
-
     Dune::IGA::Nurbs<double, griddim> nurbs_;
 //    MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
   };

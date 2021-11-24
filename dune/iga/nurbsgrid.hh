@@ -5,7 +5,7 @@
 #include <dune/iga/NURBSleafgridview.hh>
 #include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/concepts.hh>
-#include <dune/iga/gridCapabilities.hh>
+#include <dune/iga/gridcapabilities.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/igaidset.hh>
 
@@ -27,7 +27,7 @@ namespace Dune::IGA {
 
     using ControlPointNetType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType;
 
-    using Comm = Communication<No_Comm>;
+    using Comm       = Communication<No_Comm>;
     using GridFamily = NURBSGrid;
 
     struct Traits {
@@ -36,14 +36,13 @@ namespace Dune::IGA {
       using LocalIdSet               = IgaIdSet<NURBSGrid>;
       using LeafIntersectionIterator = NURBSGridLeafIterator<NURBSGridEntity<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
 
-      using IntersectionIterator     = NURBSGridLeafIterator<NURBSGridEntity<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
+      using IntersectionIterator = NURBSGridLeafIterator<NURBSGridEntity<dim - 1UL, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
       template <std::integral auto cd>
       struct Codim {
-        //        static constexpr std::integral auto  cdI= static_cast<decltype(dim)>(cd);
-        using Entity   = NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>;
-        using Geometry = NURBSGeometry<dim - cd, dimworld, dim, NurbsGridLinearAlgebraTraitsImpl>;
+        using Entity        = NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>;
+        using Geometry      = NURBSGeometry<dim - cd, dimworld, dim, NurbsGridLinearAlgebraTraitsImpl>;
         using LevelIterator = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
-        using LeafIterator = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
+        using LeafIterator  = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
         template <PartitionIteratorType pitype>
         struct Partition {
           /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
@@ -55,11 +54,11 @@ namespace Dune::IGA {
       };
     };
     template <int cd>
-    using Codim = typename Traits::template Codim<cd>;
-    using LeafGridView = typename Traits::GridView;
+    using Codim         = typename Traits::template Codim<cd>;
+    using LeafGridView  = typename Traits::GridView;
     using LevelGridView = typename Traits::GridView;
-    using LocalIdSet = typename Traits::LocalIdSet;
-    using LevelIndexSet = typename Traits::IndexSet ;
+    using LocalIdSet    = typename Traits::LocalIdSet;
+    using LevelIndexSet = typename Traits::IndexSet;
 
     NURBSGrid(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& nurbsPatchData)
         : coarsestPatchRepresentation_{nurbsPatchData},
@@ -113,11 +112,11 @@ namespace Dune::IGA {
     [[nodiscard]] int size(int level, int codim) const { return this->size(codim); }
 
     auto leafGridView() const { return NURBSLeafGridView<NURBSGrid<dim, dimworld>>(currentPatchRepresentation_, *this); }
-    auto levelGridView([[maybe_unused]] int level) const { return this->leafGridView() ; }
+    auto levelGridView([[maybe_unused]] int level) const { return this->leafGridView(); }
 
     const auto& globalIdSet() const { return *idSet_; }
 
-    int maxLevel() const { return 0; }
+    [[nodiscard]] int maxLevel() const { return 0; }
 
     const auto& localIdSet() const { return this->globalIdSet(); }
 

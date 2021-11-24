@@ -4,8 +4,6 @@
 
 #pragma once
 
-//#include "NURBSpatch.hh"
-
 #include <concepts>
 #include <numbers>
 #include <ranges>
@@ -26,7 +24,7 @@ namespace Dune::IGA {
     std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
     return order;
   }
-  
+
   template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
   auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                  const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
@@ -40,7 +38,6 @@ namespace Dune::IGA {
 
   template <std::integral auto dim>
   auto createPartialSubDerivativPermutations(const FieldVector<int, dim>& v) {
-  https:  // godbolt.org/z/EG1EfWK9q
     std::vector<FieldVector<int, dim>> perm;
     for (int i = 1; i < std::pow(2, v.size()); ++i) {
       FieldVector<int, dim> x{};
@@ -55,27 +52,19 @@ namespace Dune::IGA {
     return perm;
   }
 
-  template <std::integral auto dim>
-  int binom(const FieldVector<int, dim>& n, const FieldVector<int, dim>& k) {
+  template <Vector VectorType>
+  int binom(const VectorType& n, const VectorType& k) {
     return std::inner_product(n.begin(), n.end(), k.begin(), 1, std::multiplies{},
                               [](auto& ni, auto& ki) { return Dune::binomial(ni, ki); });
   }
 
-  template <std::integral auto dim, typename ValueType>
-  requires requires(ValueType cp) {
-    cp.w;
-    cp.p;
-  }
+  template <std::integral auto dim, ControlPointConcept ValueType>
   auto extractWeights(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
     return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.size(), viewOverWeights);
   }
 
-  template <std::integral auto dim, typename ValueType>
-  requires requires(ValueType cp) {
-    cp.w;
-    cp.p;
-  }
+  template <std::integral auto dim, ControlPointConcept ValueType>
   auto extractControlpoints(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
@@ -113,14 +102,7 @@ namespace Dune::IGA {
       return Nnet;
     }
 
-    //    template <typename ContainerType = std::vector<ScalarType>>
-    //    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const std::array<int, dim>& derivativeOrder)const  {
-    //      auto derivativeOrderTotal
-    //          = std::accumulate(derivativeOrder.begin(), derivativeOrder.end(), 1, std::multiplies{});  // TODO this is expensive!
-    //      return basisFunctionDerivatives<ContainerType>(u, knots_, degree_, weights_, derivativeOrderTotal);
-    //    }
-
-    // \brief This function return the basis function and the corresponding derivatives
+    // \*brief This function return the basis function and the corresponding derivatives
     // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
     static auto basisFunctionDerivatives(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
@@ -167,7 +149,6 @@ namespace Dune::IGA {
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);
       }
-
       return R;
     }
 
@@ -225,8 +206,8 @@ namespace Dune::IGA {
     for (auto hSOld = oldSurfI + b, hSNew = newSurfI + b; hSOld != oldCPv.hyperSurfEnd(otherDirections); ++hSOld, ++hSNew)
       std::ranges::transform(*hSOld, (*hSNew).begin(), scaleCPWithW);
 
-    newSurfI = newCPv.hyperSurfEnd(otherDirections)-1;
-    oldSurfI = oldCPv.hyperSurfEnd(otherDirections)-1;
+    newSurfI = newCPv.hyperSurfEnd(otherDirections) - 1;
+    oldSurfI = oldCPv.hyperSurfEnd(otherDirections) - 1;
 
     auto currentNewKnot = newKnotVec.end();
     auto currentOldKnot = oldKnotVec.end();
@@ -298,13 +279,13 @@ namespace Dune::IGA {
       const ScalarType parameter2 = (dir1squaredLength * dir2BasePdiff - angle * dir1BasePdiff) / D;
 
       VectorType c1 = basepoint1 + parameter1 * direction1;
-      assert(dot(c1 - (basepoint2 + parameter2 * direction2), c1 - (basepoint2 + parameter2 * direction2)) < 1e-8
+      assert(dot(c1 - (basepoint2 + parameter2 * direction2), c1 - (basepoint2 + parameter2 * direction2)) < tol
              && "Both calculated points do not coincide");
       return c1;
     }
   }  // namespace Impl
 
-  // Algo A7.1
+  // Piegl and Tiller Algo A7.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2UL, 3UL>>
   auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type radius     = 1.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type startAngle = 0.0,
@@ -314,7 +295,6 @@ namespace Dune::IGA {
                        const typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType Y                      = {0, 1, 0}) {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type;
     using GlobalCoordinateType = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
-    using ControlPoint         = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
     const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::GlobalCoordinateType::value_type>;
 
     if (endAngle < startAngle) endAngle += 360.0;
@@ -363,9 +343,6 @@ namespace Dune::IGA {
     return NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
   }
 
-  //  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  //  auto surfaceOrderElevation(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
-  //                             const std::array<int, dim>& newDegrees) {}
 
   // Algo 8.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double, 2UL, 3UL>>
@@ -421,15 +398,15 @@ namespace Dune::IGA {
       const ScalarType r            = X.two_norm();
       X /= r;
       const GlobalCoordinateType Y = cross(revolutionaxis, X);
-      surfaceCP.get({0, j}) = PO = genCP.directGet(j);
+      surfaceCP(0, j) = PO = genCP.directGet(j);
       GlobalCoordinateType TO    = Y;
       for (int index = 0, i = 0; i < narcs; ++i) {
         const GlobalCoordinateType P2 = Om + r * cosines[i] * X + r * sines[i] * Y;
-        surfaceCP.get({index + 2, j}) = {.p = P2, .w = genCP.directGet(j).w};
+        surfaceCP(index + 2, j) = {.p = P2, .w = genCP.directGet(j).w};
 
         const GlobalCoordinateType T2   = -sines[i] * X + cosines[i] * Y;
-        surfaceCP.get({index + 1, j}).p = Impl::Intersect3DLines(PO.p, TO, P2, T2);
-        surfaceCP.get({index + 1, j}).w = wm * genCP.directGet(j).w;
+        surfaceCP(index + 1, j).p = Impl::Intersect3DLines(PO.p, TO, P2, T2);
+        surfaceCP(index + 1, j).w = wm * genCP.directGet(j).w;
         index += 2;
         if (i < narcs - 1) {
           PO.p = P2;

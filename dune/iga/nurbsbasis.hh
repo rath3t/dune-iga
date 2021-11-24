@@ -103,11 +103,11 @@ namespace Dune::Functions {
      * a B-spline basis function can easily have different orders in the different coordinate directions.
      * We therefore take the conservative choice and return the maximum over the orders of all directions.
      */
-    unsigned int order() const { return *std::max_element(preBasis_.patchData_.order_.begin(), preBasis_.patchData_.order_.end()); }
+    [[nodiscard]] unsigned int order() const { return *std::max_element(preBasis_.patchData_.order_.begin(), preBasis_.patchData_.order_.end()); }
 
     /** \brief Return the number of basis functions on the current knot span
      */
-    std::size_t size() const { return lFE_.size(); }
+    [[nodiscard]] std::size_t size() const { return lFE_.size(); }
 
   private:
     const NurbsPreBasis<GV, MI>& preBasis_;

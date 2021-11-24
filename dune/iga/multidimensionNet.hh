@@ -17,9 +17,9 @@ namespace Dune::IGA {
     class HyperSurfaceIterator;
 
     template <std::integral auto netdim1, typename ValueType1>
-    HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+    HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
     template <std::integral auto netdim1, typename ValueType1>
-    HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+    HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
   }  // namespace Impl
 
   /** \brief class holds a n-dim net */
@@ -44,8 +44,8 @@ namespace Dune::IGA {
      */
     explicit MultiDimensionNet(const std::array<int, netdim>& dimSize) : dimSize_(dimSize) {
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize)
+        size *= ds;
 
       values_.resize(size);
     }
@@ -53,8 +53,8 @@ namespace Dune::IGA {
     template <typename... Args>
     explicit MultiDimensionNet(int dimSize0, Args&&... dimSize) : dimSize_({dimSize0, std::forward<Args>(dimSize)...}) {
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize_)
+        size *= ds;
 
       values_.resize(size);
     }
@@ -62,8 +62,8 @@ namespace Dune::IGA {
     explicit MultiDimensionNet(const FieldVector<int, netdim>& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize_)
+        size *= ds;
 
       values_.resize(size);
     }
@@ -71,8 +71,8 @@ namespace Dune::IGA {
     explicit MultiDimensionNet(FieldVector<int, netdim>&& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize_)
+        size *= ds;
 
       values_.resize(size);
     }
@@ -150,8 +150,9 @@ namespace Dune::IGA {
      */
     MultiDimensionNet(std::array<int, netdim> dimSize, const ValueType& value) : dimSize_(dimSize) {
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize_)
+        size *= ds;
+
       values_.resize(size);
       std::fill(values_.begin(), values_.end(), value);
     }
@@ -180,15 +181,13 @@ namespace Dune::IGA {
     /** \brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
     ValueType& get(const ArrayType& multiIndex) {
-      int index = this->index(multiIndex);
-      return values_[index];
+      return values_[this->index(multiIndex)];
     }
 
     /** \brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
     const ValueType& get(const ArrayType& multiIndex) const {
-      int index = this->index(multiIndex);
-      return values_[index];
+      return values_[this->index(multiIndex)];
     }
 
     auto subNet(const std::array<int, netdim>& start, const std::array<int, netdim>& size) const {
@@ -250,8 +249,8 @@ namespace Dune::IGA {
     void resize(std::array<int, netdim> dimSize) {
       dimSize_ = dimSize;
       int size = 1;
-      for (int i = 0; i < netdim; ++i)
-        size *= dimSize_[i];
+      for (auto ds : dimSize_)
+        size *= ds;
 
       values_.resize(size);
     }
@@ -265,14 +264,14 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires DivideAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator/=(const rValueType& div) {
       std::ranges::transform(values_, values_.begin(), [&div](auto& val) { return val / div; });
       return *this;
     }
 
     template <typename rValueType>
-    requires DivideAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->size() == rnet.size() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), [](auto& lval, auto& rval) { return lval / rval; });
@@ -408,29 +407,14 @@ namespace Dune::IGA {
       auto operator->() { return *this; }
 
     private:
-      //      auto hyperSurface(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction, const int at) {
-      //        std::array<int, netdim> multiIndex;
-      //        if constexpr (netdim != 1)
-      //          for (int dirI = 0, i = 0; i < netdim; ++i)
-      //            if (i != direction[dirI++]) multiIndex[i] = at;
-      //
-      //
-      //        auto objectExtractor = [ multiIndex, &net, direction ](auto mI) mutable -> auto& {
-      //          for (int i = 0; i < direction.size(); ++i)
-      //            multiIndex[direction[i]] = mI[i];
-      //
-      //          return net.get(multiIndex);
-      //        };
-      //        return std::ranges::transform_view(indices, objectExtractor);
-      //      }
 
       MultiDimensionNet<netdim, ValueType>* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
       template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
       template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, const int inc);
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
     };
     template <std::integral auto netdim, typename ValueType>
     HyperSurfaceIterator<netdim, ValueType> operator+(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {

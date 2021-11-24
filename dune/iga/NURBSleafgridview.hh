@@ -21,18 +21,10 @@ namespace Dune::IGA {
     /** \brief type of the grid */
     typedef typename std::remove_const<GridImp>::type Grid;
 
-    //          /** \brief type of the index set */
-    //          typedef typename GridImpl :: Traits :: LeafIndexSet IndexSet;
-    //
-    //          /** \brief type of the intersection */
-    //          typedef typename GridImpl :: Traits :: LeafIntersection Intersection;
-    //
     /** \brief type of the intersection iterator */
     typedef typename Grid ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename Grid ::Traits ::IntersectionIterator IntersectionIterator;
-    //
-    //          /** \brief type of the collective communication */
-    //          typedef typename GridImpl :: Traits :: CollectiveCommunication CollectiveCommunication;
+
     template <int cd>
     struct Codim {
       typedef typename Grid::Traits ::template Codim<cd>::template Partition<All_Partition>::LeafIterator Iterator;
@@ -58,9 +50,9 @@ namespace Dune::IGA {
       std::integer_sequence<std::common_type_t<decltype(codim)...>, codim...>);
 
   template <typename GridImpl>
-  const auto& elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
+  const auto &elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
   template <typename GridImpl>
-  auto& elements( NURBSLeafGridView<GridImpl> &gridLeafView);
+  auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView);
 
   /** \brief NURBS grid manager */
   template <typename GridImpl>
@@ -89,18 +81,10 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
     typedef NURBSLeafGridView<GridImpl> NURBSGridView;
-    //    typedef NURBSGeometry<dimension, dimensionworld, typename GridImpl::NurbsGridLinearAlgebraTraits> Geometry;
     typedef NURBSGridLeafIndexSet<NURBSGridView> IndexSet;
 
     template <int cd>
     struct Codim : public Traits::template Codim<cd> {};
-
-    /** \brief  constructor
-     *
-     *  \param[in] knotSpans vector of knotSpans for each dimension
-     *  \param[in] controlPoints a n-dimensional net of control points
-     *  \param[in] order order of the B-Spline structure for each dimension
-     */
 
     NURBSLeafGridView(const NURBSPatchData<dimension, dimensionworld, NurbsGridLinearAlgebraTraits> &patchData, const Grid &grid)
         : NURBSLeafGridView(patchData.knotSpans, patchData.controlPoints, patchData.order, grid) {}
@@ -178,7 +162,7 @@ namespace Dune::IGA {
     const IndexSet &indexSet() const { return indexSet_; }
 
     auto size(int codim) const {
-      assert(codim<=3 && codim>=0);
+      assert(codim <= 3 && codim >= 0);
       if (codim == 0)
         return std::get<0>(*entityVector_.get()).size();
       else if (codim == 1)
@@ -191,10 +175,9 @@ namespace Dune::IGA {
     }
 
   private:
-
     friend class NURBSGridLeafIndexSet<NURBSLeafGridView<GridImpl>>;
-    friend const auto& elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
-    friend auto& elements<GridImpl>( NURBSLeafGridView<GridImpl> &gridLeafView);
+    friend const auto &elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
+    friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
     std::shared_ptr<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>> NURBSpatch_;
     NURBSGridLeafIndexSet<NURBSGridView> indexSet_;
     const Grid *grid_;
@@ -203,12 +186,12 @@ namespace Dune::IGA {
   };
 
   template <typename GridImpl>
-  const auto& elements(const NURBSLeafGridView<GridImpl> &gridLeafView) {
+  const auto &elements(const NURBSLeafGridView<GridImpl> &gridLeafView) {
     return std::get<0>(*gridLeafView.entityVector_.get());
   }
 
   template <typename GridImpl>
-  auto& elements( NURBSLeafGridView<GridImpl> &gridLeafView) {
+  auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView) {
     return std::get<0>(*gridLeafView.entityVector_.get());
   }
 }  // namespace Dune::IGA
