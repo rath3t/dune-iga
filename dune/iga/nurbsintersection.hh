@@ -15,11 +15,15 @@ namespace Dune::IGA {
     using Iterator      = NURBSGridInterSectionIterator<NURBSintersection>;
     using Entity        = typename GridViewImp::template Codim<0>::Entity;
     using Geometry      = typename GridViewImp::template Codim<1>::Geometry;
-    using LocalGeometry = typename GridViewImp::Traits::LocalGeometryIntersection;
+    using LocalGeometry = typename GridViewImp::template Codim<1>::LocalGeometry;
 
-    NURBSintersection(std::array<unsigned int, 2> directIndices,const GridViewImp& gridView )
-        :gridView_{gridView},
-        interDirectIndex_{directIndices[0]}, outerDirectIndex_{directIndices[1]} {}
+    NURBSintersection(int innerLocalIndex, int outerLocalIndex, unsigned int innerDirectIndex, unsigned int outerDirectIndex,
+                      const GridViewImp& gridView)
+        : gridView_{&gridView},
+          innerDirectIndex_{innerDirectIndex},
+          outerDirectIndex_{outerDirectIndex},
+          innerLocalIndex_{innerLocalIndex},
+          outerLocalIndex_{outerLocalIndex} {}
     /** coordinate type */
     typedef double ctype;
 
@@ -39,24 +43,66 @@ namespace Dune::IGA {
     [[nodiscard]] bool conforming() const { return true; }
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
 
-    Entity inside() const {return gridView_->template getEntity<0>(interDirectIndex_);}
+    Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
     Entity outside() const {
-      assert(neighbor()&& "Outer Element does not exist.");
+      assert(neighbor() && "Outer Element does not exist.");
       return gridView_->template getEntity<0>(outerDirectIndex_);
     }
-    [[nodiscard]] int indexInInside() const {}
-    [[nodiscard]] int indexInOutside() const {}
-    LocalGeometry geometryInInside() const {}
-    LocalGeometry geometryInOutside() const {}
-    Geometry geometry() const {}
-    GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {}
-    GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const {}
-    GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {}
-    [[nodiscard]] std::size_t boundarySegmentIndex() const {}
+    [[nodiscard]] int indexInInside() const { return innerLocalIndex_; }
+    [[nodiscard]] int indexInOutside() const { return outerLocalIndex_; }
+    LocalGeometry geometryInInside() const { return LocalGeometry(innerLocalIndex_); }
+    LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
+    Geometry geometry() const { return inside().template subEntity<1>(innerLocalIndex_).geometry(); }
+    GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
+      const auto insideGeometry          = inside().geometry();
+      const auto xiInElementCoords       = geometryInInside().global(xi);
+      const auto innerJacobianTransposed = insideGeometry.jacobianTransposed(xiInElementCoords);
+
+      if constexpr (mydim == 0)
+        return innerJacobianTransposed[0];
+      else if constexpr (mydim == 1) {
+        switch (innerLocalIndex_) {
+          case 0:
+          case 1:
+            return cross(innerJacobianTransposed[1], insideGeometry.normal(xiInElementCoords));
+          case 2:
+          case 3:
+            return cross(innerJacobianTransposed[0], insideGeometry.normal(xiInElementCoords));
+          default:
+            __builtin_unreachable();
+        }
+      } else if constexpr (mydim == 2) {
+        switch (innerLocalIndex_) {
+          case 0:
+            return cross(innerJacobianTransposed[2], innerJacobianTransposed[1]);
+          case 1:
+            return cross(innerJacobianTransposed[1], innerJacobianTransposed[2]);
+          case 2:
+            return cross(innerJacobianTransposed[0], innerJacobianTransposed[2]);
+          case 3:
+            return cross(innerJacobianTransposed[2], innerJacobianTransposed[0]);
+          case 4:
+            return cross(innerJacobianTransposed[1], innerJacobianTransposed[0]);
+          case 5:
+            return cross(innerJacobianTransposed[0], innerJacobianTransposed[1]);
+          default:
+            __builtin_unreachable();
+        }
+      }
+      __builtin_unreachable();
+    }
+    GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const { auto N = this->outerNormal(xi); return  N/N.two_norm();}
+    GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const { return this->unitOuterNormal()*this->geometry().integrationElement(xi); }
+    [[nodiscard]] std::size_t boundarySegmentIndex() const {
+      throw std::logic_error("boundarySegmentIndex Not implemented");
+      return 0;
+    }
 
   private:
-    GridViewImp* gridView_;
-    unsigned int interDirectIndex_;
+    const GridViewImp* gridView_;
+    unsigned int innerDirectIndex_;
+    int innerLocalIndex_;
     unsigned int outerDirectIndex_;
+    int outerLocalIndex_;
   };
 }  // namespace Dune::IGA

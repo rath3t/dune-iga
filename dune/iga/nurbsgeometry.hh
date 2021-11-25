@@ -14,7 +14,7 @@ namespace Dune::IGA {
 
   /** \brief a geometry implementation for NURBS*/
   template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits, bool isLocalGeometry = false>
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
   class NURBSGeometry {
   public:
     /** coordinate type */
@@ -30,9 +30,7 @@ namespace Dune::IGA {
     using LocalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate
-        = std::conditional_t<!isLocalGeometry, typename NurbsGridLinearAlgebraTraits::template FixedVectorType<coorddimension>,
-                             typename NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim + 1>>;
+    using GlobalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<coorddimension>;
 
     /** \brief Type for the transposed Jacobian matrix */
     using JacobianTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
@@ -115,40 +113,26 @@ namespace Dune::IGA {
      *  \param[in] local local coordinates for each dimension
      */
     GlobalCoordinate global(const LocalCoordinate& local) const {
-      if constexpr (isLocalGeometry)
-        return transformLocalToSpan<GlobalCoordinate>(local);
-      else {
-        const auto localInSpan = transformLocalToSpan(local);
-        auto basis             = nurbs_.basisFunctionNet(localInSpan);
-        auto cpNetofSpan
-            = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
-        return dot(basis, cpNetofSpan);
-      }
+      const auto localInSpan = transformLocalToSpan(local);
+      auto basis             = nurbs_.basisFunctionNet(localInSpan);
+      auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
+      return dot(basis, cpNetofSpan);
     }
 
     LocalCoordinate local(const GlobalCoordinate& global) const {
-      LocalCoordinate res;
-      if constexpr (isLocalGeometry) {
-        for (int dloc = 0, dGlob = 0; auto fixedOrFreeDir : fixedOrVaryingDirections_) {
-          if (fixedOrFreeDir == Impl::FixedOrFree::free) res[dloc++] = global[dGlob];
-          ++dGlob;
-        }
-        return res;
-      } else {
-        const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
-        LocalCoordinate x     = LocalCoordinate(0.5);
-        LocalCoordinate dx{};
-        do {  // from multilinearGeometry
-          // Newton's method: DF^n dx^n = F^n, x^{n+1} -= dx^n
-          const GlobalCoordinate dglobal = (*this).global(x) - global;
-          MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
-          const bool invertible = MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
+      const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
+      LocalCoordinate x     = LocalCoordinate(0.5);
+      LocalCoordinate dx{};
+      do {  // from multilinearGeometry
+        // Newton's method: DF^n dx^n = F^n, x^{n+1} -= dx^n
+        const GlobalCoordinate dglobal = (*this).global(x) - global;
+        MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
+        const bool invertible = MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
 
-          if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
-          x -= dx;
-        } while (dx.two_norm2() > tolerance);
-        return x;
-      }
+        if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
+        x -= dx;
+      } while (dx.two_norm2() > tolerance);
+      return x;
     }
 
     /** \brief compute the Jacobian transposed matrix
@@ -197,10 +181,14 @@ namespace Dune::IGA {
       return metric;
     }
 
-    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) {
-      auto J = jacobianTransposed(local);
-      auto N = cross(J[0], J[1]);
+    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2 && coorddimension=3) {
+      auto N = normal(local);
       return N / N.two_norm();
+    }
+
+    GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2 && coorddimension=3) {
+      auto J = jacobianTransposed(local);
+      return cross(J[0], J[1]);
     }
 
     auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) {

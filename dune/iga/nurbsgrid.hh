@@ -9,6 +9,7 @@
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/igaidset.hh>
 #include <dune/iga/nurbsintersection.hh>
+#include <dune/iga/nurbslocalgeometry.hh>
 
 namespace Dune::IGA {
 
@@ -44,6 +45,7 @@ namespace Dune::IGA {
         using Geometry = NURBSGeometry<dim - cd, dimworld, dim, NurbsGridLinearAlgebraTraitsImpl>;
         using LevelIterator = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
         using LeafIterator  = NURBSGridLeafIterator<NURBSGridEntity<cd, NURBSLeafGridView<NURBSGrid<dim, dimworld>>>>;
+        using LocalGeometry =  NURBSLocalGeometry<dim-cd, dim, dim, NurbsGridLinearAlgebraTraitsImpl>;
         template <PartitionIteratorType pitype>
         struct Partition {
           /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
@@ -53,7 +55,7 @@ namespace Dune::IGA {
           using LevelIterator = LeafIterator;
         };
       };
-      using LocalGeometryIntersection =  NURBSGeometry<dim-1UL, dimworld-1UL, dim, NurbsGridLinearAlgebraTraitsImpl,true>;
+
     };
     template <int cd>
     using Codim         = typename Traits::template Codim<cd>;

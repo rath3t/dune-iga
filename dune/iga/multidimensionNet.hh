@@ -303,8 +303,14 @@ namespace Dune::IGA {
 
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
-      int index, help;
-      index = 0;
+
+      int index{}, help;
+      if((std::ranges::any_of(multiIndex,[](int i){ return i < 0; })))
+        return -1; //signaling Index Out of Net
+
+      if((std::ranges::any_of(multiIndex,[id=0,this](int i)mutable{ return i > dimSize_[id++]-1; })))
+        return -1; //signaling Index Out of Net
+
       for (int i = 0; i < netdim; ++i) {
         help = 1;
         for (int j = i - 1; j > -1; --j)

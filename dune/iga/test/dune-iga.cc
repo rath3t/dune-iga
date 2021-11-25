@@ -379,7 +379,8 @@ void testNurbsBasis() {
   nurbsPatchData.order         = order;
 
   IGA::NURBSGrid<dim, dimworld> grid(nurbsPatchData);
-  grid.globalRefine(2);
+//  grid.globalRefine(1);
+  grid.globalRefineInDirection(0,1);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -401,7 +402,7 @@ void testNurbsBasis() {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, gridView.getPatchData());
     ////        test.subTest(checkBasis(basis2, AllowZeroBasisFunctions(), EnableContinuityCheck()));
-    test.subTest(checkBasis(basis2,EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2,EnableContinuityCheck(),EnableNormalContinuityCheck(),EnableTangentialContinuityCheck()));
   }
 
   {

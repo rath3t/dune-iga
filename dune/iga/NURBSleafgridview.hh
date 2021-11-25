@@ -24,7 +24,6 @@ namespace Dune::IGA {
     /** \brief type of the intersection iterator */
     typedef typename Grid ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename Grid ::Traits ::IntersectionIterator IntersectionIterator;
-    using LocalGeometryIntersection =  typename Grid ::Traits::LocalGeometryIntersection;
 
     template <int cd>
     struct Codim {
@@ -33,7 +32,7 @@ namespace Dune::IGA {
       typedef typename Grid::Traits::template Codim<cd>::Entity Entity;
 
       typedef typename Grid::Traits::template Codim<cd>::Geometry Geometry;
-      typedef typename Grid::Traits::template Codim<cd>::Geometry LocalGeometry;
+      typedef typename Grid::Traits::template Codim<cd>::LocalGeometry LocalGeometry;
 
       /** \brief Define types needed to iterate over entities of a given partition type */
       template <PartitionIteratorType pit>

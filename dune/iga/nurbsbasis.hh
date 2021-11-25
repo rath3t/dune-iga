@@ -374,13 +374,7 @@ namespace Dune::Functions {
 
     /** \brief Number of degrees of freedom for one coordinate direction */
     [[nodiscard]] unsigned int size(int i) const {
-      const auto& order = preBasis_.patchData_.order;
-      unsigned int r    = order[i] + 1;    // The 'normal' value
-      if (currentKnotSpan_[i] < order[i])  // Less near the left end of the knot vector
-        r -= (order[i] - currentKnotSpan_[i]);
-      if (order[i] > (preBasis_.patchData_.knotSpans[i].size() - currentKnotSpan_[i] - 2))
-        r -= order[i] - (preBasis_.patchData_.knotSpans[i].size() - currentKnotSpan_[i] - 2);
-      return r;
+      return preBasis_.patchData_.order[i]+1;
     }
 
     const NurbsPreBasis<GV, MI>& preBasis_;
@@ -436,7 +430,7 @@ namespace Dune::Functions {
       const unsigned int& operator[](int i) const { return counter_[i]; }
 
       /** \brief How many times can you increment this multi-index before it overflows? */
-      unsigned int cycle() const {
+      [[nodiscard]] unsigned int cycle() const {
         unsigned int r = 1;
         for (int i = 0; i < dim; i++)
           r *= limits_[i];
@@ -518,12 +512,12 @@ namespace Dune::Functions {
      * by makeNode().
      * \deprecated
      */
-    [[deprecated(
-        "Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "
-        "As a replacement use the indices() method of the PreBasis directly.")]] IndexSet
-    makeIndexSet() const {
-      return IndexSet{*this};
-    }
+//    [[deprecated(
+//        "Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "
+//        "As a replacement use the indices() method of the PreBasis directly.")]] IndexSet
+//    makeIndexSet() const {
+//      return IndexSet{*this};
+//    }
 
     //! Return number of possible values for next position in multi index
     [[nodiscard]] size_type size(const SizePrefix prefix) const {
@@ -589,12 +583,8 @@ namespace Dune::Functions {
       std::array<int, dim> realOrder = patchData_.order;
       for (int i = 0; i < dim; ++i)
         realOrder[i] += 1;
-      IGA::MultiDimensionNet<dim, R> weights(realOrder);
-      std::ranges::fill(weights.directGetAll(), 1.0);
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      assert(weights.directSize() == std::accumulate(realOrder.begin(), realOrder.end(), 1, std::multiplies{})
-             && "Weights have wrong size");
       auto N
           = IGA::Nurbs<R, dim>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints));
       out.resize(N.directSize());
@@ -611,16 +601,17 @@ namespace Dune::Functions {
       std::array<int, dim> realOrder = patchData_.order;
       for (int i = 0; i < dim; ++i)
         realOrder[i] += 1;
-      IGA::MultiDimensionNet<dim, R> weights(realOrder);
-      std::ranges::fill(weights.directGetAll(), 1.0);
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
       auto dN = IGA::Nurbs<R, dim>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
                                                              extractWeights(patchData_.controlPoints), 1);
       out.resize(dN.get(1, 0).directSize());
-      for (int i = 0; i < dN.get(1, 0).directSize(); ++i) {
-        out[i][0][0] = dN.get(1, 0).directGet(i);
-        out[i][0][1] = dN.get(0, 1).directGet(i);
+        for (int j = 0; j < dim; ++j) {
+          std::array<int,dim> multiIndex{};
+          multiIndex[j]=1;
+          auto dNcurrent = dN.get(multiIndex);
+      for (int i = 0; i < dN.get(1, 0).directSize(); ++i)
+          out[i][0][j] = dNcurrent.directGet(i);
       }
       std::cout << "evaluateJacobian" << std::endl;
     }
@@ -641,7 +632,6 @@ namespace Dune::Functions {
 
       auto dN = IGA::Nurbs<R, dim>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
                                                              extractWeights(patchData_.controlPoints), order);
-
       out = dN.get(order).directGetAll();
     }
 
@@ -658,183 +648,6 @@ namespace Dune::Functions {
       return result;
     }
 
-    /** \brief Evaluate all one-dimensional B-spline functions for a given coordinate direction
-     *
-     * This implementations was based on the explanations in the book of
-     * Cottrell, Hughes, Bazilevs, "Isogeometric Analysis"
-     *
-     * \param in Scalar(!) coordinate where to evaluate the functions
-     * \param [out] out Vector containing the values of all B-spline functions at 'in'
-     */
-    static void evaluateFunction(const typename GV::ctype& in, std::vector<R>& out, const std::vector<R>& knotVector, unsigned int order,
-                                 unsigned int currentKnotSpan) {
-      std::size_t outSize = order + 1;  // The 'standard' value away from the boundaries of the knot vector
-      out.resize(outSize);
-
-      // It's not really a matrix that is needed here, a plain 2d array would do
-      DynamicMatrix<R> N(order + 1, knotVector.size() - 1);
-
-      // The text books on splines use the following geometric condition here to fill the array N
-      // (see for example Cottrell, Hughes, Bazilevs, Formula (2.1).  However, this condition
-      // only works if splines are never evaluated exactly on the knots.
-      //
-      // for (size_t i=0; i<knotVector.size()-1; i++)
-      //   N[0][i] = (knotVector[i] <= in) and (in < knotVector[i+1]);
-      for (size_t i = 0; i < knotVector.size() - 1; i++)
-        N[0][i] = (i == currentKnotSpan);
-
-      for (size_t r = 1; r <= order; r++)
-        for (size_t i = 0; i < knotVector.size() - r - 1; i++) {
-          R factor1 = ((knotVector[i + r] - knotVector[i]) > 1e-10) ? (in - knotVector[i]) / (knotVector[i + r] - knotVector[i]) : 0;
-          R factor2 = ((knotVector[i + r + 1] - knotVector[i + 1]) > 1e-10)
-                          ? (knotVector[i + r + 1] - in) / (knotVector[i + r + 1] - knotVector[i + 1])
-                          : 0;
-          N[r][i]   = factor1 * N[r - 1][i] + factor2 * N[r - 1][i + 1];
-        }
-
-      /** \todo We only hand out function values for those basis functions whose support overlaps
-       *  the current knot span.  However, in the preceding loop we still computed _all_ values_.
-       * This won't scale.
-       */
-      for (size_t i = 0; i < out.size(); i++) {
-        out[i] = N[order][std::max((int)(currentKnotSpan - order), 0) + i];
-      }
-    }
-
-    /** \brief Evaluate all one-dimensional B-spline functions for a given coordinate direction
-     *
-     * This implementations was based on the explanations in the book of
-     * Cottrell, Hughes, Bazilevs, "Isogeometric Analysis"
-     *
-     * \todo This method is a hack!  I computes the derivatives of ALL B-splines, even the ones that
-     * are zero on the current knot span.  I need it as an intermediate step to get the derivatives
-     * working.  It will/must be removed as soon as possible.
-     *
-     * \param in Scalar(!) coordinate where to evaluate the functions
-     * \param [out] out Vector containing the values of all B-spline functions at 'in'
-     */
-    static void evaluateFunctionFull(const typename GV::ctype& in, DynamicMatrix<R>& out, const std::vector<R>& knotVector,
-                                     unsigned int order, unsigned int currentKnotSpan) {
-      // It's not really a matrix that is needed here, a plain 2d array would do
-      DynamicMatrix<R>& N = out;
-
-      N.resize(order + 1, knotVector.size() - 1);
-
-      // The text books on splines use the following geometric condition here to fill the array N
-      // (see for example Cottrell, Hughes, Bazilevs, Formula (2.1).  However, this condition
-      // only works if splines are never evaluated exactly on the knots.
-      //
-      // for (size_t i=0; i<knotVector.size()-1; i++)
-      //   N[0][i] = (knotVector[i] <= in) and (in < knotVector[i+1]);
-      for (size_t i = 0; i < knotVector.size() - 1; i++)
-        N[0][i] = (i == currentKnotSpan);
-
-      for (size_t r = 1; r <= order; r++)
-        for (size_t i = 0; i < knotVector.size() - r - 1; i++) {
-          R factor1 = ((knotVector[i + r] - knotVector[i]) > 1e-10) ? (in - knotVector[i]) / (knotVector[i + r] - knotVector[i]) : 0;
-          R factor2 = ((knotVector[i + r + 1] - knotVector[i + 1]) > 1e-10)
-                          ? (knotVector[i + r + 1] - in) / (knotVector[i + r + 1] - knotVector[i + 1])
-                          : 0;
-          N[r][i]   = factor1 * N[r - 1][i] + factor2 * N[r - 1][i + 1];
-        }
-    }
-
-    /** \brief Evaluate the second derivatives of all one-dimensional B-spline functions for a given coordinate direction
-     *
-     * \param in Scalar(!) coordinate where to evaluate the functions
-     * \param enableEvaluations switches calculation of desired derivatives on
-     * \param [out] out Vector containing the values of all B-spline derivatives at 'in'
-     * \param [out] outJac Vector containing the first derivatives of all B-spline derivatives at 'in' (only if calculation was switched on
-     * by enableEvaluations) \param [out] outHess Vector containing the second derivatives of all B-spline derivatives at 'in' (only if
-     * calculation was switched on by enableEvaluations)
-     */
-
-    static void evaluateAll(const typename GV::ctype& in, std::vector<R>& out, bool evaluateJacobian, std::vector<R>& outJac,
-                            bool evaluateHessian, std::vector<R>& outHess, const std::vector<R>& knotVector, unsigned int order,
-                            unsigned int currentKnotSpan) {
-      // How many shape functions to we have in each coordinate direction?
-      unsigned int limit;
-      limit = order + 1;  // The 'standard' value away from the boundaries of the knot vector
-      if (currentKnotSpan < order) limit -= (order - currentKnotSpan);
-      if (order > (knotVector.size() - currentKnotSpan - 2)) limit -= order - (knotVector.size() - currentKnotSpan - 2);
-
-      // The lowest knot spans that we need values from
-      unsigned int offset;
-      offset = std::max((int)(currentKnotSpan - order), 0);
-
-      // Evaluate 1d function values (needed for the product rule)
-      DynamicMatrix<R> values;
-
-      evaluateFunctionFull(in, values, knotVector, order, currentKnotSpan);
-
-      out.resize(knotVector.size() - order - 1);
-      for (size_t j = 0; j < out.size(); j++)
-        out[j] = values[order][j];
-
-      // Evaluate 1d function values of one order lower (needed for the derivative formula)
-      std::vector<R> lowOrderOneDValues;
-
-      if (order != 0) {
-        lowOrderOneDValues.resize(knotVector.size() - (order - 1) - 1);
-        for (size_t j = 0; j < lowOrderOneDValues.size(); j++)
-          lowOrderOneDValues[j] = values[order - 1][j];
-      }
-
-      // Evaluate 1d function values of two order lower (needed for the (second) derivative formula)
-      std::vector<R> lowOrderTwoDValues;
-
-      if (order > 1 && evaluateHessian) {
-        lowOrderTwoDValues.resize(knotVector.size() - (order - 2) - 1);
-        for (size_t j = 0; j < lowOrderTwoDValues.size(); j++)
-          lowOrderTwoDValues[j] = values[order - 2][j];
-      }
-
-      // Evaluate 1d function derivatives
-      if (evaluateJacobian) {
-        outJac.resize(limit);
-
-        if (order == 0)  // order-zero functions are piecewise constant, hence all derivatives are zero
-          std::fill(outJac.begin(), outJac.end(), R(0.0));
-        else {
-          for (size_t j = offset; j < offset + limit; j++) {
-            R derivativeAddend1 = lowOrderOneDValues[j] / (knotVector[j + order] - knotVector[j]);
-            R derivativeAddend2 = lowOrderOneDValues[j + 1] / (knotVector[j + order + 1] - knotVector[j + 1]);
-            // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
-            if (std::isnan(derivativeAddend1)) derivativeAddend1 = 0;
-            if (std::isnan(derivativeAddend2)) derivativeAddend2 = 0;
-            outJac[j - offset] = order * (derivativeAddend1 - derivativeAddend2);
-          }
-        }
-      }
-
-      // Evaluate 1d function second derivatives
-      if (evaluateHessian) {
-        outHess.resize(limit);
-
-        if (order < 2)  // order-zero functions are piecewise constant, hence all derivatives are zero
-          std::fill(outHess.begin(), outHess.end(), R(0.0));
-        else {
-          for (size_t j = offset; j < offset + limit; j++) {
-            assert(j + 2 < lowOrderTwoDValues.size());
-            R derivativeAddend1
-                = lowOrderTwoDValues[j] / (knotVector[j + order] - knotVector[j]) / (knotVector[j + order - 1] - knotVector[j]);
-            R derivativeAddend2
-                = lowOrderTwoDValues[j + 1] / (knotVector[j + order] - knotVector[j]) / (knotVector[j + order] - knotVector[j + 1]);
-            R derivativeAddend3
-                = lowOrderTwoDValues[j + 1] / (knotVector[j + order + 1] - knotVector[j + 1]) / (knotVector[j + order] - knotVector[j + 1]);
-            R derivativeAddend4 = lowOrderTwoDValues[j + 2] / (knotVector[j + order + 1] - knotVector[j + 1])
-                                  / (knotVector[j + 1 + order] - knotVector[j + 2]);
-            // The two previous terms may evaluate as 0/0.  This is to be interpreted as 0.
-
-            if (std::isnan(derivativeAddend1)) derivativeAddend1 = 0;
-            if (std::isnan(derivativeAddend2)) derivativeAddend2 = 0;
-            if (std::isnan(derivativeAddend3)) derivativeAddend3 = 0;
-            if (std::isnan(derivativeAddend4)) derivativeAddend4 = 0;
-            outHess[j - offset] = order * (order - 1) * (derivativeAddend1 - derivativeAddend2 - derivativeAddend3 + derivativeAddend4);
-          }
-        }
-      }
-    }
 
     /** \brief Order of the B-spline for each space dimension */
     Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;
@@ -889,7 +702,7 @@ namespace Dune::Functions {
       public:
         static const std::size_t requiredMultiIndexSize = 1;
 
-        NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData) : patchData_(patchData) {}
+        explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData) : patchData_(patchData) {}
 
         template <class MultiIndex, class GridView>
         auto makePreBasis(const GridView& gridView) const {

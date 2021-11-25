@@ -34,6 +34,7 @@ namespace Dune::IGA {
           parType_{
               (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} {}
 
+    using LocalIntersectionGeometry = typename GridViewImp::Traits::template Codim<1>::LocalGeometry;
     //! Geometry of this entity
     typename GridViewImp::template Codim<codim>::Geometry geometry() const {
       //      std::cerr<< "Error geometry not implemented yet for geometries of codim!=0"<<std::endl;
@@ -49,6 +50,10 @@ namespace Dune::IGA {
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridViewImp::dimension - codim); }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
+
+    LocalIntersectionGeometry localGeometry() const {
+      return NURBSGridView_->NURBSpatch_->template geometry<codim,true>(directIndex_);
+    }
 
     auto operator<=>(const NURBSGridEntity&) const = default;
 
@@ -72,6 +77,7 @@ namespace Dune::IGA {
     using Intersection             = NURBSintersection<mydim - 1, GridViewImp>;
     using IntersectionIterator     = typename Intersection::Iterator;
 
+
     NURBSGridEntity() = default;
 
     NURBSGridEntity(const GridViewImp& gridView, unsigned int directIndex)
@@ -80,10 +86,15 @@ namespace Dune::IGA {
           parType_{
               (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)}
     {
-      for (int innerIndex = 0,outerIndex=1; innerIndex < this->subEntities(1); ++innerIndex) {
+      intersections_= std::make_shared<std::vector<Intersection>>();
+      intersections_->reserve(this->subEntities(1));
+      for (int innerLocalIndex = 0,outerLocalIndex=1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
 
-        intersections_->template emplace_back({innerIndex,outerIndex},*NURBSGridView_);
-        outerIndex += (innerIndex%2) ? -1 : 3;
+        auto multiIndex = NURBSGridView_->NURBSpatch_->elementNet_->directToMultiIndex(directIndex_);
+        multiIndex[static_cast<int>(std::floor(innerLocalIndex/2))]+=((innerLocalIndex%2) ? 1 : -1);
+        auto directOuterIndex = NURBSGridView_->NURBSpatch_->elementNet_->index(multiIndex);
+        intersections_->emplace_back(innerLocalIndex,outerLocalIndex,directIndex_,directOuterIndex,*NURBSGridView_);
+        outerLocalIndex += ((innerLocalIndex-1)%2) ? -1 : 3;
       }
 
     }
@@ -92,6 +103,7 @@ namespace Dune::IGA {
     typename GridViewImp::template Codim<0>::Geometry geometry() const {
       return NURBSGridView_->NURBSpatch_->template geometry<0UL>(directIndex_);
     }
+
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
 
