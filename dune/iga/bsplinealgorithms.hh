@@ -12,9 +12,9 @@
 
 namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
-  auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U) {
+  auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p - 1, U.end() - p - 1, u);
+    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end() - p - 1, u);
     return std::distance(U.begin(), it) - 1;
   }
 
@@ -43,13 +43,14 @@ namespace Dune::IGA {
 
     // The Nurbs Book Algorithm A2.2
     template <typename ContainerType = std::vector<ScalarType>>
-    static auto basisFunctions(ScalarType u, const std::vector<ScalarType>& knots, const int degree) {
+    static auto basisFunctions(ScalarType u, const std::vector<ScalarType>& knots, const int degree,
+                               const std::optional<int>& spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + degree + 1, knots.front()) == degree + 1);
       assert(std::ranges::count(knots.end() - degree - 1, knots.end(), knots.back()) == degree + 1);
       ContainerType N;
       const int p = degree;
       resize(N, p + 1);
-      const int sp = findSpan(p, u, knots);
+      const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });
       auto rDiff = transform_view(std::views::counted(knots.begin() + sp + 1, p), [&u](auto& kn) { return kn - u; });
@@ -72,10 +73,11 @@ namespace Dune::IGA {
     }
 
     // The Nurbs Book Algorithm A2.3
-    static auto basisFunctionDerivatives(ScalarType u, const std::vector<ScalarType>& knots, const int degree, const int derivativeOrder) {
+    static auto basisFunctionDerivatives(ScalarType u, const std::vector<ScalarType>& knots, const int degree, const int derivativeOrder,
+                                         const std::optional<int>& spIndex = std::nullopt) {
       const int order = degree + 1;
       int p           = degree;
-      const int sp    = findSpan(p, u, knots);
+      const int sp    = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });
       auto rDiff = transform_view(std::views::counted(begin(knots) + sp + 1, p), [&u](auto& kn) { return kn - u; });
@@ -84,7 +86,6 @@ namespace Dune::IGA {
 
       std::vector<ScalarType> left(order);
       std::vector<ScalarType> right(order);
-
       DynamicMatrix<ScalarType> ndu(order, order);
 
       ndu[0][0] = 1.0;

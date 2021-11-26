@@ -11,12 +11,11 @@
 #include <numeric>
 
 #include <dune/iga/bsplinealgorithms.hh>
-#include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/concepts.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/igaalgorithms.hh>
 
-/** \todo Don't use this matrix */
-#include <dune/common/diagonalmatrix.hh>
+
 #include <dune/common/dynmatrix.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -32,7 +31,7 @@ namespace Dune::Functions {
   template <typename GV, typename R, typename MI>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI,Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::LinearAlgebraTraits<double>>
+  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::LinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -92,10 +91,10 @@ namespace Dune::Functions {
       scaling_.umv(in, globalIn);
       preBasis_.partial(order, globalIn, out, lFE_.currentKnotSpan_);
 
-      for (size_t d = 0; d < order.size(); ++d)
+      for (size_t d = 0; d < dim; ++d)
         for (size_t i = 0; i < out.size(); i++)
-          for (size_t fac = 0; fac < order[d]; ++fac)
-            out[i][0] *= scaling_[order[d]][order[d]];
+          for (std::size_t fac = 0; fac < order[d]; ++fac)
+            out[i][0] *= scaling_[d][d];
     }
 
     /** \brief Polynomial order of the shape functions
@@ -105,7 +104,9 @@ namespace Dune::Functions {
      * a B-spline basis function can easily have different orders in the different coordinate directions.
      * We therefore take the conservative choice and return the maximum over the orders of all directions.
      */
-    [[nodiscard]] unsigned int order() const { return *std::max_element(preBasis_.patchData_.order_.begin(), preBasis_.patchData_.order_.end()); }
+    [[nodiscard]] unsigned int order() const {
+      return *std::max_element(preBasis_.patchData_.order_.begin(), preBasis_.patchData_.order_.end());
+    }
 
     /** \brief Return the number of basis functions on the current knot span
      */
@@ -308,7 +309,7 @@ namespace Dune::Functions {
 
     /** \brief Constructor with a given B-spline basis
      */
-    NurbsLocalFiniteElement(const NurbsPreBasis<GV, MI>& preBasis) : preBasis_(preBasis), localBasis_(preBasis, *this) {}
+    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, MI>& preBasis) : preBasis_(preBasis), localBasis_(preBasis, *this) {}
 
     /** \brief Copy constructor
      */
@@ -322,21 +323,10 @@ namespace Dune::Functions {
      */
     void bind(const std::array<unsigned, dim>& elementIdx) {
       /* \todo In the long run we need to precompute a table for this */
+      const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
-        currentKnotSpan_[i] = 0;
-
-        // Skip over degenerate knot spans
-        while (preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i] + 1] < preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]] + 1e-8)
-          currentKnotSpan_[i]++;
-
-        for (size_t j = 0; j < elementIdx[i]; j++)  // TODO Alex: More efficient way to solve this?
-        {
-          currentKnotSpan_[i]++;
-
-          // Skip over degenerate knot spans
-          while (preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i] + 1] < preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]] + 1e-8)
-            currentKnotSpan_[i]++;
-        }
+        currentKnotSpan_[i] = Dune::IGA::findSpan(patchData.order[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
+                                                  patchData.knotSpans[i], elementIdx[i]);
 
         // Compute the geometric transformation from knotspan-local to global coordinates
         localBasis_.offset_[i] = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
@@ -372,12 +362,8 @@ namespace Dune::Functions {
      */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(dim); }
 
-    // private:
-
     /** \brief Number of degrees of freedom for one coordinate direction */
-    [[nodiscard]] unsigned int size(int i) const {
-      return preBasis_.patchData_.order[i]+1;
-    }
+    [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.order[i] + 1; }
 
     const NurbsPreBasis<GV, MI>& preBasis_;
 
@@ -386,7 +372,7 @@ namespace Dune::Functions {
     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>> localInterpolation_;
 
     // The knot span we are bound to
-    std::array<unsigned, dim> currentKnotSpan_;
+    std::array<int, dim> currentKnotSpan_;
   };
 
   template <typename GV, typename MI>
@@ -402,7 +388,7 @@ namespace Dune::Functions {
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
    */
-  template <typename GV, class MI,Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
   class NurbsPreBasis {
     static const auto dim      = GV::dimension;
     static const auto dimworld = GV::dimensionworld;
@@ -413,7 +399,9 @@ namespace Dune::Functions {
       /** \brief Constructs a new multi-index, and sets all digits to zero
        *  \param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
        */
-      MultiDigitCounter(const std::array<unsigned int, dim>& limits) : limits_(limits) { std::fill(counter_.begin(), counter_.end(), 0); }
+      explicit MultiDigitCounter(const std::array<unsigned int, dim>& limits) : limits_(limits) {
+        std::fill(counter_.begin(), counter_.end(), 0);
+      }
 
       /** \brief Increment the multi-index */
       MultiDigitCounter& operator++() {
@@ -465,32 +453,15 @@ namespace Dune::Functions {
     // Type used for function values
     using R = typename NurbsGridLinearAlgebraTraits::value_type;
 
-    /** \brief Construct a B-spline basis for a given grid view and set of knot vectors
-     *
-     * The grid *must* match the knot vectors, i.e.:
-     *  - The grid must be structured and Cartesian, and have cube elements only
-     *  - The number of elements in each direction must match the number of knot spans in that direction
-     *  - In fact, the element spacing in any direction must match the knot spacing in that direction
-     *    (disregarding knot multiplicities)
-     *  - When ordering the grid elements according to their indices, the resulting order must
-     *    be lexicographical, with the x-index increasing fastest.
-     *
-     * Unfortunately, not all of these conditions can be checked for automatically.
-     *
-     * \param knotVector A single knot vector, which will be used for all coordinate directions
-     * \param order B-spline order, will be used for all coordinate directions
-     * \param makeOpen If this is true, then knots are prepended and appended to the knot vector to make the knot vector 'open'.
-     *        i.e., start and end with 'order+1' identical knots.  Basis functions from such knot vectors are interpolatory at
-     *        the end of the parameter interval.
-     */
-    NurbsPreBasis(const GridView& gridView)    :NurbsPreBasis(gridView,gridView.getPatchData())    {}
+    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.getPatchData()) {}
 
     NurbsPreBasis(const GridView& gridView, const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
         : gridView_{gridView}, patchData_{patchData} {
-      auto uniqueKnotVector = patchData.knotSpans;
       for (int i = 0; i < dim; ++i)
-        uniqueKnotVector[i].erase(std::ranges::begin(std::ranges::unique(uniqueKnotVector[i])), std::end(uniqueKnotVector[i]));
-      std::ranges::transform(uniqueKnotVector, elements_.begin(), [](auto& v){return v.size()-1;});
+        std::ranges::unique_copy(patchData_.knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
+                                 [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
+
+      std::ranges::transform(uniqueKnotVector_, elements_.begin(), [](auto& v) { return v.size() - 1; });
     }
 
     //! Initialize the global indices
@@ -506,20 +477,6 @@ namespace Dune::Functions {
      * \brief Create tree node
      */
     Node makeNode() const { return Node{this}; }
-
-    /**
-     * \brief Create tree node index set
-     *
-     * Create an index set suitable for the tree node obtained
-     * by makeNode().
-     * \deprecated
-     */
-//    [[deprecated(
-//        "Warning: The IndexSet typedef and the makeIndexSet method are deprecated. "
-//        "As a replacement use the indices() method of the PreBasis directly.")]] IndexSet
-//    makeIndexSet() const {
-//      return IndexSet{*this};
-//    }
 
     //! Return number of possible values for next position in multi index
     [[nodiscard]] size_type size(const SizePrefix prefix) const {
@@ -581,14 +538,11 @@ namespace Dune::Functions {
     /** \brief Evaluate all B-spline basis functions at a given point
      */
     void evaluateFunction(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
-                          const std::array<unsigned, dim>& currentKnotSpan) const {
-      std::array<int, dim> realOrder = patchData_.order;
-      for (int i = 0; i < dim; ++i)
-        realOrder[i] += 1;
+                          const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      auto N
-          = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints));
+      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order,
+                                                                             extractWeights(patchData_.controlPoints), currentKnotSpan);
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
     }
@@ -599,42 +553,31 @@ namespace Dune::Functions {
      * The challenge is compute only the values needed for the current knot span.
      */
     void evaluateJacobian(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldMatrix<R, 1, dim>>& out,
-                          const std::array<unsigned, dim>& currentKnotSpan) const {
-      std::array<int, dim> realOrder = patchData_.order;
-      for (int i = 0; i < dim; ++i)
-        realOrder[i] += 1;
+                          const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      auto dN = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
-                                                             extractWeights(patchData_.controlPoints), 1);
-      out.resize(dN.get(1, 0).directSize());
-        for (int j = 0; j < dim; ++j) {
-          std::array<int,dim> multiIndex{};
-          multiIndex[j]=1;
-          auto dNcurrent = dN.get(multiIndex);
-      for (int i = 0; i < dN.get(1, 0).directSize(); ++i)
+      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
+          inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints), 1, false, currentKnotSpan);
+      out.resize(dN.get(std::array<int, dim>{}).directSize());
+      for (int j = 0; j < dim; ++j) {
+        std::array<int, dim> multiIndex{};
+        multiIndex[j]  = 1;
+        const auto& dNcurrent = dN.get(multiIndex);
+        for (int i = 0; i < dNcurrent.directSize(); ++i)
           out[i][0][j] = dNcurrent.directGet(i);
       }
-      std::cout << "evaluateJacobian" << std::endl;
     }
 
     //! \brief Evaluate Derivatives of all B-spline basis functions
 
-    void partial(const std::array<int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
-                  std::vector<FieldVector<R, 1>>& out, const std::array<unsigned, dim>& currentKnotSpan) const {
-
-      std::cout<<"partial"<<std::endl;
-      std::array<int, dim> realOrder = patchData_.order;
-      for (int i = 0; i < dim; ++i)
-        realOrder[i] += 1;
-      IGA::MultiDimensionNet<dim, R> weights(realOrder);
-      std::ranges::fill(weights.directGetAll(), 1.0);
+    void partial(const std::array<int, dim>& order, const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
+                 const std::array<unsigned, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
 
-      auto dN = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
-                                                             extractWeights(patchData_.controlPoints), order);
-      out = dN.get(order).directGetAll();
+      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
+                                                                                        extractWeights(patchData_.controlPoints), order);
+      out     = dN.get(order).directGetAll();
     }
 
     /** \brief Compute integer element coordinates from the element index
@@ -650,6 +593,7 @@ namespace Dune::Functions {
       return result;
     }
 
+    std::array<std::vector<double>, dim> uniqueKnotVector_;
 
     /** \brief Order of the B-spline for each space dimension */
     Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;

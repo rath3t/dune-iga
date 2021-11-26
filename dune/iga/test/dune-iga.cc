@@ -382,7 +382,7 @@ void testNurbsBasis() {
   IGA::NURBSGrid<dim, dimworld> grid(nurbsPatchData);
   //  grid.globalRefine(1);
   grid.globalRefineInDirection(0, 2);
-  grid.globalRefineInDirection(1, 3);
+//  grid.globalRefineInDirection(1, 3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -402,13 +402,13 @@ void testNurbsBasis() {
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, gridView.getPatchData());
-    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView);
-    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 
   {
@@ -745,15 +745,15 @@ int main(int argc, char** argv) try {
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
 
-    testNURBSGridCurve();
-    std::cout << "done with NURBS grid Curve" << std::endl;
-    test3DGrid();
-    std::cout << "3dGrid " << std::endl;
-    testTorusGeometry();
-    std::cout << "done with NURBS torus " << std::endl;
+//    testNURBSGridCurve();
+//    std::cout << "done with NURBS grid Curve" << std::endl;
+//    test3DGrid();
+//    std::cout << "3dGrid " << std::endl;
+//    testTorusGeometry();
+//    std::cout << "done with NURBS torus " << std::endl;
 
   testNurbsBasis();
-  //  std::cout << "done with NURBS basis test " << std::endl;
+    std::cout << "done with NURBS basis test " << std::endl;
   //
   testBsplineBasisFunctions();
   return 0;

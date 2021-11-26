@@ -26,14 +26,19 @@ namespace Dune::IGA {
   }
 
   template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
-  auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<std::vector<ScalarType>, dim>& knots,
                  const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = ordersFromDegrees(degree);
-    auto subNetStart           = findSpan(degree, u, knots);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
-
     return net.subNet(subNetStart, order);
+  }
+
+  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
+  auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+                 const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
+    auto subNetStart = findSpan(degree, u, knots);
+    return netOfSpan(subNetStart, knots, degree, net);
   }
 
   template <std::integral auto dim>
@@ -70,7 +75,7 @@ namespace Dune::IGA {
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
   }
 
-  template <std::size_t dim, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits= LinearAlgebraTraits<double>>
+  template <std::size_t dim, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class Nurbs {
   public:
     using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
@@ -81,21 +86,29 @@ namespace Dune::IGA {
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree, const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    auto operator()(const std::array<ScalarType, dim>& u) { return basisFunctions(u, knots_, degree_, weights_).directGetAll(); }
+    auto operator()(const std::array<ScalarType, dim>& u, const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
+      return basisFunctions(u, knots_, degree_, weights_, spIndex).directGetAll();
+    }
 
-    auto basisFunctionNet(const std::array<ScalarType, dim>& u) const { return basisFunctions(u, knots_, degree_, weights_); }
+    auto basisFunctionNet(const std::array<ScalarType, dim>& u,
+                          const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
+      return basisFunctions(u, knots_, degree_, weights_, spIndex);
+    }
 
     static auto basisFunctions(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
-                               const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights) {
+                               const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
+                               const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
-        bSplines[i] = Bspline<ScalarType>::basisFunctions(u[i], knots[i], degree[i]);
+        bSplines[i] = Bspline<ScalarType>::basisFunctions(u[i], knots[i], degree[i],
+                                                          (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
-      auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
+      auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
+      auto subNetStart = spIndex ? spIndex.value() : findSpan(degree, u, knots);
 
-      const auto subNetWeights = netOfSpan<ScalarType, dim>(u, knots, degree, weights);
+      const auto subNetWeights = netOfSpan<ScalarType, dim>(subNetStart, knots, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
       Nnet *= subNetWeights;
@@ -107,10 +120,12 @@ namespace Dune::IGA {
     // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
     static auto basisFunctionDerivatives(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
-                                         const int derivativeOrder, const bool triangleDerivatives = false) {
-      std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType , dim> bSplineDerivatives;
+                                         const int derivativeOrder, const bool triangleDerivatives = false,
+                                         const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
+      std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
-        bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(u[i], knots[i], degree[i], derivativeOrder);
+        bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(
+            u[i], knots[i], degree[i], derivativeOrder, (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
       std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
       FieldVector<int, dim> dimSize(derivativeOrder + 1);
@@ -125,7 +140,8 @@ namespace Dune::IGA {
 
       MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netsOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
-      const auto subNetWeights = netOfSpan<ScalarType, dim>(u, knots, degree, weights);
+      auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
+      const auto subNetWeights = netOfSpan<ScalarType, dim>(subNetStart, knots, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
         R.directGet(j) *= subNetWeights;
@@ -153,8 +169,9 @@ namespace Dune::IGA {
       return R;
     }
 
-    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder) const {
-      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder);
+    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder, const bool triangleDerivatives = false,
+                                  const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder,triangleDerivatives,spIndex);
     }
 
   private:
@@ -288,12 +305,12 @@ namespace Dune::IGA {
 
   // Piegl and Tiller Algo A7.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double>>
-  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius     = 1.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle = 0.0,
-                       typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle         = 360.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> origin                 = {0, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> X                      = {1, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> Y                      = {0, 1, 0}) {
+  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                    = 1.0,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle                = 0.0,
+                       typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                        = 360.0,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> origin = {0, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> X      = {1, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> Y      = {0, 1, 0}) {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
     using GlobalCoordinateType = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::value_type>;
@@ -344,13 +361,13 @@ namespace Dune::IGA {
     return NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
   }
 
-
   // Algo 8.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double>>
   auto makeSurfaceOfRevolution(const NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
                                const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> point,
                                const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> revolutionaxisI,
-                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL>::value_type revolutionAngle = 360.0) {
+                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL>::value_type revolutionAngle
+                               = 360.0) {
     const auto& genCP          = generatrix.controlPoints;
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
     using ControlPoint         = typename NURBSPatchData<2UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
@@ -399,15 +416,15 @@ namespace Dune::IGA {
       const ScalarType r            = X.two_norm();
       X /= r;
       const GlobalCoordinateType Y = cross(revolutionaxis, X);
-      surfaceCP(0, j) = PO = genCP.directGet(j);
-      GlobalCoordinateType TO    = Y;
+      surfaceCP(0, j) = PO    = genCP.directGet(j);
+      GlobalCoordinateType TO = Y;
       for (int index = 0, i = 0; i < narcs; ++i) {
         const GlobalCoordinateType P2 = Om + r * cosines[i] * X + r * sines[i] * Y;
-        surfaceCP(index + 2, j) = {.p = P2, .w = genCP.directGet(j).w};
+        surfaceCP(index + 2, j)       = {.p = P2, .w = genCP.directGet(j).w};
 
-        const GlobalCoordinateType T2   = -sines[i] * X + cosines[i] * Y;
-        surfaceCP(index + 1, j).p = Impl::Intersect3DLines(PO.p, TO, P2, T2);
-        surfaceCP(index + 1, j).w = wm * genCP.directGet(j).w;
+        const GlobalCoordinateType T2 = -sines[i] * X + cosines[i] * Y;
+        surfaceCP(index + 1, j).p     = Impl::Intersect3DLines(PO.p, TO, P2, T2);
+        surfaceCP(index + 1, j).w     = wm * genCP.directGet(j).w;
         index += 2;
         if (i < narcs - 1) {
           PO.p = P2;

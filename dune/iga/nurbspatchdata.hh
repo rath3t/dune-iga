@@ -9,24 +9,23 @@
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/multidimensionNet.hh>
 
+namespace Dune::IGA {
+  /** \brief class that holds all data regarding the NURBS structure */
+  template <std::integral auto dim, std::integral auto dimworld,
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
+  class NURBSPatchData {
+  public:
+    using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using ControlPointType     = ControlPoint<GlobalCoordinateType>;
+    using ControlPointNetType  = MultiDimensionNet<dim, ControlPointType>;
 
+    NURBSPatchData() = default;
+    NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
+                   const std::array<int, dim>& orderI)
+        : knotSpans(knotSpansI), controlPoints(controlPointsI), order(orderI) {}
 
-namespace Dune::IGA{
-/** \brief class that holds all data regarding the NURBS structure */
-template <std::integral auto  dim, std::integral auto  dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
-class NURBSPatchData {
-public:
-  using GlobalCoordinateType      = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
-  using ControlPointType = ControlPoint<GlobalCoordinateType>;
-
-  using ControlPointNetType = MultiDimensionNet<dim, ControlPointType>;
-  NURBSPatchData()          = default;
-  NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
-                 const std::array<int, dim>& orderI)
-      : knotSpans(knotSpansI), controlPoints(controlPointsI), order(orderI) {}
-
-  std::array<std::vector<double>, dim> knotSpans;
-  ControlPointNetType controlPoints;
-  std::array<int, dim> order;
-};
-}
+    std::array<std::vector<double>, dim> knotSpans;
+    ControlPointNetType controlPoints;
+    std::array<int, dim> order;
+  };
+}  // namespace Dune::IGA

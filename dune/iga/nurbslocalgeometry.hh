@@ -86,7 +86,7 @@ namespace Dune::IGA {
      *  \param[in] local local coordinates for each dimension
      */
     GlobalCoordinate global(const LocalCoordinate& local) const {
-      const double offset = 1e-15;
+      const double offset = 0;
       if constexpr (mydim == 0)
         return (localIndexInElement_ == 0) ? GlobalCoordinate(0) : GlobalCoordinate(1-offset);
       else if constexpr (mydim == 1)
