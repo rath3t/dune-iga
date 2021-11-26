@@ -12,6 +12,8 @@
 
 #include <dune/iga/bsplinealgorithms.hh>
 #include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/concepts.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 
 /** \todo Don't use this matrix */
 #include <dune/common/diagonalmatrix.hh>
@@ -30,7 +32,7 @@ namespace Dune::Functions {
   template <typename GV, typename R, typename MI>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI>
+  template <typename GV, class MI,Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::LinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -400,7 +402,7 @@ namespace Dune::Functions {
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
    */
-  template <typename GV, class MI>
+  template <typename GV, class MI,Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
   class NurbsPreBasis {
     static const auto dim      = GV::dimension;
     static const auto dimworld = GV::dimensionworld;
@@ -461,7 +463,7 @@ namespace Dune::Functions {
     using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
     // Type used for function values
-    using R = double;
+    using R = typename NurbsGridLinearAlgebraTraits::value_type;
 
     /** \brief Construct a B-spline basis for a given grid view and set of knot vectors
      *
@@ -586,7 +588,7 @@ namespace Dune::Functions {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
       auto N
-          = IGA::Nurbs<R, dim>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints));
+          = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints));
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
     }
@@ -603,7 +605,7 @@ namespace Dune::Functions {
         realOrder[i] += 1;
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      auto dN = IGA::Nurbs<R, dim>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
+      auto dN = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
                                                              extractWeights(patchData_.controlPoints), 1);
       out.resize(dN.get(1, 0).directSize());
         for (int j = 0; j < dim; ++j) {
@@ -630,7 +632,7 @@ namespace Dune::Functions {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
 
-      auto dN = IGA::Nurbs<R, dim>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
+      auto dN = IGA::Nurbs<dim,NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
                                                              extractWeights(patchData_.controlPoints), order);
       out = dN.get(order).directGetAll();
     }

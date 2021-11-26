@@ -6,8 +6,8 @@
 #include <span>
 
 #include <dune/common/iteratorfacades.hh>
-#include <dune/iga/NURBSleafgridview.hh>
-#include <dune/iga/NURBSpatch.hh>
+#include <dune/iga/nurbsleafgridview.hh>
+#include <dune/iga/nurbspatch.hh>
 /** \file
  * \brief The NURBSGridIterator class
  */

@@ -5,11 +5,11 @@
 #include <ranges>
 
 #include <dune/common/tuplevector.hh>
-#include <dune/iga/NURBSgridleafiterator.hh>
-#include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
+#include <dune/iga/nurbsgridleafiterator.hh>
+#include <dune/iga/nurbspatch.hh>
 
 namespace Dune::IGA {
 

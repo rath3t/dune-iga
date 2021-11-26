@@ -181,17 +181,17 @@ namespace Dune::IGA {
       return metric;
     }
 
-    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2 && coorddimension=3) {
+    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2)  && (coorddimension==3) {
       auto N = normal(local);
       return N / N.two_norm();
     }
 
-    GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2 && coorddimension=3) {
+    GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2)  && (coorddimension==3) {
       auto J = jacobianTransposed(local);
       return cross(J[0], J[1]);
     }
 
-    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) {
+    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2)  && (coorddimension==3) {
       const auto secDerivatives = secondDerivativeOfPosition(local);
       const auto unitnormal     = unitNormal(local);
       FieldMatrix<ctype, mydimension, mydimension> b;
@@ -235,7 +235,7 @@ namespace Dune::IGA {
     std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
     std::array<std::vector<double>::const_iterator, griddim> varyingSpans_;
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
-    Dune::IGA::Nurbs<double, griddim> nurbs_;
+    Dune::IGA::Nurbs<griddim,NurbsGridLinearAlgebraTraits> nurbs_;
     //    MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
   };
 

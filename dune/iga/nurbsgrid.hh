@@ -2,10 +2,10 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include <dune/iga/NURBSleafgridview.hh>
-#include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/concepts.hh>
-#include <dune/iga/gridcapabilities.hh>
+#include <dune/iga/nurbsleafgridview.hh>
+#include <dune/iga/nurbspatch.hh>
+//#include <dune/iga/gridcapabilities.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/igaidset.hh>
 #include <dune/iga/nurbsintersection.hh>
@@ -18,14 +18,14 @@ namespace Dune::IGA {
   class NURBSGrid {
   public:
     using NurbsGridLinearAlgebraTraits = NurbsGridLinearAlgebraTraitsImpl;
-    using GlobalCoordinateType         = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
-    using LocalCoordinateType          = typename NurbsGridLinearAlgebraTraits::LocalCoordinateType;
-    using JacobianTransposedType       = typename NurbsGridLinearAlgebraTraits::JacobianTransposedType;
-    using JacobianInverseTransposed    = typename NurbsGridLinearAlgebraTraits::JacobianInverseTransposed;
+    using GlobalCoordinateType         = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using LocalCoordinateType          = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dim>;
+    using JacobianTransposedType       = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<dim,dimworld>;
+    using JacobianInverseTransposed    = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<dimworld,dim>;
 
     static constexpr std::integral auto dimension      = dim;
     static constexpr std::integral auto dimensionworld = dimworld;
-    using ctype                                        = typename GlobalCoordinateType::value_type;
+    using ctype                                        = typename NurbsGridLinearAlgebraTraits::value_type;
 
     using ControlPointNetType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType;
 

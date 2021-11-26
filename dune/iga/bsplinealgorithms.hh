@@ -8,7 +8,7 @@
 #include <ranges>
 
 #include <dune/common/dynmatrix.hh>
-#include <dune/iga/traits.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 
 namespace Dune::IGA {
   template <std::ranges::random_access_range Range>

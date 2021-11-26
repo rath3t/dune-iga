@@ -10,9 +10,9 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-#include <dune/iga/NURBSpatch.hh>
 #include <dune/iga/bsplinepatch.hh>
 #include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/nurbspatch.hh>
 
 using namespace Dune;
 

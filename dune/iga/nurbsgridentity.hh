@@ -10,8 +10,8 @@
 
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/gridenums.hh>
-#include <dune/iga/NURBSleafgridview.hh>
-#include <dune/iga/NURBSpatch.hh>
+#include <dune/iga/nurbsleafgridview.hh>
+#include <dune/iga/nurbspatch.hh>
 
 /** \file
  * \brief The NURBSGridEntity class

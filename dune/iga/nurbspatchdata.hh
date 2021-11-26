@@ -6,17 +6,17 @@
 
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
-#include <dune/iga/traits.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/multidimensionNet.hh>
 
 
 
 namespace Dune::IGA{
 /** \brief class that holds all data regarding the NURBS structure */
-template <std::integral auto  dim, std::integral auto  dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double, dim, dimworld>>
+template <std::integral auto  dim, std::integral auto  dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
 class NURBSPatchData {
 public:
-  using GlobalCoordinateType      = typename NurbsGridLinearAlgebraTraits::GlobalCoordinateType;
+  using GlobalCoordinateType      = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
   using ControlPointType = ControlPoint<GlobalCoordinateType>;
 
   using ControlPointNetType = MultiDimensionNet<dim, ControlPointType>;

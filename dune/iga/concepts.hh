@@ -17,7 +17,7 @@ namespace Dune::IGA {
     { v *= a } -> std::same_as<VectorType&>;
     { v /= a } -> std::same_as<VectorType&>;
     { dot(v,v) } -> std::same_as<typename VectorType::value_type>;
-
+    { two_norm(v) } -> std::same_as<typename VectorType::value_type>;
   };
 
   template <typename MatrixType>
@@ -30,11 +30,14 @@ namespace Dune::IGA {
   };
 
   template <typename LinearAlgebraTraits, int a = 1>
-  concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Vector<
-      typename LinearAlgebraTraits::template FixedVectorType<a>> && requires() {
+  concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<typename LinearAlgebraTraits::DynamicMatrixType>  && Vector<
+      typename LinearAlgebraTraits::template FixedVectorType<a>>  && Vector<
+      typename LinearAlgebraTraits::DynamicVectorType>&&  requires() {
     typename LinearAlgebraTraits::value_type;
     typename LinearAlgebraTraits::template FixedMatrixType<a, a>;
     typename LinearAlgebraTraits::template FixedVectorType<a>;
+    typename LinearAlgebraTraits::DynamicMatrixType;
+    typename LinearAlgebraTraits::DynamicVectorType;
   };
 
   template <typename ControlPointType>

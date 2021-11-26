@@ -7,13 +7,13 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/nurbsgeometry.hh>
-#include <dune/iga/traits.hh>
 
 namespace Dune::IGA {
 
   template <std::integral auto dim, std::integral auto dimworld,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double, dim, dimworld>>
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class NURBSGrid;
 
   template <typename GridImpl>
@@ -24,7 +24,7 @@ namespace Dune::IGA {
 
   /** \brief Class where the NURBS geometry can work on */
   template <std::integral auto dim, std::integral auto dimworld,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double, dim, dimworld>>
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class NURBSPatch {
   public:
     friend class NURBSLeafGridView<NURBSGrid<dim, dimworld>>;
