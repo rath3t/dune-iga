@@ -116,13 +116,9 @@ namespace Dune::IGA {
      */
     MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>> values) : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size());
-
-      for (int i = 0; i < values.size(); ++i) {
-        for (int j = 0; j < values[0].size(); ++j) {
-          std::array<int, netdim> multiIndex = {i, j};
-          this->set(multiIndex, values[i][j]);
-        }
-      }
+      for (int i = 0; i < values.size(); ++i)
+        for (int j = 0; j < values[0].size(); ++j)
+          this->set({i, j}, values[i][j]);
     }
 
     /** \brief constructor intended for the 3-D

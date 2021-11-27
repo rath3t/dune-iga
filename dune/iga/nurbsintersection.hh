@@ -4,16 +4,15 @@
 
 #pragma once
 
-
 namespace Dune::IGA {
   namespace Impl {
     static constexpr int noNeighbor = -1;
   }
 
-  template<typename NURBSIntersection>
+  template <typename NURBSIntersection>
   class NURBSGridInterSectionIterator;
 
-      template <std::integral auto mydim, typename GridViewImp>
+  template <std::integral auto mydim, typename GridViewImp>
   class NURBSintersection {
   public:
     using Iterator      = NURBSGridInterSectionIterator<NURBSintersection>;
@@ -60,61 +59,54 @@ namespace Dune::IGA {
     GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
       if constexpr (mydim == 0)
         return this->geometry().jacobianTransposed(xi)[0];
-      else if constexpr (mydim == 1) { //edges
-        if constexpr (dimworld == 2) { // edges in R2
+      else if constexpr (mydim == 1) {  // edges
+        if constexpr (dimworld == 2) {  // edges in R2
           const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi)[0];
           switch (innerLocalIndex_) {
             case 0:
-            case 3:
-              return GlobalCoordinate({-innerJacobianTransposed[1], innerJacobianTransposed[0]});
+            case 3: return GlobalCoordinate({-innerJacobianTransposed[1], innerJacobianTransposed[0]});
             case 1:
-            case 2:
-              return GlobalCoordinate({innerJacobianTransposed[1], -innerJacobianTransposed[0]});
-            default:
-              __builtin_unreachable();
+            case 2: return GlobalCoordinate({innerJacobianTransposed[1], -innerJacobianTransposed[0]});
+            default: __builtin_unreachable();
           }
-        }else if constexpr (dimworld == 3) // edges in R3
+        } else if constexpr (dimworld == 3)  // edges in R3
         {
-          const auto xiInElementCoords       = geometryInInside().global(xi);
+          const auto xiInElementCoords        = geometryInInside().global(xi);
           const auto insideJacobianTransposed = inside().geometry().jacobianTransposed(xiInElementCoords);
-          auto normal = cross(insideJacobianTransposed[0],insideJacobianTransposed[1]);
+          auto normal                         = cross(insideJacobianTransposed[0], insideJacobianTransposed[1]);
           switch (innerLocalIndex_) {
-            case 0:
-              return cross(normal,insideJacobianTransposed[1]);
-            case 1:
-              return cross(insideJacobianTransposed[1],normal);
-            case 2:
-              return cross(insideJacobianTransposed[0],normal);
-            case 3:
-              return cross(normal,insideJacobianTransposed[0]);
-            default:
-              __builtin_unreachable();
+            case 0: return cross(normal, insideJacobianTransposed[1]);
+            case 1: return cross(insideJacobianTransposed[1], normal);
+            case 2: return cross(insideJacobianTransposed[0], normal);
+            case 3: return cross(normal, insideJacobianTransposed[0]);
+            default: __builtin_unreachable();
           }
         }
-      } else if constexpr (mydim == 2 && dimworld==3) { // surfaces in R3
-          const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi);
-          switch (innerLocalIndex_) {
-            case 0:
-            case 3:
-            case 4:
-              return cross(innerJacobianTransposed[1],innerJacobianTransposed[0]);
-            case 1:
-            case 2:
-            case 5:
-              return cross(innerJacobianTransposed[0],innerJacobianTransposed[1]);
-            default:
-              __builtin_unreachable();
-          }
+      } else if constexpr (mydim == 2 && dimworld == 3) {  // surfaces in R3
+        const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi);
+        switch (innerLocalIndex_) {
+          case 0:
+          case 3:
+          case 4: return cross(innerJacobianTransposed[1], innerJacobianTransposed[0]);
+          case 1:
+          case 2:
+          case 5: return cross(innerJacobianTransposed[0], innerJacobianTransposed[1]);
+          default: __builtin_unreachable();
+        }
       }
       __builtin_unreachable();
     }
-    GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const { auto N = this->outerNormal(xi); return  N/N.two_norm();}
-    GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const { return this->unitOuterNormal()*this->geometry().integrationElement(xi); }
+    GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const {
+      auto N = this->outerNormal(xi);
+      return N / N.two_norm();
+    }
+    GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {
+      return this->unitOuterNormal() * this->geometry().integrationElement(xi);
+    }
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       throw std::logic_error("boundarySegmentIndex Not implemented");
       return 0;
     }
-
 
     auto operator<=>(const NURBSintersection&) const = default;
 

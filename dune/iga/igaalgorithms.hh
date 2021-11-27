@@ -194,139 +194,167 @@ namespace Dune::IGA {
     bezalfs[0][0] = bezalfs[ph][p] = 1.0;
     for (int i = 1; i <= ph2; ++i) {
       const ScalarType inv = 1.0 / Dune::binomial(ph, i);
-      const int mpi = std::min(p, i);
-      for (int j = std::max(0, i - t); j <= mpi; ++j)
+      for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
         bezalfs[i][j] = inv * Dune::binomial(p, j) * Dune::binomial(t, i - j);
     }
-    for (int i = ph2 + 1; i <= ph - 1; ++i) {
-      const int mpi = std::min(p, i);
-      for (int j = std::max(0, i - t); j <= mpi; ++j)
+    for (int i = ph2 + 1; i <= ph - 1; ++i)
+      for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
         bezalfs[i][j] = bezalfs[ph - i][p - j];
-    }
-    int mh    = ph;
-    int kind  = ph + 1;
-    int r     = -1;
-    int a     = p;
-    int b     = p + 1;
-    int cind  = 1;
+
+
     double ua = oldData.knotSpans[refinementDirection][0];
     typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType newCPv(oldData.controlPoints.size());
     using ControlPointType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
 
     auto oldCPsw = oldData.controlPoints;
+
     auto scaleCPWithW = [](const auto& cp) -> ControlPointType { return {.p = cp.w * cp.p, .w = cp.w}; };
     std::ranges::transform(oldCPsw.directGetAll(), oldCPsw.directGetAll().begin(), scaleCPWithW);
 
-    std::vector<ControlPointType> bpts(p + 1);
-    std::vector<ControlPointType> ebpts(p + t + 1);
-    std::vector<ControlPointType> nextbpts(p - 1);
+    std::vector<ControlPointType> bpts(p + 1), ebpts(ph + 1), nextbpts(p - 1);
     std::vector<ScalarType> Uh;
-    std::vector<ControlPointType> Qw;
-    Qw.push_back(oldData.controlPoints.directGet(0)); //TODO Only for 1d
-    for (int i = 0; i <= ph; ++i)
-      Uh.push_back(ua);
-    for (int i = 0; i <= p; ++i) {
-      std::array<int, dim> multiIndex{};
-      multiIndex[refinementDirection] = i;
-      bpts[i]                         = oldCPsw.get(multiIndex);
-    }
-    const auto& U = oldData.knotSpans[refinementDirection];
-    std::vector<ScalarType> alphas(p - 1);
-    while (b < m) {
-      int i = b;
-      while (b < m && Dune::FloatCmp::eq(U[b] , U[b + 1]))
-        ++b;
-      const int mul = b - i + 1;
-      mh += mul + t;
-      const auto ub  = U[b];
-      const int oldr = r;
-      r              = p - mul;
-      const int lbz  = (oldr > 0) ? ((oldr + 2) / 2) : 1;  // Insert knot u(b) r times
-      const int rbz  = (r > 0) ? (ph - (r + 1) / 2) : ph;
 
-      if (r > 0)  // Insert knot to get Bezier segment
-      {
-        const auto numer = ub - ua;
-        for (int k = p; k > mul; --k) //TODO hier vllt bug?
-          alphas[k - mul - 1] = numer / (U[a + k] - ua);
-        for (int j = 1; j <= r; ++j) {
-          const int save = r - j;
-          const int s    = mul + j;
-          for (int k = p; k >= s; --k)
-            bpts[k] = alphas[k - s] * bpts[k] + (1.0 - alphas[k - s]) * bpts[k - 1];
-          nextbpts[save] = bpts[p];
-        }
-      } //End of insert knot
-
-      for (int i = lbz; i <= ph; ++i) {  // Degree elevate Bezier
-        ebpts[i]      = 0.0;
-        const int mpi = std::min(p, i);
-        for (int j = std::max(0, i - t); j <= mpi; ++j)
-          ebpts[i] += bezalfs[i][j] * bpts[j];
-      }  // End of degree elevating Bezier
-
-      if (oldr > 1) {  // Must remove knot u = U[a] oldr times
-        int first            = kind - 2;
-        int last             = kind;
-        const ScalarType den = ub - ua;
-        const ScalarType bet = (ub - Uh[kind - 1]) / den;
-        for (int tr = 1; tr < oldr; ++tr) {  // Knot removal loop
-          int i  = first;
-          int j  = last;
-          int kj = j - kind + 1;
-          while (j - i > tr) {
-            if (i < cind) {
-              const ScalarType alf = (ub - Uh[i]) / (ua - Uh[i]);
-              Qw[i]                = alf * Qw[i] + (1.0 - alf) * Qw[i - 1];
-            }
-            if (j >= lbz) {
-              if (j - tr <= kind - ph + oldr) {
-                const ScalarType gam = (ub - Uh[j - tr]) / den;
-                ebpts[kj]            = gam * ebpts[kj] + (1.0 - gam) * ebpts[kj + 1];
-              } else
-                ebpts[kj] = bet * ebpts[kj] + (1.0 - bet) * ebpts[kj + 1];
-            }
-            ++i; --j; --kj;
-          }
-          --first; ++last;
-        }
-      }  // End of removing knot, u= U[a]
-      if (a != p)
-        for (int j = 0; j < ph - oldr; ++j) {
-          Uh.push_back( ua);
-          ++kind;
-        }
-      for (int j = lbz; j <= rbz; ++j) {  // Load ctrl pts into Qw
-        Qw.push_back(ebpts[j]);
-        ++cind;
-      }
-      if (b < m) {  // Set up for next pass thru loop
-        for (int j = 0; j < r; ++j)
-          bpts[j] = nextbpts[j];
-        for (int j = r; j <= p; ++j) {
-          std::array<int, dim> multiIndex{};
-          multiIndex[refinementDirection] = b - p + j;
-          bpts[j]                         = oldCPsw.get(multiIndex);
-        }
-        a = b;
-        ++b;
-        ua = ub;
-      } else {
-        for (int i = 0; i <= ph; ++i)
-          Uh.push_back(ub);
-      }
-    }  // End of while-loop (b<m)
-       //    nh = mh-ph-1;
     NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl> newData;
     newData.order = oldData.order;
     newData.order[refinementDirection] += t;
-//    newData.knotSpans[refinementDirection]                      = oldData.knotSpans[refinementDirection];
-    newData.knotSpans[refinementDirection].resize(Uh.size());
-    newData.knotSpans[refinementDirection] = Uh;
-    newData.controlPoints                  = MultiDimensionNet<dim, ControlPointType>(std::array<int, 1>{Qw.size()}, Qw);
-    std::ranges::transform(newData.controlPoints.directGetAll(), newData.controlPoints.directGetAll().begin(),
-                           [](auto& cp) -> ControlPointType { return {.p = cp.p / cp.w, .w = cp.w}; });
+    const auto& U = oldData.knotSpans[refinementDirection];
+    for (int j = 0, i = 0; i < U.size(); ++i)
+      if (j < U.size()) {
+        do {
+          Uh.push_back(U[j]);
+          ++j;
+        } while (Dune::FloatCmp::eq(U[j - 1] , U[j]));
+        Uh.insert(Uh.end(), t, U[j - 1]);
+        if (j == U.size()) break;
+      }
 
+    for (int i = 0; i < dim; ++i)
+      if(i==refinementDirection)
+        newData.knotSpans[i] = Uh;
+      else
+        newData.knotSpans[i] =  oldData.knotSpans[i];
+
+    auto dimSize                           = oldData.controlPoints.size();
+    dimSize[refinementDirection]           = Uh.size() - ph - 1;
+    newData.controlPoints                  = MultiDimensionNet<dim, ControlPointType>(dimSize);
+
+    int totalCurvesInPatch=1;
+    std::array<int,dim-1> indicesOther;
+    for (int counter=0,i = 0; i < dim; ++i)
+      if(i!=refinementDirection) {
+        totalCurvesInPatch *= dimSize[i];
+        indicesOther[counter++] = dimSize[i];
+      }
+    auto func = [indicesOther](auto i) {
+      return MultiDimensionNet<dim - 1, int>::template directToMultiIndex<std::array<int, dim - 1>>(indicesOther, i);
+    };
+
+    for (auto mI: std::ranges::iota_view(0, totalCurvesInPatch) | std::views::transform(func))
+    {
+      int kind  = ph + 1;
+      int r     = -1;
+      int a     = p;
+      int b     = p + 1;
+      int cind  = 1;
+//      auto mIndex = newData.controlPoints.size();
+
+      auto oldCurve = [&oldCPsw, &refinementDirection,mI](int i) {
+        std::array<int, dim> multiIndex{};
+        for (int counter=0,j = 0; j < dim; ++j) {
+          if (j== refinementDirection)
+            multiIndex[j] = i;
+          else
+            multiIndex[j]=mI[counter++];
+        }
+        return oldCPsw.get(multiIndex);
+      };
+
+      auto newCurve = [&newData, &refinementDirection,mI ](int i) -> auto& {
+        std::array<int, dim> multiIndex{};
+        for (int counter=0,j = 0; j < dim; ++j) {
+          if (j== refinementDirection)
+            multiIndex[j] = i;
+          else
+            multiIndex[j]=mI[counter++];
+        }
+        return newData.controlPoints.get(multiIndex);
+      };
+
+      newCurve(0) = oldCurve(0);
+      for (int i = 0; i <= p; ++i)
+        bpts[i] = oldCurve(i);
+
+      std::vector<ScalarType> alphas(p - 1);
+      while (b < m) {
+        const int bold = b;
+        while (b < m && Dune::FloatCmp::eq(U[b], U[b + 1]))
+          ++b;
+        const int mul  = b - bold + 1;
+        const auto ub  = U[b];
+        const int oldr = r;
+        r              = p - mul;
+        const int lbz  = (oldr > 0) ? ((oldr + 2) / 2) : 1;  // Insert knot u(b) r times
+        const int rbz  = (r > 0) ? (ph - (r + 1) / 2) : ph;
+        if (r > 0)  // Insert knot to get Bezier segment
+        {
+          const auto numer = ub - ua;
+          for (int k = p; k > mul; --k)
+            alphas[k - mul - 1] = numer / (U[a + k] - ua);
+          for (int j = 1; j <= r; ++j) {
+            const int s = mul + j;
+            for (int k = p; k >= s; --k)
+              bpts[k] = alphas[k - s] * bpts[k] + (1.0 - alphas[k - s]) * bpts[k - 1];
+            nextbpts[r - j] = bpts[p];
+          }
+        }  // End of insert knot
+
+        for (int i = lbz; i <= ph; ++i) {  // Degree elevate Bezier
+          ebpts[i] = 0.0;
+          for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
+            ebpts[i] += bezalfs[i][j] * bpts[j];
+        }                // End of degree elevating Bezier
+        if (oldr > 1) {  // Must remove knot u = U[a] oldr times
+          int first            = kind - 2;
+          int last             = kind;
+          const ScalarType den = ub - ua;
+          const ScalarType bet = (ub - Uh[kind - 1]) / den;
+          for (int tr = 1; tr < oldr; ++tr) {  // Knot removal loop
+            int i  = first;
+            int j  = last;
+            int kj = j - kind + 1;
+            while (j - i > tr) {
+              if (i < cind) {
+                const ScalarType alf = (ub - Uh[i]) / (ua - Uh[i]);
+                newCurve(i)          = alf * newCurve(i) + (1.0 - alf) * newCurve(i - 1);
+              }
+              if (j >= lbz) {
+                const auto factor = (j - tr <= kind - ph + oldr) ? (ub - Uh[j - tr]) / den : bet;
+                ebpts[kj]         = factor * ebpts[kj] + (1.0 - factor) * ebpts[kj + 1];
+              }
+              ++i;
+              --j;
+              --kj;
+            }
+            --first;
+            ++last;
+          }
+        }  // End of removing knot, u= U[a]
+        if (a != p) kind += ph - oldr;
+        for (int j = lbz; j <= rbz; ++j, ++cind)  // Load ctrl pts into Qw
+          newCurve(cind) = ebpts[j];
+        if (b < m) {  // Set up for next pass thru loop
+          std::ranges::copy(nextbpts | std::views::take(r), bpts.begin());
+          for (int j = r; j <= p; ++j)
+            bpts[j] = oldCurve(b - p + j);
+          a = b;
+          ++b;
+          ua = ub;
+        }
+      }  // End of while-loop (b<m)
+    }
+
+      std::ranges::transform(newData.controlPoints.directGetAll(), newData.controlPoints.directGetAll().begin(),
+                           [](auto& cp) -> ControlPointType { return {.p = cp.p / cp.w, .w = cp.w}; });
     return newData;
   }
 

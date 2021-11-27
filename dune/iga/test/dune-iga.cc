@@ -44,8 +44,8 @@ void testNURBSGridCurve() {
   const auto dim      = 1UL;
   const auto dimworld = 3UL;
 
-  const std::array<int, dim> order                     = {2};
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
+  const std::array<int, dim> order                     = {3};
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0, 1, 3, 4, 4,4, 5,5, 5, 5}}};
   //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
@@ -60,7 +60,11 @@ void testNURBSGridCurve() {
   patchData.knotSpans = knotSpans;
   patchData.order = order;
   patchData.controlPoints = controlNet;
-  patchData= degreeElevate(patchData,0,10);
+  auto additionalKnots        = std::vector<double>(2);
+  additionalKnots[0] = 0.5;
+  additionalKnots[1] = 3.5;
+//  patchData = knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData= degreeElevate(patchData,0,1);
 
 
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
@@ -72,6 +76,7 @@ void testNURBSGridCurve() {
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
   //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
   vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
+//  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
 }
 
 void testNURBSGridSurface() {
@@ -137,9 +142,11 @@ void test3DGrid() {
 
   nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
   nurbsPatchData.order         = order;
-
+  nurbsPatchData = degreeElevate(nurbsPatchData,0,3);
+  nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
+  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid grid(nurbsPatchData);
-  grid.globalRefine(1);
+  grid.globalRefine(2);
 
   auto gridView = grid.leafGridView();
 
@@ -189,11 +196,12 @@ void testTorusGeometry() {
   const double r      = 1.0;
   auto circle         = makeCircularArc(r);
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
-
+  nurbsPatchData = degreeElevate(nurbsPatchData,0,3);
+  nurbsPatchData = degreeElevate(nurbsPatchData,1,7);
   IGA::NURBSGrid grid(nurbsPatchData);
   grid.globalRefine(0);
-  grid.globalRefineInDirection(1, 2);
-  grid.globalRefineInDirection(0, 1);
+  grid.globalRefineInDirection(1, 3);
+  grid.globalRefineInDirection(0, 3);
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;
@@ -752,9 +760,9 @@ int main(int argc, char** argv) try {
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
 
-    testNURBSGridCurve();
+//    testNURBSGridCurve();
 //    std::cout << "done with NURBS grid Curve" << std::endl;
-//    test3DGrid();
+    test3DGrid();
 //    std::cout << "3dGrid " << std::endl;
 //    testTorusGeometry();
 //    std::cout << "done with NURBS torus " << std::endl;
