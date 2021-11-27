@@ -90,8 +90,7 @@ namespace Dune::IGA {
       return basisFunctions(u, knots_, degree_, weights_, spIndex).directGetAll();
     }
 
-    auto basisFunctionNet(const std::array<ScalarType, dim>& u,
-                          const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
+    auto basisFunctionNet(const std::array<ScalarType, dim>& u, const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
       return basisFunctions(u, knots_, degree_, weights_, spIndex);
     }
 
@@ -171,7 +170,7 @@ namespace Dune::IGA {
 
     auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder, const bool triangleDerivatives = false,
                                   const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
-      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder,triangleDerivatives,spIndex);
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, triangleDerivatives, spIndex);
     }
 
   private:
@@ -179,6 +178,154 @@ namespace Dune::IGA {
     std::array<int, dim> degree_;
     MultiDimensionNet<dim, ScalarType> weights_;
   };
+
+  template <std::integral auto dim, std::integral auto dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  auto degreeElevate(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData, const int refinementDirection,
+                     const int elevationFactor) {
+    using DynamicMatrixType = typename NurbsGridLinearAlgebraTraitsImpl::DynamicMatrixType;
+    using ScalarType        = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
+    const int t             = elevationFactor;
+    const int p             = oldData.order[refinementDirection];
+    const int m             = oldData.controlPoints.size()[refinementDirection] + p;
+    const int ph            = p + t;
+    const int ph2           = ph / 2;
+    /* Compute Bezier degree elevation coefficients */
+    DynamicMatrixType bezalfs(ph + 1, p + 1);
+    bezalfs[0][0] = bezalfs[ph][p] = 1.0;
+    for (int i = 1; i <= ph2; ++i) {
+      const ScalarType inv = 1.0 / Dune::binomial(ph, i);
+      const int mpi = std::min(p, i);
+      for (int j = std::max(0, i - t); j <= mpi; ++j)
+        bezalfs[i][j] = inv * Dune::binomial(p, j) * Dune::binomial(t, i - j);
+    }
+    for (int i = ph2 + 1; i <= ph - 1; ++i) {
+      const int mpi = std::min(p, i);
+      for (int j = std::max(0, i - t); j <= mpi; ++j)
+        bezalfs[i][j] = bezalfs[ph - i][p - j];
+    }
+    int mh    = ph;
+    int kind  = ph + 1;
+    int r     = -1;
+    int a     = p;
+    int b     = p + 1;
+    int cind  = 1;
+    double ua = oldData.knotSpans[refinementDirection][0];
+    typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType newCPv(oldData.controlPoints.size());
+    using ControlPointType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+
+    std::vector<ControlPointType> bpts(p + 1);
+    std::vector<ControlPointType> ebpts(p + t + 1);
+    std::vector<ControlPointType> nextbpts(p - 1);
+    std::vector<ScalarType> Uh;
+    std::vector<ControlPointType> Qw;
+    Qw.push_back(oldData.controlPoints.directGet(0)); //TODO Only for 1d
+    for (int i = 0; i <= ph; ++i)
+      Uh.push_back(ua);
+    for (int i = 0; i <= p; ++i) {
+      std::array<int, dim> multiIndex{};
+      multiIndex[refinementDirection] = i;
+      bpts[i]                         = oldData.controlPoints.get(multiIndex);
+    }
+    const auto& U = oldData.knotSpans[refinementDirection];
+    std::vector<ScalarType> alphas(p - 1);
+    while (b < m) {
+      int i = b;
+      while (b < m && Dune::FloatCmp::eq(U[b] , U[b + 1]))
+        ++b;
+      const int mul = b - i + 1;
+      mh += mul + t;
+      const auto ub  = U[b];
+      const int oldr = r;
+      r              = p - mul;
+      const int lbz  = (oldr > 0) ? ((oldr + 2) / 2) : 1;  // Insert knot u(b) r times
+      const int rbz  = (r > 0) ? (ph - (r + 1) / 2) : ph;
+
+      if (r > 0)  // Insert knot to get Bezier segment
+      {
+        const auto numer = ub - ua;
+        for (int k = p; k > mul; --k)
+          alphas[k - mul - 1] = numer / (U[a + k] - ua);
+        for (int j = 1; j <= r; ++j) {
+          const int save = r - j;
+          const int s    = mul + j;
+          for (int k = p; k >= s; --k)
+            bpts[k] = alphas[k - s] * bpts[k] + (1.0 - alphas[k - s]) * bpts[k - 1];
+          nextbpts[save] = bpts[p];
+        }
+      } //End of insert knot
+
+      for (int i = lbz; i <= ph; ++i) {  // Degree elevate Bezier
+        ebpts[i]      = 0.0;
+        const int mpi = std::min(p, i);
+        for (int j = std::max(0, i - t); j <= mpi; ++j)
+          ebpts[i] += bezalfs[i][j] * bpts[j];
+      }  // End of degree elevating Bezier
+
+      if (oldr > 1) {  // Must remove knot u = U[a] oldr times
+        int first            = kind - 2;
+        int last             = kind;
+        const ScalarType den = ub - ua;
+        const ScalarType bet = (ub - Uh[kind - 1]) / den;
+        for (int tr = 1; tr < oldr; ++tr) {  // Knot removal loop
+          int i  = first;
+          int j  = last;
+          int kj = j - kind + 1;
+          while (j - i > tr) {
+            if (i < cind) {
+              const ScalarType alf = (ub - Uh[i]) / (ua - Uh[i]);
+              Qw[i]                = alf * Qw[i] + (1.0 - alf) * Qw[i - 1];
+            }
+            if (j >= lbz) {
+              if (j - tr <= kind - ph + oldr) {
+                const ScalarType gam = (ub - Uh[j - tr]) / den;
+                ebpts[kj]            = gam * ebpts[kj] + (1.0 - gam) * ebpts[kj + 1];
+              } else
+                ebpts[kj] = bet * ebpts[kj] + (1.0 - bet) * ebpts[kj + 1];
+            }
+            ++i;
+            --j;
+            --kj;
+          }
+          --first;
+          ++last;
+        }
+      }  // End of removing knot, u= U[a]
+      if (a != p)
+        for (int j = 0; j < ph - oldr; ++j) {
+          Uh.push_back( ua);
+          ++kind;
+        }
+      for (int j = lbz; j <= rbz; ++j) {  // Load ctrl pts into Qw
+        Qw.push_back(ebpts[j]);
+        ++cind;
+      }
+      if (b < m) {  // Set up for next pass thru loop
+        for (int j = 0; j < r; ++j)
+          bpts[j] = nextbpts[j];
+        for (int j = r; j <= p; ++j) {
+          std::array<int, dim> multiIndex{};
+          multiIndex[refinementDirection] = b - p + j;
+          bpts[j]                         = oldData.controlPoints.get(multiIndex);
+        }
+        a = b;
+        ++b;
+        ua = ub;
+      } else {
+        for (int i = 0; i <= ph; ++i)
+          Uh.push_back(ub);
+      }
+    }  // End of while-loop (b<m)
+       //    nh = mh-ph-1;
+    NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl> newData;
+    newData.order = oldData.order;
+    newData.order[refinementDirection] += t;
+//    newData.knotSpans[refinementDirection]                      = oldData.knotSpans[refinementDirection];
+    newData.knotSpans[refinementDirection].resize(Uh.size());
+    newData.knotSpans[refinementDirection] = Uh;
+    newData.controlPoints                  = MultiDimensionNet<dim, ControlPointType>(std::array<int, 1>{Qw.size()}, Qw);
+
+    return newData;
+  }
 
   template <std::integral auto dim, std::integral auto dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   auto knotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData, const std::vector<double>& newKnots,

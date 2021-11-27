@@ -10,6 +10,20 @@ namespace Dune::IGA {
     using VectorType = VT;
     VectorType p;
     typename VectorType::value_type w{1.0};
+
+    ControlPoint& operator= (const typename VectorType::value_type& a)
+    {
+      p=a;
+      w=a;
+      return *this;
+    }
+
+    ControlPoint& operator+= (const ControlPoint& cp)
+    {
+      p+=cp.p;
+      w+=cp.w;
+      return *this;
+    }
   };
 
   template <Vector VectorType>

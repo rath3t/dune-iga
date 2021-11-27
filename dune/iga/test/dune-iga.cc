@@ -54,9 +54,16 @@ void testNURBSGridCurve() {
          {.p = {8, 6, 2}, .w = 1}, {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet               = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  IGA::NURBSGrid<dim, dimworld> grid(knotSpans, controlNet, order);
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans = knotSpans;
+  patchData.order = order;
+  patchData.controlPoints = controlNet;
+  patchData= degreeElevate(patchData,0,1);
+
+
+  IGA::NURBSGrid<dim, dimworld> grid(patchData);
   grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -745,17 +752,17 @@ int main(int argc, char** argv) try {
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
 
-//    testNURBSGridCurve();
+    testNURBSGridCurve();
 //    std::cout << "done with NURBS grid Curve" << std::endl;
 //    test3DGrid();
 //    std::cout << "3dGrid " << std::endl;
 //    testTorusGeometry();
 //    std::cout << "done with NURBS torus " << std::endl;
 
-  testNurbsBasis();
-    std::cout << "done with NURBS basis test " << std::endl;
+//  testNurbsBasis();
+//    std::cout << "done with NURBS basis test " << std::endl;
   //
-  testBsplineBasisFunctions();
+//  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

@@ -133,14 +133,10 @@ namespace Dune::IGA {
     MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>> values) : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size() * values[0][0].size());
 
-      for (int i = 0; i < values.size(); ++i) {
-        for (int j = 0; j < values[0].size(); ++j) {
-          for (int k = 0; k < values[0][0].size(); ++k) {
-            std::array<int, netdim> multiIndex = {i, j, k};
-            this->set(multiIndex, values[i][j][k]);
-          }
-        }
-      }
+      for (int i = 0; i < values.size(); ++i)
+        for (int j = 0; j < values[0].size(); ++j)
+          for (int k = 0; k < values[0][0].size(); ++k)
+            this->set({i, j, k}, values[i][j][k]);
     }
 
     /** \brief constructor for a grid of the same value
@@ -303,13 +299,11 @@ namespace Dune::IGA {
 
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
-
       int index{}, help;
-      if((std::ranges::any_of(multiIndex,[](int i){ return i < 0; })))
-        return -1; //signaling Index Out of Net
+      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; }))) return -1;  // signaling Index Out of Net
 
-      if((std::ranges::any_of(multiIndex,[id=0,this](int i)mutable{ return i > dimSize_[id++]-1; })))
-        return -1; //signaling Index Out of Net
+      if ((std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })))
+        return -1;  // signaling Index Out of Net
 
       for (int i = 0; i < netdim; ++i) {
         help = 1;
@@ -326,14 +320,14 @@ namespace Dune::IGA {
     }
     Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(const std::array<int, netdim - 1>& direction) {
       int directionEnd;
-      if constexpr (netdim!=0) {
+      if constexpr (netdim != 0) {
         for (int dirI = 0, i = 0; i < netdim; ++i) {
           if (dirI < direction.size() && i == direction.at(dirI++)) continue;
           directionEnd = this->size()[i];
           break;
         }
       } else
-          directionEnd = this->size()[0];
+        directionEnd = this->size()[0];
 
       return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, directionEnd);
     }
@@ -413,7 +407,6 @@ namespace Dune::IGA {
       auto operator->() { return *this; }
 
     private:
-
       MultiDimensionNet<netdim, ValueType>* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
