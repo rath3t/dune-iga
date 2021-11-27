@@ -190,7 +190,7 @@ namespace Dune::IGA {
     const int ph            = p + t;
     const int ph2           = ph / 2;
     /* Compute Bezier degree elevation coefficients */
-    DynamicMatrixType bezalfs(ph + 1, p + 1);
+    DynamicMatrixType bezalfs(p + t + 1, p + 1);
     bezalfs[0][0] = bezalfs[ph][p] = 1.0;
     for (int i = 1; i <= ph2; ++i) {
       const ScalarType inv = 1.0 / Dune::binomial(ph, i);
@@ -213,6 +213,10 @@ namespace Dune::IGA {
     typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType newCPv(oldData.controlPoints.size());
     using ControlPointType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
 
+    auto oldCPsw = oldData.controlPoints;
+    auto scaleCPWithW = [](const auto& cp) -> ControlPointType { return {.p = cp.w * cp.p, .w = cp.w}; };
+    std::ranges::transform(oldCPsw.directGetAll(), oldCPsw.directGetAll().begin(), scaleCPWithW);
+
     std::vector<ControlPointType> bpts(p + 1);
     std::vector<ControlPointType> ebpts(p + t + 1);
     std::vector<ControlPointType> nextbpts(p - 1);
@@ -224,7 +228,7 @@ namespace Dune::IGA {
     for (int i = 0; i <= p; ++i) {
       std::array<int, dim> multiIndex{};
       multiIndex[refinementDirection] = i;
-      bpts[i]                         = oldData.controlPoints.get(multiIndex);
+      bpts[i]                         = oldCPsw.get(multiIndex);
     }
     const auto& U = oldData.knotSpans[refinementDirection];
     std::vector<ScalarType> alphas(p - 1);
@@ -243,7 +247,7 @@ namespace Dune::IGA {
       if (r > 0)  // Insert knot to get Bezier segment
       {
         const auto numer = ub - ua;
-        for (int k = p; k > mul; --k)
+        for (int k = p; k > mul; --k) //TODO hier vllt bug?
           alphas[k - mul - 1] = numer / (U[a + k] - ua);
         for (int j = 1; j <= r; ++j) {
           const int save = r - j;
@@ -282,12 +286,9 @@ namespace Dune::IGA {
               } else
                 ebpts[kj] = bet * ebpts[kj] + (1.0 - bet) * ebpts[kj + 1];
             }
-            ++i;
-            --j;
-            --kj;
+            ++i; --j; --kj;
           }
-          --first;
-          ++last;
+          --first; ++last;
         }
       }  // End of removing knot, u= U[a]
       if (a != p)
@@ -305,7 +306,7 @@ namespace Dune::IGA {
         for (int j = r; j <= p; ++j) {
           std::array<int, dim> multiIndex{};
           multiIndex[refinementDirection] = b - p + j;
-          bpts[j]                         = oldData.controlPoints.get(multiIndex);
+          bpts[j]                         = oldCPsw.get(multiIndex);
         }
         a = b;
         ++b;
@@ -323,6 +324,8 @@ namespace Dune::IGA {
     newData.knotSpans[refinementDirection].resize(Uh.size());
     newData.knotSpans[refinementDirection] = Uh;
     newData.controlPoints                  = MultiDimensionNet<dim, ControlPointType>(std::array<int, 1>{Qw.size()}, Qw);
+    std::ranges::transform(newData.controlPoints.directGetAll(), newData.controlPoints.directGetAll().begin(),
+                           [](auto& cp) -> ControlPointType { return {.p = cp.p / cp.w, .w = cp.w}; });
 
     return newData;
   }

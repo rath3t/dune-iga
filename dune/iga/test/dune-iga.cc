@@ -60,7 +60,7 @@ void testNURBSGridCurve() {
   patchData.knotSpans = knotSpans;
   patchData.order = order;
   patchData.controlPoints = controlNet;
-  patchData= degreeElevate(patchData,0,1);
+  patchData= degreeElevate(patchData,0,10);
 
 
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
