@@ -201,84 +201,75 @@ namespace Dune::IGA {
       for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
         bezalfs[i][j] = bezalfs[ph - i][p - j];
 
-
     double ua = oldData.knotSpans[refinementDirection][0];
     typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType newCPv(oldData.controlPoints.size());
     using ControlPointType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
 
-    auto oldCPsw = oldData.controlPoints;
+    auto oldCPs = oldData.controlPoints;
 
     auto scaleCPWithW = [](const auto& cp) -> ControlPointType { return {.p = cp.w * cp.p, .w = cp.w}; };
-    std::ranges::transform(oldCPsw.directGetAll(), oldCPsw.directGetAll().begin(), scaleCPWithW);
+    std::ranges::transform(oldCPs.directGetAll(), oldCPs.directGetAll().begin(), scaleCPWithW);
 
     std::vector<ControlPointType> bpts(p + 1), ebpts(ph + 1), nextbpts(p - 1);
-    std::vector<ScalarType> Uh;
 
     NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl> newData;
     newData.order = oldData.order;
     newData.order[refinementDirection] += t;
     const auto& U = oldData.knotSpans[refinementDirection];
-    for (int j = 0, i = 0; i < U.size(); ++i)
+    std::vector<ScalarType> Uh;
+    for (int j = 0, i = 0; i < U.size(); ++i) // insert knot t times for each unique knot
       if (j < U.size()) {
         do {
           Uh.push_back(U[j]);
           ++j;
-        } while (Dune::FloatCmp::eq(U[j - 1] , U[j]));
+        } while (Dune::FloatCmp::eq(U[j - 1], U[j]));
         Uh.insert(Uh.end(), t, U[j - 1]);
         if (j == U.size()) break;
       }
 
     for (int i = 0; i < dim; ++i)
-      if(i==refinementDirection)
+      if (i == refinementDirection)
         newData.knotSpans[i] = Uh;
       else
-        newData.knotSpans[i] =  oldData.knotSpans[i];
+        newData.knotSpans[i] = oldData.knotSpans[i];
 
-    auto dimSize                           = oldData.controlPoints.size();
-    dimSize[refinementDirection]           = Uh.size() - ph - 1;
-    newData.controlPoints                  = MultiDimensionNet<dim, ControlPointType>(dimSize);
+    auto dimSize                 = oldData.controlPoints.size();
+    dimSize[refinementDirection] = Uh.size() - ph - 1;
+    newData.controlPoints        = MultiDimensionNet<dim, ControlPointType>(dimSize);
+    auto& newCPs                 = newData.controlPoints;
 
-    int totalCurvesInPatch=1;
-    std::array<int,dim-1> indicesOther;
-    for (int counter=0,i = 0; i < dim; ++i)
-      if(i!=refinementDirection) {
+    int totalCurvesInPatch = 1;
+    std::array<int, dim - 1> indicesOther;
+    for (int counter = 0, i = 0; i < dim; ++i)
+      if (i != refinementDirection) {
         totalCurvesInPatch *= dimSize[i];
         indicesOther[counter++] = dimSize[i];
       }
-    auto func = [indicesOther](auto i) {
-      return MultiDimensionNet<dim - 1, int>::template directToMultiIndex<std::array<int, dim - 1>>(indicesOther, i);
+
+    auto newAndOldCurve = [&refinementDirection, indicesOther, &oldCPs, &newCPs](auto i) {
+      const auto mI = MultiDimensionNet<dim - 1, int>::template directToMultiIndex<std::array<int, dim - 1>>(indicesOther, i);
+      std::array<int, dim> multiIndex{};
+      for (int c = 0, j = 0; j < dim; ++j)
+        if (j != refinementDirection) multiIndex[j] = mI[c++];
+
+      auto oldCurve = [&oldCPs, &refinementDirection, multiIndex](int i) mutable {
+        multiIndex[refinementDirection] = i;
+        return oldCPs.get(multiIndex);
+      };
+
+      auto newCurve = [&newCPs, &refinementDirection, multiIndex ](int i) mutable -> auto& {
+        multiIndex[refinementDirection] = i;
+        return newCPs.get(multiIndex);
+      };
+      return std::make_pair(oldCurve, newCurve);
     };
 
-    for (auto mI: std::ranges::iota_view(0, totalCurvesInPatch) | std::views::transform(func))
-    {
-      int kind  = ph + 1;
-      int r     = -1;
-      int a     = p;
-      int b     = p + 1;
-      int cind  = 1;
-//      auto mIndex = newData.controlPoints.size();
-
-      auto oldCurve = [&oldCPsw, &refinementDirection,mI](int i) {
-        std::array<int, dim> multiIndex{};
-        for (int counter=0,j = 0; j < dim; ++j) {
-          if (j== refinementDirection)
-            multiIndex[j] = i;
-          else
-            multiIndex[j]=mI[counter++];
-        }
-        return oldCPsw.get(multiIndex);
-      };
-
-      auto newCurve = [&newData, &refinementDirection,mI ](int i) -> auto& {
-        std::array<int, dim> multiIndex{};
-        for (int counter=0,j = 0; j < dim; ++j) {
-          if (j== refinementDirection)
-            multiIndex[j] = i;
-          else
-            multiIndex[j]=mI[counter++];
-        }
-        return newData.controlPoints.get(multiIndex);
-      };
+    for (auto [oldCurve, newCurve] : std::ranges::iota_view(0, totalCurvesInPatch) | std::views::transform(newAndOldCurve)) {
+      int kind = ph + 1;
+      int r    = -1;
+      int a    = p;
+      int b    = p + 1;
+      int cind = 1;
 
       newCurve(0) = oldCurve(0);
       for (int i = 0; i <= p; ++i)
@@ -331,8 +322,7 @@ namespace Dune::IGA {
                 const auto factor = (j - tr <= kind - ph + oldr) ? (ub - Uh[j - tr]) / den : bet;
                 ebpts[kj]         = factor * ebpts[kj] + (1.0 - factor) * ebpts[kj + 1];
               }
-              ++i;
-              --j;
+              ++i;      --j;
               --kj;
             }
             --first;
@@ -352,8 +342,7 @@ namespace Dune::IGA {
         }
       }  // End of while-loop (b<m)
     }
-
-      std::ranges::transform(newData.controlPoints.directGetAll(), newData.controlPoints.directGetAll().begin(),
+    std::ranges::transform(newData.controlPoints.directGetAll(), newData.controlPoints.directGetAll().begin(),
                            [](auto& cp) -> ControlPointType { return {.p = cp.p / cp.w, .w = cp.w}; });
     return newData;
   }
