@@ -322,7 +322,6 @@ namespace Dune::Functions {
      * \param ijk Integer coordinates in the tensor product patch
      */
     void bind(const std::array<unsigned, dim>& elementIdx) {
-      /* \todo In the long run we need to precompute a table for this */
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
         currentKnotSpan_[i] = Dune::IGA::findSpan(patchData.order[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),

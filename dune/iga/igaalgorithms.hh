@@ -25,9 +25,9 @@ namespace Dune::IGA {
     return order;
   }
 
-  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
-  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<std::vector<ScalarType>, dim>& knots,
-                 const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
+  template <std::integral auto dim, typename NetValueType>
+  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
+                 const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
@@ -35,10 +35,10 @@ namespace Dune::IGA {
   }
 
   template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
-  auto netOfSpan(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+  auto netOfSpan(const std::array<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim>& knots,
                  const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
     auto subNetStart = findSpan(degree, u, knots);
-    return netOfSpan(subNetStart, knots, degree, net);
+    return netOfSpan(subNetStart, degree, net);
   }
 
   template <std::integral auto dim>
@@ -80,18 +80,18 @@ namespace Dune::IGA {
   public:
     using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
     template <std::integral auto dimworld>
-    Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data)
-        : knots_{data.knotSpans}, degree_{data.order}, weights_{extractWeights(data.controlPoints)} {}
+    Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
+        : knots_{data.knotSpans}, degree_{data.order}, weights_{extractWeights(data.controlPoints)}, spIndex_{spIndex} {}
 
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree, const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    auto operator()(const std::array<ScalarType, dim>& u, const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex).directGetAll();
+    auto operator()(const std::array<ScalarType, dim>& u) {
+      return basisFunctions(u, knots_, degree_, weights_, spIndex_).directGetAll();
     }
 
-    auto basisFunctionNet(const std::array<ScalarType, dim>& u, const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex);
+    auto basisFunctionNet(const std::array<ScalarType, dim>& u) const {
+      return basisFunctions(u, knots_, degree_, weights_, spIndex_);
     }
 
     static auto basisFunctions(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
@@ -107,7 +107,7 @@ namespace Dune::IGA {
       auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
       auto subNetStart = spIndex ? spIndex.value() : findSpan(degree, u, knots);
 
-      const auto subNetWeights = netOfSpan<ScalarType, dim>(subNetStart, knots, degree, weights);
+      const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
       Nnet *= subNetWeights;
@@ -140,7 +140,7 @@ namespace Dune::IGA {
       MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netsOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
       auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
-      const auto subNetWeights = netOfSpan<ScalarType, dim>(subNetStart, knots, degree, weights);
+      const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
         R.directGet(j) *= subNetWeights;
@@ -168,15 +168,15 @@ namespace Dune::IGA {
       return R;
     }
 
-    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder, const bool triangleDerivatives = false,
-                                  const std::optional<std::array<int, dim>>& spIndex = std::nullopt) const {
-      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, triangleDerivatives, spIndex);
+    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder, const bool triangleDerivatives = false) const {
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, triangleDerivatives, spIndex_);
     }
 
   private:
     std::array<std::vector<ScalarType>, dim> knots_;
     std::array<int, dim> degree_;
     MultiDimensionNet<dim, ScalarType> weights_;
+    std::optional<std::array<int, dim>> spIndex_;
   };
 
   template <std::integral auto dim, std::integral auto dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -222,7 +222,7 @@ namespace Dune::IGA {
         do {
           Uh.push_back(U[j]);
           ++j;
-        } while (Dune::FloatCmp::eq(U[j - 1], U[j]));
+        } while (j != U.size() && Dune::FloatCmp::eq(U[j - 1], U[j]));
         Uh.insert(Uh.end(), t, U[j - 1]);
         if (j == U.size()) break;
       }

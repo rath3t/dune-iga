@@ -142,15 +142,15 @@ void test3DGrid() {
 
   nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
   nurbsPatchData.order         = order;
-  nurbsPatchData = degreeElevate(nurbsPatchData,0,3);
+  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
   nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid grid(nurbsPatchData);
-  grid.globalRefine(2);
+  grid.globalRefine(1);
 
   auto gridView = grid.leafGridView();
 
-  const int subSampling = 10;
+  const int subSampling = 3;
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("NURBSGridTest-Solid");
@@ -167,6 +167,8 @@ void test3DGrid() {
 
   checkIterators(gridView);
 }
+
+
 
 void testTorusGeometry() {
   //    constexpr auto dim               = 2UL;
@@ -196,12 +198,12 @@ void testTorusGeometry() {
   const double r      = 1.0;
   auto circle         = makeCircularArc(r);
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
-  nurbsPatchData = degreeElevate(nurbsPatchData,0,3);
-  nurbsPatchData = degreeElevate(nurbsPatchData,1,7);
+  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+  nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
   IGA::NURBSGrid grid(nurbsPatchData);
   grid.globalRefine(0);
-  grid.globalRefineInDirection(1, 3);
-  grid.globalRefineInDirection(0, 3);
+  grid.globalRefineInDirection(1, 1);
+  grid.globalRefineInDirection(0, 1);
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;
@@ -760,17 +762,17 @@ int main(int argc, char** argv) try {
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
   //
 
-//    testNURBSGridCurve();
+    testNURBSGridCurve();
 //    std::cout << "done with NURBS grid Curve" << std::endl;
     test3DGrid();
 //    std::cout << "3dGrid " << std::endl;
-//    testTorusGeometry();
+    testTorusGeometry();
 //    std::cout << "done with NURBS torus " << std::endl;
 
-//  testNurbsBasis();
+  testNurbsBasis();
 //    std::cout << "done with NURBS basis test " << std::endl;
   //
-//  testBsplineBasisFunctions();
+  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

@@ -115,23 +115,23 @@ namespace Dune::IGA {
     NURBSGeometry<dim - codim, dimworld, dim, NurbsGridLinearAlgebraTraits> geometry(const int directIndex) const {
       if constexpr (codim == 0) {
         const auto multiIndex = elementNet_->directToMultiIndex(directIndex);
-        const auto& knotSpans = patchData_->knotSpans;
-
-        std::array<std::vector<double>::const_iterator, dim> freeSpans;
-        for (int i = 0; i < dim; ++i)
-          freeSpans[i] = uniqueKnotVector_[i].begin() + multiIndex[i];
+        std::array<int,dim> currentKnotSpan;
+        for (size_t i = 0; i < dim; i++)
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][multiIndex[i]],
+                                                   patchData_->knotSpans[i], multiIndex[i]);
 
         std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
-        return NURBSGeometry<dim - codim, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, freeSpans, fixedOrFreeDirection);
+        return NURBSGeometry<dim - codim, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
       } else if constexpr (codim == dim) {  // vertex
         const auto vertexSpanIndex = vertexNet_->directToMultiIndex(directIndex);
-        std::array<std::vector<double>::const_iterator, dim> freeSpans;
-        for (int i = 0; i < dim; ++i)
-          freeSpans[i] = uniqueKnotVector_[i].begin() + vertexSpanIndex[i];
+        std::array<int,dim> currentKnotSpan;
+        for (size_t i = 0; i < dim; i++)
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][vertexSpanIndex[i]],
+                                                   patchData_->knotSpans[i], vertexSpanIndex[i]);
         std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
-        return NURBSGeometry<0UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, freeSpans, fixedOrFreeDirection);
+        return NURBSGeometry<0UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
       {
         std::array<std::vector<double>::const_iterator, dim> freeSpans;
@@ -168,13 +168,14 @@ namespace Dune::IGA {
         } else if constexpr (dim == 2)
           spanIndices[(edgeDir + 1) % dim]
               = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[edgeDir])), uniqueSpanSize_[(edgeDir + 1) % dim] + 1);
-        for (int i = 0; i < dim; ++i)
-          freeSpans[i] = uniqueKnotVector_[i].begin() + spanIndices[i];
-
-        return NURBSGeometry<1UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, freeSpans, fixedOrFreeDirection);
+        std::array<int,dim> currentKnotSpan;
+        for (size_t i = 0; i < dim; i++)
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]],
+                                                   patchData_->knotSpans[i], spanIndices[i]);
+        return NURBSGeometry<1UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
       } else if (dim - codim == 2 && dim > 2)  // surface case
       {
-        std::abort();
+        throw std::logic_error("Surface case not implemented");
       }
     }
 
