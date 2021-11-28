@@ -11,7 +11,7 @@
 
 namespace Dune::IGA
 {
-  template<std::integral auto dim,std::integral auto dimworld,NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  template<int dim,int dimworld,NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
   class NURBSGrid;
 }
 namespace Dune::Capabilities {

@@ -17,10 +17,12 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
-#include <dune/grid/test/checkidset.hh>
-#include <dune/grid/test/checkindexset.hh>
+//#include <dune/grid/test/checkidset.hh>
+//#include <dune/grid/test/checkindexset.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
+//template <class Grid, class IdSet>
+//void checkIdSet ( const Grid &grid, const IdSet& idSet);
 #include <dune/grid/test/gridcheck.hh>
 
 #include <dune/iga/dunelinearalgebratraits.hh>
@@ -41,8 +43,8 @@ void testNURBSGridCurve() {
   // parameters
   int subSampling = 80;
 
-  const auto dim      = 1UL;
-  const auto dimworld = 3UL;
+  const auto dim      = 1;
+  const auto dimworld = 3;
 
   const std::array<int, dim> order                     = {3};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0, 1, 3, 4, 4,4, 5,5, 5, 5}}};
@@ -86,8 +88,8 @@ void testNURBSGridSurface() {
   // Create a 2d NURBS surface in 3d
   //////////////////////////////////////////////////////////////
 
-  const auto dim                   = 2UL;
-  const auto dimworld              = 3UL;
+  const auto dim                   = 2;
+  const auto dimworld              = 3;
   const std::array<int, dim> order = {2, 2};
 
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
@@ -114,8 +116,8 @@ void testNURBSGridSurface() {
 }
 
 void test3DGrid() {
-  constexpr auto dim               = 3UL;
-  constexpr auto dimworld          = 3UL;
+  constexpr std::size_t dim               = 3;
+  constexpr std::size_t dimworld          = 3;
   const std::array<int, dim> order = {2, 2, 2};
   // quarter cylindrical hyperSurface
   const double lx = 2;
@@ -145,7 +147,7 @@ void test3DGrid() {
   nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
   nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
-  IGA::NURBSGrid grid(nurbsPatchData);
+  IGA::NURBSGrid<3,3> grid(nurbsPatchData);
   grid.globalRefine(1);
 
   auto gridView = grid.leafGridView();
@@ -168,7 +170,40 @@ void test3DGrid() {
   checkIterators(gridView);
 }
 
+void testFactory(){
+  constexpr auto dim               = 2UL;
+  constexpr auto dimworld          = 3UL;
+  const std::array<int, dim> order = {2, 1};
+  constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
+  // quarter cylindrical surface
+  const double l   = 10;
+  const double rad = 5;
+  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
+  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
+  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
+         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+  nurbsPatchData.controlPoints =  Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  nurbsPatchData.order =  order;
+
+
+
+
+//    IGA::GridFactory<2UL,3UL> gridFactory;
+//    gridFactory.insert(nurbsPatchData,{0,1,2,3})
+//
+//    auto grid = gridFactory.createGrid();
+
+
+};
 
 void testTorusGeometry() {
   //    constexpr auto dim               = 2UL;
@@ -200,7 +235,7 @@ void testTorusGeometry() {
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
   nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
-  IGA::NURBSGrid grid(nurbsPatchData);
+  IGA::NURBSGrid<2,3> grid(nurbsPatchData);
   grid.globalRefine(0);
   grid.globalRefineInDirection(1, 1);
   grid.globalRefineInDirection(0, 1);
@@ -244,7 +279,7 @@ void testTorusGeometry() {
 
   checkIterators(gridView);
 
-//  gridcheck(grid);
+  gridcheck(grid);
 }
 
 void testNURBSSurface() {
@@ -255,8 +290,8 @@ void testNURBSSurface() {
   // Create a 2d NURBS surface in 3d
   //////////////////////////////////////////////////////////////
 
-  const int dim                    = 2;
-  const int dimworld               = 3;
+  const auto dim                    = 2UL;
+  const auto dimworld               = 3UL;
   const std::array<int, dim> order = {2, 2};
 
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};

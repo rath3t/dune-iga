@@ -8,12 +8,12 @@ namespace Dune::IGA {
   template <typename IgaGridImpl>
   class IgaIdSet {
   public:
-    using IdType = std::size_t;
+    using IdType = int;
 
     explicit IgaIdSet(const IgaGridImpl& grid) : gridView_{grid.leafGridView()} {}
 
     template <class Entity>
-    auto id(const Entity& entity) const {
+    int id(const Entity& entity) const {
       return gridView_.indexSet().index(entity);
     }
 

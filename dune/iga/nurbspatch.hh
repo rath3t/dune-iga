@@ -12,7 +12,7 @@
 
 namespace Dune::IGA {
 
-  template <std::integral auto dim, std::integral auto dimworld,
+  template <int dim, int dimworld,
             NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class NURBSGrid;
 
@@ -28,7 +28,7 @@ namespace Dune::IGA {
   class NURBSPatch {
   public:
     friend class NURBSLeafGridView<NURBSGrid<dim, dimworld>>;
-    template <std::integral auto codim, class GridViewImp>
+    template <int codim, class GridViewImp>
     friend class NURBSGridEntity;
 
     /** \brief Constructor of NURBS from knots, control points, weights and order
@@ -131,7 +131,7 @@ namespace Dune::IGA {
                                                    patchData_->knotSpans[i], vertexSpanIndex[i]);
         std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
-        return NURBSGeometry<0UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
+        return NURBSGeometry<0, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
       {
         std::array<std::vector<double>::const_iterator, dim> freeSpans;
@@ -172,7 +172,7 @@ namespace Dune::IGA {
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]],
                                                    patchData_->knotSpans[i], spanIndices[i]);
-        return NURBSGeometry<1UL, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
+        return NURBSGeometry<1, dimworld, dim, NurbsGridLinearAlgebraTraits>(patchData_, fixedOrFreeDirection,currentKnotSpan);
       } else if (dim - codim == 2 && dim > 2)  // surface case
       {
         throw std::logic_error("Surface case not implemented");

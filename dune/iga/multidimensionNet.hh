@@ -23,7 +23,7 @@ namespace Dune::IGA {
   }  // namespace Impl
 
   /** \brief class holds a n-dim net */
-  template <std::integral auto netdim, typename ValueType>
+  template <std::size_t netdim, typename ValueType>
   class MultiDimensionNet {
     using value_type = ValueType;
 
@@ -311,10 +311,10 @@ namespace Dune::IGA {
       return index;
     }
 
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(const std::array<int, netdim - 1>& direction) {
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, 0);
     }
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(const std::array<int, netdim - 1>& direction) {
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       int directionEnd;
       if constexpr (netdim != 0) {
         for (int dirI = 0, i = 0; i < netdim; ++i) {

@@ -20,9 +20,22 @@
     public:
       NURBSGridLeafIterator()=default;
       using Reference =  NURBSEntity;
+      using Entity =  NURBSEntity;
+
       explicit NURBSGridLeafIterator(typename std::vector<NURBSEntity>::const_iterator spanIter)
           :  std::vector<NURBSEntity>::const_iterator(spanIter)
       {}
+    };
+
+    template<typename NURBSEntity>
+    struct NurbsHierarchicIterator
+    {
+      explicit NurbsHierarchicIterator(const  NURBSEntity& ent) : nurbsEntity{&ent}{}
+      auto operator<=>(const NurbsHierarchicIterator&) const = default;
+      auto operator*(){ return *nurbsEntity;}
+      auto operator->(){ return nurbsEntity;}
+      void operator++(){}
+      const NURBSEntity* nurbsEntity;
     };
 
     template<typename NURBSIntersection>
@@ -31,6 +44,7 @@
     public:
       NURBSGridInterSectionIterator()=default;
       using Reference =  NURBSIntersection;
+      using Intersection = NURBSIntersection;
       explicit NURBSGridInterSectionIterator(typename std::vector<NURBSIntersection>::const_iterator spanIter)
           :  std::vector<NURBSIntersection>::const_iterator(spanIter)
       {}

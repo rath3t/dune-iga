@@ -19,12 +19,15 @@
 
 namespace Dune::IGA {
 
-  template <std::integral auto codim, typename GridViewImp>
+  template <int codim, typename GridViewImp>
   class NURBSGridEntity {
   public:
     static constexpr auto mydim    = GridViewImp::dimension - codim;
+    static constexpr int  codimension    = codim;
+    static constexpr int  dimension    = GridViewImp::dimension;
     static constexpr auto dimworld = GridViewImp::dimensionworld;
-    using Geometry                 = NURBSGeometry<mydim, dimworld, mydim, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    using Geometry                 = NURBSGeometry<mydim, dimworld, dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    using EntitySeed = typename GridViewImp::Traits::template Codim<codim>::EntitySeed;
     //! Default Constructor
     NURBSGridEntity() = default;
 
@@ -49,6 +52,7 @@ namespace Dune::IGA {
 
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridViewImp::dimension - codim); }
     [[nodiscard]] int level() const { return 0; }
+    [[nodiscard]] EntitySeed seed() const { EntitySeed e; e.index= directIndex_; return e; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
     LocalIntersectionGeometry localGeometry() const {
@@ -73,11 +77,14 @@ namespace Dune::IGA {
   public:
     static constexpr auto mydim    = GridViewImp::dimension;
     static constexpr auto dimworld = GridViewImp::dimensionworld;
-    using Geometry                 = NURBSGeometry<mydim, dimworld, mydim, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
+    static constexpr int codimension    = 0;
+    static constexpr int dimension    = GridViewImp::dimension;
+    using Geometry                 = NURBSGeometry<mydim, dimworld, dimension, typename GridViewImp::NurbsGridLinearAlgebraTraits>;
     using Intersection             = NURBSintersection<mydim - 1, GridViewImp>;
     using IntersectionIterator     = typename Intersection::Iterator;
-
-
+    using HierarchicIterator     = typename GridViewImp::Traits::HierarchicIterator;
+    using EntitySeed = typename GridViewImp::Traits::template Codim<0>::EntitySeed;
+    using LocalGeometry = typename GridViewImp::template Codim<1>::LocalGeometry;
     NURBSGridEntity() = default;
 
     NURBSGridEntity(const GridViewImp& gridView, unsigned int directIndex)
@@ -101,16 +108,20 @@ namespace Dune::IGA {
 
     //! Geometry of this entity
     typename GridViewImp::template Codim<0>::Geometry geometry() const {
-      return NURBSGridView_->NURBSpatch_->template geometry<0UL>(directIndex_);
+      return NURBSGridView_->NURBSpatch_->template geometry<0>(directIndex_);
     }
 
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
+    [[nodiscard]] bool hasFather() const { return false; }
+    [[nodiscard]] EntitySeed seed() const  { EntitySeed e; e.index= directIndex_; return e; }
+    LocalGeometry geometryInFather()const{ }
+    [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydim < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydim), codim1) << codim1);
     }
-
+    bool hasBoundaryIntersections()const  { return false;}
     template <int codimSub>
     typename GridViewImp::template Codim<codimSub>::Entity subEntity(int i) const {
       if constexpr (codimSub == 0) {
@@ -129,9 +140,14 @@ namespace Dune::IGA {
       throw std::logic_error("The requested subentity codim combination is not supported ");
     }
 
+    bool isNew() const { return false;}
+    bool mightVanish() const { return false;}
+
     IntersectionIterator ibegin([[maybe_unused]] int lvl) const { return IntersectionIterator(intersections_->begin()); }
+    HierarchicIterator hbegin([[maybe_unused]] int lvl) const { return  HierarchicIterator(*this); }
 
     IntersectionIterator iend([[maybe_unused]] int lvl) const { return IntersectionIterator(intersections_->end()); }
+    HierarchicIterator hend([[maybe_unused]] int lvl) const {return HierarchicIterator(*this); }
 
     [[nodiscard]] bool isLeaf() const { return true; }
     [[nodiscard]] auto type() const { return GeometryTypes::cube(mydim); }

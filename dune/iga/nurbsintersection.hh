@@ -12,7 +12,7 @@ namespace Dune::IGA {
   template <typename NURBSIntersection>
   class NURBSGridInterSectionIterator;
 
-  template <std::integral auto mydim, typename GridViewImp>
+  template <int mydim, typename GridViewImp>
   class NURBSintersection {
   public:
     using Iterator      = NURBSGridInterSectionIterator<NURBSintersection>;
@@ -101,7 +101,7 @@ namespace Dune::IGA {
       return N / N.two_norm();
     }
     GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {
-      return this->unitOuterNormal() * this->geometry().integrationElement(xi);
+      return this->unitOuterNormal(xi) * this->geometry().integrationElement(xi);
     }
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       throw std::logic_error("boundarySegmentIndex Not implemented");

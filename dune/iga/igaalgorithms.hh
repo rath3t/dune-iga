@@ -475,18 +475,18 @@ namespace Dune::IGA {
   auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                    = 1.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle                = 0.0,
                        typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                        = 360.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> origin = {0, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> X      = {1, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> Y      = {0, 1, 0}) {
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> origin = {0, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> X      = {1, 0, 0},
+                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> Y      = {0, 1, 0}) {
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
-    using GlobalCoordinateType = typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
+    using GlobalCoordinateType = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::value_type>;
 
     if (endAngle < startAngle) endAngle += 360.0;
     const ScalarType theta = endAngle - startAngle;
     const int narcs        = std::ceil(theta / 90);
 
-    typename NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs(2 * narcs + 1);
+    typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs(2 * narcs + 1);
     const ScalarType dtheta  = theta / narcs * pi / 180;
     const int n              = 2 * narcs;
     const ScalarType w1      = cos(dtheta / 2.0);
@@ -525,20 +525,20 @@ namespace Dune::IGA {
 
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
-    return NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
+    return NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
   }
 
   // Algo 8.1
   template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double>>
-  auto makeSurfaceOfRevolution(const NURBSPatchData<1UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
-                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> point,
-                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL> revolutionaxisI,
-                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3UL>::value_type revolutionAngle
+  auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
+                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> point,
+                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> revolutionaxisI,
+                               const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3>::value_type revolutionAngle
                                = 360.0) {
     const auto& genCP          = generatrix.controlPoints;
     using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
-    using ControlPoint         = typename NURBSPatchData<2UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
-    using GlobalCoordinateType = typename NURBSPatchData<2UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
+    using ControlPoint         = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+    using GlobalCoordinateType = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
     const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::value_type>;
 
     const auto revolutionaxis = revolutionaxisI / revolutionaxisI.two_norm();

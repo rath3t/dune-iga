@@ -11,7 +11,7 @@
 
 namespace Dune::IGA {
   /** \brief class that holds all data regarding the NURBS structure */
-  template <std::integral auto dim, std::integral auto dimworld,
+  template <std::size_t dim, std::size_t dimworld,
             NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class NURBSPatchData {
   public:

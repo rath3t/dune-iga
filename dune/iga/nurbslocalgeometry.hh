@@ -209,5 +209,9 @@ namespace Dune::IGA {
       Dune::Geo::ReferenceElements<ctype,mydim> referenceElement_;
     int localIndexInElement_;
   };
-
+  template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, griddim, NurbsGridLinearAlgebraTraits>& geo) {
+    return Dune::ReferenceElements<typename NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
+  };
 }  // namespace Dune::IGA

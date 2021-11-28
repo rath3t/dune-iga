@@ -23,13 +23,18 @@ namespace Dune::IGA {
 
     /** \brief type of the intersection iterator */
     typedef typename Grid ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
-    typedef typename Grid ::Traits ::IntersectionIterator IntersectionIterator;
+    typedef typename Grid ::Traits ::LevelIntersectionIterator LevelIntersectionIterator;
+    typedef typename Grid ::Traits ::LeafIntersectionIterator IntersectionIterator;
+    typedef typename Grid ::Traits ::HierarchicIterator HierarchicIterator;
+    typedef typename Grid ::Traits ::CollectiveCommunication CollectiveCommunication;
+    typedef typename Grid ::Traits ::LeafIntersection Intersection;
 
     template <int cd>
     struct Codim {
       typedef typename Grid::Traits ::template Codim<cd>::template Partition<All_Partition>::LeafIterator Iterator;
 
       typedef typename Grid::Traits::template Codim<cd>::Entity Entity;
+      typedef typename Grid::Traits::template Codim<cd>::EntitySeed EntitySeed;
 
       typedef typename Grid::Traits::template Codim<cd>::Geometry Geometry;
       typedef typename Grid::Traits::template Codim<cd>::LocalGeometry LocalGeometry;
@@ -66,11 +71,15 @@ namespace Dune::IGA {
 
     using ControlPointNetType = typename GridImpl::ControlPointNetType;
 
-    template <std::integral auto codim, class GridViewImp>
+    template <int codim, class GridViewImp>
     friend class NURBSGridEntity;
 
     using Traits               = NurbsLeafGridViewTraits<GridImpl>;
-    using IntersectionIterator = typename Traits::IntersectionIterator;
+    using LeafIntersectionIterator = typename Traits::LeafIntersectionIterator;
+    using IntersectionIterator = LeafIntersectionIterator;
+    using CollectiveCommunication = typename Traits::CollectiveCommunication;
+    using Intersection = typename Traits::Intersection;
+//    using IntersectionIterator = LeafIntersectionIterator;
 
     using ctype                          = double;
     static constexpr auto dimension      = GridImpl::dimension;
@@ -86,7 +95,7 @@ namespace Dune::IGA {
     template <int cd>
     struct Codim : public Traits::template Codim<cd> {};
 
-    NURBSLeafGridView(const NURBSPatchData<dimension, dimensionworld, NurbsGridLinearAlgebraTraits> &patchData, const Grid &grid)
+    NURBSLeafGridView(const NURBSPatchData<(size_t)dimension, (size_t)dimensionworld, NurbsGridLinearAlgebraTraits> &patchData, const Grid &grid)
         : NURBSLeafGridView(patchData.knotSpans, patchData.controlPoints, patchData.order, grid) {}
 
     NURBSLeafGridView(const std::array<std::vector<double>, dimension> &knotSpans, const ControlPointNetType &controlPoints,
@@ -128,6 +137,13 @@ namespace Dune::IGA {
     /** \brief obtain collective communication object */
     const auto &grid() const { return *grid_; }
 
+    int size(const GeometryType& type) const{
+      if(type==Dune::GeometryTypes::vertex || type==Dune::GeometryTypes::cube(1) || type==Dune::GeometryTypes::cube(2) || type==Dune::GeometryTypes::cube(3))
+        return this->size(dimension-type.dim());
+      else
+        return 0;
+    }
+
     const auto &getPatchData() const { return *NURBSpatch_->getPatchData(); }
 
     auto getPreBasis() { return Dune::Functions::BasisFactory::nurbs<dimension>(*NURBSpatch_->getPatchData()); }
@@ -142,13 +158,13 @@ namespace Dune::IGA {
       return typename Codim<cd>::Iterator(std::get<cd>(*entityVector_.get()).cend());
     }
 
-    IntersectionIterator ibegin(const typename Codim<0>::Entity &entity) const {
-      assert(this->contains(entity) && "The entity you passed to ibegin is not contained in this gridview");
+    LeafIntersectionIterator ibegin(const typename Codim<0UL>::Entity &entity) const {
+//      assert(this->contains(entity) && "The entity you passed to ibegin is not contained in this gridview");
       return entity.ibegin(level_);
     }
 
-    IntersectionIterator iend(const typename Codim<0>::Entity &entity) const {
-      assert(this->contains(entity) && "The entity you passed to iend is not contained in this gridview");
+    LeafIntersectionIterator iend(const typename Codim<0UL>::Entity &entity) const {
+//      assert(this->contains(entity) && "The entity you passed to iend is not contained in this gridview");
       return entity.iend(level_);
     }
 
@@ -166,7 +182,8 @@ namespace Dune::IGA {
     }
 
     const IndexSet &indexSet() const { return indexSet_; }
-
+    int overlapSize(int codim) const { return 0;}
+        int ghostSize(int codim) const{ return 0;}
     auto size(int codim) const {
       assert(codim <= 3 && codim >= 0);
       if (codim == 0)
