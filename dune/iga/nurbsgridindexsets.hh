@@ -8,16 +8,17 @@
 #include <dune/iga/nurbsgridentity.hh>
 
 namespace Dune::IGA {
-  template <class GridViewImp>
+  template <class GridImpl>
   class NURBSGridLeafIndexSet {
   public:
     using Types                    = std::array<GeometryType, 1>;
     using IndexType                = unsigned int;
-    static constexpr auto griddim  = GridViewImp::dimension;
-    static constexpr auto dimworld = GridViewImp::dimensionworld;
+    using GridView = typename GridImpl::Traits::LeafGridView;
+    static constexpr auto griddim  = GridImpl::dimension;
+    static constexpr auto dimworld = GridImpl::dimensionworld;
 
     //! constructor
-    explicit NURBSGridLeafIndexSet(const GridViewImp& g) : gridView_(&g) {
+    explicit NURBSGridLeafIndexSet(const GridView& g) : gridView_(&g) {
       for (int id = 0; auto& entTypes : types_) {
         entTypes = {GeometryTypes::cube(griddim - id)};
         ++id;
@@ -31,13 +32,13 @@ namespace Dune::IGA {
 
     //! get index of an entity, need to change the type to a property from GridImp
     template <int codim>
-    int index(const NURBSGridEntity<codim, GridViewImp>& e) const {
+    int index(const NURBSGridEntity<codim,griddim, GridImpl>& e) const {
       return e.getIndex();
     }
 
     template <int codimElement>
-    int subIndex(const NURBSGridEntity<codimElement, GridViewImp>& e, int i, unsigned int codim) const {
-      if (codimElement == 0 && NURBSGridEntity<codimElement, GridViewImp>::mydim == codim)
+    int subIndex(const NURBSGridEntity<codimElement,griddim, GridImpl>& e, int i, unsigned int codim) const {
+      if (codimElement == 0 && NURBSGridEntity<codimElement,griddim, GridImpl>::mydim == codim)
         return gridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(e.getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
         return this->index(e);
@@ -58,6 +59,6 @@ namespace Dune::IGA {
 
   private:
     std::array<std::array<GeometryType, 1>, griddim + 1> types_;
-    const GridViewImp* gridView_;
+    const GridView* gridView_;
   };
 }  // namespace Dune::IGA

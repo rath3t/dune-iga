@@ -9,8 +9,8 @@
 
 namespace Dune::IGA {
   /** \brief a geometry implementation for NURBS*/
-  template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits> class NURBSLocalGeometry {
+  template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
+  class NURBSLocalGeometry {
   public:
     /** coordinate type */
     typedef double ctype;
@@ -19,7 +19,10 @@ namespace Dune::IGA {
     static constexpr std::integral auto mydimension = mydim;
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
-    static constexpr std::integral auto coorddimension = griddim;
+    static constexpr std::integral auto coorddimension = GridImpl::dimensionworld;
+    static constexpr std::integral auto griddim = GridImpl::dimension;
+
+    using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
 
     /** \brief Type used for a vector of element coordinates */
     using LocalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim>;
@@ -209,9 +212,8 @@ namespace Dune::IGA {
       Dune::Geo::ReferenceElements<ctype,mydim> referenceElement_;
     int localIndexInElement_;
   };
-  template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
-  auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, griddim, NurbsGridLinearAlgebraTraits>& geo) {
-    return Dune::ReferenceElements<typename NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
+  template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
+  auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
+    return Dune::ReferenceElements<typename GridImpl::NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
   };
 }  // namespace Dune::IGA

@@ -12,16 +12,17 @@ namespace Dune::IGA {
   template <typename NURBSIntersection>
   class NURBSGridInterSectionIterator;
 
-  template <int mydim, typename GridViewImp>
+  template <typename GridImp>
   class NURBSintersection {
   public:
     using Iterator      = NURBSGridInterSectionIterator<NURBSintersection>;
-    using Entity        = typename GridViewImp::template Codim<0>::Entity;
-    using Geometry      = typename GridViewImp::template Codim<1>::Geometry;
-    using LocalGeometry = typename GridViewImp::template Codim<1>::LocalGeometry;
+    using Entity        = typename GridImp::Traits::template Codim<0>::Entity;
+    using Geometry      = typename GridImp::Traits::template Codim<1>::Geometry;
+    using LocalGeometry = typename GridImp::Traits::template Codim<1>::LocalGeometry;
+    using GridView = typename GridImp::Traits::LeafGridView;
 
     NURBSintersection(int innerLocalIndex, int outerLocalIndex, unsigned int innerDirectIndex, unsigned int outerDirectIndex,
-                      const GridViewImp& gridView)
+                      const GridView& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -31,20 +32,20 @@ namespace Dune::IGA {
     typedef double ctype;
 
     /** \brief Dimension of the cube element */
-    static constexpr std::integral auto mydimension = mydim;
+    static constexpr std::integral auto mydimension = GridImp::dimension-1;
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
-    static constexpr std::integral auto dimworld = GridViewImp::dimensionworld;
+    static constexpr std::integral auto dimworld = GridImp::dimensionworld;
 
     /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename GridViewImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim>;
+    using LocalCoordinate = typename GridImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<mydimension>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename GridViewImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using GlobalCoordinate = typename GridImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
     [[nodiscard]] bool boundary() const { return outerDirectIndex_ != Impl::noNeighbor; }
     [[nodiscard]] bool neighbor() const { return outerDirectIndex_ != Impl::noNeighbor; }
     [[nodiscard]] bool conforming() const { return true; }
-    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
+    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
     Entity outside() const {
@@ -57,9 +58,9 @@ namespace Dune::IGA {
     LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
     Geometry geometry() const { return inside().template subEntity<1>(innerLocalIndex_).geometry(); }
     GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
-      if constexpr (mydim == 0)
+      if constexpr (mydimension == 0)
         return this->geometry().jacobianTransposed(xi)[0];
-      else if constexpr (mydim == 1) {  // edges
+      else if constexpr (mydimension == 1) {  // edges
         if constexpr (dimworld == 2) {  // edges in R2
           const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi)[0];
           switch (innerLocalIndex_) {
@@ -82,7 +83,7 @@ namespace Dune::IGA {
             default: __builtin_unreachable();
           }
         }
-      } else if constexpr (mydim == 2 && dimworld == 3) {  // surfaces in R3
+      } else if constexpr (mydimension == 2 && dimworld == 3) {  // surfaces in R3
         const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi);
         switch (innerLocalIndex_) {
           case 0:
@@ -104,14 +105,14 @@ namespace Dune::IGA {
       return this->unitOuterNormal(xi) * this->geometry().integrationElement(xi);
     }
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
-      throw std::logic_error("boundarySegmentIndex Not implemented");
+//      throw std::logic_error("boundarySegmentIndex Not implemented");
       return 0;
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
 
   private:
-    const GridViewImp* gridView_;
+    const GridView* gridView_;
     unsigned int innerDirectIndex_;
     int innerLocalIndex_;
     unsigned int outerDirectIndex_;

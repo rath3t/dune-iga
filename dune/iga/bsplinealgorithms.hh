@@ -14,7 +14,7 @@ namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
   auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end() - p - 1, u);
+    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end() - p, u);
     return std::distance(U.begin(), it) - 1;
   }
 
@@ -44,12 +44,19 @@ namespace Dune::IGA {
     // The Nurbs Book Algorithm A2.2
     template <typename ContainerType = std::vector<ScalarType>>
     static auto basisFunctions(ScalarType u, const std::vector<ScalarType>& knots, const int degree,
-                               const std::optional<int>& spIndex = std::nullopt) {
+                                std::optional<int> spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + degree + 1, knots.front()) == degree + 1);
       assert(std::ranges::count(knots.end() - degree - 1, knots.end(), knots.back()) == degree + 1);
       ContainerType N;
       const int p = degree;
-      resize(N, p + 1);
+      N.resize(p + 1,0.0);
+      if(Dune::FloatCmp::eq(u,knots.back()) and spIndex.has_value()) //early exit
+      {
+        --spIndex.value();
+        u-= 1e-8;
+//        N.back()=1.0;
+//        return N;
+      }
       const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });
@@ -69,14 +76,26 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
+
+      if(Dune::FloatCmp::eq(u,knots.back())) {
+        std::cout <<"N:::::::::::::::::::::::::::" <<std::endl;
+        for (auto Ni :N) {
+          std::cout << Ni << " ";
+        }
+        std::cout <<"NEND:::::::::::::::::::::::::"<< std::endl;
+      }
       return N;
     }
 
     // The Nurbs Book Algorithm A2.3
     static auto basisFunctionDerivatives(ScalarType u, const std::vector<ScalarType>& knots, const int degree, const int derivativeOrder,
-                                         const std::optional<int>& spIndex = std::nullopt) {
+                                         std::optional<int> spIndex = std::nullopt) {
+      if(Dune::FloatCmp::eq(u,knots.back()) and spIndex.has_value()) {
+        u -= 1e-8;
+        --spIndex.value();
+      }
       const int order = degree + 1;
-      int p           = degree;
+      const int p           = degree;
       const int sp    = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });

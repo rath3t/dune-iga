@@ -233,12 +233,12 @@ void testTorusGeometry() {
   const double r      = 1.0;
   auto circle         = makeCircularArc(r);
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
-  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
   IGA::NURBSGrid<2,3> grid(nurbsPatchData);
-  grid.globalRefine(0);
-  grid.globalRefineInDirection(1, 1);
-  grid.globalRefineInDirection(0, 1);
+//  grid.globalRefine(0);
+//  grid.globalRefineInDirection(1, 1);
+//  grid.globalRefineInDirection(0, 1);
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;

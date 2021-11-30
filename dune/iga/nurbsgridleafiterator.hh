@@ -14,39 +14,42 @@
  namespace Dune::IGA
   {
     /** \brief NURBS gird leaf iterator */
-    template<typename NURBSEntity>
-  class NURBSGridLeafIterator : public std::vector<NURBSEntity>::const_iterator
+    template<int codim, PartitionIteratorType pitype, class GridImp>
+    class NURBSGridLeafIterator : public std::vector<typename GridImp::Traits::template Codim<codim>::Entity>::const_iterator
     {
     public:
       NURBSGridLeafIterator()=default;
-      using Reference =  NURBSEntity;
-      using Entity =  NURBSEntity;
+      using Reference =  typename GridImp::Traits::template Codim<codim>::Entity;
+      using Entity =  typename GridImp::Traits::template Codim<codim>::Entity;
 
-      explicit NURBSGridLeafIterator(typename std::vector<NURBSEntity>::const_iterator spanIter)
-          :  std::vector<NURBSEntity>::const_iterator(spanIter)
+      auto dereference()
+      {return *this;}
+
+      explicit NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator spanIter)
+          :  std::vector<Entity>::const_iterator(spanIter)
       {}
     };
 
-    template<typename NURBSEntity>
+    template<class GridImp>
     struct NurbsHierarchicIterator
     {
-      explicit NurbsHierarchicIterator(const  NURBSEntity& ent) : nurbsEntity{&ent}{}
+      explicit NurbsHierarchicIterator(const  typename GridImp::Traits::template Codim<0>::Entity& ent) : nurbsEntity{&ent}{}
       auto operator<=>(const NurbsHierarchicIterator&) const = default;
       auto operator*(){ return *nurbsEntity;}
       auto operator->(){ return nurbsEntity;}
       void operator++(){}
-      const NURBSEntity* nurbsEntity;
+      const typename GridImp::Traits::template Codim<0>::Entity* nurbsEntity;
     };
 
-    template<typename NURBSIntersection>
-    class NURBSGridInterSectionIterator : public std::vector<NURBSIntersection>::const_iterator
+    template<class GridImp>
+    class NURBSGridInterSectionIterator : public std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator
     {
     public:
       NURBSGridInterSectionIterator()=default;
-      using Reference =  NURBSIntersection;
-      using Intersection = NURBSIntersection;
-      explicit NURBSGridInterSectionIterator(typename std::vector<NURBSIntersection>::const_iterator spanIter)
-          :  std::vector<NURBSIntersection>::const_iterator(spanIter)
+      using Intersection = typename GridImp::Traits::LeafIntersection;
+      using Reference =  Intersection;
+      explicit NURBSGridInterSectionIterator(typename std::vector<Intersection>::const_iterator spanIter)
+          :  std::vector<Intersection>::const_iterator(spanIter)
       {}
     };
   }

@@ -13,8 +13,7 @@ namespace Dune::IGA {
   }
 
   /** \brief a geometry implementation for NURBS*/
-  template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   class NURBSGeometry {
   public:
     /** coordinate type */
@@ -22,6 +21,9 @@ namespace Dune::IGA {
 
     /** \brief Dimension of the cube element */
     static constexpr std::integral auto mydimension = mydim;
+    static constexpr std::integral auto griddim = GridImpl::dimension;
+
+    using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
     static constexpr std::integral auto coorddimension = dimworld;
@@ -68,7 +70,7 @@ namespace Dune::IGA {
     }
 
     /** \brief Map the center of the element to the geometry */
-    GlobalCoordinate center() const {
+    [[nodiscard]] GlobalCoordinate center() const {
       LocalCoordinate localcenter(0.5);
       return global(localcenter);
     }
@@ -85,7 +87,7 @@ namespace Dune::IGA {
     [[nodiscard]] int corners() const { return 1 << mydimension; }
 
     /** \brief Return world coordinates of the k-th corner of the element */
-    GlobalCoordinate corner(int k) const {
+    [[nodiscard]] GlobalCoordinate corner(int k) const {
       LocalCoordinate localcorner;
       for (size_t i = 0; i < mydimension; i++) {
         localcorner[i] = (k & (1 << i)) ? 1 : 0;
@@ -101,27 +103,30 @@ namespace Dune::IGA {
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto transformLocalToSpan(const LocalCoordinate& local) const {
       ReturnType localInSpan;
-      if constexpr (local.size() != 0)
+      if constexpr (local.size() != 0) {
         for (int loci = 0, i = 0; i < griddim; ++i) {
           localInSpan[i]
               = (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free) ? local[loci++] * scaling_[i] + offset_[i] : offset_[i];
         }
-      else
+      } else
         for (int i = 0; i < griddim; ++i)
           localInSpan[i] = offset_[i];
+      std::cout<<"localInSpanInternal"<<std::endl;
+      for (int i = 0; i < griddim; ++i)
+        std::cout<<localInSpan[i]<<" "<<offset_[i]<<"\n";
       return localInSpan;
     }
     /** \brief evaluates the NURBS mapping
      *
      *  \param[in] local local coordinates for each dimension
      */
-    GlobalCoordinate global(const LocalCoordinate& local) const {
+    [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
       const auto localInSpan = transformLocalToSpan(local);
       auto basis             = nurbs_.basisFunctionNet(localInSpan);
       return dot(basis, cpCoordinateNet_);
     }
 
-    LocalCoordinate local(const GlobalCoordinate& global) const {
+    [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
       LocalCoordinate x     = LocalCoordinate(0.5);
       LocalCoordinate dx{};
@@ -140,35 +145,56 @@ namespace Dune::IGA {
      *
      *  \param[in] local local coordinates for each dimension
      */
-    JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
+    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       JacobianTransposed result;
       std::array<unsigned int, mydim> subDirs;
       for (int subI = 0, i = 0; i < griddim; ++i) {
         if (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::fixed) continue;
         subDirs[subI++] = i;
       }
+      for (int i = 0; i < mydimension; ++i) {
+        std::cout<<subDirs[i]<<" ";
+      }
+
       const auto localInSpan              = transformLocalToSpan(local);
+      std::cout<<std::endl;
+      std::cout<<"local: size: "<<local.size()<<std::endl;
+      for (int i = 0; i < mydim; ++i) {
+        std::cout<<local[i]<<" ";
+      }
+      std::cout<<std::endl;
+      std::cout<<"localInSpan: size: "<<localInSpan.size()<<" "<<griddim<<std::endl;
+      for (int i = 0; i < griddim; ++i) {
+        std::cout<<localInSpan[i]<<" ";
+      }
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 1);
+
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
         ithVec[subDirs[dir]] = 1;
+        std::cout<<std::endl;
+        for (int i = 0; i <basisFunctionDerivatives.get(ithVec).directGetAll().size(); ++i) {
+          std::cout<<basisFunctionDerivatives.get(ithVec).directGetAll()[i]<<" ";
+        }
+        std::cout<<std::endl;
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
         result[dir] *= scaling_[subDirs[dir]];  // transform back to 0..1 domain
       }
       return result;
     }
 
-    ctype integrationElement(const LocalCoordinate& local) const {
-      return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(jacobianTransposed(local));
+    [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
+      auto j = jacobianTransposed(local);
+      return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(j);
     }
 
-    JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
+    [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
       JacobianInverseTransposed jacobianInverseTransposed1;
       MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local), jacobianInverseTransposed1);
       return jacobianInverseTransposed1;
     }
 
-    ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
+    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
       auto metricDet = metric(local).determinant();
       auto secondF   = secondFundamentalForm(local).determinant();
       return secondF / metricDet;
@@ -181,12 +207,12 @@ namespace Dune::IGA {
       return metric;
     }
 
-    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
       auto N = normal(local);
       return N / N.two_norm();
     }
 
-    GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
       auto J = jacobianTransposed(local);
       return cross(J[0], J[1]);
     }
@@ -241,9 +267,8 @@ namespace Dune::IGA {
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
   };
 
-  template <std::integral auto mydim, std::integral auto dimworld, std::integral auto griddim,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
-  auto referenceElement(const NURBSGeometry<mydim, dimworld, griddim, NurbsGridLinearAlgebraTraits>& geo) {
-    return Dune::ReferenceElements<typename NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
+  template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
+  auto referenceElement(const NURBSGeometry<mydim, dimworld,GridImpl>& geo) {
+    return Dune::ReferenceElements<typename GridImpl::NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
   };
 }  // namespace Dune::IGA

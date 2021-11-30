@@ -94,9 +94,15 @@ namespace Dune::IGA {
       return basisFunctions(u, knots_, degree_, weights_, spIndex_);
     }
 
-    static auto basisFunctions(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+    static auto basisFunctions( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
-                               const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
+                               std::optional<std::array<int, dim>> spIndex = std::nullopt) {
+//      for (int i = 0; i < dim; ++i) {
+//        if(Dune::FloatCmp::eq(u[i],knots[i].back())&& spIndex.has_value()) {
+//          spIndex.value()[i] = knots[i].size() - degree[i] - 2;
+//          u[i]-=1e-8;
+//        }
+//      }
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
@@ -117,10 +123,19 @@ namespace Dune::IGA {
 
     // \*brief This function return the basis function and the corresponding derivatives
     // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative order derivativeOrder
-    static auto basisFunctionDerivatives(const std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+    static auto basisFunctionDerivatives( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
                                          const int derivativeOrder, const bool triangleDerivatives = false,
-                                         const std::optional<std::array<int, dim>>& spIndex = std::nullopt) {
+                                         std::optional<std::array<int, dim>> spIndex = std::nullopt) {
+//      std::cout<<"u: ";
+//      for (int i = 0; i < dim; ++i) {
+//        if(Dune::FloatCmp::eq(u[i],knots[i].back())&& spIndex.has_value()) {
+//          spIndex.value()[i] = knots[i].size() - degree[i] - 2;
+//          u[i]-=1e-8;
+//        }
+//        std::cout<<u[i]<<" "<<knots[i].back()<<" "<<knots[i].back()-u[i]<<std::endl;
+//      }
+      std::cout<<std::endl;
       std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
         bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(
