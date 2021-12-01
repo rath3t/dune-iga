@@ -14,7 +14,7 @@ namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
   auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end() - p, u);
+    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
     return std::distance(U.begin(), it) - 1;
   }
 
@@ -44,19 +44,42 @@ namespace Dune::IGA {
     // The Nurbs Book Algorithm A2.2
     template <typename ContainerType = std::vector<ScalarType>>
     static auto basisFunctions(ScalarType u, const std::vector<ScalarType>& knots, const int degree,
-                                std::optional<int> spIndex = std::nullopt) {
+                               std::optional<int> spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + degree + 1, knots.front()) == degree + 1);
       assert(std::ranges::count(knots.end() - degree - 1, knots.end(), knots.back()) == degree + 1);
+      assert(spIndex < knots.size() - degree - 1);
       ContainerType N;
       const int p = degree;
-      N.resize(p + 1,0.0);
-      if(Dune::FloatCmp::eq(u,knots.back()) and spIndex.has_value()) //early exit
+      N.resize(p + 1, 0.0);
+      if (Dune::FloatCmp::eq(u, knots.back()))  // early exits
       {
-        --spIndex.value();
-        u-= 1e-8;
-//        N.back()=1.0;
-//        return N;
+        N.back() = 1;
+        return N;
+      } else if (Dune::FloatCmp::eq(u, knots.front())) {
+        N.front() = 1;
+        return N;
       }
+
+      //      if(spIndex.has_value() and spIndex.value()==knots.size()-1) //early exit
+      //      {
+      //        std::cout<<u<<" ";
+      //        std::cout<<spIndex.value()<<std::endl;
+      //        for (int i = 0; i < knots.size(); ++i) {
+      //          std::cout<<i<<" ";
+      //        }
+      //
+      //        std::cout<<std::endl;
+      //        for (auto k  :knots) {
+      //          std::cout<<k<<" ";
+      //        }
+      //        std::cout<<std::endl;
+      //        std::cout<<spIndex.value()<<" ";
+      //        spIndex.value()-= degree+1;
+      //        std::cout<<spIndex.value()<<" "<<knots[spIndex.value()]<<std::endl;
+      ////        u-= 1e-1;
+      ////        N.back()=1.0;
+      ////        return N;
+      //      }
       const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });
@@ -76,26 +99,25 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
-
-      if(Dune::FloatCmp::eq(u,knots.back())) {
-        std::cout <<"N:::::::::::::::::::::::::::" <<std::endl;
-        for (auto Ni :N) {
-          std::cout << Ni << " ";
-        }
-        std::cout <<"NEND:::::::::::::::::::::::::"<< std::endl;
-      }
+      //      std::cout<<"=======Nb:"<<std::endl;
+      //      for (auto Ni : N) {
+      //        std::cout<<Ni<<" ";
+      //      }
+      //      std::cout<<"=======Ne"<<std::endl;
       return N;
     }
 
     // The Nurbs Book Algorithm A2.3
     static auto basisFunctionDerivatives(ScalarType u, const std::vector<ScalarType>& knots, const int degree, const int derivativeOrder,
                                          std::optional<int> spIndex = std::nullopt) {
-      if(Dune::FloatCmp::eq(u,knots.back()) and spIndex.has_value()) {
-        u -= 1e-8;
-        --spIndex.value();
-      }
+      assert(spIndex < knots.size() - degree - 1);
+      //      if(spIndex.has_value() and spIndex.value()==knots.size()) {
+      ////        spIndex.value()-= degree-2;
+      //        u -= 1e-4;
+      ////        --spIndex.value();
+      //      }
       const int order = degree + 1;
-      const int p           = degree;
+      const int p     = degree;
       const int sp    = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });

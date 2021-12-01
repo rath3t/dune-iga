@@ -59,14 +59,17 @@ namespace Dune::IGA {
                   //                  const std::array<double, griddim - mydimension>& fixedSpans,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections, const std::array<int, griddim>& thisSpanIndices)
         : patchData_(patchData),
-          fixedOrVaryingDirections_{fixedOrVaryingDirections},
-          nurbs_{*patchData, thisSpanIndices},
-          thisSpanIndices_{thisSpanIndices},
-          cpCoordinateNet_{netOfSpan(thisSpanIndices_, patchData_->order, extractControlpoints(patchData_->controlPoints))} {
+          fixedOrVaryingDirections_{fixedOrVaryingDirections}
+         {
       for (int i = 0; i < griddim; ++i) {
         scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
         offset_[i]  = patchData_->knotSpans[i][thisSpanIndices[i]];
       }
+      for (int i = 0; i < griddim; ++i)
+        thisSpanIndices_[i] = (thisSpanIndices[i]==patchData->knotSpans[i].size()-1) ? thisSpanIndices[i]-patchData->order[i]-1 :thisSpanIndices[i];
+
+      nurbs_ =  Dune::IGA::Nurbs<griddim, NurbsGridLinearAlgebraTraits> (*patchData, thisSpanIndices_);
+          cpCoordinateNet_= netOfSpan(thisSpanIndices_, patchData_->order, extractControlpoints(patchData_->controlPoints));
     }
 
     /** \brief Map the center of the element to the geometry */
@@ -111,9 +114,6 @@ namespace Dune::IGA {
       } else
         for (int i = 0; i < griddim; ++i)
           localInSpan[i] = offset_[i];
-      std::cout<<"localInSpanInternal"<<std::endl;
-      for (int i = 0; i < griddim; ++i)
-        std::cout<<localInSpan[i]<<" "<<offset_[i]<<"\n";
       return localInSpan;
     }
     /** \brief evaluates the NURBS mapping
@@ -152,31 +152,13 @@ namespace Dune::IGA {
         if (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::fixed) continue;
         subDirs[subI++] = i;
       }
-      for (int i = 0; i < mydimension; ++i) {
-        std::cout<<subDirs[i]<<" ";
-      }
 
       const auto localInSpan              = transformLocalToSpan(local);
-      std::cout<<std::endl;
-      std::cout<<"local: size: "<<local.size()<<std::endl;
-      for (int i = 0; i < mydim; ++i) {
-        std::cout<<local[i]<<" ";
-      }
-      std::cout<<std::endl;
-      std::cout<<"localInSpan: size: "<<localInSpan.size()<<" "<<griddim<<std::endl;
-      for (int i = 0; i < griddim; ++i) {
-        std::cout<<localInSpan[i]<<" ";
-      }
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 1);
 
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
         ithVec[subDirs[dir]] = 1;
-        std::cout<<std::endl;
-        for (int i = 0; i <basisFunctionDerivatives.get(ithVec).directGetAll().size(); ++i) {
-          std::cout<<basisFunctionDerivatives.get(ithVec).directGetAll()[i]<<" ";
-        }
-        std::cout<<std::endl;
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
         result[dir] *= scaling_[subDirs[dir]];  // transform back to 0..1 domain
       }

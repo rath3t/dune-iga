@@ -127,7 +127,7 @@ namespace Dune::IGA {
 
     LocalCoordinate local(const GlobalCoordinate& global) const {
       if constexpr (mydim == 0)
-        return (localIndexInElement_ == 0) ? GlobalCoordinate(0) : GlobalCoordinate(1);
+        return (localIndexInElement_ == 0) ? LocalCoordinate(0) : LocalCoordinate(1);
       else if constexpr (mydim == 1)
         switch (localIndexInElement_) {
           case 0:

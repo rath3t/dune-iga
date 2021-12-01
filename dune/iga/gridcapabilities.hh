@@ -16,7 +16,7 @@ namespace Dune::IGA
 }
 namespace Dune::Capabilities {
   template <std::integral auto dim, std::integral auto dimworld, int codim,Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
-  requires(codim == 0 || (codim == 1 && dim < 3) || (codim == 2 && dim == 3)
+  requires(codim == 0 || (codim == 1 && dim < 3) || (codim == 2 && dim == 3) || (codim == 1 && dim == 3)
            || codim == dim) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld,NurbsGridLinearAlgebraTraits>, codim> {
     static const bool v = true;
   };

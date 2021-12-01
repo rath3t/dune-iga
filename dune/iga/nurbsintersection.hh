@@ -19,10 +19,9 @@ namespace Dune::IGA {
     using Entity        = typename GridImp::Traits::template Codim<0>::Entity;
     using Geometry      = typename GridImp::Traits::template Codim<1>::Geometry;
     using LocalGeometry = typename GridImp::Traits::template Codim<1>::LocalGeometry;
-    using GridView = typename GridImp::Traits::LeafGridView;
+    using GridView      = typename GridImp::Traits::LeafGridView;
 
-    NURBSintersection(int innerLocalIndex, int outerLocalIndex, unsigned int innerDirectIndex, unsigned int outerDirectIndex,
-                      const GridView& gridView)
+    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const GridView& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -32,7 +31,7 @@ namespace Dune::IGA {
     typedef double ctype;
 
     /** \brief Dimension of the cube element */
-    static constexpr std::integral auto mydimension = GridImp::dimension-1;
+    static constexpr std::integral auto mydimension = GridImp::dimension - 1;
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
     static constexpr std::integral auto dimworld = GridImp::dimensionworld;
@@ -58,10 +57,12 @@ namespace Dune::IGA {
     LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
     Geometry geometry() const { return inside().template subEntity<1>(innerLocalIndex_).geometry(); }
     GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
-      if constexpr (mydimension == 0)
-        return this->geometry().jacobianTransposed(xi)[0];
-      else if constexpr (mydimension == 1) {  // edges
-        if constexpr (dimworld == 2) {  // edges in R2
+      if constexpr (mydimension == 0) {
+        const auto xiInElementCoords        = geometryInInside().global(xi);
+        const auto insideJacobianTransposed = inside().geometry().jacobianTransposed(xiInElementCoords);
+        return (innerLocalIndex_ == 0) ? -insideJacobianTransposed[0] : insideJacobianTransposed[0];
+      } else if constexpr (mydimension == 1) {  // edges
+        if constexpr (dimworld == 2) {          // edges in R2
           const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi)[0];
           switch (innerLocalIndex_) {
             case 0:
@@ -105,17 +106,18 @@ namespace Dune::IGA {
       return this->unitOuterNormal(xi) * this->geometry().integrationElement(xi);
     }
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
-//      throw std::logic_error("boundarySegmentIndex Not implemented");
-      return 0;
+      assert(boundary());
+
+      return gridView_->NURBSpatch_->patchBoundaryIndex(innerDirectIndex_);
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
 
   private:
     const GridView* gridView_;
-    unsigned int innerDirectIndex_;
+    int innerDirectIndex_;
     int innerLocalIndex_;
-    unsigned int outerDirectIndex_;
+    int outerDirectIndex_;
     int outerLocalIndex_;
   };
 }  // namespace Dune::IGA

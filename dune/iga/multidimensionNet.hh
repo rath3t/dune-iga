@@ -296,10 +296,10 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; }))) return -1;  // signaling Index Out of Net
+      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; }))) throw std::logic_error("Out of bounds");  // signaling Index Out of Net
 
       if ((std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })))
-        return -1;  // signaling Index Out of Net
+        throw std::logic_error("Out of bounds");  // signaling Index Out of Net
 
       for (int i = 0; i < netdim; ++i) {
         help = 1;
@@ -309,6 +309,14 @@ namespace Dune::IGA {
         index += help * multiIndex[i];
       }
       return index;
+    }
+
+    template <typename ArrayType = std::array<int, netdim>>
+    bool isValid(const ArrayType& multiIndex) const {
+      for (int i = 0; i < netdim; ++i) {
+        if(multiIndex[i]> dimSize_[i]-1 || (multiIndex[i]<0)) return false;
+      }
+      return true;
     }
 
     Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(const std::array<int, (std::size_t)(netdim - 1)>& direction) {

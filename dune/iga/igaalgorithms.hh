@@ -78,6 +78,7 @@ namespace Dune::IGA {
   template <std::size_t dim, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
   class Nurbs {
   public:
+    Nurbs() = default;
     using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
     template <std::integral auto dimworld>
     Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
@@ -97,12 +98,6 @@ namespace Dune::IGA {
     static auto basisFunctions( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
                                std::optional<std::array<int, dim>> spIndex = std::nullopt) {
-//      for (int i = 0; i < dim; ++i) {
-//        if(Dune::FloatCmp::eq(u[i],knots[i].back())&& spIndex.has_value()) {
-//          spIndex.value()[i] = knots[i].size() - degree[i] - 2;
-//          u[i]-=1e-8;
-//        }
-//      }
       const std::array<int, dim> order = ordersFromDegrees(degree);
       std::array<std::vector<ScalarType>, dim> bSplines;
 
@@ -127,15 +122,6 @@ namespace Dune::IGA {
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
                                          const int derivativeOrder, const bool triangleDerivatives = false,
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
-//      std::cout<<"u: ";
-//      for (int i = 0; i < dim; ++i) {
-//        if(Dune::FloatCmp::eq(u[i],knots[i].back())&& spIndex.has_value()) {
-//          spIndex.value()[i] = knots[i].size() - degree[i] - 2;
-//          u[i]-=1e-8;
-//        }
-//        std::cout<<u[i]<<" "<<knots[i].back()<<" "<<knots[i].back()-u[i]<<std::endl;
-//      }
-      std::cout<<std::endl;
       std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
         bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(

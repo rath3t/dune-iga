@@ -37,8 +37,7 @@ namespace Dune::IGA {
     NURBSGridEntity(const GridView& gridView, unsigned int directIndex)
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
-          parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)} {}
+          parType_{PartitionType::InteriorEntity} {}
 
     using LocalIntersectionGeometry = typename GridView::Traits::template Codim<1>::LocalGeometry;
     //! Geometry of this entity
@@ -55,7 +54,7 @@ namespace Dune::IGA {
 
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridView::dimension - codim); }
     [[nodiscard]] int level() const { return 0; }
-    [[nodiscard]] EntitySeed seed() const { EntitySeed e; e.index= directIndex_; return e; }
+    [[nodiscard]] EntitySeed seed() const { EntitySeed e; e.index_= directIndex_; e.valid_ = true; return e; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
     LocalIntersectionGeometry localGeometry() const {
@@ -95,19 +94,18 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           parType_{
-              (NURBSGridView_->NURBSpatch_->isBorderElement(directIndex_) ? PartitionType::BorderEntity : PartitionType::InteriorEntity)}
+               PartitionType::InteriorEntity}
     {
       intersections_= std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
       for (int innerLocalIndex = 0,outerLocalIndex=1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
-
-        auto multiIndex = NURBSGridView_->NURBSpatch_->elementNet_->directToMultiIndex(directIndex_);
-        multiIndex[static_cast<int>(std::floor(innerLocalIndex/2))]+=((innerLocalIndex%2) ? 1 : -1);
-        auto directOuterIndex = NURBSGridView_->NURBSpatch_->elementNet_->index(multiIndex);
+        const auto& eleNet = NURBSGridView_->NURBSpatch_->elementNet_;
+        auto multiIndex = eleNet->directToMultiIndex(directIndex_);
+        multiIndex[static_cast<int>(std::floor(innerLocalIndex/2))]+=((innerLocalIndex%2) ? 1 : Impl::noNeighbor); //increase the multiIndex depending where the outer element should lie
+        auto directOuterIndex = (eleNet->isValid(multiIndex)) ? eleNet->index(multiIndex) : Impl::noNeighbor;
         intersections_->emplace_back(innerLocalIndex,outerLocalIndex,directIndex_,directOuterIndex,*NURBSGridView_);
         outerLocalIndex += ((innerLocalIndex-1)%2) ? -1 : 3;
       }
-
     }
 
     //! Geometry of this entity
@@ -118,14 +116,15 @@ namespace Dune::IGA {
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
     [[nodiscard]] bool hasFather() const { return false; }
-    [[nodiscard]] EntitySeed seed() const  { EntitySeed e; e.index= directIndex_; return e; }
+    [[nodiscard]] EntitySeed seed() const  { EntitySeed e; e.index_= directIndex_; e.valid_ = true; return e; }
     LocalGeometry geometryInFather()const{ }
     [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydim < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydim), codim1) << codim1);
     }
-    bool hasBoundaryIntersections()const  { return false;}
+    [[nodiscard]] bool hasBoundaryIntersections()const  { return NURBSGridView_->NURBSpatch_->isPatchBoundary(directIndex_);}
+
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
       if constexpr (codimSub == 0) {
@@ -140,12 +139,16 @@ namespace Dune::IGA {
         auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalEdgeIndexFromElementIndex(directIndex_, i);
         return NURBSGridView_->template getEntity<codimSub>( globalIndex);
       }
-
+      else if constexpr (mydim-codimSub == 2) // surfaces from elements
+      {
+        auto globalIndex = NURBSGridView_->NURBSpatch_->getGlobalSurfaceIndexFromElementIndex(directIndex_, i);
+        return NURBSGridView_->template getEntity<codimSub>( globalIndex);
+      }
       throw std::logic_error("The requested subentity codim combination is not supported ");
     }
 
-    bool isNew() const { return false;}
-    bool mightVanish() const { return false;}
+    [[nodiscard]] bool isNew() const { return false;}
+    [[nodiscard]] bool mightVanish() const { return false;}
 
     IntersectionIterator ibegin([[maybe_unused]] int lvl) const { return IntersectionIterator(intersections_->begin()); }
     HierarchicIterator hbegin([[maybe_unused]] int lvl) const { return  HierarchicIterator(*this); }
