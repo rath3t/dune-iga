@@ -75,11 +75,14 @@ namespace Dune::IGA {
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
   }
 
-  template <std::size_t dim, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
+  template <std::size_t dim, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class Nurbs {
   public:
     Nurbs() = default;
     using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
+    using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
+    using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
+
     template <std::integral auto dimworld>
     Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
         : knots_{data.knotSpans}, degree_{data.order}, weights_{extractWeights(data.controlPoints)}, spIndex_{spIndex} {}
@@ -99,10 +102,10 @@ namespace Dune::IGA {
                                const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
                                std::optional<std::array<int, dim>> spIndex = std::nullopt) {
       const std::array<int, dim> order = ordersFromDegrees(degree);
-      std::array<std::vector<ScalarType>, dim> bSplines;
+      std::array<DynamicVectorType, dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
-        bSplines[i] = Bspline<ScalarType>::basisFunctions(u[i], knots[i], degree[i],
+        bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i],
                                                           (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
       auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
@@ -124,7 +127,7 @@ namespace Dune::IGA {
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
       std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
-        bSplineDerivatives[i] = Bspline<ScalarType>::basisFunctionDerivatives(
+        bSplineDerivatives[i] = BsplineBasis1D<ScalarType>::basisFunctionDerivatives(
             u[i], knots[i], degree[i], derivativeOrder, (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
       std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
@@ -473,7 +476,7 @@ namespace Dune::IGA {
   }  // namespace Impl
 
   // Piegl and Tiller Algo A7.1
-  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double>>
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::DuneLinearAlgebraTraits<double>>
   auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                    = 1.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle                = 0.0,
                        typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                        = 360.0,
@@ -531,7 +534,7 @@ namespace Dune::IGA {
   }
 
   // Algo 8.1
-  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::LinearAlgebraTraits<double>>
+  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::DuneLinearAlgebraTraits<double>>
   auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
                                const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> point,
                                const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> revolutionaxisI,

@@ -12,7 +12,7 @@
 namespace Dune::IGA {
   /** \brief class that holds all data regarding the NURBS structure */
   template <std::size_t dim, std::size_t dimworld,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSPatchData {
   public:
     using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;

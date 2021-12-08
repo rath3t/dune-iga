@@ -31,7 +31,7 @@ namespace Dune::Functions {
   template <typename GV, typename R, typename MI>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::LinearAlgebraTraits<double>>
+  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction

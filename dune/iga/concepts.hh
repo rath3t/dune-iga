@@ -38,6 +38,8 @@ namespace Dune::IGA {
     typename LinearAlgebraTraits::template FixedVectorType<a>;
     typename LinearAlgebraTraits::DynamicMatrixType;
     typename LinearAlgebraTraits::DynamicVectorType;
+    typename LinearAlgebraTraits::template RowFixedMatrix<a>;
+    typename LinearAlgebraTraits::template ColumnFixedMatrix<a>;
   };
 
   template <typename ControlPointType>
@@ -77,4 +79,14 @@ template <typename L, typename R>
 concept DivideAble = requires(L x, R y) {
   x / y;
 };
+
+template <typename V>
+concept StdVectorLikeContainer = requires(V v, int a) {
+  typename V::value_type;
+  { v.resize(a) } -> std::same_as<void>;
+  { v.back() } -> std::same_as<typename V::value_type&>;
+  { v.front() } -> std::same_as<typename V::value_type&>;
+};
+
+
 }  // namespace Dune::IGA

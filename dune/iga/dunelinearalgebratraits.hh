@@ -13,13 +13,17 @@
 
 namespace Dune::IGA {
   template <typename ScalarType>
-  struct LinearAlgebraTraits {
+  struct DuneLinearAlgebraTraits {
     using value_type = ScalarType;
     template <int rows, int cols>
     using FixedMatrixType = FieldMatrix<ScalarType, rows, cols>;
     template <int rows>
     using FixedVectorType = FieldVector<ScalarType, rows>;
     using DynamicMatrixType = DynamicMatrix<ScalarType>;
+    template <int cols=0>
+    using RowFixedMatrix = DynamicMatrix<ScalarType>;
+    template <int rows=0>
+    using ColumnFixedMatrix = DynamicMatrix<ScalarType>;
     using DynamicVectorType = DynamicVector<ScalarType>;
   };
   template <int rows, typename ScalarType>

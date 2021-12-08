@@ -12,7 +12,7 @@
 
 namespace Dune::IGA {
 
-  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
+  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSGrid;
 
   template <typename GridImpl>
@@ -23,7 +23,7 @@ namespace Dune::IGA {
 
   /** \brief Class where the NURBS geometry can work on */
   template <std::integral auto dim, std::integral auto dimworld,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = LinearAlgebraTraits<double>>
+            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSPatch {
   public:
     using GridImpl = NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>;
