@@ -21,27 +21,27 @@ namespace Dune::IGA {
 
     /** \brief Dimension of the cube element */
     static constexpr std::integral auto mydimension = mydim;
-    static constexpr std::integral auto griddim = GridImpl::dimension;
+    static constexpr std::integral auto griddim     = GridImpl::dimension;
 
-    using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
+    using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
     static constexpr std::integral auto coorddimension = dimworld;
 
     /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim>;
+    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydim>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<coorddimension>;
+    using GlobalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
 
     /** \brief Type for the transposed Jacobian matrix */
-    using JacobianTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
+    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
 
     /** \brief Type for the transposed inverse Jacobian matrix */
-    using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
+    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
 
-    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointType;
-    using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType;
+    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
+    using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointNetType;
 
   private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -53,23 +53,19 @@ namespace Dune::IGA {
      *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
      *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
      */
-    NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData,
-                  //                  const std::array<std::vector<double>::const_iterator, griddim>& varyingSpans,
-                  //                  const std::array<ctype,griddim>& scaling, const  std::array<ctype,griddim>& offset,
-                  //                  const std::array<double, griddim - mydimension>& fixedSpans,
+    NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections, const std::array<int, griddim>& thisSpanIndices)
-        : patchData_(patchData),
-          fixedOrVaryingDirections_{fixedOrVaryingDirections}
-         {
+        : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections} {
       for (int i = 0; i < griddim; ++i) {
         scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
         offset_[i]  = patchData_->knotSpans[i][thisSpanIndices[i]];
       }
       for (int i = 0; i < griddim; ++i)
-        thisSpanIndices_[i] = (thisSpanIndices[i]==patchData->knotSpans[i].size()-1) ? thisSpanIndices[i]-patchData->order[i]-1 :thisSpanIndices[i];
+        thisSpanIndices_[i] = (thisSpanIndices[i] == patchData->knotSpans[i].size() - 1) ? thisSpanIndices[i] - patchData->degree[i] - 1
+                                                                                         : thisSpanIndices[i];
 
-      nurbs_ =  Dune::IGA::Nurbs<griddim, NurbsGridLinearAlgebraTraits> (*patchData, thisSpanIndices_);
-          cpCoordinateNet_= netOfSpan(thisSpanIndices_, patchData_->order, extractControlpoints(patchData_->controlPoints));
+      nurbs_           = Dune::IGA::Nurbs<griddim, LinearAlgebraTraits>(*patchData, thisSpanIndices_);
+      cpCoordinateNet_ = netOfSpan(thisSpanIndices_, patchData_->degree, extractControlpoints(patchData_->controlPoints));
     }
 
     /** \brief Map the center of the element to the geometry */
@@ -79,7 +75,7 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] double volume() const {
-      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), (*std::ranges::max_element(patchData_->order)));
+      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), (*std::ranges::max_element(patchData_->degree)));
       ctype vol       = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -218,7 +214,7 @@ namespace Dune::IGA {
       }
       const auto localInSpan              = transformLocalToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
-      auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->order, extractControlpoints(patchData_->controlPoints));
+      auto cpNetofSpan = netOfSpan(localInSpan, patchData_->knotSpans, patchData_->degree, extractControlpoints(patchData_->controlPoints));
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
         ithVec[subDirs[dir]] = 2;  // second derivative in dir direction
@@ -240,17 +236,17 @@ namespace Dune::IGA {
     }
 
   private:
-    std::shared_ptr<NURBSPatchData<griddim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
+    std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData_;
     std::array<int, griddim> thisSpanIndices_;
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
-    Dune::IGA::Nurbs<griddim, NurbsGridLinearAlgebraTraits> nurbs_;
+    Dune::IGA::Nurbs<griddim, LinearAlgebraTraits> nurbs_;
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
-  auto referenceElement(const NURBSGeometry<mydim, dimworld,GridImpl>& geo) {
-    return Dune::ReferenceElements<typename GridImpl::NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
+  auto referenceElement(const NURBSGeometry<mydim, dimworld, GridImpl>& geo) {
+    return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();
   };
 }  // namespace Dune::IGA

@@ -30,7 +30,7 @@ namespace Dune::IGA {
   };
 
   template <typename LinearAlgebraTraits, int a = 1>
-  concept NurbsGridLinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<typename LinearAlgebraTraits::DynamicMatrixType>  && Vector<
+  concept LinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<typename LinearAlgebraTraits::DynamicMatrixType>  && Vector<
       typename LinearAlgebraTraits::template FixedVectorType<a>>  && Vector<
       typename LinearAlgebraTraits::DynamicVectorType>&&  requires() {
     typename LinearAlgebraTraits::value_type;

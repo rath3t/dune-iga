@@ -20,25 +20,24 @@ namespace Dune::IGA {
 
     /** \brief Dimension of the world space that the cube element is embedded in*/
     static constexpr std::integral auto coorddimension = GridImpl::dimensionworld;
-    static constexpr std::integral auto griddim = GridImpl::dimension;
+    static constexpr std::integral auto griddim        = GridImpl::dimension;
 
-    using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
+    using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
 
     /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<mydim>;
+    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydim>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<griddim>;
+    using GlobalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<griddim>;
 
     /** \brief Type for the transposed Jacobian matrix */
-    using JacobianTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
+    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
 
     /** \brief Type for the transposed inverse Jacobian matrix */
-    using JacobianInverseTransposed = typename NurbsGridLinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
+    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
 
-    using ControlPointType = typename NURBSPatchData<griddim, dimworld , NurbsGridLinearAlgebraTraits>::ControlPointType;
-    using ControlPointNetType =
-        typename NURBSPatchData<griddim, dimworld , NurbsGridLinearAlgebraTraits>::ControlPointNetType;
+    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
+    using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointNetType;
 
   private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -54,7 +53,6 @@ namespace Dune::IGA {
         : localIndexInElement_{localSubEntityIndex}
 
     {
-//      referenceElement_= Dune::Geo::ReferenceElements<ctype,mydim>::cube();
       assert((localIndexInElement_ < 2 && griddim == 1) || (localIndexInElement_ < 4 && griddim == 2)
              || (localIndexInElement_ < 6 && griddim == 3));
     }
@@ -84,74 +82,63 @@ namespace Dune::IGA {
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
 
-    /** \brief evaluates the NURBS mapping
+    /** \brief Evaluates the mapping from a subKnotSpan to the global one, e.g. from an edge of an surface it construct the 2d coordinates
      *
-     *  \param[in] local local coordinates for each dimension
+     * @param  local local coordinates for each dimension in [0,1]^(dim)
+     * @return global coordinates in [0,1]^(griddim)
      */
     GlobalCoordinate global(const LocalCoordinate& local) const {
       const double offset = 0;
       if constexpr (mydim == 0)
-        return (localIndexInElement_ == 0) ? GlobalCoordinate(0) : GlobalCoordinate(1-offset);
+        return (localIndexInElement_ == 0) ? GlobalCoordinate(0) : GlobalCoordinate(1 - offset);
       else if constexpr (mydim == 1)
         switch (localIndexInElement_) {
-          case 0:
-            return GlobalCoordinate({0, local[0]});
-          case 1:
-            return GlobalCoordinate({1-offset, local[0]});
-          case 2:
-            return GlobalCoordinate({local[0], 0});
-          case 3:
-            return GlobalCoordinate({local[0], 1-offset});
-          default:
-            __builtin_unreachable();
+          case 0: return GlobalCoordinate({0, local[0]});
+          case 1: return GlobalCoordinate({1 - offset, local[0]});
+          case 2: return GlobalCoordinate({local[0], 0});
+          case 3: return GlobalCoordinate({local[0], 1 - offset});
+          default: __builtin_unreachable();
         }
       else if constexpr (mydim == 3)
         switch (localIndexInElement_) {
-          case 0:
-            return GlobalCoordinate({0, local[0], local[1]});
-          case 1:
-            return GlobalCoordinate({1-offset, local[0], local[1]});
-          case 2:
-            return GlobalCoordinate({local[0], 0, local[1]});
-          case 3:
-            return GlobalCoordinate({local[0], 1-offset, local[1]});
-          case 4:
-            return GlobalCoordinate({local[0], local[1], 0});
-          case 5:
-            return GlobalCoordinate({local[0], local[1], 1-offset});
-          default:
-            __builtin_unreachable();
+          case 0: return GlobalCoordinate({0, local[0], local[1]});
+          case 1: return GlobalCoordinate({1 - offset, local[0], local[1]});
+          case 2: return GlobalCoordinate({local[0], 0, local[1]});
+          case 3: return GlobalCoordinate({local[0], 1 - offset, local[1]});
+          case 4: return GlobalCoordinate({local[0], local[1], 0});
+          case 5: return GlobalCoordinate({local[0], local[1], 1 - offset});
+          default: __builtin_unreachable();
         }
       __builtin_unreachable();
     }
 
+    /** \brief Evaluates the mapping from the grid coordinates to the lcaol one, e.g. from an surface to an edge
+     * The local coordinates are obtained from global ones by orthogonal projection, therefore if the global coordinates are [0.5,0.7] and
+     * the edge points into the second direction the local coordinate [0.7] is returned
+     *
+     * @param  global global coordinates for each dimension in [0,1]^(griddim)
+     * @return local coordinates in [0,1]^(dim)
+     */
     LocalCoordinate local(const GlobalCoordinate& global) const {
       if constexpr (mydim == 0)
         return (localIndexInElement_ == 0) ? LocalCoordinate(0) : LocalCoordinate(1);
       else if constexpr (mydim == 1)
         switch (localIndexInElement_) {
           case 0:
-          case 1:
-            return LocalCoordinate({global[1]});
+          case 1: return LocalCoordinate({global[1]});
           case 2:
-          case 3:
-            return LocalCoordinate({global[0]});
-          default:
-            __builtin_unreachable();
+          case 3: return LocalCoordinate({global[0]});
+          default: __builtin_unreachable();
         }
       else if constexpr (mydim == 3)
         switch (localIndexInElement_) {
           case 0:
-          case 1:
-            return LocalCoordinate({global[1], global[2]});
+          case 1: return LocalCoordinate({global[1], global[2]});
           case 2:
-          case 3:
-            return LocalCoordinate({global[0], global[2]});
+          case 3: return LocalCoordinate({global[0], global[2]});
           case 4:
-          case 5:
-            return LocalCoordinate({global[0], global[1]});
-          default:
-            __builtin_unreachable();
+          case 5: return LocalCoordinate({global[0], global[1]});
+          default: __builtin_unreachable();
         }
       __builtin_unreachable();
     }
@@ -166,54 +153,57 @@ namespace Dune::IGA {
       else if constexpr (mydim == 1)
         switch (localIndexInElement_) {
           case 0:
-          case 1:
-            return JacobianTransposed({FieldVector<ctype,mydim>({0,1})});
+          case 1: return JacobianTransposed({FieldVector<ctype, mydim>({0, 1})});
           case 2:
-          case 3:
-            return JacobianTransposed({FieldVector<ctype,mydim>({1,0})});
-          default:
-            __builtin_unreachable();
+          case 3: return JacobianTransposed({FieldVector<ctype, mydim>({1, 0})});
+          default: __builtin_unreachable();
         }
       else if constexpr (mydim == 3)
         switch (localIndexInElement_) {
           case 0:
-          case 1:
-            return LocalCoordinate({FieldVector<ctype,mydim>({0,1,0}), FieldVector<ctype,mydim>({0,0,1})});
+          case 1: return LocalCoordinate({FieldVector<ctype, mydim>({0, 1, 0}), FieldVector<ctype, mydim>({0, 0, 1})});
           case 2:
-          case 3:
-            return LocalCoordinate({FieldVector<ctype,mydim>({1,0,0}), FieldVector<ctype,mydim>({0,0,1})});
+          case 3: return LocalCoordinate({FieldVector<ctype, mydim>({1, 0, 0}), FieldVector<ctype, mydim>({0, 0, 1})});
           case 4:
-          case 5:
-            return LocalCoordinate({FieldVector<ctype,mydim>({1,0,0}), FieldVector<ctype,mydim>({0,1,0})});
-          default:
-            __builtin_unreachable();
+          case 5: return LocalCoordinate({FieldVector<ctype, mydim>({1, 0, 0}), FieldVector<ctype, mydim>({0, 1, 0})});
+          default: __builtin_unreachable();
         }
       __builtin_unreachable();
-
     }
 
+    /** \brief compute the Jacobian determinant of the mapping
+     *
+     *  \param[in] local local coordinates for each dimension
+     */
     ctype integrationElement(const LocalCoordinate& local) const {
       return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(jacobianTransposed(local));
     }
 
+    /** \brief compute the Jacobian inverse transposed matrix
+     *
+     *  \param[in] local local coordinates for each dimension
+     */
     JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
       JacobianInverseTransposed jacobianInverseTransposed1;
       MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local), jacobianInverseTransposed1);
       return jacobianInverseTransposed1;
     }
 
+    /** \brief computes the unit outward normal
+     *
+     *  \param[in] local local coordinates for each dimension
+     */
     GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) {
       auto J = jacobianTransposed(local);
       auto N = cross(J[0], J[1]);
       return N / N.two_norm();
     }
 
-  private:
-      Dune::Geo::ReferenceElements<ctype,mydim> referenceElement_;
+  private : Dune::Geo::ReferenceElements<ctype, mydim> referenceElement_;
     int localIndexInElement_;
   };
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
-    return Dune::ReferenceElements<typename GridImpl::NurbsGridLinearAlgebraTraits::value_type, mydim>::cube();
+    return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();
   };
 }  // namespace Dune::IGA

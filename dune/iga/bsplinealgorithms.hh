@@ -40,17 +40,17 @@ namespace Dune::IGA {
 
   /** \brief One dimensional b-spline basis
    *
-   * @tparam T is either the scalar type pf the point where to evaluate or a specif non-default NurbsGridLinearAlgebraTraits where
+   * @tparam T is either the scalar type pf the point where to evaluate or a specif non-default LinearAlgebraTraits where
    * DynamicMatrixType and DynamicVectorType,... is derived from
    */
-  template <typename T = DuneLinearAlgebraTraits<double>> requires  NurbsGridLinearAlgebra<T> || std::floating_point<T>
+  template <typename T = DuneLinearAlgebraTraits<double>> requires LinearAlgebra<T> || std::floating_point<T>
   class BsplineBasis1D;
 
    /** \brief One dimensional b-spline basis
     *
     * @tparam NurbsGridLinearAlgebraTraits Specialization where the Traits are directly given
     */
-  template <NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <LinearAlgebra NurbsGridLinearAlgebraTraits>
   class BsplineBasis1D<NurbsGridLinearAlgebraTraits> {
   public:
     using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
@@ -121,7 +121,7 @@ namespace Dune::IGA {
      * @param u scalar point where to evaluate the spline
      * @param knots knotvector
      * @param p polynomial p of the underlying b-spline basis
-     * @param derivativeOrder maximum derivative order that are constructed
+     * @param derivativeOrder maximum derivative degree that are constructed
      * @param spIndex optional index in which range the evaluationg point lies, if omited it is searched for
      * @return Non-zero B-spline derivatives  evaluated at u
      */

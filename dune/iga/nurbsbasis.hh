@@ -31,7 +31,7 @@ namespace Dune::Functions {
   template <typename GV, typename R, typename MI>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
+  template <typename GV, class MI, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -84,7 +84,7 @@ namespace Dune::Functions {
           out[i][0][j] *= scaling_[j][j];
     }
 
-    //! \brief Evaluate all shape functions and derivatives of any order
+    //! \brief Evaluate all shape functions and derivatives of any degree
     inline void partial(const typename std::array<unsigned int, dim>& order, const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const {
       FieldVector<D, dim> globalIn = offset_;
@@ -97,9 +97,9 @@ namespace Dune::Functions {
             out[i][0] *= scaling_[d][d];
     }
 
-    /** \brief Polynomial order of the shape functions
+    /** \brief Polynomial degree of the shape functions
      *
-     * Unfortunately, the general interface of the LocalBasis class mandates that the 'order' method
+     * Unfortunately, the general interface of the LocalBasis class mandates that the 'degree' method
      * takes no arguments, and returns a single integer.  It therefore cannot reflect that fact that
      * a B-spline basis function can easily have different orders in the different coordinate directions.
      * We therefore take the conservative choice and return the maximum over the orders of all directions.
@@ -127,7 +127,7 @@ namespace Dune::Functions {
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * The attachment uses the same order as for Qk elements.  This does *not* provide sufficient information
+   * The attachment uses the same degree as for Qk elements.  This does *not* provide sufficient information
    * to compute global indices for the shape functions.  However, it does allow to find all degrees of freedom
    * that belong to the grid boundary, if the knot vector is open.
    *
@@ -324,7 +324,7 @@ namespace Dune::Functions {
     void bind(const std::array<unsigned, dim>& elementIdx) {
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
-        currentKnotSpan_[i] = Dune::IGA::findSpan(patchData.order[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
+        currentKnotSpan_[i] = Dune::IGA::findSpan(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
                                                   patchData.knotSpans[i], elementIdx[i]);
 
         // Compute the geometric transformation from knotspan-local to global coordinates
@@ -362,7 +362,7 @@ namespace Dune::Functions {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(dim); }
 
     /** \brief Number of degrees of freedom for one coordinate direction */
-    [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.order[i] + 1; }
+    [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.degree[i] + 1; }
 
     const NurbsPreBasis<GV, MI>& preBasis_;
 
@@ -387,7 +387,7 @@ namespace Dune::Functions {
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
    */
-  template <typename GV, class MI, Dune::IGA::NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <typename GV, class MI, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
   class NurbsPreBasis {
     static const auto dim      = GV::dimension;
     static const auto dimworld = GV::dimensionworld;
@@ -490,7 +490,7 @@ namespace Dune::Functions {
     [[nodiscard]] size_type maxNodeSize() const {
       size_type result = 1;
       for (int i = 0; i < dim; i++)
-        result *= patchData_.order[i] + 1;
+        result *= patchData_.degree[i] + 1;
       return result;
     }
 
@@ -506,7 +506,7 @@ namespace Dune::Functions {
         std::array<unsigned int, dim> localIJK = getIJK(i, localSizes);
 
         const auto currentKnotSpan = node.finiteElement().currentKnotSpan_;
-        const auto order           = patchData_.order;
+        const auto order           = patchData_.degree;
 
         std::array<unsigned int, dim> globalIJK;
         for (int j = 0; j < dim; j++)
@@ -532,7 +532,7 @@ namespace Dune::Functions {
     }
 
     //! \brief Number of shape functions in one direction
-    [[nodiscard]] unsigned int size(size_t d) const { return patchData_.knotSpans[d].size() - patchData_.order[d] - 1; }
+    [[nodiscard]] unsigned int size(size_t d) const { return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1; }
 
     /** \brief Evaluate all B-spline basis functions at a given point
      */
@@ -540,7 +540,7 @@ namespace Dune::Functions {
                           const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.order,
+      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.degree,
                                                                              extractWeights(patchData_.controlPoints), currentKnotSpan);
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
@@ -556,7 +556,7 @@ namespace Dune::Functions {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
-          inArray, patchData_.knotSpans, patchData_.order, extractWeights(patchData_.controlPoints), 1, false, currentKnotSpan);
+          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false, currentKnotSpan);
       out.resize(dN.get(std::array<int, dim>{}).directSize());
       for (int j = 0; j < dim; ++j) {
         std::array<int, dim> multiIndex{};
@@ -574,7 +574,7 @@ namespace Dune::Functions {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
 
-      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.order,
+      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.degree,
                                                                                         extractWeights(patchData_.controlPoints), order);
       out     = dN.get(order).directGetAll();
     }

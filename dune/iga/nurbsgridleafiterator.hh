@@ -8,9 +8,7 @@
 #include <dune/common/iteratorfacades.hh>
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbspatch.hh>
-/** \file
- * \brief The NURBSGridIterator class
- */
+
  namespace Dune::IGA
   {
     /** \brief NURBS gird leaf iterator */

@@ -66,12 +66,9 @@ namespace Dune::IGA {
   template <typename GridImpl>
   class NURBSLeafGridView {
   public:
-    using NurbsGridLinearAlgebraTraits = typename GridImpl::NurbsGridLinearAlgebraTraits;
+    using NurbsGridLinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
     using Traits                       = NurbsLeafGridViewTraits<GridImpl>;
-    //    using GlobalCoordinateType         = typename GridImpl::GlobalCoordinateType;
-    //    using LocalCoordinateType          = typename GridImpl::LocalCoordinateType;
-    //    using JacobianTransposedType       = typename GridImpl::JacobianTransposedType;
-    //    using JacobianInverseTransposed    = typename GridImpl::JacobianInverseTransposed;
+
 
     using ControlPointNetType = typename GridImpl::ControlPointNetType;
 
@@ -95,15 +92,10 @@ namespace Dune::IGA {
     friend class NURBSGridLeafIterator;
 
     using Grid = typename Traits::Grid;
-    //    typedef NURBSLeafGridView<GridImpl> NURBSGridView;
-    //    typedef NURBSGridLeafIndexSet<NURBSGridView> IndexSet;
-
-    //    template <int cd>
-    //    struct Codim : public Traits::template Codim<cd> {};
 
     NURBSLeafGridView(const NURBSPatchData<(size_t)dimension, (size_t)dimensionworld, NurbsGridLinearAlgebraTraits> &patchData,
                       const GridImpl &grid)
-        : NURBSLeafGridView(patchData.knotSpans, patchData.controlPoints, patchData.order, grid) {}
+        : NURBSLeafGridView(patchData.knotSpans, patchData.controlPoints, patchData.degree, grid) {}
 
     NURBSLeafGridView(const std::array<std::vector<double>, dimension> &knotSpans, const ControlPointNetType &controlPoints,
                       const std::array<int, dimension> order, const GridImpl &grid)
@@ -169,12 +161,10 @@ namespace Dune::IGA {
     }
 
     LeafIntersectionIterator ibegin(const typename Codim<0UL>::Entity &entity) const {
-      //      assert(this->contains(entity) && "The entity you passed to ibegin is not contained in this gridview");
       return entity.ibegin(level_);
     }
 
     LeafIntersectionIterator iend(const typename Codim<0UL>::Entity &entity) const {
-      //      assert(this->contains(entity) && "The entity you passed to iend is not contained in this gridview");
       return entity.iend(level_);
     }
 

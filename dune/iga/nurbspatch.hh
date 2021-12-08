@@ -12,7 +12,7 @@
 
 namespace Dune::IGA {
 
-  template <int dim, int dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSGrid;
 
   template <typename GridImpl>
@@ -23,7 +23,7 @@ namespace Dune::IGA {
 
   /** \brief Class where the NURBS geometry can work on */
   template <std::integral auto dim, std::integral auto dimworld,
-            NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+            LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSPatch {
   public:
     using GridImpl = NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>;
@@ -31,11 +31,11 @@ namespace Dune::IGA {
     template <int codim, int dim1, typename GridImpl1>
     friend class NURBSGridEntity;
 
-    /** \brief Constructor of NURBS from knots, control points, weights and order
+    /** \brief Constructor of NURBS from knots, control points, weights and degree
      *  \param[in] knotSpans vector of knotSpans for each dimension
      *  \param[in] controlPoints a n-dimensional net of control points
      *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-     *  \param[in] order order of the NURBS structure for each dimension
+     *  \param[in] order degree of the NURBS structure for each dimension
      */
     NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
                const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
@@ -187,12 +187,12 @@ namespace Dune::IGA {
         const auto multiIndex = elementNet_->directToMultiIndex(directIndex);
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
+              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
       } else if constexpr (codim == dim) {  // vertex
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
         const auto vertexSpanIndex = vertexNet_->directToMultiIndex(directIndex);
         for (size_t i = 0; i < dim; ++i)
-          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][vertexSpanIndex[i]], patchData_->knotSpans[i],
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][vertexSpanIndex[i]], patchData_->knotSpans[i],
                                                    vertexSpanIndex[i]);
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
       {
@@ -232,7 +232,7 @@ namespace Dune::IGA {
         }
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
       } else if constexpr (dim - codim == 2 && dim > 2)  // surface case
       {
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
@@ -268,7 +268,7 @@ namespace Dune::IGA {
         }
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
       }
       return std::make_pair(currentKnotSpan, fixedOrFreeDirection);
     };

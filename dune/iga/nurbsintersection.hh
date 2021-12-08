@@ -26,10 +26,10 @@ namespace Dune::IGA {
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
           innerLocalIndex_{innerLocalIndex},
-          outerLocalIndex_{outerLocalIndex} {
-    }
+          outerLocalIndex_{outerLocalIndex} {}
+
     /** coordinate type */
-    typedef double ctype;
+    using ctype = typename GridImp::LinearAlgebraTraits::value_type;
 
     /** \brief Dimension of the cube element */
     static constexpr std::integral auto mydimension = GridImp::dimension - 1;
@@ -38,26 +38,53 @@ namespace Dune::IGA {
     static constexpr std::integral auto dimworld = GridImp::dimensionworld;
 
     /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename GridImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<mydimension>;
+    using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename GridImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
+
+    /** \brief Returns true if the intersection is on the boundary */
     [[nodiscard]] bool boundary() const { return outerDirectIndex_ == Impl::noNeighbor; }
+
+    /** \brief Returns true if the intersection has no outer neighbor */
     [[nodiscard]] bool neighbor() const { return outerDirectIndex_ != Impl::noNeighbor; }
+    /** \brief Returns true if the intersection is conforming, i.e. inside the patch this is true but between patches not necessarily */
     [[nodiscard]] bool conforming() const { return true; }
+
+    /** \brief Returns the cube type this intersection, i.e. vertex, edge or quadrilateral */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
+    /** \brief Returns the element entity from which this intersection is constructed */
     Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
+
+    /** \brief Returns the element entity which intersects with the inside() element */
     Entity outside() const {
       assert(neighbor() && "Outer Element does not exist.");
       return gridView_->template getEntity<0>(outerDirectIndex_);
     }
+
+    /** \brief Returns the index of the inside element */
     [[nodiscard]] int indexInInside() const { return innerLocalIndex_; }
-    [[nodiscard]] int indexInOutside() const { return outerLocalIndex_; }
+
+    /** \brief Returns the index of the outside element, this return Impl::noNeighbor if the outside element does not exist */
+    [[nodiscard]] int indexInOutside() const {
+      assert(neighbor() && "Outer Element does not exist.");
+      return outerLocalIndex_;
+    }
+
+    /** \brief Returns the local geometry of the intersection in the coordinates of the element inside */
     LocalGeometry geometryInInside() const { return LocalGeometry(innerLocalIndex_); }
+
+    /** \brief Returns the local geometry of the intersection in the coordinates of the element outside */
     LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
+
+    /** \brief Returns the global geometry of the intersection, currently this returns the geometry of the intersection as seen from the
+     * inside element. This could differ from the outside element */
     Geometry geometry() const { return inside().template subEntity<1>(innerLocalIndex_).geometry(); }
-    GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
+
+    /** \brief Returns the normal which lies in the tangent plane of the inside element and is perpendicular on the intersection (edge or
+     * surface) */
+    [[nodiscard]] GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
       if constexpr (mydimension == 0) {
         const auto xiInElementCoords        = geometryInInside().global(xi);
         const auto insideJacobianTransposed = inside().geometry().jacobianTransposed(xiInElementCoords);
@@ -99,18 +126,22 @@ namespace Dune::IGA {
       }
       __builtin_unreachable();
     }
-    GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const {
+
+    /** \brief Same as outerNormal() but with unit length */
+    [[nodiscard]] GlobalCoordinate unitOuterNormal(const LocalCoordinate& xi) const {
       auto N = this->outerNormal(xi);
       return N / N.two_norm();
     }
-    GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {
+
+    /** \brief Same as outerNormal() but with the length of the integration element */
+    [[nodiscard]] GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {
       return this->unitOuterNormal(xi) * this->geometry().integrationElement(xi);
     }
+
+    /** \brief Returns the consecutive index if this intersection lies on the boundary */
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-//      const auto codimSizes = gridView_->nurbsPatch->sizeOfCodim1PerDirection();
-      const auto ent = gridView_->NURBSpatch_->elementNet_->directToMultiIndex(innerDirectIndex_);
       return gridView_->NURBSpatch_->patchBoundaryIndex(geomEntity.getIndex());
     }
 

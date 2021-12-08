@@ -4,24 +4,30 @@
 
 #pragma once
 #include <dune/iga/concepts.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 namespace Dune::IGA {
+
+  /** \brief The class which stored a Nurbs ControlPoint
+   *
+   * @tparam VT The type of coordinates of the controlpoint position
+   *
+   * The constrolpoint has two public member variables p and w where p is the position and w is the weight of point
+   */
   template <Vector VT>
   struct ControlPoint {
     using VectorType = VT;
     VectorType p;
     typename VectorType::value_type w{1.0};
 
-    ControlPoint& operator= (const typename VectorType::value_type& a)
-    {
-      p=a;
-      w=a;
-      return *this;
+    /** \brief Reset the coordinates and the weight of the controlpoint to zero */
+    void setZero() {
+      Dune::IGA::setZero(p);
+      w = typename VectorType::value_type{0};
     }
 
-    ControlPoint& operator+= (const ControlPoint& cp)
-    {
-      p+=cp.p;
-      w+=cp.w;
+    ControlPoint& operator+=(const ControlPoint& cp) {
+      p += cp.p;
+      w += cp.w;
       return *this;
     }
   };
