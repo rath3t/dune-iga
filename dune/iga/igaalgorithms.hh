@@ -351,6 +351,7 @@ namespace Dune::IGA {
   template <std::integral auto dim, std::integral auto dimworld, NurbsGridLinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   auto knotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData, const std::vector<double>& newKnots,
                       const int refinementDirection) {
+    assert(std::ranges::is_sorted(newKnots) && "You passed a non-sorted vector of new knots. Sort it first or check if you passed the correct vector.");
     using NurbsPatchData = NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
     using ControlPoint   = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
     using namespace std::ranges;

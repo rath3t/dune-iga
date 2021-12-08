@@ -47,7 +47,7 @@ namespace Dune::IGA {
       else if (codim==1 && griddim == 3) // surface case
         return gridView_->NURBSpatch_->getGlobalSurfaceIndexFromElementIndex(e.getIndex(), i);
       else
-        throw std::logic_error("subIndex only defined from element to vertices and edges");
+        throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");
     }
 
     auto& types(int codim) const { return types_[codim]; }

@@ -26,7 +26,8 @@ namespace Dune::IGA {
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
           innerLocalIndex_{innerLocalIndex},
-          outerLocalIndex_{outerLocalIndex} {}
+          outerLocalIndex_{outerLocalIndex} {
+    }
     /** coordinate type */
     typedef double ctype;
 
@@ -41,7 +42,7 @@ namespace Dune::IGA {
 
     /** \brief Type used for a vector of world coordinates */
     using GlobalCoordinate = typename GridImp::NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
-    [[nodiscard]] bool boundary() const { return outerDirectIndex_ != Impl::noNeighbor; }
+    [[nodiscard]] bool boundary() const { return outerDirectIndex_ == Impl::noNeighbor; }
     [[nodiscard]] bool neighbor() const { return outerDirectIndex_ != Impl::noNeighbor; }
     [[nodiscard]] bool conforming() const { return true; }
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
@@ -107,8 +108,10 @@ namespace Dune::IGA {
     }
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
-
-      return gridView_->NURBSpatch_->patchBoundaryIndex(innerDirectIndex_);
+      auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
+//      const auto codimSizes = gridView_->nurbsPatch->sizeOfCodim1PerDirection();
+      const auto ent = gridView_->NURBSpatch_->elementNet_->directToMultiIndex(innerDirectIndex_);
+      return gridView_->NURBSpatch_->patchBoundaryIndex(geomEntity.getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;

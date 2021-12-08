@@ -65,12 +65,12 @@ void testNURBSGridCurve() {
   auto additionalKnots        = std::vector<double>(2);
   additionalKnots[0] = 0.5;
   additionalKnots[1] = 3.5;
-//  patchData = knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData = knotRefinement<dim>(patchData, additionalKnots, 0);
   patchData= degreeElevate(patchData,0,1);
 
 
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
-  grid.globalRefine(2);
+  grid.globalRefine(3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -145,11 +145,26 @@ void test3DGrid() {
 
   nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
   nurbsPatchData.order         = order;
-  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
-  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
+
+  auto additionalKnots        = std::vector<double>(2);
+  additionalKnots[0] = 0.1;
+  additionalKnots[1] = 0.3;
+//  additionalKnots[2] = 0.6;
+//  additionalKnots[1] = 3.5;
+  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid<3,3> grid(nurbsPatchData);
-  grid.globalRefine(1);
+  std::cout<<"==================================="<<std::endl;
+//  grid.globalRefine(1);
+  std::cout<<"==================================="<<std::endl;
+  grid.globalRefineInDirection(0,1);
+  std::cout<<"==================================="<<std::endl;
+  grid.globalRefineInDirection(1,2);
+  std::cout<<"==================================="<<std::endl;
+
+  grid.globalRefineInDirection(2,3);
 
   auto gridView = grid.leafGridView();
 
@@ -200,7 +215,7 @@ void testFactory(){
 
 
 //    IGA::GridFactory<2UL,3UL> gridFactory;
-//    gridFactory.insert(nurbsPatchData,{0,1,2,3})
+//    gridFactory.insert(nurbsPatchData,linesIndices(0,1,2,3),gluedat(0,1)
 //
 //    auto grid = gridFactory.createGrid();
 
@@ -214,11 +229,19 @@ void testTorusGeometry() {
   auto circle         = makeCircularArc(r);
   auto nurbsPatchData = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
   nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
+//  nurbsPatchData = degreeElevate(nurbsPatchData,1,1);
+  auto additionalKnots        = std::vector<double>(1);
+  additionalKnots[0] = 0.1;
+//  additionalKnots[1] = 3.5;
+  nurbsPatchData = knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
+
   IGA::NURBSGrid<2,3> grid(nurbsPatchData);
-  grid.globalRefine(0);
-  grid.globalRefineInDirection(1, 1);
-  grid.globalRefineInDirection(0, 1);
+//  grid.globalRefine(1);
+//  grid.globalRefineInDirection(1, 1);
+//  grid.globalRefineInDirection(0, 2);
+
+
+
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;
@@ -447,14 +470,14 @@ void testNurbsBasis() {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.getPatchData()));
-    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 
   {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(gridView.getPreBasis()));
-    test.subTest(checkBasis(basis2, EnableContinuityCheck()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 }
 
@@ -740,7 +763,7 @@ void testBsplineBasisFunctions() {
   // std::cout<<dN_Nurbs.get({3,1}).get({1,2})<<std::endl;
   // std::cout<<dN_Nurbs.get({3,1}).get({2,2})<<std::endl;
 
-  // 2,1 mixed derivative
+  // 3,1 mixed derivative
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 0}), 430363.3606745686), "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({3, 1}).get({1, 0}), -408827.1566149851), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({3, 1}).get({2, 0}), 21583.77160030052), "Nurbs P=2,N2");

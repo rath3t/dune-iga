@@ -60,6 +60,7 @@ namespace Dune::IGA {
       vertexNet_ = std::make_shared<MultiDimensionNet<dim, double>>(vertexSize);
     }
 
+
     [[nodiscard]] int size(int codim) const {
       assert(codim <= dim);
       assert(codim <= 3);
@@ -100,81 +101,103 @@ namespace Dune::IGA {
       auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
 
       for (int i = 0; i < dim; ++i)
-        if ((multiIndex[i] == knotElementNet->size()[i] - 1))
-          return true;
-        else if ((multiIndex[i] == 0))
-          return true;
+        if ((multiIndex[i] == knotElementNet->size()[i] - 1) or (multiIndex[i] == 0)) return true;
 
       return false;
     }
 
-    int patchBoundaryIndex(const int& id) {
-      auto const& knotElementNet = this->elementNet_;
-      auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
-      int index=0;
-      if constexpr (dim==1) {
-        if ((multiIndex[0] == 0))
-          return 0;
-        else
-          return 1;
-      } else if constexpr (dim==2) {
-        if ((multiIndex[0] == 0))
-          return multiIndex[1];
-        else if ((multiIndex[0] == knotElementNet->size()[0] - 1))
-          return multiIndex[0]*multiIndex[1]+multiIndex[1];
-        else if ((multiIndex[0] == 0))
-          return multiIndex[1];
-        else if ((multiIndex[0] == knotElementNet->size()[0] - 1))
-          return multiIndex[0]*multiIndex[1]+multiIndex[1];
-      }
+    int patchBoundaryIndex(const int id) {
+      int index = id;
 
-      for (int dimCounter = 0, i = 0; i < dim; ++i) {
-        if ((multiIndex[0] == knotElementNet->size()[0] - 1))
-          return dimCounter + 1;
-        else if ((multiIndex[0] == 0))
-          return dimCounter;
-        dimCounter += 2;
+      if constexpr (dim == 1) {
+        if (id == 0) return 0;
+        if (id == uniqueSpanSize_[0]) return 1;
       }
-      return -1;
+      const auto codimSizes = this->sizeOfCodim1PerDirection<1>();
+
+      int surfFixedDir = 0;
+      int edgesPerDir  = codimSizes[0];
+      for (int j = 0; j < dim; ++j)
+        if (id < edgesPerDir) {  // find out to which edge direction this edge index belongs
+          surfFixedDir = j;
+          break;
+        } else
+          edgesPerDir += codimSizes.at(j + 1);
+
+      // move index to correct subset, e.g. edges in y-dir or surfaces with fixed z-dir
+      index -= std::accumulate(codimSizes.begin(), codimSizes.begin() + surfFixedDir, 0);
+
+      if constexpr (dim == 2) {
+        if (surfFixedDir == 1) {
+          const double fac = std::ceil((double)index / (uniqueSpanSize_[0] + 1));
+          index -= fac * (uniqueSpanSize_[0] - 1);
+        }
+        if (surfFixedDir == 0) {
+          const int fac2 = std::floor((double)(index) / ((uniqueSpanSize_[1]) * uniqueSpanSize_[0]));
+          index -= fac2 * (uniqueSpanSize_[0] * (uniqueSpanSize_[1] - 1));
+        }
+
+        std::array<int, dim> boundarys;
+        std::ranges::fill(boundarys, 2);
+        for (int i = 0; i < dim; ++i)
+          boundarys[i] *= uniqueSpanSize_[i];
+
+        const int reductionb = std::accumulate(boundarys.begin(), boundarys.begin() + surfFixedDir, 0);
+        index += reductionb;
+      }
+      if constexpr (dim == 3) {
+        if (surfFixedDir == 0) {
+          if (((index + 1) % (uniqueSpanSize_[0] + 1)) != 0)
+            if ((index % (uniqueSpanSize_[0] + 1)) != 0) return -1;
+
+          const int fac = (index + 1) / (uniqueSpanSize_[0] + 1);
+          index -= fac * (uniqueSpanSize_[0] - 1);
+        }
+        if (surfFixedDir == 1) {
+          const int fac2 = (index + uniqueSpanSize_[0]) / (uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 1));
+          index -= fac2 * (uniqueSpanSize_[0] * (uniqueSpanSize_[1] - 1));
+        }
+
+        if (surfFixedDir == 2) {
+          const int fac3 = index / ((uniqueSpanSize_[0] * uniqueSpanSize_[1]) * (uniqueSpanSize_[2]));
+          index -= fac3 * (uniqueSpanSize_[1] * uniqueSpanSize_[0] * (uniqueSpanSize_[2] - 1));
+        }
+
+        std::array<int, dim> boundarys;
+        std::ranges::fill(boundarys, 2);
+        for (int i = 0; i < dim; ++i)
+          for (int k = 0; k < dim; ++k) {
+            if (i == k) continue;
+            boundarys[i] *= uniqueSpanSize_[k];
+          }
+
+        const int reductionb = std::accumulate(boundarys.begin(), boundarys.begin() + surfFixedDir, 0);
+        index += reductionb;
+      }
+      assert(index >= 0);
+      return index;
     }
 
-    /** \brief creates a NURBSGeometry object
-     *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
-     *  and generates a Geometry object
-     *
-     *  \param[in] ijk array of indices for each dimension
-     */
     template <std::integral auto codim>
-    NURBSGeometry<dim - codim, dimworld, GridImpl> geometry(const int directIndex) const {
+    std::pair<std::array<int, dim>, std::array<Impl::FixedOrFree, dim>> spanAndDirectionFromDirectIndex(const int directIndex) const {
+      std::array<int, dim> currentKnotSpan;
+      std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
       if constexpr (codim == 0) {  // elements
+        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
         const auto multiIndex = elementNet_->directToMultiIndex(directIndex);
-        std::array<int, dim> currentKnotSpan;
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i]
               = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
-
-        std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
-        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
-        return NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
       } else if constexpr (codim == dim) {  // vertex
+        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
         const auto vertexSpanIndex = vertexNet_->directToMultiIndex(directIndex);
-        std::array<int, dim> currentKnotSpan;
         for (size_t i = 0; i < dim; ++i)
           currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][vertexSpanIndex[i]], patchData_->knotSpans[i],
                                                    vertexSpanIndex[i]);
-
-        std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
-        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
-        return NURBSGeometry<0, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
       {
-        std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
-        std::array<int, dim> edgeSizes;
-        std::ranges::fill(edgeSizes, 1);
-        for (int i = 0; i < dim; ++i)
-          for (int k = 0; k < dim; ++k)
-            edgeSizes[i] *= (i == k) ? uniqueSpanSize_[k] : uniqueSpanSize_[k] + 1;
+        std::array<int, dim> edgeSizes = sizeOfCodim1PerDirection<codim>();
 
         int edgeDir = 0, edgesPerDir = edgeSizes[0];
         for (int j = 0; j < dim; ++j)
@@ -187,67 +210,96 @@ namespace Dune::IGA {
 
         assert(((edgeDir < 2 && dim == 2) || (edgeDir < 3 && dim == 3)) && edgeDir >= 0);
         const int indexInDir = (directIndex - std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0)) % edgeSizes[edgeDir];
-
         std::array<int, dim> spanIndices{};
-        spanIndices[edgeDir] = indexInDir % (uniqueSpanSize_[edgeDir]);
-        if constexpr (dim == 3) {
-          const bool dirFac = !(edgeDir == 0 || edgeDir == 2);
-          spanIndices[(edgeDir + 1 + dirFac) % dim]
-              = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[edgeDir])), uniqueSpanSize_[(edgeDir + 1 + dirFac) % dim] + 1);
-          spanIndices[(edgeDir + 1 + !dirFac) % dim]
-              = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[edgeDir] * (uniqueSpanSize_[(edgeDir + 1 + dirFac) % dim] + 1))),
-                          uniqueSpanSize_[(edgeDir + 1 + !dirFac) % dim] + 1);
-        } else if constexpr (dim == 2)
-          spanIndices[(edgeDir + 1) % dim]
-              = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[edgeDir])), uniqueSpanSize_[(edgeDir + 1) % dim] + 1);
-        std::array<int, dim> currentKnotSpan;
+        spanIndices[edgeDir] = std::fmod(std::floor(indexInDir
+                                                    / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + edgeDir, 1,
+                                                                       [](auto res, auto r) { return res * (r + 1); }))),
+                                         uniqueSpanSize_[edgeDir]);
+
+        if (edgeDir == 0) {
+          spanIndices[1] = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[0])), uniqueSpanSize_[1] + 1);
+          if constexpr (dim == 3)
+            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1))), uniqueSpanSize_[2] + 1);
+        } else {
+          spanIndices[0] = std::fmod(indexInDir, uniqueSpanSize_[0] + 1);
+          if (edgeDir == 1)
+            if constexpr (dim == 3) {
+              spanIndices[2]
+                  = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0] + 1)), uniqueSpanSize_[2] + 1);
+            }
+          if constexpr (dim == 3)
+            if (edgeDir == 2) spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1))), uniqueSpanSize_[1] + 1);
+        }
         for (size_t i = 0; i < dim; i++)
           currentKnotSpan[i]
               = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
-        return NURBSGeometry<1, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
       } else if constexpr (dim - codim == 2 && dim > 2)  // surface case
       {
-          std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
-          std::ranges::fill(fixedOrFreeDirection,Impl::FixedOrFree::free);
-          std::array<int, dim> edgeSizes;
-          std::ranges::fill(edgeSizes, 1);
-          for (int i = 0; i < dim; ++i)
-            for (int k = 0; k < dim; ++k)
-              edgeSizes[i] *= (i == k) ? uniqueSpanSize_[k] +1: uniqueSpanSize_[k];
+        std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
+        std::array<int, dim> surfaceSizes = sizeOfCodim1PerDirection<codim>();
 
-          int  surfFixedDir=0;
-          int   edgesPerDir = edgeSizes[0];
-          for (int j = 0; j < dim; ++j)
-            if (directIndex < edgesPerDir) {  // find out to which edge direction this edge index belongs
-              surfFixedDir                 = j;
-              fixedOrFreeDirection[j] = Impl::FixedOrFree::fixed;
-              break;
-            } else
-              edgesPerDir += edgeSizes.at(j + 1);
-          std::cout<<directIndex<<" "<<surfFixedDir <<" ";
-          assert((surfFixedDir < 3 && dim == 3) && surfFixedDir >= 0);
-          const int indexInDir = (directIndex - std::accumulate(edgeSizes.begin(), edgeSizes.begin()+surfFixedDir , 0)) % edgeSizes[surfFixedDir];
-          std::cout<<indexInDir<<" || ";
-          std::array<int, dim> spanIndices{};
-          spanIndices[surfFixedDir] = std::fmod(std::floor(indexInDir / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin()+surfFixedDir , 1,std::multiplies{}))),uniqueSpanSize_[surfFixedDir]+1);
+        int surfFixedDir = 0;
+        int edgesPerDir  = surfaceSizes[0];
+        for (int j = 0; j < dim; ++j)
+          if (directIndex < edgesPerDir) {  // find out to which edge direction this edge index belongs
+            surfFixedDir            = j;
+            fixedOrFreeDirection[j] = Impl::FixedOrFree::fixed;
+            break;
+          } else
+            edgesPerDir += surfaceSizes.at(j + 1);
+        assert((surfFixedDir < 3 && dim == 3) && surfFixedDir >= 0);
+        const int indexInDir
+            = (directIndex - std::accumulate(surfaceSizes.begin(), surfaceSizes.begin() + surfFixedDir, 0)) % surfaceSizes[surfFixedDir];
+        std::array<int, dim> spanIndices{};
+        spanIndices[surfFixedDir] = std::fmod(
+            std::floor(indexInDir
+                       / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + surfFixedDir, 1, std::multiplies{}))),
+            uniqueSpanSize_[surfFixedDir] + 1);
 
-          if (surfFixedDir == 0)
-          {spanIndices[1] = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[0]+1)),uniqueSpanSize_[1]);
-            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]+1)*uniqueSpanSize_[1])),uniqueSpanSize_[2]);
-          }
-          else if (surfFixedDir !=0)
-          { spanIndices[0] = std::fmod(indexInDir ,uniqueSpanSize_[0]);
-            if (surfFixedDir == 1)
-              spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1]+1)*uniqueSpanSize_[0])),uniqueSpanSize_[2]);
-            else if (surfFixedDir== 2)
-              spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]))),uniqueSpanSize_[1]);
-          }
-          std::array<int, dim> currentKnotSpan;
-          for (size_t i = 0; i < dim; i++)
-            currentKnotSpan[i]
-                = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
-          return NURBSGeometry<2, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
+        if (surfFixedDir == 0) {
+          spanIndices[1] = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[0] + 1)), uniqueSpanSize_[1]);
+          spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1])), uniqueSpanSize_[2]);
+        } else {
+          spanIndices[0] = std::fmod(indexInDir, uniqueSpanSize_[0]);
+          if (surfFixedDir == 1)
+            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0])), uniqueSpanSize_[2]);
+          else if (surfFixedDir == 2)
+            spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]))), uniqueSpanSize_[1]);
+        }
+        for (size_t i = 0; i < dim; i++)
+          currentKnotSpan[i]
+              = Dune::IGA::findSpan(patchData_->order[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
       }
+      return std::make_pair(currentKnotSpan, fixedOrFreeDirection);
+    };
+
+    template <int codim>
+    std::array<int, dim> sizeOfCodim1PerDirection() const {
+      std::array<int, dim> codim1Sizes;
+      std::ranges::fill(codim1Sizes, 1);
+      if constexpr (dim > 1) {
+        for (int i = 0; i < dim; ++i)
+          for (int k = 0; k < dim; ++k)
+            if constexpr (dim - codim == 2)
+              codim1Sizes[i] *= (i == k) ? uniqueSpanSize_[k] + 1 : uniqueSpanSize_[k];  // surfaces
+            else
+              codim1Sizes[i] *= (i == k) ? uniqueSpanSize_[k] : uniqueSpanSize_[k] + 1;  // edges
+      } else
+        codim1Sizes[0] = uniqueSpanSize_[0] + 1;  // vertices
+
+      return codim1Sizes;
+    }
+
+    /** \brief creates a NURBSGeometry object
+     *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
+     *  and generates a Geometry object
+     *
+     *  \param[in] ijk array of indices for each dimension
+     */
+    template <std::integral auto codim>
+    NURBSGeometry<dim - codim, dimworld, GridImpl> geometry(const int directIndex) const {
+      auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
+      return NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
     }
 
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
@@ -278,59 +330,69 @@ namespace Dune::IGA {
 
       assert((edgeDir < 2 && dim == 2) || (edgeDir < 3 && dim == 3));
       int dIndex = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0);  // move index to correct subset
-      dIndex += eleI[edgeDir];
+                                                                                        //    directIndex += eleI[edgeDir];
       if constexpr (dim == 3) {
-        const bool df = (edgeDir == 2 || edgeDir == 0);
-        dIndex += uniqueSpanSize_[edgeDir]
-                  * (eleI[(edgeDir + df + 1) % dim] * (uniqueSpanSize_[(edgeDir + !df + 1) % dim] + 1) + eleI[(edgeDir + !df + 1) % dim]);
-      } else if constexpr (dim == 2)
-        dIndex += uniqueSpanSize_[edgeDir] * eleI[((edgeDir + 1) % dim)];
+        //      assert(edgeDir < 3 && edgeDir >= 0);
+        if (edgeDir == 0)
+          dIndex += eleI[0] + (uniqueSpanSize_[0]) * (eleI[1]) + (uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1) * (eleI[2]);
+        else if (edgeDir == 1)
+          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1]) + ((uniqueSpanSize_[1]) * (uniqueSpanSize_[0] + 1)) * eleI[2];
+        else if (edgeDir == 2)
+          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1]) + ((uniqueSpanSize_[1] + 1) * (uniqueSpanSize_[0] + 1)) * eleI[2];
+      } else if constexpr (dim == 2) {
+        if (edgeDir == 0)
+          dIndex += eleI[0] + (uniqueSpanSize_[0]) * (eleI[1]);
+        else if (edgeDir == 1)
+          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1]);
+      }
 
-      if constexpr (dim == 2)
-        dIndex += (eI == 1) ? uniqueSpanSize_[1] : (eI == 3) ? uniqueSpanSize_[0] : 0;
-      else if constexpr (dim == 3)
-        switch (eI) {
-          case 1: dIndex += uniqueSpanSize_[2]; break;
-          case 2:
-          case 3: dIndex += (uniqueSpanSize_[0] + (eI - 1) % 6) * uniqueSpanSize_[2]; break;
-          case 5: dIndex += uniqueSpanSize_[1]; break;
-          case 8:
-          case 9: dIndex += (uniqueSpanSize_[0] + (eI - 1) % 6) * uniqueSpanSize_[1]; break;
-          case 7: dIndex += uniqueSpanSize_[0]; break;
-          case 10:
-          case 11: dIndex += uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 1 + eI % 2); break;
-          default:  // edge local indices 0,4,6
-            break;
-        }
+      switch (dim) {
+        case 2: dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0] : 0; break;
+        case 3:
+          assert(uniqueSpanSize_.size() == dim);
+          switch (eI) {
+            case 1: dIndex += 1; break;
+            case 2: dIndex += (uniqueSpanSize_[0] + 1); break;
+            case 3: dIndex += (uniqueSpanSize_[0] + 1) + 1; break;
+            case 5: dIndex += 1; break;
+            case 8: dIndex += (uniqueSpanSize_[0] + 1) * (uniqueSpanSize_[1]); break;
+            case 9: dIndex += (uniqueSpanSize_[0] + 1) * (uniqueSpanSize_[1]) + 1; break;
+            case 7: dIndex += (uniqueSpanSize_[0]); break;
+            case 10: dIndex += (uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1); break;
+            case 11: dIndex += (uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 2); break;
+            default:  // 0,4,6
+              break;
+          }
+      }
       return dIndex;
     }
 
-    int  getGlobalSurfaceIndexFromElementIndex(const int elementDirectIndex, const int eI) {
+    int getGlobalSurfaceIndexFromElementIndex(const int elementDirectIndex, const int eI) {
       auto eleI = elementNet_->directToMultiIndex(elementDirectIndex);
 
       std::array<int, dim> edgeSizes;
       std::ranges::fill(edgeSizes, 1);
       for (int i = 0; i < dim; ++i)
         for (int k = 0; k < dim; ++k)
-          edgeSizes[i] *= (i == k) ? uniqueSpanSize_[k]+1 : uniqueSpanSize_[k];
+          edgeSizes[i] *= (i == k) ? uniqueSpanSize_[k] + 1 : uniqueSpanSize_[k];
       assert((dim == 2 && eI < 4) || (dim == 3 && eI < 12));
-      const int  surfaceFixedDir = std::floor(eI/2);
-      int dIndex = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + surfaceFixedDir, 0); // move index to correct subset
+      const int surfaceFixedDir = std::floor(eI / 2);
+      int dIndex = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + surfaceFixedDir, 0);  // move index to correct subset
 
-      assert( surfaceFixedDir < 3 && dim == 3);
+      assert(surfaceFixedDir < 3 && dim == 3);
 
-      if(surfaceFixedDir==0)
-        dIndex += eleI[0]+(uniqueSpanSize_[0]+1)*(eleI[1])+(uniqueSpanSize_[0]+1)*(uniqueSpanSize_[1])*(eleI[2]);
-      else if(surfaceFixedDir==1)
-        dIndex += eleI[0]+(uniqueSpanSize_[0]*eleI[1]) +((uniqueSpanSize_[1]+1)*uniqueSpanSize_[0])*eleI[2];//(uniqueSpanSize_[0]+1)*(eleI[0]);
-      else if(surfaceFixedDir==2)
-        dIndex += eleI[0]+(uniqueSpanSize_[0]*eleI[1]) +(uniqueSpanSize_[1]*uniqueSpanSize_[0])*eleI[2];//(uniqueSpanSize_[0]+1)*(eleI[0]);
+      if (surfaceFixedDir == 0)
+        dIndex += eleI[0] + (uniqueSpanSize_[0] + 1) * (eleI[1]) + (uniqueSpanSize_[0] + 1) * (uniqueSpanSize_[1]) * (eleI[2]);
+      else if (surfaceFixedDir == 1)
+        dIndex += eleI[0] + (uniqueSpanSize_[0] * eleI[1]) + ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0]) * eleI[2];
+      else if (surfaceFixedDir == 2)
+        dIndex += eleI[0] + (uniqueSpanSize_[0] * eleI[1]) + (uniqueSpanSize_[1] * uniqueSpanSize_[0]) * eleI[2];
 
       switch (eI) {
         case 1: ++dIndex; break;
         case 3: dIndex += uniqueSpanSize_[0]; break;
-        case 5: dIndex += uniqueSpanSize_[1]*uniqueSpanSize_[0]; break;
-        default:  // edge local indices 0,2,4
+        case 5: dIndex += uniqueSpanSize_[1] * uniqueSpanSize_[0]; break;
+        default:  // surface local indices 0,2,4
           break;
       }
       return dIndex;
@@ -338,6 +400,8 @@ namespace Dune::IGA {
 
     template <typename GridImpl>
     friend class NURBSGridLeafIndexSet;
+    template <typename GridImpl>
+    friend class NURBSintersection;
     std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;

@@ -36,13 +36,12 @@ namespace Dune::IGA {
 
     NURBSGridEntity(const GridView& gridView, unsigned int directIndex)
         : NURBSGridView_(&gridView),
-          directIndex_(directIndex),
-          parType_{PartitionType::InteriorEntity} {}
+          directIndex_(directIndex)
+    {}
 
     using LocalIntersectionGeometry = typename GridView::Traits::template Codim<1>::LocalGeometry;
     //! Geometry of this entity
     typename GridView::template Codim<codim>::Geometry geometry() const {
-      //      std::cerr<< "Error geometry not implemented yet for geometries of codim!=0"<<std::endl;
       return NURBSGridView_->NURBSpatch_->template geometry<codim>(directIndex_);
     }
 
@@ -57,9 +56,9 @@ namespace Dune::IGA {
     [[nodiscard]] EntitySeed seed() const { EntitySeed e; e.index_= directIndex_; e.valid_ = true; return e; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
-    LocalIntersectionGeometry localGeometry() const {
-      return NURBSGridView_->NURBSpatch_->template geometry<codim,true>(directIndex_);
-    }
+//    LocalIntersectionGeometry localGeometry() const {
+//      return NURBSGridView_->NURBSpatch_->template geometry<codim,true>(directIndex_);
+//    }
 
     auto operator<=>(const NURBSGridEntity&) const = default;
 
@@ -67,7 +66,7 @@ namespace Dune::IGA {
     friend GridView;
     const GridView* NURBSGridView_{nullptr};
     unsigned int directIndex_{};
-    PartitionType parType_{};
+    PartitionType parType_{PartitionType::InteriorEntity};
 
   };  // end of OneDGridEntity codim = 0
 
@@ -117,7 +116,7 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
     [[nodiscard]] bool hasFather() const { return false; }
     [[nodiscard]] EntitySeed seed() const  { EntitySeed e; e.index_= directIndex_; e.valid_ = true; return e; }
-    LocalGeometry geometryInFather()const{ }
+    LocalGeometry geometryInFather()const{ throw std::logic_error("geometryInFather function not implemented."); }
     [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {

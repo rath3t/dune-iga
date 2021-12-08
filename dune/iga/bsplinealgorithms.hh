@@ -51,7 +51,7 @@ namespace Dune::IGA {
       ContainerType N;
       const int p = degree;
       N.resize(p + 1, 0.0);
-      if (Dune::FloatCmp::eq(u, knots.back()))  // early exits
+      if (Dune::FloatCmp::eq(u, knots.back()))  // early exit
       {
         N.back() = 1;
         return N;
@@ -60,26 +60,6 @@ namespace Dune::IGA {
         return N;
       }
 
-      //      if(spIndex.has_value() and spIndex.value()==knots.size()-1) //early exit
-      //      {
-      //        std::cout<<u<<" ";
-      //        std::cout<<spIndex.value()<<std::endl;
-      //        for (int i = 0; i < knots.size(); ++i) {
-      //          std::cout<<i<<" ";
-      //        }
-      //
-      //        std::cout<<std::endl;
-      //        for (auto k  :knots) {
-      //          std::cout<<k<<" ";
-      //        }
-      //        std::cout<<std::endl;
-      //        std::cout<<spIndex.value()<<" ";
-      //        spIndex.value()-= degree+1;
-      //        std::cout<<spIndex.value()<<" "<<knots[spIndex.value()]<<std::endl;
-      ////        u-= 1e-1;
-      ////        N.back()=1.0;
-      ////        return N;
-      //      }
       const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)), [&u](auto& kn) { return u - kn; });
@@ -99,11 +79,7 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
-      //      std::cout<<"=======Nb:"<<std::endl;
-      //      for (auto Ni : N) {
-      //        std::cout<<Ni<<" ";
-      //      }
-      //      std::cout<<"=======Ne"<<std::endl;
+
       return N;
     }
 

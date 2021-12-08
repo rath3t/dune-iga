@@ -159,6 +159,7 @@ namespace Dune::IGA {
     }
 
     void globalRefineInDirection(const int dir, const int refinementLevel) {
+      if (refinementLevel==0) return;
       auto additionalKnots        = generateRefinedKnots(dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
       leafGridView_               = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
