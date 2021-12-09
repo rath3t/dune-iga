@@ -255,7 +255,7 @@ void testTorusGeometry() {
   Dune::checkIndexSet(grid, gridView, std::cout);
 
   double area = 0.0;
-  for (auto& ele : elements(gridView)) {
+  for (auto&& ele : elements(gridView)) {
     area += ele.geometry().volume();
   }
   const double pi                        = std::numbers::pi_v<double>;
@@ -263,10 +263,10 @@ void testTorusGeometry() {
   test.check(area - referenceTorusSurfaceArea < 1e-4, "The integrated area of the torus hyperSurface is wrong!");
 
   double gaussBonnet = 0.0;
-  for (auto& ele : elements(gridView)) {
+  for (auto&& ele : elements(gridView)) {
     const auto rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), (*std::ranges::max_element(nurbsPatchData.degree)));
     for (auto& gp : rule) {
-      const auto Kinc = ele.geometry().gaussianCurvature(gp.position());
+      const auto Kinc = ele.geometry().impl().gaussianCurvature(gp.position());
       const auto Kmax = 1 / (r * (R + r));
       const auto Kmin = -1 / (r * (R - r));
       test.check(Kinc < Kmax && Kinc > Kmin, "The Gaussian curvature should be within bounds");
@@ -449,14 +449,14 @@ void testNurbsBasis() {
 
   vtkWriter.write("ZylRefine");
   using GridView = decltype(gridView);
-  Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.getPatchData());
+  Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.impl().getPatchData());
 
   // Test open knot vectors
   std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
 
   {
     // Check basis created via its constructor
-    Functions::NurbsBasis<GridView> basis2(gridView, gridView.getPatchData());
+    Functions::NurbsBasis<GridView> basis2(gridView, gridView.impl().getPatchData());
     test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 
@@ -469,14 +469,14 @@ void testNurbsBasis() {
   {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
-    auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.getPatchData()));
+    auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.impl().getPatchData()));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 
   {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
-    auto basis2 = makeBasis(gridView, power<2>(gridView.getPreBasis()));
+    auto basis2 = makeBasis(gridView, power<2>(gridView.impl().getPreBasis()));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
   }
 }

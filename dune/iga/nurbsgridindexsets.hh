@@ -32,8 +32,13 @@ namespace Dune::IGA {
 
     //! get index of an entity, need to change the type to a property from GridImp
     template <int codim>
-    int index(const NURBSGridEntity<codim,griddim, GridImpl>& e) const {
+    int index(const typename GridImpl::Traits::template Codim<codim>::Entity& e) const {
       return e.getIndex();
+    }
+
+    template<class Entity>
+    int index(const  Entity& e) const {
+      return e.impl().getIndex();
     }
 
     template <int codimElement>

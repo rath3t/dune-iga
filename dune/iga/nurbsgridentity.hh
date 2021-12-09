@@ -20,7 +20,7 @@
 namespace Dune::IGA {
 
   template <int codim, int dim, typename GridImpl>
-  class NURBSGridEntity {
+  class NURBSGridEntity: public EntityDefaultImplementation <codim,dim,GridImpl,NURBSGridEntity> {
   public:
     using LinearAlgebraTraits        = typename GridImpl::LinearAlgebraTraits;
     static constexpr auto mydim      = GridImpl::dimension - codim;
@@ -59,6 +59,8 @@ namespace Dune::IGA {
 
     auto operator<=>(const NURBSGridEntity&) const = default;
 
+    auto equals(const NURBSGridEntity&r ) const { return (r.NURBSGridView_ == NURBSGridView_ && directIndex_== r.directIndex_ && parType_==r.parType_); }
+
   private:
     friend GridView;
     const GridView* NURBSGridView_{nullptr};
@@ -67,7 +69,7 @@ namespace Dune::IGA {
   };
 
   template <int dim, typename GridImpl>
-  class NURBSGridEntity<0, dim, GridImpl> {
+  class NURBSGridEntity<0, dim, GridImpl> : public EntityDefaultImplementation <0,dim,GridImpl,NURBSGridEntity> {
   public:
     static constexpr auto mydim      = GridImpl::dimension;
     static constexpr auto dimworld   = GridImpl::dimensionworld;
@@ -84,7 +86,7 @@ namespace Dune::IGA {
     NURBSGridEntity()          = default;
 
     NURBSGridEntity(const GridView& gridView, unsigned int directIndex)
-        : NURBSGridView_(&gridView), directIndex_(directIndex), parType_{PartitionType::InteriorEntity} {
+        : NURBSGridView_(&gridView), directIndex_(directIndex) {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
@@ -100,7 +102,7 @@ namespace Dune::IGA {
 
     //! Geometry of this entity
     typename GridImpl::Traits::template Codim<0>::Geometry geometry() const {
-      return NURBSGridView_->NURBSpatch_->template geometry<0>(directIndex_);
+      return NURBSGridView_->impl().NURBSpatch_->template geometry<0>(directIndex_);
     }
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
@@ -155,7 +157,7 @@ namespace Dune::IGA {
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
     auto operator<=>(const NURBSGridEntity&) const = default;
-    //    auto operator<=>(const NURBSGridEntity&) const = default;
+    auto equals(const NURBSGridEntity&r ) const { return (r.NURBSGridView_ == NURBSGridView_ && directIndex_== r.directIndex_ && parType_==r.parType_ && intersections_ == r.intersections_); }
 
   private:
     friend GridView;
@@ -164,7 +166,7 @@ namespace Dune::IGA {
     const GridView* NURBSGridView_{nullptr};
     std::shared_ptr<std::vector<Intersection>> intersections_;
     unsigned int directIndex_{};
-    PartitionType parType_{};
+    PartitionType parType_{PartitionType::InteriorEntity};
 
   };  // end of OneDGridEntity codim = 0
 

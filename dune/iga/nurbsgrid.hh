@@ -55,8 +55,10 @@ namespace Dune::IGA {
     using Codim = typename GridFamily::Traits::template Codim<cd>;
 
     using LeafIndexSet  = typename Traits::LeafIndexSet;
+    using LevelIndexSet  = typename Traits::LevelIndexSet;
     using GridView      = typename Traits::LeafGridView;
     using ElementEntity = typename Traits::template Codim<0>::Entity;
+    using GlobalIdSet = typename Traits::GlobalIdSet;
     NURBSGrid() = default;
 
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData)
@@ -64,8 +66,8 @@ namespace Dune::IGA {
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           finestPatch_{currentPatchRepresentation_},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<LeafIndexSet>(this->leafGridView())},
-          leafGridView_{std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this)} {
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView())},
+          leafGridView_{std::make_shared<GridView>(currentPatchRepresentation_, *this)} {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -89,9 +91,9 @@ namespace Dune::IGA {
         : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           finestPatch_{currentPatchRepresentation_},
-          leafGridView_{std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this)},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<LeafIndexSet>(this->leafGridView())} {}
+          leafGridView_{std::make_shared<GridView>(currentPatchRepresentation_, *this)},
+          idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView())} {}
 
     void globalRefine(int refinementLevel) {
       if (refinementLevel == 0) return;
@@ -99,9 +101,9 @@ namespace Dune::IGA {
         auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,refDirection, refinementLevel);
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
-      leafGridView_ = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
-      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(*this);
-      indexdSet_    = std::make_unique<LeafIndexSet>(this->leafGridView());
+      leafGridView_ = std::make_shared<GridView>(currentPatchRepresentation_, *this);
+      idSet_        = std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this);
+      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView());
       finestPatch_  = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
     }
 
@@ -109,9 +111,9 @@ namespace Dune::IGA {
       if (refinementLevel==0) return;
       auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
-      leafGridView_               = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
-      idSet_                      = std::make_unique<IgaIdSet<NURBSGrid>>(*this);
-      indexdSet_                  = std::make_unique<LeafIndexSet>(this->leafGridView());
+      leafGridView_               = std::make_shared<GridView>(currentPatchRepresentation_, *this);
+      idSet_                      = std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this);
+      indexdSet_                  = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView());
       finestPatch_                = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
     }
 
@@ -137,7 +139,7 @@ namespace Dune::IGA {
 
     template <int cd>
     typename Codim<cd>::Entity entity(EntitySeedStruct<cd, NURBSGrid>& seed) const {
-      return leafGridView_->template getEntity<cd>(seed.index_);
+      return leafGridView_->impl().template getEntity<cd>(seed.index_);
     }
 
     int size(const GeometryType& type) const {
@@ -149,9 +151,9 @@ namespace Dune::IGA {
     }
     int size(int lvl, const GeometryType& type) const { return this->size(type); }
 
-    const auto& globalIdSet() const { return *idSet_; }
-    const auto& levelIndexSet(int lvl) const { return *indexdSet_; }
-    const auto& leafIndexSet() const { return *indexdSet_; }
+    const GlobalIdSet& globalIdSet() const { return *idSet_; }
+    const LevelIndexSet& levelIndexSet(int lvl) const { return *indexdSet_; }
+    const LeafIndexSet& leafIndexSet() const { return *indexdSet_; }
 
     [[nodiscard]] int maxLevel() const { return 0; }
 
@@ -165,9 +167,9 @@ namespace Dune::IGA {
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;
     NURBSPatch<dim, dimworld, LinearAlgebraTraits> finestPatch_;
-    std::shared_ptr<NURBSLeafGridView<NURBSGrid>> leafGridView_;
+    std::shared_ptr<GridView> leafGridView_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
-    std::unique_ptr<LeafIndexSet> indexdSet_;
+    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexdSet_;
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>

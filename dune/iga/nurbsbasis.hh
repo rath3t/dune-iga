@@ -452,7 +452,7 @@ namespace Dune::Functions {
     // Type used for function values
     using R = typename NurbsGridLinearAlgebraTraits::value_type;
 
-    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.getPatchData()) {}
+    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
     NurbsPreBasis(const GridView& gridView, const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
         : gridView_{gridView}, patchData_{patchData} {

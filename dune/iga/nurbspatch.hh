@@ -297,7 +297,7 @@ namespace Dune::IGA {
      *  \param[in] ijk array of indices for each dimension
      */
     template <std::integral auto codim>
-    NURBSGeometry<dim - codim, dimworld, GridImpl> geometry(const int directIndex) const {
+    typename GridImpl::template Codim<codim>::Geometry geometry(const int directIndex) const {
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
       return NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
     }
