@@ -9,10 +9,10 @@
 
 namespace Dune::IGA {
   template <class GridImpl>
-  class NURBSGridLeafIndexSet {
+  class NURBSGridLeafIndexSet : public IndexSet< GridImpl, NURBSGridLeafIndexSet< GridImpl >, int > {
   public:
     using Types                    = std::array<GeometryType, 1>;
-    using IndexType                = unsigned int;
+    using IndexType                =  int;
     using GridView = typename GridImpl::Traits::LeafGridView;
     static constexpr auto griddim  = GridImpl::dimension;
     static constexpr auto dimworld = GridImpl::dimensionworld;

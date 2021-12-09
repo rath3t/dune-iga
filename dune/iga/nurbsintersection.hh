@@ -146,6 +146,7 @@ namespace Dune::IGA {
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
+    bool equals(const NURBSintersection& r) const {return *this==r;}
 
   private:
     const GridView* gridView_;

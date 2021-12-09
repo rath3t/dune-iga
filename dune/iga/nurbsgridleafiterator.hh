@@ -26,7 +26,7 @@ namespace Dune::IGA {
 
     const Entity& dereference() const { return **this; }
 
-    auto equals(const NURBSGridLeafIterator& r) const { return *this == r; }
+    bool equals(const NURBSGridLeafIterator& r) const { return *this == r; }
 
     explicit NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator spanIter) : std::vector<Entity>::const_iterator(spanIter) {}
   };
@@ -39,6 +39,7 @@ namespace Dune::IGA {
     auto operator*() { return *nurbsEntity; }
 
     const Entity& dereference() const { return *nurbsEntity; }
+    bool equals(const NurbsHierarchicIterator& r) const { return *this==r; }
     void increment() {}
     //    auto operator->() { return nurbsEntity; }
     //    void operator++() {}
