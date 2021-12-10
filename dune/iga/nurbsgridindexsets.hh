@@ -9,7 +9,7 @@
 
 namespace Dune::IGA {
   template <class GridImpl>
-  class NURBSGridLeafIndexSet : public IndexSet< GridImpl, NURBSGridLeafIndexSet< GridImpl >, int > {
+  class NURBSGridLeafIndexSet : public IndexSet< GridImpl, NURBSGridLeafIndexSet< GridImpl >, int ,std::array<GeometryType, 1>> {
   public:
     using Types                    = std::array<GeometryType, 1>;
     using IndexType                =  int;
@@ -32,25 +32,25 @@ namespace Dune::IGA {
 
     //! get index of an entity, need to change the type to a property from GridImp
     template <int codim>
-    int index(const typename GridImpl::Traits::template Codim<codim>::Entity& e) const {
-      return e.getIndex();
+    IndexType index(const typename GridImpl::Traits::template Codim<codim>::Entity& e) const {
+      return e.impl().getIndex();
     }
 
     template<class Entity>
-    int index(const  Entity& e) const {
+    IndexType index(const  Entity& e) const {
       return e.impl().getIndex();
     }
 
     template <int codimElement>
-    int subIndex(const NURBSGridEntity<codimElement,griddim, GridImpl>& e, int i, unsigned int codim) const {
+    IndexType subIndex(const typename GridImpl::Traits::template Codim<codimElement>::Entity& e, int i, unsigned int codim) const {
       if (codimElement == 0 && NURBSGridEntity<codimElement,griddim, GridImpl>::mydim == codim)
-        return gridView_->NURBSpatch_->getGlobalVertexIndexFromElementIndex(e.getIndex(), i);
+        return gridView_->impl().NURBSpatch_->getGlobalVertexIndexFromElementIndex(e.impl().getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
         return this->index(e);
       else if ((codim == 1 && codimElement == 0 && griddim == 2 )|| (codim == 2 && codimElement == 0 && griddim == 3))
-        return gridView_->NURBSpatch_->getGlobalEdgeIndexFromElementIndex(e.getIndex(), i);
+        return gridView_->impl().NURBSpatch_->getGlobalEdgeIndexFromElementIndex(e.impl().getIndex(), i);
       else if (codim==1 && griddim == 3) // surface case
-        return gridView_->NURBSpatch_->getGlobalSurfaceIndexFromElementIndex(e.getIndex(), i);
+        return gridView_->impl().NURBSpatch_->getGlobalSurfaceIndexFromElementIndex(e.impl().getIndex(), i);
       else
         throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");
     }

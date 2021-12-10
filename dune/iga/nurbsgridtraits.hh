@@ -56,15 +56,15 @@ struct NurbsGridTraits
     typedef GridImp LocalGeometryImpl;
     //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
     /** \brief The type of the geometry associated with the entity.*/
-    using Geometry = Dune::Geometry<dim-cd,dimw,const GridImp,GeometryImp> ;
+    using Geometry = Dune::Geometry<dim-cd,dimw, GridImp,GeometryImp> ;
     /** \brief The type of the local geometry associated with the entity.*/
-    using LocalGeometry = Dune::Geometry<dim-cd, dim, const GridImp, LocalGeometryImp> ;
+    using LocalGeometry = Dune::Geometry<dim-cd, dim,  GridImp, LocalGeometryImp> ;
     /** \brief The type of the entity. */
     // we could - if needed - introduce another struct for dimglobal of Geometry
-    using Entity = Dune::Entity<cd, dim, const GridImp, EntityImp>;
+    using Entity = Dune::Entity<cd, dim,  GridImp, EntityImp>;
 
     /** \brief The type of the entity seed of this codim.*/
-    using EntitySeed =  Dune::EntitySeed<const GridImp,EntitySeedImp<cd, const  GridImp >>;
+    using EntitySeed =  Dune::EntitySeed< GridImp,EntitySeedImp<cd,   GridImp >>;
 
     /**
        * \brief Traits associated with a specific grid partition type.
@@ -86,7 +86,7 @@ struct NurbsGridTraits
     typedef typename Partition< Dune::All_Partition >::LevelIterator LevelIterator;
 
   private:
-    friend class Dune::Entity<cd,dim,const GridImp,EntityImp>;
+    friend class Dune::Entity<cd,dim, GridImp,EntityImp>;
   };
 
   /** \brief type of view for leaf grid */
@@ -96,9 +96,9 @@ struct NurbsGridTraits
   using LevelGridView = Dune::GridView< LevelGridViewTraits<  GridImp > >;
   /** \brief The type of the level index set. */
 //  typedef LevelIndexSetImp LevelIndexSet;
-  using LevelIndexSet = Dune::IndexSet< GridImp,LevelIndexSetImp>;
+  using LevelIndexSet = Dune::IndexSet< GridImp,LevelIndexSetImp,GIDType, std::array<Dune::GeometryType, 1>>;
   /** \brief The type of the leaf index set. */
-  using LeafIndexSet = Dune::IndexSet< GridImp,LeafIndexSetImp>;
+  using LeafIndexSet =  Dune::IndexSet< GridImp,LevelIndexSetImp,GIDType, std::array<Dune::GeometryType, 1>>;
   /** \brief The type of the global id set. */
 //  typedef GlobalIdSetImp GlobalIdSet;
   using GlobalIdSet =  Dune::IdSet< GridImp,GlobalIdSetImp,GIDType> ;

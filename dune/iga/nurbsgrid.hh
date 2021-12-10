@@ -67,7 +67,7 @@ namespace Dune::IGA {
           finestPatch_{currentPatchRepresentation_},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView())},
-          leafGridView_{std::make_shared<GridView>(currentPatchRepresentation_, *this)} {
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))} {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -91,9 +91,9 @@ namespace Dune::IGA {
         : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           finestPatch_{currentPatchRepresentation_},
-          leafGridView_{std::make_shared<GridView>(currentPatchRepresentation_, *this)},
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView())} {}
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
 
     void globalRefine(int refinementLevel) {
       if (refinementLevel == 0) return;
@@ -101,7 +101,7 @@ namespace Dune::IGA {
         auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,refDirection, refinementLevel);
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
-      leafGridView_ = std::make_shared<GridView>(currentPatchRepresentation_, *this);
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this));
       idSet_        = std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this);
       indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView());
       finestPatch_  = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
@@ -111,7 +111,7 @@ namespace Dune::IGA {
       if (refinementLevel==0) return;
       auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
-      leafGridView_               = std::make_shared<GridView>(currentPatchRepresentation_, *this);
+      leafGridView_               = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this));
       idSet_                      = std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this);
       indexdSet_                  = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView());
       finestPatch_                = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
@@ -137,9 +137,9 @@ namespace Dune::IGA {
     int getMark(const ElementEntity& element) const { return 0; }
     bool mark(int refCount, const ElementEntity& element) { return false; }
 
-    template <int cd>
-    typename Codim<cd>::Entity entity(EntitySeedStruct<cd, NURBSGrid>& seed) const {
-      return leafGridView_->impl().template getEntity<cd>(seed.index_);
+    template <typename Seed>
+    typename Codim<Seed::codimension>::Entity entity(const Seed& seed) const {
+      return leafGridView_->impl().template getEntity<Seed::codimension>(seed.impl().index_);
     }
 
     int size(const GeometryType& type) const {
@@ -173,13 +173,13 @@ namespace Dune::IGA {
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  NURBSLeafGridView<NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>> levelGridView(
+  auto levelGridView(
       const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid, int level) {
     return grid.levelGridView(level);
   }
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  NURBSLeafGridView<NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>> leafGridView(
+  auto leafGridView(
       const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid) {
     return grid.leafGridView();
   }
@@ -187,12 +187,11 @@ namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   struct NurbsGridFamily {
     using GridImpl = Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
-    typedef NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator, NURBSintersection,
+    using Traits = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator, NURBSintersection,
                             NURBSintersection, NURBSGridInterSectionIterator, NURBSGridInterSectionIterator, NurbsHierarchicIterator,
                             NURBSGridLeafIterator, NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>,
                             int, IgaIdSet<GridImpl>, int, CollectiveCommunication<No_Comm>, NurbsLeafGridViewTraits,
-                            NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>
-        Traits;
+                            NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 
 }  // namespace Dune::IGA

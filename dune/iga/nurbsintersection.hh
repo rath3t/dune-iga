@@ -55,12 +55,12 @@ namespace Dune::IGA {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     /** \brief Returns the element entity from which this intersection is constructed */
-    Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
+    Entity inside() const { return gridView_->impl().template getEntity<0>(innerDirectIndex_); }
 
     /** \brief Returns the element entity which intersects with the inside() element */
     Entity outside() const {
       assert(neighbor() && "Outer Element does not exist.");
-      return gridView_->template getEntity<0>(outerDirectIndex_);
+      return gridView_->impl().template getEntity<0>(outerDirectIndex_);
     }
 
     /** \brief Returns the index of the inside element */
@@ -142,7 +142,7 @@ namespace Dune::IGA {
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-      return gridView_->NURBSpatch_->patchBoundaryIndex(geomEntity.getIndex());
+      return gridView_->impl().NURBSpatch_->patchBoundaryIndex(geomEntity.impl().getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;

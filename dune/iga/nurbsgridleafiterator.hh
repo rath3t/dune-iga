@@ -52,8 +52,14 @@ namespace Dune::IGA {
     using Base         = typename std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator;
 
   public:
-    const Intersection& dereference() const { return &this; }
-    void increment() const { ++this; }
+
+    //! copy constructor
+    NURBSGridInterSectionIterator (const NURBSGridInterSectionIterator& other) = default;
+
+    const Intersection& dereference() const { return **this; }
+    auto operator<=>(const NURBSGridInterSectionIterator&) const = default;
+    void increment()  { ++(*this); }
+    bool equals(const NURBSGridInterSectionIterator& r) const { return *this==r; }
     NURBSGridInterSectionIterator() = default;
     using Reference                 = Intersection;
     explicit NURBSGridInterSectionIterator(typename std::vector<Intersection>::const_iterator spanIter)

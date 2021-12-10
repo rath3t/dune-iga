@@ -299,7 +299,8 @@ namespace Dune::IGA {
     template <std::integral auto codim>
     typename GridImpl::template Codim<codim>::Geometry geometry(const int directIndex) const {
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
-      return NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
+      auto geo = NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
+      return typename GridImpl::template Codim<codim>::Geometry(geo);
     }
 
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
