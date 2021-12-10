@@ -3,14 +3,14 @@
 #pragma once
 
 #include <dune/iga/concepts.hh>
-#include <dune/iga/nurbsleafgridview.hh>
-#include <dune/iga/nurbspatch.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/igaidset.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
 #include <dune/iga/nurbsgridtraits.hh>
 #include <dune/iga/nurbsintersection.hh>
+#include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
+#include <dune/iga/nurbspatch.hh>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -40,7 +40,7 @@ namespace Dune::IGA {
   class NURBSGrid : public Dune::Grid<dim, dimworld, typename NurbsGridLinearAlgebraTraitsImpl::value_type,
                                       NurbsGridFamily<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>> {
   public:
-    using LinearAlgebraTraits          = NurbsGridLinearAlgebraTraitsImpl;
+    using LinearAlgebraTraits = NurbsGridLinearAlgebraTraitsImpl;
 
     static constexpr std::integral auto dimension      = dim;
     static constexpr std::integral auto dimensionworld = dimworld;
@@ -57,7 +57,7 @@ namespace Dune::IGA {
     using LeafIndexSet  = typename Traits::LeafIndexSet;
     using GridView      = typename Traits::LeafGridView;
     using ElementEntity = typename Traits::template Codim<0>::Entity;
-    NURBSGrid() = default;
+    NURBSGrid()         = default;
 
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData)
         : coarsestPatchRepresentation_{nurbsPatchData},
@@ -77,60 +77,56 @@ namespace Dune::IGA {
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
     }
 
-    /** \brief  constructor
-     *
-     *  \param[in] knotSpans vector of knotSpans for each dimension
-     *  \param[in] controlPoints a n-dimensional net of control points
-     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-     *  \param[in] order degree of the B-Spline structure for each dimension
-     */
-    NURBSGrid(const std::array<std::vector<double>, dim>& knotSpans, const ControlPointNetType& controlPoints,
-              const std::array<int, dim>& order)
-        : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
-          currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatch_{currentPatchRepresentation_},
-          leafGridView_{std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this)},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<LeafIndexSet>(this->leafGridView())} {}
+    //    /** \brief  constructor
+    //     *
+    //     *  \param[in] knotSpans vector of knotSpans for each dimension
+    //     *  \param[in] controlPoints a n-dimensional net of control points
+    //     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
+    //     *  \param[in] order degree of the B-Spline structure for each dimension
+    //     */
+    //    NURBSGrid(const std::array<std::vector<double>, dim>& knotSpans, const ControlPointNetType& controlPoints,
+    //              const std::array<int, dim>& order)
+    //        : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
+    //          currentPatchRepresentation_{coarsestPatchRepresentation_},
+    //          finestPatch_{currentPatchRepresentation_},
+    //          leafGridView_{std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this)},
+    //          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
+    //          indexdSet_{std::make_unique<LeafIndexSet>(this->leafGridView())} {}
 
     void globalRefine(int refinementLevel) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
-        auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,refDirection, refinementLevel);
+        auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans, refDirection, refinementLevel);
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
-      leafGridView_ = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
-      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(*this);
-      indexdSet_    = std::make_unique<LeafIndexSet>(this->leafGridView());
-      finestPatch_  = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
+      updateStateAfterRefinement();
     }
 
     void globalRefineInDirection(const int dir, const int refinementLevel) {
-      if (refinementLevel==0) return;
-      auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans,dir, refinementLevel);
+      if (refinementLevel == 0) return;
+      auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans, dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
-      leafGridView_               = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
-      idSet_                      = std::make_unique<IgaIdSet<NURBSGrid>>(*this);
-      indexdSet_                  = std::make_unique<LeafIndexSet>(this->leafGridView());
-      finestPatch_                = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
+      updateStateAfterRefinement();
     }
 
     [[nodiscard]] int size(int codim) const { return finestPatch_.size(codim); }
+
+    /** \brief returns the number of boundary segments within the macro grid */
     [[nodiscard]] int numBoundarySegments() const {
       if constexpr (dimension == 1)
         return 2;
       else if constexpr (dimension == 2)
-        return (finestPatch_.validKnotSize()[0]) * 2 + (finestPatch_.validKnotSize()[1]) * 2;
+        return (finestPatch_.validKnotSize()[0] + finestPatch_.validKnotSize()[1]) * 2;
       else if constexpr (dimension == 3)
-        return (finestPatch_.validKnotSize()[0]) *finestPatch_.validKnotSize()[1] *2 +
-               (finestPatch_.validKnotSize()[1]) *finestPatch_.validKnotSize()[2] *2 +
-               (finestPatch_.validKnotSize()[0]) *finestPatch_.validKnotSize()[2] *2;
+        return 2
+               * (finestPatch_.validKnotSize()[0] * finestPatch_.validKnotSize()[1]
+                  + finestPatch_.validKnotSize()[1] * finestPatch_.validKnotSize()[2]
+                  + finestPatch_.validKnotSize()[0] * finestPatch_.validKnotSize()[2]);
+      __builtin_unreachable();
     }
     [[nodiscard]] int size(int level, int codim) const { return this->size(codim); }
 
-    const GridView& leafGridView() const {
-      return *leafGridView_;
-    }
+    const GridView& leafGridView() const { return *leafGridView_; }
     const GridView& levelGridView([[maybe_unused]] int level) const { return *leafGridView_; }
     int getMark(const ElementEntity& element) const { return 0; }
     bool mark(int refCount, const ElementEntity& element) { return false; }
@@ -160,7 +156,12 @@ namespace Dune::IGA {
     [[nodiscard]] const typename Traits::CollectiveCommunication& comm() const { return ccobj; }
 
   private:
-
+    void updateStateAfterRefinement() {
+      leafGridView_ = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(currentPatchRepresentation_, *this);
+      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(*this);
+      indexdSet_    = std::make_unique<LeafIndexSet>(this->leafGridView());
+      finestPatch_  = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
+    }
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;

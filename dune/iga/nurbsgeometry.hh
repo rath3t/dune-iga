@@ -50,14 +50,15 @@ namespace Dune::IGA {
   public:
     /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
      *
-     *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
-     *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
+     *  \param Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
+     *  \param corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
      */
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections, const std::array<int, griddim>& thisSpanIndices)
         : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections} {
       for (int i = 0; i < griddim; ++i) {
-        scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
+        if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
+          scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
         offset_[i]  = patchData_->knotSpans[i][thisSpanIndices[i]];
       }
       for (int i = 0; i < griddim; ++i)
@@ -75,7 +76,7 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] double volume() const {
-      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), (*std::ranges::max_element(patchData_->degree)));
+      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), mydim * (*std::ranges::max_element(patchData_->degree)));
       ctype vol       = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();

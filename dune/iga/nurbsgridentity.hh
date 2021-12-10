@@ -30,9 +30,7 @@ namespace Dune::IGA {
     using Geometry                   = NURBSGeometry<mydim, dimworld, GridImpl>;
     using EntitySeed                 = typename GridImpl::Traits::template Codim<codim>::EntitySeed;
     using GridView                   = typename GridImpl::GridView;
-    //! Default Constructor
     NURBSGridEntity() = default;
-
     NURBSGridEntity(const GridView& gridView, unsigned int directIndex) : NURBSGridView_(&gridView), directIndex_(directIndex) {}
 
     using LocalIntersectionGeometry = typename GridView::Traits::template Codim<1>::LocalGeometry;

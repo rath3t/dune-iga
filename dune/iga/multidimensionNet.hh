@@ -81,7 +81,8 @@ namespace Dune::IGA {
      *
      *  \param[in] values netdim vectors of values
      */
-     template<template <class > typename V> requires StdVectorLikeContainer<V<ValueType>>
+    template <template <class> typename V>
+    requires StdVectorLikeContainer<V<ValueType>>
     explicit MultiDimensionNet(const std::array<V<ValueType>, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
@@ -297,7 +298,8 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; }))) throw std::logic_error("Out of bounds");  // signaling Index Out of Net
+      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; })))
+        throw std::logic_error("Out of bounds");  // signaling Index Out of Net
 
       if ((std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })))
         throw std::logic_error("Out of bounds");  // signaling Index Out of Net
@@ -315,7 +317,7 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     bool isValid(const ArrayType& multiIndex) const {
       for (int i = 0; i < netdim; ++i) {
-        if(multiIndex[i]> dimSize_[i]-1 || (multiIndex[i]<0)) return false;
+        if (multiIndex[i] > dimSize_[i] - 1 || (multiIndex[i] < 0)) return false;
       }
       return true;
     }

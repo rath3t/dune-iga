@@ -28,6 +28,9 @@
       {}
     };
 
+    /** \brief Iterator over child elements
+     * This is a default implementation since the functionality is not given for the iga grid
+     * */
     template<class GridImp>
     struct NurbsHierarchicIterator
     {
@@ -39,6 +42,7 @@
       const typename GridImp::Traits::template Codim<0>::Entity* nurbsEntity;
     };
 
+    /** \brief Iterator over intersections between elements  */
     template<class GridImp>
     class NURBSGridInterSectionIterator : public std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator
     {

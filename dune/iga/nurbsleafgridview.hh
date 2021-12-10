@@ -4,7 +4,6 @@
 
 #include <ranges>
 
-//#include <dune/common/tuplevector.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
@@ -52,6 +51,9 @@ namespace Dune::IGA {
     //
     static constexpr bool conforming = true;
   };
+
+  template <int codim, int dim, typename GridImpl>
+  class NURBSGridEntity;
 
   template <typename GridImpl, int griddim, std::integral auto... codim>
   std::tuple<std::vector<NURBSGridEntity<codim, griddim, GridImpl>>...> gridEntityTupleGenerator(
