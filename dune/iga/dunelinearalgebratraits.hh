@@ -43,4 +43,11 @@ namespace Dune::IGA {
   inline void setZero(Dune::FieldVector<ScalarType, rows>& v) {
     v = ScalarType(0);
   }
+
+  template <typename ScalarType>
+  inline auto& value(Dune::DynamicMatrix<ScalarType>& m,int i, int j)
+  {
+    return m[i][j];
+  }
+
 }  // namespace Dune::IGA
