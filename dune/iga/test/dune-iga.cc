@@ -243,8 +243,6 @@ void testTorusGeometry() {
   grid.globalRefineInDirection(1, 1);
   grid.globalRefineInDirection(0, 2);
 
-
-
   auto gridView = grid.leafGridView();
 
   const int subSampling = 2;

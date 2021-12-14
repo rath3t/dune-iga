@@ -133,8 +133,17 @@ namespace Dune::IGA {
       return Nnet;
     }
 
-    // \*brief This function return the basis function and the corresponding derivatives
-    // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative degree derivativeOrder
+    /** \*brief This function return the basis function and the corresponding derivatives
+     *
+     * @param u dim-dimensional position in current span
+     * @param knots dim-dimensional array of knot vectors
+     * @param degree   dim-dimensional array of polynomial degree
+     * @param weights dim-dimensional net of controlpoint weights
+     * @param derivativeOrder  up to which order should derivatives be computed
+     * @param triangleDerivatives
+     * @param spIndex
+     * @return
+     */
     static auto basisFunctionDerivatives( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
                                          const int derivativeOrder, const bool triangleDerivatives = false,
@@ -146,23 +155,23 @@ namespace Dune::IGA {
 
       std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
       FieldVector<int, dim> dimSize(derivativeOrder + 1);
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netsOfDerivativeNets(dimSize);
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netOfDerivativeNets(dimSize);
 
-      for (int j = 0; auto& derivNet : netsOfDerivativeNets.directGetAll()) {
-        auto multiIndex = netsOfDerivativeNets.directToMultiIndex(j++);
+      for (int j = 0; auto& derivNet : netOfDerivativeNets.directGetAll()) {
+        auto multiIndex = netOfDerivativeNets.directToMultiIndex(j++);
         for (int i = 0; i < multiIndex.size(); ++i)
           dimArrayOfVectors[i] = bSplineDerivatives[i][multiIndex[i]].container();
         derivNet = MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors);
       }
 
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netsOfDerivativeNets;
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
       auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
         R.directGet(j) *= subNetWeights;
-        netsOfWeightfunctions.directGet(j) = dot(netsOfDerivativeNets.directGet(j), subNetWeights);
+        netsOfWeightfunctions.directGet(j) = dot(netOfDerivativeNets.directGet(j), subNetWeights);
       }
 
       for (int j = 0; j < R.directSize(); ++j) {
@@ -177,8 +186,8 @@ namespace Dune::IGA {
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](auto& v) { return (v != 0); });
 
           for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
-            const auto k = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
-            R.directGet(j) -= binom(perm, k) * (R.get(derivOrders - k) * netsOfWeightfunctions.get(k));  // generalized Piegl Tiller (4.20)
+            const auto multik = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
+            R.directGet(j) -= binom(perm, multik) * (R.get(derivOrders - multik) * netsOfWeightfunctions.get(multik));  // generalized Piegl Tiller (4.20)
           }
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);

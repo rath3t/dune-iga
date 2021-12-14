@@ -280,7 +280,7 @@ namespace Dune::Functions {
     //! \brief Local interpolation of a function
     template <typename F, typename C>
     void interpolate(const F& f, std::vector<C>& out) const {
-      DUNE_THROW(NotImplemented, "BSplineLocalInterpolation::interpolate");
+      DUNE_THROW(NotImplemented, "NurbsLocalInterpolation::interpolate");
     }
   };
 
@@ -288,7 +288,7 @@ namespace Dune::Functions {
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * This class ties together the implementation classes BSplineLocalBasis, BSplineLocalCoefficients, and BSplineLocalInterpolation
+   * This class ties together the implementation classes NurbsLocalBasis, NurbsLocalCoefficients, and NurbsLocalInterpolation
    *
    * \tparam D Number type used for domain coordinates
    * \tparam R Number type used for spline function values
