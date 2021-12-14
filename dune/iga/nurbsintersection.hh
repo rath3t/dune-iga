@@ -21,27 +21,19 @@ namespace Dune::IGA {
     using LocalGeometry = typename GridImp::Traits::template Codim<1>::LocalGeometry;
     using GridView      = typename GridImp::Traits::LeafGridView;
 
+    using ctype = typename GridImp::LinearAlgebraTraits::value_type;
+
+    static constexpr std::integral auto mydimension = GridImp::dimension - 1;
+    static constexpr std::integral auto dimworld = GridImp::dimensionworld;
+    using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
+    using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
+
     NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const GridView& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
           innerLocalIndex_{innerLocalIndex},
           outerLocalIndex_{outerLocalIndex} {}
-
-    /** coordinate type */
-    using ctype = typename GridImp::LinearAlgebraTraits::value_type;
-
-    /** \brief Dimension of the cube element */
-    static constexpr std::integral auto mydimension = GridImp::dimension - 1;
-
-    /** \brief Dimension of the world space that the cube element is embedded in*/
-    static constexpr std::integral auto dimworld = GridImp::dimensionworld;
-
-    /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
-
-    /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
 
     /** \brief Returns true if the intersection is on the boundary */
     [[nodiscard]] bool boundary() const { return outerDirectIndex_ == Impl::noNeighbor; }
@@ -142,7 +134,7 @@ namespace Dune::IGA {
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-      return gridView_->NURBSpatch_->patchBoundaryIndex(geomEntity.getIndex());
+      return gridView_->getPatch(0).patchBoundaryIndex(geomEntity.getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;

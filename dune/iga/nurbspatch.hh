@@ -96,7 +96,7 @@ namespace Dune::IGA {
 
     const auto& getPatchData() { return patchData_; }
 
-    bool isPatchBoundary(const int& id) {
+    bool isPatchBoundary(const int& id) const {
       auto const& knotElementNet = this->elementNet_;
       auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
 
@@ -106,7 +106,7 @@ namespace Dune::IGA {
       return false;
     }
 
-    int patchBoundaryIndex(const int id) {
+    int patchBoundaryIndex(const int id) const  {
       int index = id;
 
       if constexpr (dim == 1) {
@@ -314,7 +314,7 @@ namespace Dune::IGA {
       return vertexNet_->index(multiIndexOfVertex);
     }
 
-    int getGlobalEdgeIndexFromElementIndex(const int elementDirectIndex, const int eI) {
+    int getGlobalEdgeIndexFromElementIndex(const int elementDirectIndex, const int eI) const {
       const auto eleI = elementNet_->directToMultiIndex(elementDirectIndex);
       std::array<int, dim> edgeSizes;
       std::ranges::fill(edgeSizes, 1);
@@ -367,7 +367,7 @@ namespace Dune::IGA {
       return dIndex;
     }
 
-    int getGlobalSurfaceIndexFromElementIndex(const int elementDirectIndex, const int eI) {
+    int getGlobalSurfaceIndexFromElementIndex(const int elementDirectIndex, const int eI) const {
       auto eleI = elementNet_->directToMultiIndex(elementDirectIndex);
 
       std::array<int, dim> edgeSizes;

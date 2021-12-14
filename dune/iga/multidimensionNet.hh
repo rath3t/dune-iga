@@ -32,7 +32,7 @@ namespace Dune::IGA {
 
     MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>> values) {
       std::vector<std::vector<ValueType>> vals;
-      for (auto& val : values)
+      for (auto&& val : values)
         vals.push_back(val);
       std::array<int, netdim> dimsize = {static_cast<int>(vals.size()), static_cast<int>(values.begin()->size())};
       *this                           = MultiDimensionNet{dimsize, vals};

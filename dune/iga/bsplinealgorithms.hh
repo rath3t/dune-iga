@@ -28,7 +28,7 @@ namespace Dune::IGA {
     return std::distance(U.begin(), it) - 1;
   }
 
-  /** \brief Same as findSpan() but for dim- knotvectors  */
+  /** \brief Same as findSpan() but for dim - knotvectors  */
   template <std::size_t dim, typename ValueType>
   auto findSpan(const std::array<int, dim>& p, const std::array<ValueType, dim>& u, const std::array<std::vector<ValueType>, dim>& U) {
     std::array<int, dim> res;
