@@ -9,10 +9,10 @@
 #include <ranges>
 
 #include <dune/iga/bsplinealgorithms.hh>
-#include <dune/iga/linearalgebra.h>
+#include <dune/iga/linearalgebra.hh>
 #include <dune/iga/multidimensionNet.hh>
 #include <dune/iga/nurbspatchdata.hh>
-#include <dune/iga/typetraits.h>
+#include <dune/iga/typetraits.hh>
 namespace Dune::IGA {
 
   namespace Impl {

@@ -1,5 +1,6 @@
 set(TESTS
   dune-iga
+        examples
 )
 
 foreach(_test ${TESTS})

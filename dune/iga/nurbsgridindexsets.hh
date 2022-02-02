@@ -36,7 +36,7 @@ namespace Dune::IGA {
 
     template <int codimElement>
     int subIndex(const NURBSGridEntity<codimElement, griddim, GridImpl>& e, int i, unsigned int codim) const {
-      if (codimElement == 0 && NURBSGridEntity<codimElement, griddim, GridImpl>::mydim == codim)
+      if (codimElement == 0 && NURBSGridEntity<codimElement, griddim, GridImpl>::mydimension == codim)
         return gridView_->getPatch(0).getGlobalVertexIndexFromElementIndex(e.getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
         return this->index(e);

@@ -1,7 +1,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
-
+#include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/concepts.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
@@ -122,7 +122,7 @@ namespace Dune::IGA {
       return leafGridView_->template getEntity<cd>(seed.index_);
     }
 
-    int size(const GeometryType& type) const {
+    [[nodiscard]] int size(const GeometryType& type) const {
       if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1) || type == Dune::GeometryTypes::cube(2)
           || type == Dune::GeometryTypes::cube(3))
         return this->leafGridView().size(dimension - type.dim());

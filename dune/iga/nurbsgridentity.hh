@@ -23,11 +23,11 @@ namespace Dune::IGA {
   class NURBSGridEntity {
   public:
     using LinearAlgebraTraits        = typename GridImpl::LinearAlgebraTraits;
-    static constexpr auto mydim      = GridImpl::dimension - codim;
+    static constexpr auto mydimension = GridImpl::dimension - codim;
     static constexpr int codimension = codim;
     static constexpr int dimension   = GridImpl::dimension;
     static constexpr auto dimworld   = GridImpl::dimensionworld;
-    using Geometry                   = NURBSGeometry<mydim, dimworld, GridImpl>;
+    using Geometry                   = NURBSGeometry<mydimension, dimworld, GridImpl>;
     using EntitySeed                 = typename GridImpl::Traits::template Codim<codim>::EntitySeed;
     using GridView                   = typename GridImpl::GridView;
     NURBSGridEntity()                = default;
@@ -43,7 +43,7 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
-      return (mydim < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydim), codim1) << codim1);
+      return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
 
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridView::dimension - codim); }
@@ -69,11 +69,11 @@ namespace Dune::IGA {
   template <int dim, typename GridImpl>
   class NURBSGridEntity<0, dim, GridImpl> {
   public:
-    static constexpr auto mydim      = GridImpl::dimension;
+    static constexpr auto mydimension = GridImpl::dimension;
     static constexpr auto dimworld   = GridImpl::dimensionworld;
     static constexpr int codimension = 0;
     static constexpr int dimension   = GridImpl::dimension;
-    using Geometry = typename GridImpl::Traits::template Codim<0>::Geometry;  // NURBSGeometry<mydim, dimworld, dimension, typename
+    using Geometry = typename GridImpl::Traits::template Codim<0>::Geometry;  // NURBSGeometry<mydimension, dimworld, dimension, typename
                                                                               // GridViewImp::LinearAlgebraTraits>;
     using Intersection         = typename GridImpl::Traits::LeafIntersection;
     using IntersectionIterator = typename GridImpl::Traits::LeafIntersectionIterator;
@@ -115,7 +115,7 @@ namespace Dune::IGA {
     [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
-      return (mydim < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydim), codim1) << codim1);
+      return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
     [[nodiscard]] bool hasBoundaryIntersections() const { return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_); }
 
@@ -124,15 +124,15 @@ namespace Dune::IGA {
       if constexpr (codimSub == 0) {
         assert(i == 0);
         return *this;
-      } else if constexpr (codimSub == mydim)  // vertices from elements
+      } else if constexpr (codimSub == mydimension)  // vertices from elements
       {
         auto globalIndex = NURBSGridView_->getPatch(patchID_).getGlobalVertexIndexFromElementIndex(directIndex_, i);
         return NURBSGridView_->template getEntity<codimSub>(globalIndex);
-      } else if constexpr (mydim - codimSub == 1)  // edges from elements
+      } else if constexpr (mydimension - codimSub == 1)  // edges from elements
       {
         auto globalIndex = NURBSGridView_->getPatch(patchID_).getGlobalEdgeIndexFromElementIndex(directIndex_, i);
         return NURBSGridView_->template getEntity<codimSub>(globalIndex);
-      } else if constexpr (mydim - codimSub == 2)  // surfaces from elements
+      } else if constexpr (mydimension - codimSub == 2)  // surfaces from elements
       {
         auto globalIndex = NURBSGridView_->getPatch(patchID_).getGlobalSurfaceIndexFromElementIndex(directIndex_, i);
         return NURBSGridView_->template getEntity<codimSub>(globalIndex);
@@ -150,7 +150,7 @@ namespace Dune::IGA {
     HierarchicIterator hend([[maybe_unused]] int lvl) const { return HierarchicIterator(*this); }
 
     [[nodiscard]] bool isLeaf() const { return true; }
-    [[nodiscard]] auto type() const { return GeometryTypes::cube(mydim); }
+    [[nodiscard]] auto type() const { return GeometryTypes::cube(mydimension); }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
@@ -171,7 +171,7 @@ namespace Dune::IGA {
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<codim, dim, GridImp>& e) {
-    return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydim>::cube();
+    return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydimension>::cube();
   };
 
 }  // namespace Dune::IGA

@@ -157,18 +157,17 @@ void test3DGrid() {
 //  additionalKnots[1] = 3.5;
   nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
 //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-//  nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
+  nurbsPatchData = degreeElevate(nurbsPatchData,1,2);
 //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid<3,3> grid(nurbsPatchData);
-  std::cout<<"==================================="<<std::endl;
-//  grid.globalRefine(1);
-//  std::cout<<"==================================="<<std::endl;
+  grid.globalRefine(1);
+//  gridcheck(grid);
 //  grid.globalRefineInDirection(0,1);
-//  std::cout<<"==================================="<<std::endl;
+//  gridcheck(grid);
 //  grid.globalRefineInDirection(1,2);
-//  std::cout<<"==================================="<<std::endl;
-//
-//  grid.globalRefineInDirection(2,3);
+//  gridcheck(grid);
+  grid.globalRefineInDirection(2,3);
+  gridcheck(grid);
 
   auto gridView = grid.leafGridView();
 
@@ -188,7 +187,6 @@ void test3DGrid() {
     checkJacobians(elegeo);
 
   checkIterators(gridView);
-  gridcheck(grid);
 }
 
 void testFactory(){

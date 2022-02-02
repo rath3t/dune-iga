@@ -23,10 +23,10 @@ namespace Dune::IGA {
 
     using ctype = typename GridImpl::LinearAlgebraTraits::value_type;
     using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
-    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydim>;
+    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
     using GlobalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
-    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydim, coorddimension>;
-    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydim>;
+    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
+    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
 
     using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
 
@@ -64,7 +64,7 @@ namespace Dune::IGA {
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
-      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), mydim * (*std::ranges::max_element(patchData_->degree)));
+      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
       ctype vol       = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -122,7 +122,7 @@ namespace Dune::IGA {
      */
     [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       JacobianTransposed result;
-      std::array<unsigned int, mydim> subDirs;
+      std::array<unsigned int, mydimension> subDirs;
       for (int subI = 0, i = 0; i < griddim; ++i) {
         if (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::fixed) continue;
         subDirs[subI++] = i;
@@ -187,7 +187,7 @@ namespace Dune::IGA {
 
     auto secondDerivativeOfPosition(const LocalCoordinate& local) const {
       FieldMatrix<ctype, coorddimension, mydimension*(mydimension + 1) / 2> result;
-      std::array<unsigned int, mydim> subDirs;
+      std::array<unsigned int, mydimension> subDirs;
       for (int subI = 0, i = 0; i < griddim; ++i) {
         if (fixedOrVaryingDirections_[i] == Dune::IGA::Impl::FixedOrFree::fixed) continue;
         subDirs[subI++] = i;
@@ -215,7 +215,7 @@ namespace Dune::IGA {
     }
 
     /** \brief Type of the element: a hypercube of the correct dimension */
-    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydim); }
+    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
   private:
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto transformLocalToSpan(const LocalCoordinate& local) const {

@@ -100,21 +100,8 @@ namespace Dune::IGA {
       }
     }
 
-    template <int codim>
-    typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
-      if constexpr (codim == 0)  // elements
-        return (std::get<0>(*entityVector_.get()).at(directIndex));
-      else if constexpr (codim == dimension)  // vertices
-        return (std::get<dimension>(*entityVector_.get()).at(directIndex));
-      else if constexpr (dimension - codim == 1)  // edges
-        return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));
-      else if constexpr (dimension - codim == 2)  // surface
-        return (std::get<dimension - 2>(*entityVector_.get()).at(directIndex));
-      else
-        throw std::logic_error("Your requested entity type does not exist.");
-    }
 
-    /** \brief obtain collective communication object */
+    /** \brief obtain collective communication object, currently this return a "NoComm" object */
     const auto &comm() const { return grid().comm(); }
 
     template <class Entity>
@@ -122,9 +109,10 @@ namespace Dune::IGA {
       return e.NURBSGridView_ == this;
     }
 
-    /** \brief obtain collective communication object */
     const auto &grid() const { return *grid_; }
 
+
+    /** \brief obtain how many entities of a give geometry type do live in this grid view */
     [[nodiscard]] int size(const GeometryType &type) const {
       if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1) || type == Dune::GeometryTypes::cube(2)
           || type == Dune::GeometryTypes::cube(3))
@@ -188,7 +176,21 @@ namespace Dune::IGA {
     }
 
   private:
-    friend class NURBSGridLeafIndexSet<GridImpl>;
+    template <int codim>
+    typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
+      if constexpr (codim == 0)  // elements
+        return (std::get<0>(*entityVector_.get()).at(directIndex));
+      else if constexpr (codim == dimension)  // vertices
+        return (std::get<dimension>(*entityVector_.get()).at(directIndex));
+      else if constexpr (dimension - codim == 1)  // edges
+        return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));
+      else if constexpr (dimension - codim == 2)  // surface
+        return (std::get<dimension - 2>(*entityVector_.get()).at(directIndex));
+      else
+        throw std::logic_error("Your requested entity type does not exist.");
+    }
+
+    friend GridImpl;
     friend const auto &elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
     friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
     template <typename GridImp1>
