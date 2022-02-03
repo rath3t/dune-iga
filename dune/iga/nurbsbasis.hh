@@ -105,7 +105,7 @@ namespace Dune::Functions {
      * We therefore take the conservative choice and return the maximum over the orders of all directions.
      */
     [[nodiscard]] unsigned int order() const {
-      return *std::max_element(preBasis_.patchData_.order_.begin(), preBasis_.patchData_.order_.end());
+      return *std::max_element(preBasis_.patchData_.degree.begin(), preBasis_.patchData_.degree.end());
     }
 
     /** \brief Return the number of basis functions on the current knot span
@@ -516,7 +516,7 @@ namespace Dune::Functions {
         size_type globalIdx = globalIJK[dim - 1];
 
         for (int j = dim - 2; j >= 0; j--)
-          globalIdx = globalIdx * size(j) + globalIJK[j];
+          globalIdx = globalIdx * sizePerDirection(j) + globalIJK[j];
 
         *it = {{globalIdx}};
       }
@@ -527,12 +527,12 @@ namespace Dune::Functions {
     [[nodiscard]] unsigned int size() const {
       unsigned int result = 1;
       for (size_t i = 0; i < dim; i++)
-        result *= size(i);
+        result *= sizePerDirection(i);
       return result;
     }
 
     //! \brief Number of shape functions in one direction
-    [[nodiscard]] unsigned int size(size_t d) const { return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1; }
+    [[nodiscard]] unsigned int sizePerDirection(size_t d) const { return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1; }
 
     /** \brief Evaluate all B-spline basis functions at a given point
      */
