@@ -51,7 +51,7 @@ namespace Dune::Functions {
 
   public:
     //! \brief export type traits for function signature
-    typedef LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>> Traits;
+    using Traits = LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>>;
 
     /** \brief Constructor with a given B-spline patch
      *
