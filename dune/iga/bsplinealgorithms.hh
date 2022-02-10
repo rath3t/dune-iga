@@ -10,6 +10,7 @@
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/concepts.hh>
 
 namespace Dune::IGA {
 
