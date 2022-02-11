@@ -27,7 +27,7 @@ namespace Dune::IGA {
   auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
     auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
-    return std::distance(U.begin(), it) - 1;
+    return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
   /** \brief Same as findSpan() but for dim - knotvectors  */
