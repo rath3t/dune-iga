@@ -570,14 +570,16 @@ namespace Dune::Functions {
 
     //! \brief Evaluate Derivatives of all B-spline basis functions
 
-    void partial(const std::array<int, dim>& order, const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
-                 const std::array<unsigned, dim>& currentKnotSpan) const {
+    void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
+                 const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
 
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.degree,
-                                                                                        extractWeights(patchData_.controlPoints), order);
-      out     = dN.get(order).directGetAll();
+                                                                                        extractWeights(patchData_.controlPoints), *std::ranges::max_element(order));
+
+      out.resize(dN.directSize());
+      std::ranges::copy(dN.get(order).directGetAll(), out.begin());
     }
 
     /** \brief Compute integer element coordinates from the element index

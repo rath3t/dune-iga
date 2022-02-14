@@ -795,25 +795,36 @@ void gridCheck() {
   //  Dune::checkIndexSet(grid,gridView_,std::cout);
 }
 
+void smallTestBsplineBasisFunctions()
+
+{
+  std::vector<double> knots({0,0,0,0.125,0.25,0.375,0.5,0.625,0.75,0.85,1,1,1});
+  int p= 2;
+  double u = 0.19706090651558072;
+  int spIndex = 3;
+  auto N =  BsplineBasis1D<DuneLinearAlgebraTraits<double>>::basisFunctions(u,knots,p,spIndex);
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-//    testNurbsGridCylinder();
-  //  std::cout << "done with NURBS surface cylinder" << std::endl;
-  //
-
-    testNURBSGridCurve();
-//    std::cout << "done with NURBS grid Curve" << std::endl;
-    test3DGrid();
-//    std::cout << "3dGrid " << std::endl;
-    testTorusGeometry();
-//    std::cout << "done with NURBS torus " << std::endl;
-
-  testNurbsBasis();
-//    std::cout << "done with NURBS basis test " << std::endl;
-  //
-  testBsplineBasisFunctions();
+  smallTestBsplineBasisFunctions();
+////    testNurbsGridCylinder();
+//  //  std::cout << "done with NURBS surface cylinder" << std::endl;
+//  //
+//
+//    testNURBSGridCurve();
+////    std::cout << "done with NURBS grid Curve" << std::endl;
+//    test3DGrid();
+////    std::cout << "3dGrid " << std::endl;
+//    testTorusGeometry();
+////    std::cout << "done with NURBS torus " << std::endl;
+//
+//  testNurbsBasis();
+////    std::cout << "done with NURBS basis test " << std::endl;
+//  //
+//  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
