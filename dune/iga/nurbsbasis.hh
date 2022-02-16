@@ -314,7 +314,12 @@ namespace Dune::Functions {
 
     /** \brief Copy constructor
      */
-    NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other) : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {}
+    NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other) : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
+
+          localBasis_.offset_ = other.localBasis_.offset_;
+          localBasis_.scaling_ = other.localBasis_.scaling_;
+          currentKnotSpan_ = other.currentKnotSpan_;
+          }
 
     /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
      *
@@ -367,12 +372,13 @@ namespace Dune::Functions {
 
     const NurbsPreBasis<GV, MI>& preBasis_;
 
-    NurbsLocalBasis<GV, R, MI> localBasis_;
+
     NurbsLocalCoefficients<dim> localCoefficients_;
     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>> localInterpolation_;
 
     // The knot span we are bound to
     std::array<int, dim> currentKnotSpan_;
+    NurbsLocalBasis<GV, R, MI> localBasis_;
   };
 
   template <typename GV, typename MI>
