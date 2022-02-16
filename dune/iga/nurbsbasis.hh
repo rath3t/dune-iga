@@ -576,7 +576,7 @@ namespace Dune::Functions {
       std::ranges::copy(in, inArray.begin());
 
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.degree,
-                                                                                        extractWeights(patchData_.controlPoints), *std::ranges::max_element(order));
+                                                                                        extractWeights(patchData_.controlPoints), std::accumulate(order.begin(),order.end(),0));
 
       out.resize(dN.directSize());
       std::ranges::copy(dN.get(order).directGetAll(), out.begin());
