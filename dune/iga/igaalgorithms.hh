@@ -24,8 +24,8 @@ namespace Dune::IGA {
     }
 
     template <std::integral auto dim>
-    auto createPartialSubDerivativPermutations(const FieldVector<int, dim>& v) {
-      std::vector<FieldVector<int, dim>> perm;
+    void createPartialSubDerivativPermutations(const FieldVector<int, dim>& v,std::vector<FieldVector<int, dim>>& perm) {
+      perm.resize(0);
       for (int i = 1; i < std::pow(2, v.size()); ++i) {
         FieldVector<int, dim> x{};
         for (int j = 0; j < v.size(); ++j)
@@ -36,7 +36,6 @@ namespace Dune::IGA {
         perm.push_back(x);
       outer:;
       }
-      return perm;
     }
 
     template <Vector VectorType>
@@ -186,17 +185,17 @@ namespace Dune::IGA {
         netsOfWeightfunctions.directGet(j) = dot(netOfDerivativeNets.directGet(j), subNetWeights);
       }
 
+      std::vector<FieldVector<int,dim>> perms;
       for (int j = 0; j < R.directSize(); ++j) {
         const auto derivOrders = R.template directToMultiIndex<FieldVector<int, dim>>(j);
         if (triangleDerivatives)
           if (std::accumulate(derivOrders.begin(), derivOrders.end(), derivativeOrder)) continue;
-        const auto perms = Impl::createPartialSubDerivativPermutations(derivOrders);
+        Impl::createPartialSubDerivativPermutations(derivOrders,perms);
 
         for (const auto& perm : perms) {
-          MultiDimensionNet<dim, int> kNet(perm + FieldVector<int, dim>(1));
+          const MultiDimensionNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
           auto startMultiIndex = perm;
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](auto& v) { return (v != 0); });
-
           for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
             const auto multik = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
             const ScalarType fac = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
