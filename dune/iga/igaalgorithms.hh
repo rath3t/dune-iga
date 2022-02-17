@@ -199,8 +199,11 @@ namespace Dune::IGA {
 
           for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
             const auto multik = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
-            R.directGet(j) -= Impl::binom(perm, multik)
-                              * (R.get(derivOrders - multik) * netsOfWeightfunctions.get(multik));  // generalized Piegl Tiller (4.20)
+            const ScalarType fac = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
+            const auto& Rdirect_d = R.get(derivOrders - multik);
+            auto& Rdirect = R.directGet(j);
+            for (int i = 0; i < R.directGet(j).directSize(); ++i)
+              Rdirect.directGet(i) -= fac * Rdirect_d.directGet(i); // generalized Piegl Tiller (4.20)
           }
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);

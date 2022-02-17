@@ -298,11 +298,9 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; })))
-        throw std::logic_error("Out of bounds");  // signaling Index Out of Net
-
-      if ((std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })))
-        throw std::logic_error("Out of bounds");  // signaling Index Out of Net
+      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; }) && "The passed multiIndex has negative values");
+      assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
+             && "The passed multiIndex has too large values");
 
       for (int i = 0; i < netdim; ++i) {
         help = 1;

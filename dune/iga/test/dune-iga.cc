@@ -809,22 +809,22 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-  smallTestBsplineBasisFunctions();
-////    testNurbsGridCylinder();
-//  //  std::cout << "done with NURBS surface cylinder" << std::endl;
-//  //
-//
-//    testNURBSGridCurve();
-////    std::cout << "done with NURBS grid Curve" << std::endl;
-//    test3DGrid();
-////    std::cout << "3dGrid " << std::endl;
-//    testTorusGeometry();
-////    std::cout << "done with NURBS torus " << std::endl;
-//
-//  testNurbsBasis();
-////    std::cout << "done with NURBS basis test " << std::endl;
-//  //
-//  testBsplineBasisFunctions();
+//  smallTestBsplineBasisFunctions();
+    testNurbsGridCylinder();
+  //  std::cout << "done with NURBS surface cylinder" << std::endl;
+  //
+
+    testNURBSGridCurve();
+//    std::cout << "done with NURBS grid Curve" << std::endl;
+    test3DGrid();
+//    std::cout << "3dGrid " << std::endl;
+    testTorusGeometry();
+//    std::cout << "done with NURBS torus " << std::endl;
+
+  testNurbsBasis();
+//    std::cout << "done with NURBS basis test " << std::endl;
+  //
+  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
