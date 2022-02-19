@@ -10,18 +10,16 @@
 #include <array>
 #include <numeric>
 
-#include <dune/iga/bsplinealgorithms.hh>
-#include <dune/iga/concepts.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/igaalgorithms.hh>
-
-
-#include <dune/common/dynmatrix.hh>
 #include <dune/common/diagonalmatrix.hh>
+#include <dune/common/dynmatrix.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/geometry/type.hh>
+#include <dune/iga/bsplinealgorithms.hh>
+#include <dune/iga/concepts.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/igaalgorithms.hh>
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/localfunctions/common/localkey.hh>
@@ -315,11 +313,11 @@ namespace Dune::Functions {
     /** \brief Copy constructor
      */
     NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other) : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
-
-          localBasis_.offset_ = other.localBasis_.offset_;
-          localBasis_.scaling_ = other.localBasis_.scaling_;
-          currentKnotSpan_ = other.currentKnotSpan_;
-          }
+      if (other.isBound) {
+        this->bind(other.elementIdx_);
+        isBound=true;
+      }
+    }
 
     /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
      *
@@ -344,16 +342,24 @@ namespace Dune::Functions {
       for (size_t i = 0; i < dim; i++)
         sizes[i] = size(i);
       localCoefficients_.init(sizes);
+      isBound     = true;
+      elementIdx_ = elementIdx;
     }
 
     /** \brief Hand out a LocalBasis object */
-    const NurbsLocalBasis<GV, R, MI>& localBasis() const { return localBasis_; }
+    const NurbsLocalBasis<GV, R, MI>& localBasis() const {
+      assert(isBound && "This element is not bound!");
+      return localBasis_; }
 
     /** \brief Hand out a LocalCoefficients object */
-    const NurbsLocalCoefficients<dim>& localCoefficients() const { return localCoefficients_; }
+    const NurbsLocalCoefficients<dim>& localCoefficients() const {
+      assert(isBound && "This element is not bound!");
+      return localCoefficients_; }
 
     /** \brief Hand out a LocalInterpolation object */
-    const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>& localInterpolation() const { return localInterpolation_; }
+    const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>& localInterpolation() const {
+      assert(isBound && "This element is not bound!");
+      return localInterpolation_; }
 
     /** \brief Number of shape functions in this finite element */
     [[nodiscard]] unsigned size() const {
@@ -372,13 +378,14 @@ namespace Dune::Functions {
 
     const NurbsPreBasis<GV, MI>& preBasis_;
 
-
     NurbsLocalCoefficients<dim> localCoefficients_;
     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>> localInterpolation_;
 
     // The knot span we are bound to
     std::array<int, dim> currentKnotSpan_;
     NurbsLocalBasis<GV, R, MI> localBasis_;
+    std::array<unsigned, dim> elementIdx_{};
+    bool isBound{false};
   };
 
   template <typename GV, typename MI>
@@ -547,8 +554,8 @@ namespace Dune::Functions {
                           const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
-      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(inArray, patchData_.knotSpans, patchData_.degree,
-                                                                             extractWeights(patchData_.controlPoints), currentKnotSpan);
+      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(
+          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), currentKnotSpan);
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
     }
@@ -567,7 +574,7 @@ namespace Dune::Functions {
       out.resize(dN.get(std::array<int, dim>{}).directSize());
       for (int j = 0; j < dim; ++j) {
         std::array<int, dim> multiIndex{};
-        multiIndex[j]  = 1;
+        multiIndex[j]         = 1;
         const auto& dNcurrent = dN.get(multiIndex);
         for (int i = 0; i < dNcurrent.directSize(); ++i)
           out[i][0][j] = dNcurrent.directGet(i);
@@ -576,13 +583,14 @@ namespace Dune::Functions {
 
     //! \brief Evaluate Derivatives of all B-spline basis functions
 
-    void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
-                 const std::array<int, dim>& currentKnotSpan) const {
+    void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
+                 std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
 
-      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(inArray, patchData_.knotSpans, patchData_.degree,
-                                                                                        extractWeights(patchData_.controlPoints), std::accumulate(order.begin(),order.end(),0));
+      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
+          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
+          std::accumulate(order.begin(), order.end(), 0));
 
       out.resize(dN.directSize());
       std::ranges::copy(dN.get(order).directGetAll(), out.begin());

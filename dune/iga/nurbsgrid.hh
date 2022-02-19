@@ -73,7 +73,7 @@ namespace Dune::IGA {
       if constexpr (dim > 2)
         assert(nurbsPatchData.knotSpans[2].size() - nurbsPatchData.degree[2] - 1 == nurbsPatchData.controlPoints.size()[2]
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
-
+      //FIXME check sanity of knotvector and degree
       finestPatches_->emplace_back(currentPatchRepresentation_);
       leafGridView_ = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(finestPatches_, *this);
       idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
