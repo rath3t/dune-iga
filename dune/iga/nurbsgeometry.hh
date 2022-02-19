@@ -56,6 +56,8 @@ namespace Dune::IGA {
       cpCoordinateNet_ = netOfSpan(thisSpanIndices_, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
     }
 
+    NURBSGeometry() =default;
+
     /** \brief Map the center of the element to the geometry */
     [[nodiscard]] GlobalCoordinate center() const {
       LocalCoordinate localcenter(0.5);
@@ -232,7 +234,7 @@ namespace Dune::IGA {
     }
     std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData_;
     std::array<int, griddim> thisSpanIndices_;
-    std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{free};
+    std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{Impl::FixedOrFree::free};
     Dune::IGA::Nurbs<griddim, LinearAlgebraTraits> nurbs_;
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
