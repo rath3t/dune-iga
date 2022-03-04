@@ -62,11 +62,11 @@ public:     // serialization
         return "Point" + std::to_string(TDimension) + "D";
     }
 
-    static Unique<Type> load(Model& model, const Json& source)
+    static std::unique_ptr<Type> load(Model& model, const Json& source)
     {
         const DataReader reader(source);
 
-        auto data = new_<Type>();
+        auto data = std::make_unique<Type>();
 
         reader.fill_vector("location", data->m_location);
 
@@ -99,7 +99,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = Point<TDimension>;
-        using Holder = anurbs::Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

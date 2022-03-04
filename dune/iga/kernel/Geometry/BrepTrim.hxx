@@ -20,14 +20,14 @@ Ref<Brep> BrepTrim::brep() const
     return m_loop->face()->brep();
 }
 
-Pointer<Curve<2>> BrepTrim::curve_2d() const
+std::shared_ptr<Curve<2>> BrepTrim::curve_2d() const
 {
-    return new_<Curve<2>>(curve_geometry().data(), domain());
+    return std::make_shared<Curve<2>>(curve_geometry().data(), domain());
 }
 
-Pointer<CurveOnSurface<3>> BrepTrim::curve_3d() const
+std::shared_ptr<CurveOnSurface<3>> BrepTrim::curve_3d() const
 {
-    return new_<CurveOnSurface<3>>(curve_geometry().data(),
+    return std::make_shared<CurveOnSurface<3>>(curve_geometry().data(),
         face()->surface_geometry().data(), domain());
 }
 
@@ -68,9 +68,9 @@ std::string BrepTrim::type_name()
     return "BrepTrim";
 }
 
-Unique<BrepTrim> BrepTrim::load(Model& model, const Json& data)
+std::unique_ptr<BrepTrim> BrepTrim::load(Model& model, const Json& data)
 {
-    auto result = new_<BrepTrim>();
+    auto result = std::make_unique<BrepTrim>();
 
     // Read Loop
     {

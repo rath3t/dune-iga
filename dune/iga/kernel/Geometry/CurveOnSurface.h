@@ -12,8 +12,8 @@
 namespace anurbs {
 
 template <Index TDimension,
-    typename TCurveRef = Pointer<NurbsCurveGeometry<2>>,
-    typename TSurfaceRef = Pointer<NurbsSurfaceGeometry<TDimension>>>
+    typename TCurveRef = std::shared_ptr<NurbsCurveGeometry<2>>,
+    typename TSurfaceRef = std::shared_ptr<NurbsSurfaceGeometry<TDimension>>>
 class CurveOnSurface : public CurveBase<TDimension>
 {
 public:     // types
@@ -150,7 +150,7 @@ public:     // python
 
         using Type = CurveOnSurface<TDimension>;
         using Base = CurveBase<TDimension>;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

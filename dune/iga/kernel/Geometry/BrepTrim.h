@@ -40,9 +40,9 @@ public:
 
     Ref<NurbsCurveGeometry<2>> curve_geometry() const;
 
-    Pointer<Curve<2>> curve_2d() const;
+    std::shared_ptr<Curve<2>> curve_2d() const;
 
-    Pointer<CurveOnSurface<3>> curve_3d() const;
+    std::shared_ptr<CurveOnSurface<3>> curve_3d() const;
 
     Interval domain() const;
 
@@ -51,7 +51,7 @@ public:
 public:     // serialization
     static std::string type_name();
 
-    static Unique<BrepTrim> load(Model& model, const Json& data);
+    static std::unique_ptr<BrepTrim> load(Model& model, const Json& data);
 
     static void save(const Model& model, const BrepTrim& data, Json& target);
 
@@ -65,7 +65,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = BrepTrim;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

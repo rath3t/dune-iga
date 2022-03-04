@@ -125,7 +125,7 @@ public:     // serialization
         return "Surface" + std::to_string(dimension()) + "D";
     }
 
-    static Unique<Type> load(Model& model, const Json& source)
+    static std::unique_ptr<Type> load(Model& model, const Json& source)
     {
         const auto geometry = model.get_lazy<NurbsSurfaceGeometry<TDimension>>(
             source.at("geometry"));
@@ -154,7 +154,7 @@ public:     // python
 
         using Type = Surface<TDimension, TRef>;
         using Base = SurfaceBase<TDimension>;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

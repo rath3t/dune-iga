@@ -39,7 +39,7 @@ public:     // methods
 public:     // serialization
     static std::string type_name();
 
-    static Unique<BrepEdge> load(Model& model, const Json& data);
+    static std::unique_ptr<BrepEdge> load(Model& model, const Json& data);
 
     static void save(const Model& model, const BrepEdge& data, Json& target);
 
@@ -53,7 +53,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = BrepEdge;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

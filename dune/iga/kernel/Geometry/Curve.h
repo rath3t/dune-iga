@@ -15,7 +15,7 @@
 namespace anurbs {
 
 template <Index TDimension,
-    typename TRef = Pointer<NurbsCurveGeometry<TDimension>>>
+    typename TRef = std::shared_ptr<NurbsCurveGeometry<TDimension>>>
 struct Curve : public CurveBase<TDimension>
 {
 public:     // types
@@ -93,7 +93,7 @@ public:     // serialization
         return "Curve" + std::to_string(dimension()) + "D";
     }
 
-    static Unique<Type> load(Model& model, const Json& source)
+    static std::unique_ptr<Type> load(Model& model, const Json& source)
     {
         const auto geometry = model.get_lazy<NurbsCurveGeometry<TDimension>>(
             source.at("geometry"));
@@ -122,7 +122,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = Curve<TDimension, TRef>;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
         using Base = CurveBase<TDimension>;
 
         const std::string name = Type::python_name();

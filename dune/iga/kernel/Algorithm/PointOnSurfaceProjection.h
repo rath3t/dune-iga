@@ -60,16 +60,16 @@ private:    // types
         PointCloudAdaptor, 3>;
 
 private:    // variables
-    Pointer<SurfaceBaseD> m_surface;
+    std::shared_ptr<SurfaceBaseD> m_surface;
     std::vector<ParameterPoint> m_tessellation;
     double m_tolerance;
     Index m_grid_u;
     Index m_grid_v;
-    Unique<KDTreeType> m_index;
+    std::unique_ptr<KDTreeType> m_index;
     const PointCloudAdaptor m_point_cloud_adaptor;
 
 public:     // constructors
-    PointOnSurfaceProjection(Pointer<SurfaceBaseD> surface)
+    PointOnSurfaceProjection(std::shared_ptr<SurfaceBaseD> surface)
         : m_surface(surface), m_point_cloud_adaptor(m_tessellation)
     {
         std::vector<double> us;
@@ -115,7 +115,7 @@ public:     // constructors
             }
         }
 
-        m_index = new_<KDTreeType>(3, m_point_cloud_adaptor,
+        m_index = std::make_unique<KDTreeType>(3, m_point_cloud_adaptor,
             nanoflann::KDTreeSingleIndexAdaptorParams(10));
 
         m_index->buildIndex();
@@ -124,7 +124,7 @@ public:     // constructors
         m_grid_v = length(vs) - 1;
     }
 
-    Pointer<SurfaceBaseD> surface() const
+    std::shared_ptr<SurfaceBaseD> surface() const
     {
         return m_surface;
     }
@@ -309,13 +309,13 @@ public:     // python
         namespace py = pybind11;
 
         using Type = PointOnSurfaceProjection<TDimension>;
-        using Handler = Pointer<Type>;
+        using Handler = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 
         py::class_<Type, Handler>(m, name.c_str())
             // constructors
-            .def(py::init<Pointer<SurfaceBaseD>>(), "surface"_a)
+            .def(py::init<std::shared_ptr<SurfaceBaseD>>(), "surface"_a)
             // methods
             .def("get", &Type::get, "point"_a)
             // read-only properties

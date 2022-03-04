@@ -20,7 +20,7 @@ public:     // types
     using SurfaceGeometry = NurbsSurfaceGeometry<TDimension>;
 
 public:     // static methods
-    static Pointer<CurveGeometry> insert_knots(
+    static std::shared_ptr<CurveGeometry> insert_knots(
         const CurveGeometry& geometry,
         std::vector<double> knots)
     {
@@ -40,7 +40,7 @@ public:     // static methods
         const Index nb_poles_refined = nb_poles + nb_knots_to_insert;
         const Index nb_knots_refined = nb_knots + nb_knots_to_insert + 2;
 
-        Pointer<CurveGeometry> refined = new_<CurveGeometry>(degree,
+        std::shared_ptr<CurveGeometry> refined = new_<CurveGeometry>(degree,
             nb_poles_refined, true); // FIXME: check is_rational
 
         for (Index i = 0; i < a + 1 - degree + 1; i++) {
@@ -112,7 +112,7 @@ public:     // static methods
         return refined;
     }
 
-    static Pointer<SurfaceGeometry>
+    static std::shared_ptr<SurfaceGeometry>
     insert_knots_u(const SurfaceGeometry& geometry, std::vector<double> knotsU)
     {
         std::sort(knotsU.begin(), knotsU.end());
@@ -134,7 +134,7 @@ public:     // static methods
         const Index nb_poles_refined = nb_poles_u + nb_knots_to_insert;
         const Index nb_knots_refined = geometry.nb_knots_u() + 2 + nb_knots_to_insert;
 
-        Pointer<SurfaceGeometry> refined = new_<SurfaceGeometry>(degree_u,
+        std::shared_ptr<SurfaceGeometry> refined = new_<SurfaceGeometry>(degree_u,
             degree_v, nb_poles_refined, nb_poles_v, true); // FIXME: check is_rational
 
         for (Index i = 0; i < a + 1 - degree_u + 1; i++) {
@@ -222,7 +222,7 @@ public:     // static methods
         return refined;
     }
 
-    static Pointer<SurfaceGeometry> insert_knots_v(
+    static std::shared_ptr<SurfaceGeometry> insert_knots_v(
         const SurfaceGeometry& geometry,
         std::vector<double> knotsV)
     {
@@ -247,7 +247,7 @@ public:     // static methods
         const Index nb_poles_refined = nb_poles_v + nb_knots_to_insert;
         const Index nb_knots_refined = nb_knots_v + 2 + nb_knots_to_insert;
 
-        Pointer<SurfaceGeometry> refined = new_<SurfaceGeometry>(degree_u,
+        std::shared_ptr<SurfaceGeometry> refined = new_<SurfaceGeometry>(degree_u,
             degree_v, nb_poles_u, nb_poles_refined, true); // FIXME: check is_rational
 
         for (Index i = 0; i < a + 1 - degree_v + 1; i++) {

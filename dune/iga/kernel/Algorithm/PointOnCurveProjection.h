@@ -22,15 +22,15 @@ public: // types
 
 private: // variables
     std::pair<std::vector<double>, std::vector<Vector>> m_tessellation;
-    Pointer<CurveBaseD> m_curve;
+    std::shared_ptr<CurveBaseD> m_curve;
     double m_tessellation_tolerance;
     double m_tolerance;
     double m_parameter;
     Vector m_point;
-    Unique<PolylineMapper<TDimension>> mapper;
+    std::unique_ptr<PolylineMapper<TDimension>> mapper;
 
 public: // constructors
-    PointOnCurveProjection(Pointer<CurveBaseD> curve, const double tolerance, const double tessellation_tolerance)
+    PointOnCurveProjection(std::shared_ptr<CurveBaseD> curve, const double tolerance, const double tessellation_tolerance)
         : m_tessellation()
         , m_curve(curve)
         , m_tessellation_tolerance(tessellation_tolerance)
@@ -38,11 +38,11 @@ public: // constructors
     {
         // new_ polyline
         m_tessellation = CurveTessellation<TDimension>::compute(*Curve(), m_tessellation_tolerance);
-        mapper = new_<PolylineMapper<TDimension>>(m_tessellation.second);
+        mapper = std::make_unique<PolylineMapper<TDimension>>(m_tessellation.second);
     }
 
 public: // methods
-    Pointer<CurveBaseD> Curve() const
+    std::shared_ptr<CurveBaseD> Curve() const
     {
         return m_curve;
     }
@@ -211,12 +211,12 @@ public: // python
         namespace py = pybind11;
 
         using Type = PointOnCurveProjection<TDimension>;
-        using Handler = Pointer<Type>;
+        using Handler = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 
         py::class_<Type, Handler>(m, name.c_str())
-            .def(py::init<Pointer<CurveBaseD>, double, double>(), "curve"_a, "tolerance"_a, "tessellation_tolerance"_a = 1e-3)
+            .def(py::init<std::shared_ptr<CurveBaseD>, double, double>(), "curve"_a, "tolerance"_a, "tessellation_tolerance"_a = 1e-3)
             .def("compute", &Type::compute, "point"_a, "max_distance"_a = 0)
             .def_property_readonly("parameter", &Type::parameter)
             .def_property_readonly("point", &Type::point);

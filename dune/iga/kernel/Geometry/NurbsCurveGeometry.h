@@ -353,7 +353,7 @@ public:     // serialization
         return "NurbsCurveGeometry" + std::to_string(dimension()) + "D";
     }
 
-    static Unique<Type> load(Model& model, const Json& source)
+    static std::unique_ptr<Type> load(Model& model, const Json& source)
     {
         const DataReader reader(source);
 
@@ -361,7 +361,7 @@ public:     // serialization
         const auto nb_poles = reader.count("poles");
         const auto is_rational = reader.has("weights");
 
-        auto result = new_<Type>(degree, nb_poles, is_rational);
+        auto result = std::make_unique<Type>(degree, nb_poles, is_rational);
 
         reader.fill_vector("knots", result->knots());
         reader.fill_matrix("poles", result->poles());
@@ -401,7 +401,7 @@ public:     // python
 
         using Type = NurbsCurveGeometry<TDimension>;
         using Base = CurveBase<TDimension>; 
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

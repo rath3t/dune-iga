@@ -59,9 +59,9 @@ public:     // serialization
         return "BrepFaceField" + std::to_string(dimension()) + "D";
     }
 
-    static Unique<BrepFaceField> load(Model& model, const Json& data)
+    static std::unique_ptr<BrepFaceField> load(Model& model, const Json& data)
     {
-        auto result = new_<BrepFaceField>();
+        auto result = std::make_unique<BrepFaceField>();
 
         // Read Face
         {
@@ -102,7 +102,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = BrepFaceField<TDimension>;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

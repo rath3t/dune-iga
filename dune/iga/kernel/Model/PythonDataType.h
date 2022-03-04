@@ -17,7 +17,7 @@ struct PythonDataTypeBase
 
     virtual pybind11::object of_type(const TModel& model) = 0;
 
-    static inline std::unordered_map<std::string, Unique<PythonDataTypeBase>>
+    static inline std::unordered_map<std::string, std::unique_ptr<PythonDataTypeBase>>
         s_types;
 
     static pybind11::object by_key(const TModel& model,
@@ -61,31 +61,31 @@ struct PythonDataType : public PythonDataTypeBase<TModel>
         return pybind11::cast(model.template of_type<TData>());
     }
 
-    static Ref<TData> add(TModel& self, Pointer<TData> data)
+    static Ref<TData> add(TModel& self, std::shared_ptr<TData> data)
     {
         return self.template add<TData>(data);
     }
 
-    static Ref<TData> add_with_attributes(TModel& self, Pointer<TData> data,
+    static Ref<TData> add_with_attributes(TModel& self, std::shared_ptr<TData> data,
         const std::string& attributes)
     {
         return self.template add<TData>(data, attributes);
     }
 
     static Ref<TData> add_with_key(TModel& self, const std::string& key,
-        Pointer<TData> data)
+        std::shared_ptr<TData> data)
     {
         return self.template add<TData>(key, data);
     }
 
     static Ref<TData> replace(TModel& self, const size_t index,
-        Pointer<TData> data)
+        std::shared_ptr<TData> data)
     {
         return self.template replace<TData>(index, data);
     }
 
     static Ref<TData> replace_with_key(TModel& self, const std::string& key,
-        Pointer<TData> data)
+        std::shared_ptr<TData> data)
     {
         return self.template replace<TData>(key, data);
     }

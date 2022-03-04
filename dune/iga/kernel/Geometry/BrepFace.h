@@ -44,7 +44,7 @@ public:
 public:     // serialization
     static std::string type_name();
 
-    static Unique<BrepFace> load(Model& model, const Json& data);
+    static std::unique_ptr<BrepFace> load(Model& model, const Json& data);
 
     static void save(const Model& model, const BrepFace& data, Json& target);
 
@@ -58,7 +58,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = BrepFace;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

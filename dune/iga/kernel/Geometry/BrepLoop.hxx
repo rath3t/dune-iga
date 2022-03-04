@@ -53,9 +53,9 @@ std::string BrepLoop::type_name()
     return "BrepLoop";
 }
 
-Unique<BrepLoop> BrepLoop::load(Model& model, const Json& data)
+std::unique_ptr<BrepLoop> BrepLoop::load(Model& model, const Json& data)
 {
-    auto result = new_<BrepLoop>();
+    auto result = std::make_unique<BrepLoop>();
 
     // Read Face
     {

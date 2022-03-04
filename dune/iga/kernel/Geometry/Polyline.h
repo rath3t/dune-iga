@@ -56,9 +56,9 @@ public:     // serialization
         return "Polyline" + std::to_string(TDimension) + "D";
     }
 
-    static Unique<Polyline<TDimension>> load(Model& model, const Json& data)
+    static std::unique_ptr<Polyline<TDimension>> load(Model& model, const Json& data)
     {
-        auto result = new_<Polyline<TDimension>>();
+        auto result = std::make_unique<Polyline<TDimension>>();
 
         // load Points
         {
@@ -91,7 +91,7 @@ public:     // python
         using namespace pybind11::literals;
         namespace py = pybind11;
 
-        using Holder = anurbs::Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 

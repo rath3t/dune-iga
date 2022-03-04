@@ -54,7 +54,7 @@ public:     // methods
 public:     // serialization
     static std::string type_name();
 
-    static Unique<Brep> load(Model& model, const Json& data);
+    static std::unique_ptr<Brep> load(Model& model, const Json& data);
 
     static void save(const Model& model, const Brep& data, Json& target);
 
@@ -68,7 +68,7 @@ public:     // python
         namespace py = pybind11;
 
         using Type = Brep;
-        using Holder = Pointer<Brep>;
+        using Holder = std::shared_ptr<Brep>;
 
         const std::string name = Type::python_name();
 

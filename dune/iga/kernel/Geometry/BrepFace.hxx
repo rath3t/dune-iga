@@ -68,9 +68,9 @@ std::string BrepFace::type_name()
     return "BrepFace";
 }
 
-Unique<BrepFace> BrepFace::load(Model& model, const Json& data)
+std::unique_ptr<BrepFace> BrepFace::load(Model& model, const Json& data)
 {
-    auto result = new_<BrepFace>();
+    auto result = std::make_unique<BrepFace>();
 
     // Read Brep
     {

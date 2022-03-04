@@ -52,9 +52,9 @@ std::string BrepEdge::type_name()
     return "BrepEdge";
 }
 
-Unique<BrepEdge> BrepEdge::load(Model& model, const Json& data)
+std::unique_ptr<BrepEdge> BrepEdge::load(Model& model, const Json& data)
 {
-    auto result = new_<BrepEdge>();
+    auto result = std::make_unique<BrepEdge>();
 
     // Read trims
     {

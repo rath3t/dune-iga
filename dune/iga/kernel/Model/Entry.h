@@ -73,14 +73,14 @@ public:     // methods
     static std::unique_ptr<Entry<TData>> create(std::string key,
         std::shared_ptr<TData> data)
     {
-        Pointer<Attributes> attributes = new_<Attributes>();
-        return new_<Entry<TData>>(key, data, attributes);
+        auto attributes = std::make_shared<Attributes>();
+        return std::make_unique<Entry<TData>>(key, data, attributes);
     }
 
     static std::unique_ptr<Entry<TData>> create(std::shared_ptr<TData> data)
     {
-        Pointer<Attributes> attributes = new_<Attributes>();
-        return new_<Entry<TData>>(data, attributes);
+        auto attributes = std::make_shared<Attributes>();
+        return std::make_unique<Entry<TData>>(data, attributes);
     }
 
     bool is_empty() const override

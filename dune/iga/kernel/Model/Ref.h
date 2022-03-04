@@ -18,14 +18,14 @@ private:    // types
     using Type = Ref<TData>;
 
 private:    // variables
-    Pointer<Entry<TData>> m_entry;
+    std::shared_ptr<Entry<TData>> m_entry;
 
 public:     // constructors
     Ref()
     {
     }
 
-    Ref(Pointer<Entry<TData>> entry) : m_entry(entry)
+    Ref(std::shared_ptr<Entry<TData>> entry) : m_entry(entry)
     {
     }
 
@@ -40,12 +40,12 @@ public:     // methods
         return m_entry->type_name();
     }
 
-    Pointer<TData> data() const
+    std::shared_ptr<TData> data() const
     {
         return m_entry->data();
     }
 
-    Pointer<Attributes> attributes() const
+    std::shared_ptr<Attributes> attributes() const
     {
         return m_entry->attributes();
     }
@@ -60,7 +60,7 @@ public:     // methods
         return *data();
     }
 
-    Pointer<TData> operator->() const
+    std::shared_ptr<TData> operator->() const
     {
         return data();
     }

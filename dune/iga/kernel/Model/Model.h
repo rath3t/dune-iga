@@ -21,15 +21,19 @@ namespace anurbs {
 class Model
 {
 private:    // variables
-    std::vector<Pointer<EntryBase>> m_entries;
+    std::vector<std::shared_ptr<EntryBase>> m_entries;
     std::vector<size_t> m_entry_map;
     std::unordered_map<std::string, std::pair<size_t, size_t>> m_key_map;
 
 public:     // static methods
-    static Pointer<Model> from_file(const std::string& path)
-    {
-        auto model = new_<Model>();
 
+    Model()
+  {
+      TypeRegistry<Model>::createRegistry();
+    }
+    static std::shared_ptr<Model> from_file(const std::string& path)
+    {
+        auto model = std::make_shared<Model>();
         model->load(path);
 
         return model;
@@ -43,13 +47,13 @@ public:     // methods
     }
 
     template <typename TData>
-    Ref<TData> add(Pointer<TData> data)
+    Ref<TData> add(std::shared_ptr<TData> data)
     {
         if (data == nullptr) {
             throw std::invalid_argument("Data is null");
         }
 
-        Pointer<Entry<TData>> entry = Entry<TData>::create(data);
+        std::shared_ptr<Entry<TData>> entry = Entry<TData>::create(data);
 
         m_entries.push_back(std::static_pointer_cast<EntryBase>(entry));
 
@@ -59,7 +63,7 @@ public:     // methods
     }
 
     template <typename TData>
-    Ref<TData> add(Pointer<TData> data, const std::string& attributes)
+    Ref<TData> add(std::shared_ptr<TData> data, const std::string& attributes)
     {
         const auto ref = add(data);
 
@@ -69,7 +73,7 @@ public:     // methods
     }
 
     template <typename TData>
-    Ref<TData> add(const std::string& key, Pointer<TData> data)
+    Ref<TData> add(const std::string& key, std::shared_ptr<TData> data)
     {
         if (key.empty()) {
             throw std::invalid_argument("Key is empty");
@@ -78,7 +82,7 @@ public:     // methods
             throw std::invalid_argument("Data is null");
         }
 
-        Pointer<Entry<TData>> entry;
+        std::shared_ptr<Entry<TData>> entry;
 
         const auto it = m_key_map.find(key);
 
@@ -112,7 +116,7 @@ public:     // methods
     }
 
     template <typename TData>
-    Ref<TData> replace(size_t index, Pointer<TData> data)
+    Ref<TData> replace(size_t index, std::shared_ptr<TData> data)
     {
         if (data == nullptr) {
             throw std::invalid_argument("Data is null");
@@ -127,7 +131,7 @@ public:     // methods
     }
 
     template <typename TData>
-    Ref<TData> replace(const std::string& key, Pointer<TData> data)
+    Ref<TData> replace(const std::string& key, std::shared_ptr<TData> data)
     {
         if (key.empty()) {
             throw std::invalid_argument("Key is empty");
@@ -241,7 +245,7 @@ public:     // methods
     template <typename TData>
     Ref<TData> get_lazy(std::string key)
     {
-        Pointer<Entry<TData>> entry;
+        std::shared_ptr<Entry<TData>> entry;
 
         const auto it = m_key_map.find(key);
 
@@ -291,14 +295,14 @@ public:     // methods
     }
 
 public:     // python
-    static pybind11::class_<Model, Pointer<Model>> register_python(
+    static pybind11::class_<Model, std::shared_ptr<Model>> register_python(
         pybind11::module& m)
     {
         using namespace pybind11::literals;
         namespace py = pybind11;
 
         using Type = Model;
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         return pybind11::class_<Type, Holder>(m, "Model")
             .def(py::init<>())
@@ -329,7 +333,7 @@ public:     // python
 
     template <typename TData>
     static void register_python_data_type(pybind11::module& m,
-        pybind11::class_<Model, Pointer<Model>>& model)
+        pybind11::class_<Model, std::shared_ptr<Model>>& model)
     {
         using namespace pybind11::literals;
         namespace py = pybind11;
@@ -339,7 +343,7 @@ public:     // python
         Ref<TData>::register_python(m);
 
         PythonDataTypeBase<Model>::s_types[TData::type_name()] =
-            new_<PythonDataType<Model, TData>>();
+            std::make_unique<PythonDataType<Model, TData>>();
 
         model.def("add", &PythonDataType<Model, TData>::add, "data"_a);
 

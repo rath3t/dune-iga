@@ -65,7 +65,7 @@ public:     // serialization
         return "Box" + std::to_string(dimension()) + "D";
     }
 
-    static Unique<Type> load(Model& model, const Json& source)
+    static std::unique_ptr<Type> load(Model& model, const Json& source)
     {
         const DataReader reader(source);
 
@@ -74,7 +74,7 @@ public:     // serialization
         reader.fill_vector("min", min);
         reader.fill_vector("max", max);
 
-        return new_<Type>(min, max);
+        return std::make_unique<Type>(min, max);
     }
 
     static void save(const Model& model, const Type& data, Json& target)
@@ -97,7 +97,7 @@ public:     // python
         using namespace pybind11::literals;
         namespace py = pybind11;
 
-        using Holder = Pointer<Type>;
+        using Holder = std::shared_ptr<Type>;
 
         const std::string name = Type::python_name();
 
