@@ -795,6 +795,62 @@ void gridCheck() {
   //  Dune::checkIndexSet(grid,gridView_,std::cout);
 }
 
+
+void partialDerivativesTest()
+{
+  constexpr int griddim                                    = 2;
+  constexpr int dimworld                                   = 2;
+  const std::array<std::vector<double>, griddim> knotSpans = {{{0, 0, 1, 1}, {0, 0, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointType;
+
+  const double Lx = 1;
+  const double Ly = 1;
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0}, .w = 1}, {.p = {0, Ly}, .w = 1}}, {{.p = {Lx, 0}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
+
+  std::array<int, griddim> dimsize = {2, 2};
+
+  std::vector<double> dofsVec;
+  std::vector<double> l2Evcector;
+  auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
+
+  Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = {1, 1};
+  patchData.controlPoints = controlNet;
+  /// Increate polynomial degree in each direction
+  patchData = Dune::IGA::degreeElevate(patchData, 0, 2);
+  patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
+  Grid grid(patchData);
+  auto gridView = grid.leafGridView();
+  auto basis = Dune::Functions::BasisFactory::makeBasis(gridView, gridView.getPreBasis());
+  auto localView = basis.localView();
+
+
+  for(auto& ele: elements(gridView)) {
+    localView.bind(ele);
+    //  auto& ele           = localView.element();
+    auto& fe = localView.tree().finiteElement();
+    const auto& localBasis = fe.localBasis();
+
+
+    const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
+    for (auto& gp : rule) {
+      std::vector<Dune::FieldVector<double, 1>> dN_xixi;
+      std::vector<Dune::FieldVector<double, 1>> dN_xieta;
+      std::vector<Dune::FieldVector<double, 1>> dN_etaeta;
+      std::vector<Dune::FieldVector<double, 1>> N_dune;
+
+      localBasis.evaluateFunction(gp.position(), N_dune);
+      localBasis.partial({2, 0}, gp.position(), dN_xixi);
+      localBasis.partial({1, 1}, gp.position(), dN_xieta);
+      localBasis.partial({0, 2}, gp.position(), dN_etaeta);
+    }
+  }
+}
+
 void smallTestBsplineBasisFunctions()
 
 {
@@ -808,6 +864,8 @@ void smallTestBsplineBasisFunctions()
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
+
+  partialDerivativesTest();
 
 //  smallTestBsplineBasisFunctions();
     testNurbsGridCylinder();
