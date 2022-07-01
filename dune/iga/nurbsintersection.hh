@@ -28,6 +28,8 @@ namespace Dune::IGA {
     using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
     using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
 
+    NURBSintersection()=default;
+
     NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const GridView& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
