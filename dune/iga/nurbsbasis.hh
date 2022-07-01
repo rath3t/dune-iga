@@ -592,8 +592,9 @@ namespace Dune::Functions {
           inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
           std::accumulate(order.begin(), order.end(), 0));
 
-      out.resize(dN.directSize());
-      std::ranges::copy(dN.get(order).directGetAll(), out.begin());
+      auto& dNpart = dN.get(order).directGetAll();
+      out.reserve(dNpart.size());
+      std::ranges::copy(std::move(dNpart), std::back_inserter(out));
     }
 
     /** \brief Compute integer element coordinates from the element index
