@@ -19,7 +19,7 @@ namespace Dune::IGA {
     using IndexSet    = NURBSGridLeafIndexSet<GridImp>;
     using GridViewImp = NURBSLeafGridView<GridImp>;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
-//    typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
+    typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
     typedef typename GridImp ::Traits ::CollectiveCommunication CollectiveCommunication;
     typedef typename GridImp ::Traits ::LeafIntersection Intersection;
 

@@ -79,7 +79,7 @@ void testNURBSGridCurve() {
   //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
   vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
 //  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
-//  gridcheck(grid);
+  gridcheck(grid);
 }
 
 void testNURBSGridSurface() {
@@ -460,27 +460,27 @@ void testNurbsBasis() {
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, gridView.getPatchData());
-//    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView);
-//    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 
   {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.getPatchData()));
-//    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 
   {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(gridView.getPreBasis()));
-//    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 }
 
@@ -795,82 +795,45 @@ void gridCheck() {
   //  Dune::checkIndexSet(grid,gridView_,std::cout);
 }
 
-
-void partialDerivativesTest()
+auto testPlate()
 {
-  constexpr int griddim                                    = 2;
-  constexpr int dimworld                                   = 2;
-  const std::array<std::vector<double>, griddim> knotSpans = {{{0, 0, 1, 1}, {0, 0, 1, 1}}};
+  constexpr int gridDim = 2;
+  constexpr auto dimworld              = 2;
+  const std::array<int, gridDim> order = {2, 2};
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointType;
+  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
 
-  const double Lx = 1;
-  const double Ly = 1;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {0, Ly}, .w = 1}}, {{.p = {Lx, 0}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
+      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
 
-  std::array<int, griddim> dimsize = {2, 2};
+  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  std::vector<double> dofsVec;
-  std::vector<double> l2Evcector;
-  auto controlNet = Dune::IGA::NURBSPatchData<griddim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGA::NURBSGrid<griddim, dimworld>;
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
 
-  Dune::IGA::NURBSPatchData<griddim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
-  patchData.degree        = {1, 1};
+  patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  /// Increate polynomial degree in each direction
-  patchData = Dune::IGA::degreeElevate(patchData, 0, 1);
-  patchData = Dune::IGA::degreeElevate(patchData, 1, 1);
-  Grid grid(patchData);
-  auto gridView = grid.leafGridView();
-  auto basis = Dune::Functions::BasisFactory::makeBasis(gridView, gridView.getPreBasis());
-  auto localView = basis.localView();
+  auto grid               = std::make_shared<Grid>(patchData);
+  grid->globalRefine(0);
+  auto gridView = grid->leafGridView();
+  Dune::GeometryChecker<decltype(grid)> geometryChecker;
+  geometryChecker.checkGeometry(gridView);
+  Dune::checkIndexSet(grid, gridView, std::cout);
 
+  checkEntityLifetime(gridView, gridView.size(0));
 
-  for(auto& ele: elements(gridView)) {
-    localView.bind(ele);
-    //  auto& ele           = localView.element();
-    auto& fe = localView.tree().finiteElement();
-    const auto& localBasis = fe.localBasis();
+  for (auto&& elegeo : elements(gridView) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
+    checkJacobians(elegeo);
 
-
-     auto rule = std::vector<Dune::FieldVector<double,2>>();
-     for (int i = 0; i < 10; ++i) {
-      for (int j = 0; j < 10; ++j) {
-        rule.push_back({i/9.0, j/9.0});
-      }
-     }
-     for (auto& gp : rule) {
-      std::vector<Dune::FieldVector<double, 1>> dN_xixi;
-      std::vector<Dune::FieldVector<double, 1>> dN_xieta;
-      std::vector<Dune::FieldVector<double, 1>> dN_etaeta;
-      std::vector<Dune::FieldVector<double, 1>> N_dune;
-
-      localBasis.evaluateFunction(gp, N_dune);
-      localBasis.partial({2, 0}, gp, dN_xixi);
-      localBasis.partial({1, 1}, gp, dN_xieta);
-      localBasis.partial({0, 2}, gp, dN_etaeta);
-      std::cout<<"GP: "<<gp[0]<<" "<<gp[1]<<std::endl;
-      std::cout<<"dN_xixi:"<<std::endl;
-      for (int j = 0; j < dN_xixi.size(); ++j) {
-        std::cout<<dN_xixi[j]<<" ";
-      }
-      std::cout<<std::endl;
-      std::cout<<"dN_xieta:"<<std::endl;
-      for (int j = 0; j < dN_xieta.size(); ++j) {
-        std::cout<<dN_xieta[j]<<" ";
-      }
-      std::cout<<std::endl;
-      std::cout<<"dN_etaeta:"<<std::endl;
-      for (int j = 0; j < dN_etaeta.size(); ++j) {
-        std::cout<<dN_etaeta[j]<<" ";
-      }
-      std::cout<<std::endl;
-    }
-  }
+  checkIterators(gridView);
 }
+
 
 void smallTestBsplineBasisFunctions()
 
@@ -886,24 +849,23 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
-  partialDerivativesTest();
+  smallTestBsplineBasisFunctions();
+    testNurbsGridCylinder();
+  //  std::cout << "done with NURBS surface cylinder" << std::endl;
+  //
 
-//  smallTestBsplineBasisFunctions();
-//    testNurbsGridCylinder();
-//  //  std::cout << "done with NURBS surface cylinder" << std::endl;
-//  //
-//
-//    testNURBSGridCurve();
-////    std::cout << "done with NURBS grid Curve" << std::endl;
-//    test3DGrid();
-////    std::cout << "3dGrid " << std::endl;
-//    testTorusGeometry();
-////    std::cout << "done with NURBS torus " << std::endl;
-//
-//  testNurbsBasis();
-////    std::cout << "done with NURBS basis test " << std::endl;
-//  //
-//  testBsplineBasisFunctions();
+    testNURBSGridCurve();
+//    std::cout << "done with NURBS grid Curve" << std::endl;
+    test3DGrid();
+//    std::cout << "3dGrid " << std::endl;
+    testTorusGeometry();
+//    std::cout << "done with NURBS torus " << std::endl;
+
+  testNurbsBasis();
+//    std::cout << "done with NURBS basis test " << std::endl;
+  //
+  testPlate();
+  testBsplineBasisFunctions();
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
