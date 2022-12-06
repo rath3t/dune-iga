@@ -27,9 +27,38 @@ namespace Dune::IGA {
     const Entity& dereference() const { return **this; }
 
     bool equals(const NURBSGridLeafIterator& r) const { return *this == r; }
-
-    explicit NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator spanIter) : std::vector<Entity>::const_iterator(spanIter) {}
+        explicit NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator spanIter) : std::vector<Entity>::const_iterator(spanIter) {}
   };
+
+
+    /** \brief Iterator over child elements
+     * This is a default implementation since the functionality is not given for the iga grid
+     * */
+    template<class GridImp>
+    struct NurbsHierarchicIterator
+    {
+      explicit NurbsHierarchicIterator(const  typename GridImp::Traits::template Codim<0>::Entity& ent) : nurbsEntity{&ent}{}
+      auto operator<=>(const NurbsHierarchicIterator&) const = default;
+      auto operator*(){ return *nurbsEntity;}
+      auto operator->(){ return nurbsEntity;}
+      void operator++(){}
+      const typename GridImp::Traits::template Codim<0>::Entity* nurbsEntity;
+    };
+    /** \brief Iterator over intersections between elements  */
+    template<class GridImp>
+    class NURBSGridInterSectionIterator : public std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator
+    {
+    public:
+      NURBSGridInterSectionIterator()=default;
+      using Intersection = typename GridImp::Traits::LeafIntersection;
+      using Reference =  Intersection;
+      explicit NURBSGridInterSectionIterator(typename std::vector<Intersection>::const_iterator spanIter)
+          :  std::vector<Intersection>::const_iterator(spanIter)
+      {}
+    };
+  }
+
+
 
   template <class GridImp>
   struct NurbsHierarchicIterator {

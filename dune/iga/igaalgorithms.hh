@@ -9,20 +9,45 @@
 #include <ranges>
 
 #include <dune/iga/bsplinealgorithms.hh>
+#include <dune/iga/linearalgebra.hh>
 #include <dune/iga/multidimensionNet.hh>
 #include <dune/iga/nurbspatchdata.hh>
-#include <dune/iga/linearalgebra.h>
+#include <dune/iga/typetraits.hh>
 namespace Dune::IGA {
 
-  template <std::integral auto dim>
-  auto ordersFromDegrees(const std::array<int, dim>& degree) {
-    std::array<int, dim> order;
-    std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
-    return order;
-  }
+  namespace Impl {
+    template <std::integral auto dim>
+    auto ordersFromDegrees(const std::array<int, dim>& degree) {
+      std::array<int, dim> order;
+      std::ranges::transform(degree, order.begin(), [](const auto& p) { return p + 1; });
+      return order;
+    }
+
+    template <std::integral auto dim>
+    void createPartialSubDerivativPermutations(const FieldVector<int, dim>& v,std::vector<FieldVector<int, dim>>& perm) {
+      perm.resize(0);
+      for (int i = 1; i < std::pow(2, v.size()); ++i) {
+        FieldVector<int, dim> x{};
+        for (int j = 0; j < v.size(); ++j)
+          if ((i & (1 << j)) != 0) {
+            x[j] = v[j];
+            if (v[j] == 0) goto outer;
+          }
+        perm.push_back(x);
+      outer:;
+      }
+    }
+
+    template <Vector VectorType>
+    int binom(const VectorType& n, const VectorType& k) {
+      return std::inner_product(n.begin(), n.end(), k.begin(), 1, std::multiplies{},
+                                [](auto& ni, auto& ki) { return Dune::binomial(ni, ki); });
+    }
+
+  }  // namespace Impl
 
   template <std::floating_point ScalarType, std::integral auto dim>
-  auto generateRefinedKnots(const std::array<std::vector<ScalarType>, dim>& knotSpans,const int dir, const int refinementLevel) {
+  auto generateRefinedKnots(const std::array<std::vector<ScalarType>, dim>& knotSpans, const int dir, const int refinementLevel) {
     const int newKnotsSizeForEachSpan = Dune::power(2, refinementLevel);
     auto unique_Knots                 = knotSpans;
     std::vector<double> additionalKnots;
@@ -39,42 +64,32 @@ namespace Dune::IGA {
     return additionalKnots;
   }
 
-  template <std::integral auto dim, typename NetValueType>
-  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
-                 const MultiDimensionNet<dim, NetValueType>& net) {
-    std::array<int, dim> order = ordersFromDegrees(degree);
+
+
+
+  /** \brief Function return a copy of the subNet of a knotspan, i.e. it is used to return the weights or controlpoints defined on one element
+   *
+   * @tparam dim dimension of the patch/net
+   * @tparam NetValueType The type inside the net. It should be scalar for weights, Controlpoint<> or some vector type which satisfies Vector for the controlpoint coordinates
+   * @param subNetStart The start of the controlpointnet in terms of knot span indices. From this the degree is substracted to get the correct Controlpoint index start
+   * @param degree array of degrees per direction
+   * @param net the full net itself
+   * @return subNet with the size degree+1 per direction
+   */
+  template <std::integral auto dim, typename NetValueType> requires (std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint,NetValueType>::value )
+  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
+    std::array<int, dim> order = Impl::ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
     return net.subNet(subNetStart, order);
   }
 
-  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
+  /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
+  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType> requires (std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint,NetValueType>::value )
   auto netOfSpan(const std::array<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim>& knots,
                  const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
     auto subNetStart = findSpan(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
-  }
-
-  template <std::integral auto dim>
-  auto createPartialSubDerivativPermutations(const FieldVector<int, dim>& v) {
-    std::vector<FieldVector<int, dim>> perm;
-    for (int i = 1; i < std::pow(2, v.size()); ++i) {
-      FieldVector<int, dim> x{};
-      for (int j = 0; j < v.size(); ++j)
-        if ((i & (1 << j)) != 0) {
-          x[j] = v[j];
-          if (v[j] == 0) goto outer;
-        }
-      perm.push_back(x);
-    outer:;
-    }
-    return perm;
-  }
-
-  template <Vector VectorType>
-  int binom(const VectorType& n, const VectorType& k) {
-    return std::inner_product(n.begin(), n.end(), k.begin(), 1, std::multiplies{},
-                              [](auto& ni, auto& ki) { return Dune::binomial(ni, ki); });
   }
 
   template <std::integral auto dim, ControlPointConcept ValueType>
@@ -84,7 +99,7 @@ namespace Dune::IGA {
   }
 
   template <std::integral auto dim, ControlPointConcept ValueType>
-  auto extractControlpoints(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
+  auto extractControlCoordinates(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
   }
@@ -92,35 +107,31 @@ namespace Dune::IGA {
   template <std::size_t dim, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class Nurbs {
   public:
-    Nurbs() = default;
-    using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
+    Nurbs()                 = default;
+    using ScalarType        = typename NurbsGridLinearAlgebraTraits::value_type;
     using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
     using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
 
     template <std::integral auto dimworld>
-    Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
+    Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data, const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
         : knots_{data.knotSpans}, degree_{data.degree}, weights_{extractWeights(data.controlPoints)}, spIndex_{spIndex} {}
 
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree, const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    auto operator()(const std::array<ScalarType, dim>& u) {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex_).directGetAll();
-    }
+    auto operator()(const std::array<ScalarType, dim>& u) { return basisFunctions(u, knots_, degree_, weights_, spIndex_).directGetAll(); }
 
-    auto basisFunctionNet(const std::array<ScalarType, dim>& u) const {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex_);
-    }
+    auto basisFunctionNet(const std::array<ScalarType, dim>& u) const { return basisFunctions(u, knots_, degree_, weights_, spIndex_); }
 
-    static auto basisFunctions( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+    static auto basisFunctions(std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
                                std::optional<std::array<int, dim>> spIndex = std::nullopt) {
-      const std::array<int, dim> order = ordersFromDegrees(degree);
+      const std::array<int, dim> order = Impl::ordersFromDegrees(degree);
       std::array<DynamicVectorType, dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
         bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i],
-                                                          (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
+                                                                 (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
       auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
       auto subNetStart = spIndex ? spIndex.value() : findSpan(degree, u, knots);
@@ -133,9 +144,18 @@ namespace Dune::IGA {
       return Nnet;
     }
 
-    // \*brief This function return the basis function and the corresponding derivatives
-    // it generalizes the formula (4.20) of Piegl and Tiller 97 for a basis of dimension dim and up to the derivative degree derivativeOrder
-    static auto basisFunctionDerivatives( std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
+    /** \*brief This function return the basis function and the corresponding derivatives
+     *
+     * @param u dim-dimensional position in current span
+     * @param knots dim-dimensional array of knot vectors
+     * @param degree   dim-dimensional array of polynomial degree
+     * @param weights dim-dimensional net of controlpoint weights
+     * @param derivativeOrder  up to which order should derivatives be computed
+     * @param triangleDerivatives
+     * @param spIndex
+     * @return
+     */
+    static auto basisFunctionDerivatives(std::array<ScalarType, dim> u, const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree, const MultiDimensionNet<dim, double>& weights,
                                          const int derivativeOrder, const bool triangleDerivatives = false,
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
@@ -146,39 +166,43 @@ namespace Dune::IGA {
 
       std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
       FieldVector<int, dim> dimSize(derivativeOrder + 1);
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netsOfDerivativeNets(dimSize);
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netOfDerivativeNets(dimSize);
 
-      for (int j = 0; auto& derivNet : netsOfDerivativeNets.directGetAll()) {
-        auto multiIndex = netsOfDerivativeNets.directToMultiIndex(j++);
+      for (int j = 0; auto& derivNet : netOfDerivativeNets.directGetAll()) {
+        auto multiIndex = netOfDerivativeNets.directToMultiIndex(j++);
         for (int i = 0; i < multiIndex.size(); ++i)
           dimArrayOfVectors[i] = bSplineDerivatives[i][multiIndex[i]].container();
         derivNet = MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors);
       }
 
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netsOfDerivativeNets;
+      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
       auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
         R.directGet(j) *= subNetWeights;
-        netsOfWeightfunctions.directGet(j) = dot(netsOfDerivativeNets.directGet(j), subNetWeights);
+        netsOfWeightfunctions.directGet(j) = dot(netOfDerivativeNets.directGet(j), subNetWeights);
       }
 
+      std::vector<FieldVector<int,dim>> perms;
       for (int j = 0; j < R.directSize(); ++j) {
         const auto derivOrders = R.template directToMultiIndex<FieldVector<int, dim>>(j);
         if (triangleDerivatives)
           if (std::accumulate(derivOrders.begin(), derivOrders.end(), derivativeOrder)) continue;
-        const auto perms = createPartialSubDerivativPermutations(derivOrders);
+        Impl::createPartialSubDerivativPermutations(derivOrders,perms);
 
         for (const auto& perm : perms) {
-          MultiDimensionNet<dim, int> kNet(perm + FieldVector<int, dim>(1));
+          const MultiDimensionNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
           auto startMultiIndex = perm;
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](auto& v) { return (v != 0); });
-
           for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
-            const auto k = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
-            R.directGet(j) -= binom(perm, k) * (R.get(derivOrders - k) * netsOfWeightfunctions.get(k));  // generalized Piegl Tiller (4.20)
+            const auto multik = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
+            const ScalarType fac = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
+            const auto& Rdirect_d = R.get(derivOrders - multik);
+            auto& Rdirect = R.directGet(j);
+            for (int i = 0; i < R.directGet(j).directSize(); ++i)
+              Rdirect.directGet(i) -= fac * Rdirect_d.directGet(i); // generalized Piegl Tiller (4.20)
           }
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);
@@ -186,7 +210,8 @@ namespace Dune::IGA {
       return R;
     }
 
-    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder, const bool triangleDerivatives = false) const {
+    auto basisFunctionDerivatives(const std::array<ScalarType, dim>& u, const int derivativeOrder,
+                                  const bool triangleDerivatives = false) const {
       return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, triangleDerivatives, spIndex_);
     }
 
@@ -235,7 +260,7 @@ namespace Dune::IGA {
     newData.degree[refinementDirection] += t;
     const auto& U = oldData.knotSpans[refinementDirection];
     std::vector<ScalarType> Uh;
-    for (int j = 0, i = 0; i < U.size(); ++i) // insert knot t times for each unique knot
+    for (int j = 0, i = 0; i < U.size(); ++i)  // insert knot t times for each unique knot
       if (j < U.size()) {
         do {
           Uh.push_back(U[j]);
@@ -340,7 +365,8 @@ namespace Dune::IGA {
                 const auto factor = (j - tr <= kind - ph + oldr) ? (ub - Uh[j - tr]) / den : bet;
                 ebpts[kj]         = factor * ebpts[kj] + (1.0 - factor) * ebpts[kj + 1];
               }
-              ++i;      --j;
+              ++i;
+              --j;
               --kj;
             }
             --first;
@@ -368,7 +394,8 @@ namespace Dune::IGA {
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   auto knotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData, const std::vector<double>& newKnots,
                       const int refinementDirection) {
-    assert(std::ranges::is_sorted(newKnots) && "You passed a non-sorted vector of new knots. Sort it first or check if you passed the correct vector.");
+    assert(std::ranges::is_sorted(newKnots)
+           && "You passed a non-sorted vector of new knots. Sort it first or check if you passed the correct vector.");
     using NurbsPatchData = NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
     using ControlPoint   = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
     using namespace std::ranges;
@@ -491,9 +518,9 @@ namespace Dune::IGA {
 
   // Piegl and Tiller Algo A7.1
   template <LinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::DuneLinearAlgebraTraits<double>>
-  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                    = 1.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle                = 0.0,
-                       typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                        = 360.0,
+  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                  = 1.0,
+                       const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle              = 0.0,
+                       typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                      = 360.0,
                        const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> origin = {0, 0, 0},
                        const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> X      = {1, 0, 0},
                        const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> Y      = {0, 1, 0}) {

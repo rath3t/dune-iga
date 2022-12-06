@@ -32,7 +32,7 @@ namespace Dune::IGA {
 
     MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>> values) {
       std::vector<std::vector<ValueType>> vals;
-      for (auto& val : values)
+      for (auto&& val : values)
         vals.push_back(val);
       std::array<int, netdim> dimsize = {static_cast<int>(vals.size()), static_cast<int>(values.begin()->size())};
       *this                           = MultiDimensionNet{dimsize, vals};
@@ -81,7 +81,8 @@ namespace Dune::IGA {
      *
      *  \param[in] values netdim vectors of values
      */
-     template<template <class > typename V> requires StdVectorLikeContainer<V<ValueType>>
+    template <template <class> typename V>
+    requires StdVectorLikeContainer<V<ValueType>>
     explicit MultiDimensionNet(const std::array<V<ValueType>, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
@@ -297,10 +298,9 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      if ((std::ranges::any_of(multiIndex, [](int i) { return i < 0; }))) throw std::logic_error("Out of bounds");  // signaling Index Out of Net
-
-      if ((std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })))
-        throw std::logic_error("Out of bounds");  // signaling Index Out of Net
+      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; }) && "The passed multiIndex has negative values");
+      assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
+             && "The passed multiIndex has too large values");
 
       for (int i = 0; i < netdim; ++i) {
         help = 1;
@@ -315,7 +315,7 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     bool isValid(const ArrayType& multiIndex) const {
       for (int i = 0; i < netdim; ++i) {
-        if(multiIndex[i]> dimSize_[i]-1 || (multiIndex[i]<0)) return false;
+        if (multiIndex[i] > dimSize_[i] - 1 || (multiIndex[i] < 0)) return false;
       }
       return true;
     }
@@ -467,4 +467,59 @@ namespace Dune::IGA {
   requires DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
   operator*(const rValueType& fac, const MultiDimensionNet<netdim, lValueType>& lnet) { return lnet * fac; }
 
+  /** \brief class holds a n-dim net */
+  template <std::size_t netdim>
+  class MultiDimensionNetIndex //FIXME merge with Net
+  {
+  public:
+    explicit MultiDimensionNetIndex(const FieldVector<int, netdim>& dimSize) {
+      std::ranges::copy(dimSize, dimSize_.begin());
+      size_ = 1;
+      for (auto ds : dimSize_)
+        size_ *= ds;
+    }
+    /** \brief returns a multiindex for a scalar index */
+    template <typename ReturnType = std::array<int, netdim>>
+    ReturnType directToMultiIndex(const int index) const {
+      return directToMultiIndex<ReturnType>(dimSize_, index);
+    }
+
+    template <typename ReturnType = std::array<int, netdim>>
+    static ReturnType directToMultiIndex(const std::array<int, netdim>& dimSize, const int index) {
+      ReturnType multiIndex;
+
+      int help = index;
+      int temp;
+      for (int i = 0; i < netdim; ++i) {
+        temp          = help % (dimSize[i]);
+        multiIndex[i] = temp;
+        help -= temp;
+        help = help / dimSize[i];
+      }
+      return multiIndex;
+    }
+
+    template <typename ArrayType = std::array<int, netdim>>
+    int index(const ArrayType& multiIndex) const {
+      int index{}, help;
+      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; }) && "The passed multiIndex has negative values");
+      assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
+             && "The passed multiIndex has too large values");
+
+      for (int i = 0; i < netdim; ++i) {
+        help = 1;
+        for (int j = i - 1; j > -1; --j)
+          help *= dimSize_[j];
+
+        index += help * multiIndex[i];
+      }
+      return index;
+    }
+
+    int directSize() const { return size_;}
+  private:
+    std::array<int, netdim> dimSize_;
+    int size_;
+
+  };
 }  // namespace Dune::IGA

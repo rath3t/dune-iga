@@ -4,7 +4,6 @@
 
 #include <ranges>
 
-//#include <dune/common/tuplevector.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
@@ -21,9 +20,7 @@ namespace Dune::IGA {
     using GridViewImp =  NURBSLeafGridView<GridImp>;
 
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
-    //    typedef typename Grid ::Traits ::LevelIntersectionIterator LevelIntersectionIterator;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
-    //    typedef typename Grid ::Traits ::HierarchicIterator HierarchicIterator;
     typedef typename GridImp ::Traits ::CollectiveCommunication CollectiveCommunication;
     typedef typename GridImp ::Traits ::LeafIntersection Intersection;
 
@@ -33,8 +30,6 @@ namespace Dune::IGA {
       typedef typename GridImp::Traits ::template Codim<cd>::template Partition<All_Partition>::LeafIterator Iterator;
 
       typedef typename GridImp::Traits::template Codim<cd>::Entity Entity;
-      //      typedef typename Grid::Traits::template Codim<cd>::EntitySeed EntitySeed;
-
       typedef typename GridImp::Traits::template Codim<cd>::Geometry Geometry;
       typedef typename GridImp::Traits::template Codim<cd>::LocalGeometry LocalGeometry;
 
@@ -45,9 +40,11 @@ namespace Dune::IGA {
         typedef typename GridImp::Traits::template Codim<cd>::template Partition<pit>::LeafIterator Iterator;
       };
     };
-    //
     static constexpr bool conforming = true;
   };
+
+  template <int codim, int dim, typename GridImpl>
+  class NURBSGridEntity;
 
   template <typename GridImpl, int griddim, std::integral auto... codim>
   std::tuple<std::vector<typename NurbsLeafGridViewTraits<GridImpl>::template Codim<codim>::Entity>...> gridEntityTupleGenerator(
@@ -58,7 +55,7 @@ namespace Dune::IGA {
   template <typename GridImpl>
   auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView);
 
-  /** \brief NURBS grid manager */
+  /** \brief NURBS leaf grid view, see Dune Book Ch. 5.1 */
   template <typename GridImpl>
   class NURBSLeafGridView {
   public:
@@ -75,12 +72,11 @@ namespace Dune::IGA {
     using IndexSet                 = typename Traits::LeafIndexSet;
     template <int cd>
     using Codim = typename Traits::template Codim<cd>;
-    //    using IntersectionIterator = LeafIntersectionIterator;
     using CollectiveCommunication = typename Traits::CollectiveCommunication;
     using Intersection            = typename Traits::LeafIntersection;
     using IntersectionIterator    = LeafIntersectionIterator;
 
-    using ctype                          = double;
+    using ctype                          = typename LinearAlgebraTraits::value_type;
     static constexpr auto dimension      = GridImpl::dimension;
     static constexpr auto dimensionworld = GridImpl::dimensionworld;
 
@@ -89,44 +85,25 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
 
-
-
-    NURBSLeafGridView(const NURBSPatchData<(size_t)dimension, (size_t)dimensionworld, NurbsGridLinearAlgebraTraits> &patchData,
+    NURBSLeafGridView(const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, LinearAlgebraTraits>>>& leafpatches,
                       const GridImpl &grid)
-        : NURBSLeafGridView(patchData.knotSpans, patchData.controlPoints, patchData.degree, grid) {}
-
-    NURBSLeafGridView(const std::array<std::vector<double>, dimension> &knotSpans, const ControlPointNetType &controlPoints,
-                      const std::array<int, dimension> order, const GridImpl &grid)
-        : NURBSpatch_(
-            std::make_shared<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>(knotSpans, controlPoints, order)),
+        : leafPatches_(leafpatches),
           grid_{&grid},
           entityVector_{
               std::make_shared<decltype(gridEntityTupleGenerator<Grid, dimension>(std::make_integer_sequence<int, dimension + 1>()))>()},
-          indexSet_{std::make_shared<NURBSGridLeafIndexSet<GridImpl>>(*this)} {
-      Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
-        std::get<i>(*entityVector_.get()).reserve(NURBSpatch_->size(i));
-        for (unsigned int j = 0; j < NURBSpatch_->size(i); ++j)
-          std::get<i>(*entityVector_.get()).emplace_back(NURBSGridEntity<i,dimension,GridImpl>(*this, j));
-      });
-
+          indexSet_{*this} {
+      for (int currentPatchId = 0; auto&& patch : *leafPatches_.get()) {
+        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
+          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
+          for (unsigned int j = 0; j < patch.size(i); ++j)
+            std::get<i>(*entityVector_.get()).emplace_back(*this, j,currentPatchId);
+        });
+        ++currentPatchId;
+      }
     }
 
-    template <int codim>
-    typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
-      // need to be rewrite for other codims
-      if constexpr (codim == 0)  // elements
-        return (std::get<0>(*entityVector_.get()).at(directIndex));
-      else if constexpr (codim == dimension)  // vertices
-        return (std::get<dimension>(*entityVector_.get()).at(directIndex));
-      else if constexpr (dimension - codim == 1)  // edges
-        return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));
-      else if constexpr (dimension - codim == 2)  // surface
-        return (std::get<dimension - 2>(*entityVector_.get()).at(directIndex));
-      else
-        throw std::logic_error("Your requested entity type does not exist.");
-    }
 
-    /** \brief obtain collective communication object */
+    /** \brief obtain collective communication object, currently this return a "NoComm" object */
     const auto &comm() const { return grid().comm(); }
 
     template <class Entity>
@@ -134,9 +111,10 @@ namespace Dune::IGA {
       return e.NURBSGridView_ == this;
     }
 
-    /** \brief obtain collective communication object */
     const auto &grid() const { return *grid_; }
 
+
+    /** \brief obtain how many entities of a give geometry type do live in this grid view */
     [[nodiscard]] int size(const GeometryType &type) const {
       if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1) || type == Dune::GeometryTypes::cube(2)
           || type == Dune::GeometryTypes::cube(3))
@@ -145,9 +123,13 @@ namespace Dune::IGA {
         return 0;
     }
 
-    const auto &getPatchData() const { return *NURBSpatch_->getPatchData(); }
+    const auto &getPatchData(int patchID=0) const { return *(leafPatches_->at(patchID).getPatchData());}
+    const auto &getPatch(int patchID=0) const { return leafPatches_->at(patchID);}
 
-    auto getPreBasis() { return Dune::Functions::BasisFactory::nurbs<dimension>(*NURBSpatch_->getPatchData()); }
+    auto getPreBasis() {
+      assert(leafPatches_->size()==1 && "The basis is only defined for single patch gridview");
+      return Dune::Functions::BasisFactory::nurbs<dimension>(this->getPatchData(0)); }
+      
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>
     using LeafIteratorImpl = NURBSGridLeafIterator<cd,ptype,GridImpl>;
     template <int cd>
@@ -198,12 +180,26 @@ namespace Dune::IGA {
     }
 
   private:
-    friend class NURBSGridLeafIndexSet<GridImpl>;
+    template <int codim>
+    typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
+      if constexpr (codim == 0)  // elements
+        return (std::get<0>(*entityVector_.get()).at(directIndex));
+      else if constexpr (codim == dimension)  // vertices
+        return (std::get<dimension>(*entityVector_.get()).at(directIndex));
+      else if constexpr (dimension - codim == 1)  // edges
+        return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));
+      else if constexpr (dimension - codim == 2)  // surface
+        return (std::get<dimension - 2>(*entityVector_.get()).at(directIndex));
+      else
+        throw std::logic_error("Your requested entity type does not exist.");
+    }
+
+    friend GridImpl;
     friend const auto &elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
     friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
     template <typename GridImp1>
     friend class NURBSintersection;
-    std::shared_ptr<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>> NURBSpatch_;
+    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, LinearAlgebraTraits>>> leafPatches_;
     const GridImpl *grid_;
     using EntityVectorType = decltype(gridEntityTupleGenerator<GridImpl, dimension>(std::make_integer_sequence<int, dimension + 1>()));
     std::shared_ptr<EntityVectorType> entityVector_{};

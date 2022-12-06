@@ -8,7 +8,9 @@
 #include <ranges>
 
 #include <dune/common/dynmatrix.hh>
+#include <dune/common/float_cmp.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/concepts.hh>
 
 namespace Dune::IGA {
 
@@ -24,11 +26,12 @@ namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
   auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
+    if (u >= U.back()) return static_cast<long int>(U.size()-p-2);
     auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
-    return std::distance(U.begin(), it) - 1;
+    return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
-  /** \brief Same as findSpan() but for dim- knotvectors  */
+  /** \brief Same as findSpan() but for dim - knotvectors  */
   template <std::size_t dim, typename ValueType>
   auto findSpan(const std::array<int, dim>& p, const std::array<ValueType, dim>& u, const std::array<std::vector<ValueType>, dim>& U) {
     std::array<int, dim> res;
@@ -37,34 +40,31 @@ namespace Dune::IGA {
     return res;
   }
 
-
   /** \brief One dimensional b-spline basis
    *
    * @tparam T is either the scalar type pf the point where to evaluate or a specif non-default LinearAlgebraTraits where
    * DynamicMatrixType and DynamicVectorType,... is derived from
    */
-  template <typename T = DuneLinearAlgebraTraits<double>> requires LinearAlgebra<T> || std::floating_point<T>
+  template <typename T = DuneLinearAlgebraTraits<double>>
+  requires LinearAlgebra<T> || std::floating_point<T>
   class BsplineBasis1D;
 
-   /** \brief One dimensional b-spline basis
-    *
-    * @tparam NurbsGridLinearAlgebraTraits Specialization where the Traits are directly given
-    */
+  /** \brief One dimensional b-spline basis
+   *
+   * @tparam NurbsGridLinearAlgebraTraits Specialization where the Traits are directly given
+   */
   template <LinearAlgebra NurbsGridLinearAlgebraTraits>
   class BsplineBasis1D<NurbsGridLinearAlgebraTraits> {
   public:
-    using ScalarType = typename NurbsGridLinearAlgebraTraits::value_type;
+    using ScalarType        = typename NurbsGridLinearAlgebraTraits::value_type;
     using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
     using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
-    template <int cols=0>
+    template <int cols = 0>
     using RowFixedMatrix = typename NurbsGridLinearAlgebraTraits::template RowFixedMatrix<cols>;
-
 
     BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : knots_{knots}, degree_{degree} {}
 
-    auto operator()(ScalarType u) {
-      return basisFunctions(u, knots_, degree_);
-    }
+    auto operator()(ScalarType u) { return basisFunctions(u, knots_, degree_); }
 
     /** \brief The evaluation function modified version of The Nurbs Book Algorithm A2.2
      *
@@ -76,9 +76,8 @@ namespace Dune::IGA {
      * @param spIndex optional index in which range the evaluationg point lies, if omited it is searched for
      * @return Non-zero B-spline basisfunctions evaluated at u
      */
-  template <std::ranges::random_access_range Range>
-    static auto basisFunctions(ScalarType u, Range&& knots, const int p,
-                               std::optional<int> spIndex = std::nullopt) {
+    template <std::ranges::random_access_range Range>
+    static auto basisFunctions(ScalarType u, Range&& knots, const int p, std::optional<int> spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + p + 1, knots.front()) == p + 1);
       assert(std::ranges::count(knots.end() - p - 1, knots.end(), knots.back()) == p + 1);
       assert(spIndex < knots.size() - p - 1);
@@ -112,6 +111,8 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
+      for ([[maybe_unused]] auto& Ni : N)
+        assert(Dune::FloatCmp::ge(Ni, 0.0)); // The basis functions are always >=0!
 
       return N;
     }
@@ -211,17 +212,16 @@ namespace Dune::IGA {
     int degree_;
   };
 
-
   /** \brief One dimensional b-spline basis
-    *
-    * @tparam ScalarType Specialization where the scalar type is given and the LinearAlgebraTraits are defaulted
+   *
+   * @tparam ScalarType Specialization where the scalar type is given and the LinearAlgebraTraits are defaulted
    */
   template <std::floating_point ScalarType>
-  class BsplineBasis1D<ScalarType > : public BsplineBasis1D<DuneLinearAlgebraTraits<ScalarType>>
-  {
+  class BsplineBasis1D<ScalarType> : public BsplineBasis1D<DuneLinearAlgebraTraits<ScalarType>> {
     using Base = BsplineBasis1D<DuneLinearAlgebraTraits<ScalarType>>;
+
   public:
-    BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : Base(knots,degree) {}
+    BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : Base(knots, degree) {}
   };
 
 }  // namespace Dune::IGA
