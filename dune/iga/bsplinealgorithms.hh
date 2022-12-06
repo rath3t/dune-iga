@@ -26,7 +26,7 @@ namespace Dune::IGA {
   template <std::ranges::random_access_range Range>
   auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    if (u >= U.back()) return static_cast<long int>(U.size()-p-2);
+    if (u >= U.back()) return static_cast<long int>(U.size()-1);
     auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }

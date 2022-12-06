@@ -5,58 +5,71 @@
 
 #include <span>
 
-//#include <dune/common/iteratorfacades.hh>
-#include <dune/iga/nurbsleafgridview.hh>
+#include <dune/common/iteratorfacades.hh>
+//#include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbspatch.hh>
 
 namespace Dune::IGA {
-  /** \brief NURBS gird leaf iterator */
+
   template <int codim, PartitionIteratorType pitype, class GridImp>
-  class NURBSGridLeafIterator : public std::vector<typename GridImp::Traits::template Codim<codim>::Entity>::const_iterator {
-    using Base = typename std::vector<typename GridImp::Traits::template Codim<codim>::Entity>::const_iterator;
+  class NURBSGridLeafIterator
+  {
+
+    constexpr static int dim = GridImp::dimension;
+
 
   public:
+    using Entity = typename GridImp::Traits::template Codim<codim>::Entity;
+    constexpr static int codimension = codim;
+
+    NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator virtualEntity) : virtualEntity_(virtualEntity) {}
+
     NURBSGridLeafIterator() = default;
-    using Reference         = typename GridImp::Traits::template Codim<codim>::Entity;
-    using Entity            = typename GridImp::Traits::template Codim<codim>::Entity;
+    //! prefix increment
+    void increment() {
+      ++virtualEntity_;
+    }
 
-    void increment() {++(*this); }
-    //    using Base::operator*;
-    //    using Base::operator->;
+    //! dereferencing
+    const Entity& dereference() const {return *virtualEntity_;}
 
-    const Entity& dereference() const { return **this; }
+    //! equality
+    bool equals(const NURBSGridLeafIterator<codim,pitype,GridImp>& other) const {
+      return virtualEntity_ == other.virtualEntity_;
+    }
 
-    bool equals(const NURBSGridLeafIterator& r) const { return *this == r; }
-        explicit NURBSGridLeafIterator(typename std::vector<Entity>::const_iterator spanIter) : std::vector<Entity>::const_iterator(spanIter) {}
+  private:
+
+//    /** \brief This increment makes the iterator wander over all entities on all levels */
+//    void globalIncrement() {
+//
+//      // Backup current level because it may not be accessible anymore after
+//      // setting the pointer to the next entity.
+//      const int oldLevel = this->virtualEntity_.level();
+//
+//      // Increment on this level
+//      this->virtualEntity_.impl().setToTarget(this->virtualEntity_.impl().target_->succ_);
+//
+//      // If beyond the end of this level set to first of next level
+//      if (!this->virtualEntity_.impl().target_ && oldLevel < grid_->maxLevel()) {
+//
+//        this->virtualEntity_.impl().setToTarget(const_cast<OneDEntityImp<dim-codim>*>(std::get<1-codim>(grid_->entityImps_[oldLevel+1]).begin()));
+//
+//      }
+//
+//    }
+
+    // /////////////////////////////////////
+    //   Data members
+    // /////////////////////////////////////
+//    const GridImp* grid_;
+
+    //! The entity that the iterator is pointing to
+    std::vector<Entity>::const_iterator virtualEntity_{nullptr};
+
   };
 
 
-    /** \brief Iterator over child elements
-     * This is a default implementation since the functionality is not given for the iga grid
-     * */
-    template<class GridImp>
-    struct NurbsHierarchicIterator
-    {
-      explicit NurbsHierarchicIterator(const  typename GridImp::Traits::template Codim<0>::Entity& ent) : nurbsEntity{&ent}{}
-      auto operator<=>(const NurbsHierarchicIterator&) const = default;
-      auto operator*(){ return *nurbsEntity;}
-      auto operator->(){ return nurbsEntity;}
-      void operator++(){}
-      const typename GridImp::Traits::template Codim<0>::Entity* nurbsEntity;
-    };
-    /** \brief Iterator over intersections between elements  */
-    template<class GridImp>
-    class NURBSGridInterSectionIterator : public std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator
-    {
-    public:
-      NURBSGridInterSectionIterator()=default;
-      using Intersection = typename GridImp::Traits::LeafIntersection;
-      using Reference =  Intersection;
-      explicit NURBSGridInterSectionIterator(typename std::vector<Intersection>::const_iterator spanIter)
-          :  std::vector<Intersection>::const_iterator(spanIter)
-      {}
-    };
-  }
 
 
 

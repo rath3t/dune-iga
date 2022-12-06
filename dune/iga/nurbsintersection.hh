@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "nurbsleafgridview.hh"
+#include "nurbslocalgeometry.hh"
 namespace Dune::IGA {
   namespace Impl {
     static constexpr int noNeighbor = -1;
@@ -30,7 +32,7 @@ namespace Dune::IGA {
 
     NURBSintersection()=default;
 
-    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const GridView& gridView)
+    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const NURBSLeafGridView<GridImp>& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -49,12 +51,12 @@ namespace Dune::IGA {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     /** \brief Returns the element entity from which this intersection is constructed */
-    Entity inside() const { return gridView_->impl().template getEntity<0>(innerDirectIndex_); }
+    Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
 
     /** \brief Returns the element entity which intersects with the inside() element */
     Entity outside() const {
       assert(neighbor() && "Outer Element does not exist.");
-      return gridView_->impl().template getEntity<0>(outerDirectIndex_);
+      return gridView_->template getEntity<0>(outerDirectIndex_);
     }
 
     /** \brief Returns the index of the inside element */
@@ -67,10 +69,10 @@ namespace Dune::IGA {
     }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element inside */
-    LocalGeometry geometryInInside() const { return LocalGeometry(innerLocalIndex_); }
+    LocalGeometry geometryInInside() const { return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(innerLocalIndex_)); }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element outside */
-    LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
+    LocalGeometry geometryInOutside() const { return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(outerLocalIndex_)); }
 
     /** \brief Returns the global geometry of the intersection, currently this returns the geometry of the intersection as seen from the
      * inside element. This could differ from the outside element */
@@ -136,14 +138,14 @@ namespace Dune::IGA {
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-      return gridView_->impl().getPatch(0)->patchBoundaryIndex(geomEntity.impl().getIndex());
+      return gridView_->getPatch(0).patchBoundaryIndex(geomEntity.impl().getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
     bool equals(const NURBSintersection& r) const {return *this==r;}
 
   private:
-    const GridView* gridView_;
+    const NURBSLeafGridView<GridImp>* gridView_;
     int innerDirectIndex_;
     int innerLocalIndex_;
     int outerDirectIndex_;

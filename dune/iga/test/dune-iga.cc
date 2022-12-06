@@ -193,7 +193,7 @@ void testFactory(){
   constexpr auto dim               = 2UL;
   constexpr auto dimworld          = 3UL;
   const std::array<int, dim> order = {2, 1};
-  constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
+  const double invsqr2         = 1.0 / std::sqrt(2.0);
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
@@ -224,7 +224,7 @@ void testFactory(){
 
 };
 
-void testTorusGeometry() {
+auto testTorusGeometry() {
 
   const double R      = 2.0;
   const double r      = 1.0;
@@ -281,10 +281,11 @@ void testTorusGeometry() {
 
   checkIterators(gridView);
 
-//  gridcheck(grid);
+  gridcheck(grid);
+  return test;
 }
 
-void testNURBSSurface() {
+auto testNURBSSurface() {
   // parameters
   int subSampling = 5;
 
@@ -316,9 +317,10 @@ void testNURBSSurface() {
   testSuite.check(patch.size(0) == 1);
   testSuite.check(patch.size(1) == 4);
   testSuite.check(patch.size(2) == 9);
+  return testSuite;
 }
 
-void testNURBSCurve() {
+auto testNURBSCurve() {
   // parameters
   unsigned int subSampling = 5;
 
@@ -345,6 +347,7 @@ void testNURBSCurve() {
   TestSuite testSuite;
   testSuite.check(patch.size(0) == 5);
   testSuite.check(patch.size(1) == controlPoints.size());
+  return testSuite;
 }
 
 void testNurbsGridCylinder() {
@@ -362,7 +365,7 @@ void testNurbsGridCylinder() {
   constexpr auto dim               = 2UL;
   constexpr auto dimworld          = 3UL;
   const std::array<int, dim> order = {2, 1};
-  constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
+  const double invsqr2         = 1.0 / std::sqrt(2.0);
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
@@ -398,15 +401,15 @@ void testNurbsGridCylinder() {
 
   //! Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);
-  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
+  VTKWriter vtkWriter(gridView);
 
-  vtkWriter.write("ZylRefine");
+ vtkWriter.write("ZylRefine");
 
   ////////////////////////////////////////////////////////////////
 }
 
 // template <int dim>
-void testNurbsBasis() {
+auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
   //  First test
   //  A B-Spline surface of dimWorld 3
@@ -421,7 +424,7 @@ void testNurbsBasis() {
   constexpr auto dim               = 2UL;
   constexpr auto dimworld          = 3UL;
   const std::array<int, dim> order = {2, 1};
-  constexpr double invsqr2         = 1.0 / std::sqrt(2.0);
+  const double invsqr2         = 1.0 / std::sqrt(2.0);
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
@@ -460,7 +463,7 @@ void testNurbsBasis() {
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, gridView.impl().getPatchData());
-    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 
   {
@@ -473,18 +476,19 @@ void testNurbsBasis() {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.impl().getPatchData()));
-    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
 
   {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(gridView.impl().getPreBasis()));
-    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck<1>()));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(),EnableContinuityCheck()));
   }
+  return test;
 }
 
-void testBsplineBasisFunctions() {
+auto testBsplineBasisFunctions() {
   std::vector<double> knots = {0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3};
   int degree                = 2;
   TestSuite test;
@@ -776,6 +780,7 @@ void testBsplineBasisFunctions() {
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 2}), -12947.75940540574), "Nurbs P=2,N6");
   test.check(eq(dN_Nurbs.get({3, 1}).get({1, 2}), 6609.384604876715), "Nurbs P=2,N7");
   test.check(eq(dN_Nurbs.get({3, 1}).get({2, 2}), -429.1510142749812), "Nurbs P=2,N8");
+  return test;
 }
 
 #include <dune/grid/test/checkindexset.hh>
@@ -824,7 +829,7 @@ auto testPlate()
   auto gridView = grid->leafGridView();
   Dune::GeometryChecker<decltype(grid)> geometryChecker;
   geometryChecker.checkGeometry(gridView);
-  Dune::checkIndexSet(grid, gridView, std::cout);
+  Dune::checkIndexSet(*grid, gridView, std::cout);
 
   checkEntityLifetime(gridView, gridView.size(0));
 
@@ -835,37 +840,27 @@ auto testPlate()
 }
 
 
-void smallTestBsplineBasisFunctions()
-
-{
-  std::vector<double> knots({0,0,0,0.125,0.25,0.375,0.5,0.625,0.75,0.85,1,1,1});
-  int p= 2;
-  double u = 0.19706090651558072;
-  int spIndex = 3;
-  auto N =  BsplineBasis1D<DuneLinearAlgebraTraits<double>>::basisFunctions(u,knots,p,spIndex);
-}
-
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
+  TestSuite t;
 
-  smallTestBsplineBasisFunctions();
     testNurbsGridCylinder();
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
-  //
 
     testNURBSGridCurve();
 //    std::cout << "done with NURBS grid Curve" << std::endl;
     test3DGrid();
 //    std::cout << "3dGrid " << std::endl;
-    testTorusGeometry();
+    t.subTest(testTorusGeometry());
 //    std::cout << "done with NURBS torus " << std::endl;
 
-  testNurbsBasis();
+  t.subTest(testNurbsBasis());
 //    std::cout << "done with NURBS basis test " << std::endl;
   //
-  testPlate();
-  testBsplineBasisFunctions();
+ testPlate();
+  gridCheck();
+  t.subTest(testBsplineBasisFunctions());
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

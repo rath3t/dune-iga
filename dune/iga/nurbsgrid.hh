@@ -65,10 +65,10 @@ namespace Dune::IGA {
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData)
         : coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatch_{currentPatchRepresentation_},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView())},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))} {
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()} ,
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))} ,
+          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())}{
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -80,9 +80,9 @@ namespace Dune::IGA {
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
       //FIXME check sanity of knotvector and degree
       finestPatches_->emplace_back(currentPatchRepresentation_);
-      leafGridView_ = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(finestPatches_, *this);
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
       idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
-      indexdSet_    = std::make_unique<LeafIndexSet>(this->leafGridView());
+      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
     }
 
     /** \brief  constructor
@@ -96,7 +96,7 @@ namespace Dune::IGA {
               const std::array<int, dim>& order)
         : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatch_{currentPatchRepresentation_},
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()} ,
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
@@ -166,8 +166,8 @@ namespace Dune::IGA {
   private:
     void updateStateAfterRefinement() {
       finestPatches_.get()->front() = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
-      leafGridView_                 = std::make_shared<NURBSLeafGridView<NURBSGrid<dim, dimworld>>>(finestPatches_, *this);
-      indexdSet_                    = std::make_unique<LeafIndexSet>(this->leafGridView());
+      leafGridView_                 = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
+      indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
       idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
     }
 
@@ -175,9 +175,9 @@ namespace Dune::IGA {
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;
     std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>> finestPatches_;
-    std::shared_ptr<NURBSLeafGridView<NURBSGrid>> leafGridView_;
+    std::shared_ptr<GridView> leafGridView_;
+    std::unique_ptr<LeafIndexSet> indexdSet_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
-    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexdSet_;
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>

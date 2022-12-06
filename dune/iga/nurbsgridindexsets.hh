@@ -18,7 +18,7 @@ namespace Dune::IGA {
     static constexpr auto griddim  = GridImpl::dimension;
     static constexpr auto dimworld = GridImpl::dimensionworld;
 
-    explicit NURBSGridLeafIndexSet(GridView const& g) : gridView_(&g) {
+    explicit NURBSGridLeafIndexSet(NURBSLeafGridView<GridImpl> const& g) : gridView_(&g) {
       for (int id = 0; auto& entTypes : types_)
         entTypes = {GeometryTypes::cube(griddim - (id++))};
     }
@@ -41,14 +41,14 @@ namespace Dune::IGA {
 
     template <int codimElement>
     IndexType subIndex(const typename GridImpl::Traits::template Codim<codimElement>::Entity& e, int i, unsigned int codim) const {
-      if (codimElement == 0 && NURBSGridEntity<codimElement,griddim, GridImpl>::mydim == codim)
-        return gridView_->impl().getPatch(0)->getGlobalVertexIndexFromElementIndex(e.impl().getIndex(), i);
+      if (codimElement == 0 && NURBSGridEntity<codimElement,griddim, GridImpl>::mydimension == codim)
+        return gridView_->getPatch(0).getGlobalVertexIndexFromElementIndex(e.impl().getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
         return this->index(e);
       else if ((codim == 1 && codimElement == 0 && griddim == 2 )|| (codim == 2 && codimElement == 0 && griddim == 3))
-        return gridView_->impl()..getPatch(0)->getGlobalEdgeIndexFromElementIndex(e.impl().getIndex(), i);
+        return gridView_->getPatch(0).getGlobalEdgeIndexFromElementIndex(e.impl().getIndex(), i);
       else if (codim==1 && griddim == 3) // surface case
-        return gridView_->impl()..getPatch(0)->getGlobalSurfaceIndexFromElementIndex(e.impl().getIndex(), i);
+        return gridView_->getPatch(0).getGlobalSurfaceIndexFromElementIndex(e.impl().getIndex(), i);
       else
         throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");
     }
@@ -59,6 +59,6 @@ namespace Dune::IGA {
 
   private:
     std::array<std::array<GeometryType, 1>, griddim + 1> types_;
-    GridView const* gridView_;
+    NURBSLeafGridView<GridImpl> const* gridView_;
   };
 }  // namespace Dune::IGA

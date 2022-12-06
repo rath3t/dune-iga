@@ -223,7 +223,7 @@ namespace Dune::IGA {
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto transformLocalToSpan(const LocalCoordinate& local) const {
       ReturnType localInSpan;
-      if constexpr (local.size() != 0) {
+      if constexpr (LocalCoordinate::dimension != 0) {
         for (int loci = 0, i = 0; i < griddim; ++i) {
           localInSpan[i]
               = (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free) ? local[loci++] * scaling_[i] + offset_[i] : offset_[i];

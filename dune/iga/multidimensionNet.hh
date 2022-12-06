@@ -81,9 +81,9 @@ namespace Dune::IGA {
      *
      *  \param[in] values netdim vectors of values
      */
-    template <template <class> typename V>
-    requires StdVectorLikeContainer<V<ValueType>>
-    explicit MultiDimensionNet(const std::array<V<ValueType>, netdim>& values) {
+    template <typename V>
+    requires StdVectorLikeContainer<V>
+    explicit MultiDimensionNet(const std::array<V, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
 

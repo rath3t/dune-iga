@@ -127,7 +127,7 @@ namespace Dune::IGA {
                                const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
                                std::optional<std::array<int, dim>> spIndex = std::nullopt) {
       const std::array<int, dim> order = Impl::ordersFromDegrees(degree);
-      std::array<DynamicVectorType, dim> bSplines;
+      std::array<DynamicVectorType, (size_t)dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
         bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i],
