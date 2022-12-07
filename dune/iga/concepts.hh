@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 27.10.21.
 //
@@ -16,9 +19,8 @@ namespace Dune::IGA {
     { v -= v } -> std::same_as<VectorType&>;
     { v *= a } -> std::same_as<VectorType&>;
     { v /= a } -> std::same_as<VectorType&>;
-    { dot(v,v) } -> std::same_as<typename VectorType::value_type>;
-    {
-      two_norm(v) } -> std::same_as<typename VectorType::value_type>;
+    { dot(v, v) } -> std::same_as<typename VectorType::value_type>;
+    { two_norm(v) } -> std::same_as<typename VectorType::value_type>;
   };
 
   template <typename MatrixType>
@@ -31,9 +33,11 @@ namespace Dune::IGA {
   };
 
   template <typename LinearAlgebraTraits, int a = 1>
-  concept LinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<typename LinearAlgebraTraits::DynamicMatrixType>  && Vector<
-      typename LinearAlgebraTraits::template FixedVectorType<a>>  && Vector<
-      typename LinearAlgebraTraits::DynamicVectorType>&&  requires() {
+  concept LinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<
+      typename LinearAlgebraTraits::
+          DynamicMatrixType> && Vector<typename LinearAlgebraTraits::
+                                           template FixedVectorType<
+                                               a>> && Vector<typename LinearAlgebraTraits::DynamicVectorType> && requires() {
     typename LinearAlgebraTraits::value_type;
     typename LinearAlgebraTraits::template FixedMatrixType<a, a>;
     typename LinearAlgebraTraits::template FixedVectorType<a>;
@@ -44,50 +48,49 @@ namespace Dune::IGA {
   };
 
   template <typename ControlPointType>
-  concept ControlPointConcept
-      = Vector < typename ControlPointType::VectorType> && requires(ControlPointType cp){typename ControlPointType::VectorType;
-  typename ControlPointType::VectorType::value_type;
-  { cp.p } -> std::same_as<typename ControlPointType::VectorType&>;
-  { cp.w } -> std::same_as<typename ControlPointType::VectorType::value_type&>;
-};  // namespace Dune::IGA
+  concept ControlPointConcept = Vector<typename ControlPointType::VectorType> && requires(ControlPointType cp) {
+    typename ControlPointType::VectorType;
+    typename ControlPointType::VectorType::value_type;
+    { cp.p } -> std::same_as<typename ControlPointType::VectorType&>;
+    { cp.w } -> std::same_as<typename ControlPointType::VectorType::value_type&>;
+  };  // namespace Dune::IGA
 
-template <typename L, typename R>
-concept MultiplyAble = requires(L x, R y) {
-  x* y;
-};
+  template <typename L, typename R>
+  concept MultiplyAble = requires(L x, R y) {
+    x* y;
+  };
 
-template <typename L, typename R>
-concept AddAble = requires(L x, R y) {
-  x + y;
-};
+  template <typename L, typename R>
+  concept AddAble = requires(L x, R y) {
+    x + y;
+  };
 
-template <typename L, typename R>
-concept SubstractAble = requires(L x, R y) {
-  x - y;
-};
+  template <typename L, typename R>
+  concept SubstractAble = requires(L x, R y) {
+    x - y;
+  };
 
-template <typename L, typename R>
-concept MultiplyAssignAble = requires(L x, R y) {
-  x *= y;
-};
+  template <typename L, typename R>
+  concept MultiplyAssignAble = requires(L x, R y) {
+    x *= y;
+  };
 
-template <typename L, typename R>
-concept DivideAssignAble = requires(L x, R y) {
-  x /= y;
-};
+  template <typename L, typename R>
+  concept DivideAssignAble = requires(L x, R y) {
+    x /= y;
+  };
 
-template <typename L, typename R>
-concept DivideAble = requires(L x, R y) {
-  x / y;
-};
+  template <typename L, typename R>
+  concept DivideAble = requires(L x, R y) {
+    x / y;
+  };
 
-template <typename V>
-concept StdVectorLikeContainer = requires(V v, int a) {
-  typename V::value_type;
-  { v.resize(a) } -> std::same_as<void>;
-  { v.back() } -> std::same_as<typename V::value_type&>;
-  { v.front() } -> std::same_as<typename V::value_type&>;
-};
-
+  template <typename V>
+  concept StdVectorLikeContainer = requires(V v, int a) {
+    typename V::value_type;
+    { v.resize(a) } -> std::same_as<void>;
+    { v.back() } -> std::same_as<typename V::value_type&>;
+    { v.front() } -> std::same_as<typename V::value_type&>;
+  };
 
 }  // namespace Dune::IGA

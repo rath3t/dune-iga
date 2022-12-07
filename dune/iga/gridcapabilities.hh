@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 16.11.21.
 //
@@ -15,8 +18,7 @@ namespace Dune::IGA {
 }
 namespace Dune::Capabilities {
   template <std::integral auto dim, std::integral auto dimworld, int codim, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-  requires( dim <= 3)
-               struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>, codim> {
+  requires(dim <= 3) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>, codim> {
     static const bool v = true;
   };
 }  // namespace Dune::Capabilities

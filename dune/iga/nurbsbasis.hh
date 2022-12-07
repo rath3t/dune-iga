@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH
@@ -315,7 +318,7 @@ namespace Dune::Functions {
     NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other) : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
       if (other.isBound) {
         this->bind(other.elementIdx_);
-        isBound=true;
+        isBound = true;
       }
     }
 
@@ -349,17 +352,20 @@ namespace Dune::Functions {
     /** \brief Hand out a LocalBasis object */
     const NurbsLocalBasis<GV, R, MI>& localBasis() const {
       assert(isBound && "This element is not bound!");
-      return localBasis_; }
+      return localBasis_;
+    }
 
     /** \brief Hand out a LocalCoefficients object */
     const NurbsLocalCoefficients<dim>& localCoefficients() const {
       assert(isBound && "This element is not bound!");
-      return localCoefficients_; }
+      return localCoefficients_;
+    }
 
     /** \brief Hand out a LocalInterpolation object */
     const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>& localInterpolation() const {
       assert(isBound && "This element is not bound!");
-      return localInterpolation_; }
+      return localInterpolation_;
+    }
 
     /** \brief Number of shape functions in this finite element */
     [[nodiscard]] unsigned size() const {

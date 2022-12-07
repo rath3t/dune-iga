@@ -1,6 +1,5 @@
-################################
-# Dune module information file #
-################################
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: CC0-1.0
 
 #Name of the module
 Module: dune-iga

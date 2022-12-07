@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 23.11.21.
 //
@@ -26,13 +29,14 @@ namespace Dune::IGA {
     using ctype = typename GridImp::LinearAlgebraTraits::value_type;
 
     static constexpr std::integral auto mydimension = GridImp::dimension - 1;
-    static constexpr std::integral auto dimworld = GridImp::dimensionworld;
-    using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
-    using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
+    static constexpr std::integral auto dimworld    = GridImp::dimensionworld;
+    using LocalCoordinate                           = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
+    using GlobalCoordinate                          = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
 
-    NURBSintersection()=default;
+    NURBSintersection() = default;
 
-    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const NURBSLeafGridView<GridImp>& gridView)
+    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex,
+                      const NURBSLeafGridView<GridImp>& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -69,10 +73,14 @@ namespace Dune::IGA {
     }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element inside */
-    LocalGeometry geometryInInside() const { return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(innerLocalIndex_)); }
+    LocalGeometry geometryInInside() const {
+      return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(innerLocalIndex_));
+    }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element outside */
-    LocalGeometry geometryInOutside() const { return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(outerLocalIndex_)); }
+    LocalGeometry geometryInOutside() const {
+      return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(outerLocalIndex_));
+    }
 
     /** \brief Returns the global geometry of the intersection, currently this returns the geometry of the intersection as seen from the
      * inside element. This could differ from the outside element */
@@ -142,7 +150,7 @@ namespace Dune::IGA {
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
-    bool equals(const NURBSintersection& r) const {return *this==r;}
+    bool equals(const NURBSintersection& r) const { return *this == r; }
 
   private:
     const NURBSLeafGridView<GridImp>* gridView_;

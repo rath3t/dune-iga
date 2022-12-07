@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Debian
+on:
+  push:
+
+jobs:
+  Build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    container:
+      image: rath3t/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2"
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+#          - {
+#            name: "Clang-Debug",
+#            config: Debug,
+#            compilerC: clang-12,
+#            compilerCxx: clang++-12,
+#            lib: "-stdlib=libc++",
+#           }
+#          - {
+#            name: "Clang-Release",
+#            config: Release,
+#            compilerC: clang-12,
+#            compilerCxx: clang++-12,
+#            lib: "-stdlib=libc++",
+#           }
+          - {
+            name: "GCC-Debug-Dune",
+            config: Debug,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: "",
+            enableEigen: 0
+          }
+          - {
+            name: "GCC-Release-Dune",
+            config: Release,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: "",
+            enableEigen: 0
+          }
+          - {
+            name: "GCC-Debug-Eigen",
+            config: Debug,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: "",
+            enableEigen: 1
+          }
+          - {
+            name: "GCC-Release-Eigen",
+            config: Release,
+            compilerC: gcc-12,
+            compilerCxx: g++-12,
+            lib: 1,
+            enableEigen: 1
+          }
+    steps:
+      - uses: actions/checkout@v2
+        with:
+         path: 'repo'
+      - name: Build
+        working-directory: ./repo
+        run: |
+          mkdir cmake-build-${{ matrix.config.config }}
+          cd cmake-build-${{ matrix.config.config }}
+          cmake ../  -DCMAKE_BUILD_TYPE=${{ matrix.config.config }} -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.compilerC }} -DCMAKE_CXX_COMPILER=${{ matrix.config.compilerCxx }} -DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=${{ matrix.config.enableEigen }} -DDUNE_LOCALFEFUNCTIONS_ENABLE_TESTING=1
+          cmake --build . --parallel 2 --target build_tests
+      - name: Tests
+        working-directory: ./repo/cmake-build-${{ matrix.config.config }}
+        run: ctest --output-on-failure --parallel 2 -C ${{ matrix.config.config }}

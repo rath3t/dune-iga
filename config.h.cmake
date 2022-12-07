@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
 /* begin dune-iga
    put the definitions for config.h specific to
    your project here. Everything above will be

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #ifdef HAVE_CONFIG_H
@@ -61,11 +64,11 @@ auto testNURBSGridCurve() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  auto additionalKnots        = std::vector<double>(2);
-  additionalKnots[0] = 0.5;
-  additionalKnots[1] = 3.5;
-  patchData = knotRefinement<dim>(patchData, additionalKnots, 0);
-  patchData= degreeElevate(patchData,0,1);
+  auto additionalKnots    = std::vector<double>(2);
+  additionalKnots[0]      = 0.5;
+  additionalKnots[1]      = 3.5;
+  patchData               = knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData               = degreeElevate(patchData, 0, 1);
 
   TestSuite t;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
@@ -73,13 +76,14 @@ auto testNURBSGridCurve() {
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
-  for(int eleIndex=0; auto& ele: elements(gridView)) //This test also exists in grid check, but it is more convenient to debug it here
+  for (int eleIndex = 0; auto& ele : elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
   {
     const int numCorners = ele.subEntities(dim);
     for (int c = 0; c < numCorners; ++c) {
-      auto vertex = ele.template subEntity< dim >( c ).geometry();
-      auto elegeo= ele.geometry();
-      t.check(Dune::FloatCmp::eq((elegeo.corner( c )-vertex.corner(0)).two_norm(),0.0))<<"Corner "<<c<<" "<<elegeo.corner( c )<<" Alt: "<<vertex.corner(0);
+      auto vertex = ele.template subEntity<dim>(c).geometry();
+      auto elegeo = ele.geometry();
+      t.check(Dune::FloatCmp::eq((elegeo.corner(c) - vertex.corner(0)).two_norm(), 0.0))
+          << "Corner " << c << " " << elegeo.corner(c) << " Alt: " << vertex.corner(0);
     }
     ++eleIndex;
   }
@@ -808,15 +812,13 @@ void gridCheck() {
 template <typename C>
 bool checkIfFinite(const C& v) {
   for (auto& vi : v) {
-    if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>)
-    {
+    if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
       if (not std::isfinite(vi)) return false;
     } else {
       for (auto& vii : vi)
         if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vii)>>) {
           if (not std::isfinite(vii)) return false;
-        }else
-        {
+        } else {
           for (auto& viii : vii)
             if (not std::isfinite(viii)) return false;
         }
@@ -864,11 +866,11 @@ auto testPlate() {
   checkIterators(gridView);
   auto basis     = Dune::Functions::BasisFactory::makeBasis(gridView, gridView.impl().getPreBasis());
   auto localView = basis.localView();
-  std::vector<Dune::FieldVector<double,1>> N;
-  std::vector<Dune::FieldVector<double,1>> ddNi02;
-  std::vector<Dune::FieldVector<double,1>> ddNi20;
-  std::vector<Dune::FieldVector<double,1>> ddNi11;
-  std::vector<Dune::FieldMatrix<double,1,2>> dN;
+  std::vector<Dune::FieldVector<double, 1>> N;
+  std::vector<Dune::FieldVector<double, 1>> ddNi02;
+  std::vector<Dune::FieldVector<double, 1>> ddNi20;
+  std::vector<Dune::FieldVector<double, 1>> ddNi11;
+  std::vector<Dune::FieldMatrix<double, 1, 2>> dN;
   for (auto& element : elements(gridView)) {
     localView.bind(element);
     const auto& fe     = localView.tree().finiteElement();
@@ -877,18 +879,18 @@ auto testPlate() {
     auto geo           = element.geometry();
     auto localGeometry = referenceEle.template geometry<0>(0);
     for (int i = 0; i < localGeometry.corners(); ++i) {
-      auto local = localGeometry.corner(i);
+      auto local  = localGeometry.corner(i);
       auto global = geo.global(local);
-      auto J = geo.jacobianTransposed(local);
+      auto J      = geo.jacobianTransposed(local);
 
       t.check(checkIfFinite(global));
       t.check(checkIfFinite(J));
 
-      localBasis.evaluateFunction(local,N);
-      localBasis.evaluateJacobian(local,dN);
-      localBasis.partial({2,0},local,ddNi20);
-      localBasis.partial({1,1},local,ddNi11);
-      localBasis.partial({0,2},local,ddNi02);
+      localBasis.evaluateFunction(local, N);
+      localBasis.evaluateJacobian(local, dN);
+      localBasis.partial({2, 0}, local, ddNi20);
+      localBasis.partial({1, 1}, local, ddNi11);
+      localBasis.partial({0, 2}, local, ddNi02);
 
       t.check(checkIfFinite(N));
       t.check(checkIfFinite(dN));
@@ -908,7 +910,6 @@ int main(int argc, char** argv) try {
   t.subTest(testPlate());
   testNurbsGridCylinder();
   //  std::cout << "done with NURBS surface cylinder" << std::endl;
-
 
   //    std::cout << "done with NURBS grid Curve" << std::endl;
   test3DGrid();

@@ -1,4 +1,6 @@
-# default cmake build directory
+# SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
 build-cmake
 .idea/
 # need to add other file formats

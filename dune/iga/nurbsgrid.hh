@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
-#include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/common/parallel/communication.hh>
 #include <dune/iga/concepts.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
 #include <dune/iga/nurbsgridtraits.hh>
@@ -11,7 +15,6 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <dune/common/parallel/communication.hh>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -56,19 +59,19 @@ namespace Dune::IGA {
     using Codim = typename GridFamily::Traits::template Codim<cd>;
 
     using LeafIndexSet  = typename Traits::LeafIndexSet;
-    using LevelIndexSet  = typename Traits::LevelIndexSet;
+    using LevelIndexSet = typename Traits::LevelIndexSet;
     using GridView      = typename Traits::LeafGridView;
     using ElementEntity = typename Traits::template Codim<0>::Entity;
-    using GlobalIdSet = typename Traits::GlobalIdSet;
+    using GlobalIdSet   = typename Traits::GlobalIdSet;
     NURBSGrid()         = default;
 
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData)
         : coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()} ,
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))} ,
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())}{
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
+          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())} {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -78,7 +81,7 @@ namespace Dune::IGA {
       if constexpr (dim > 2)
         assert(nurbsPatchData.knotSpans[2].size() - nurbsPatchData.degree[2] - 1 == nurbsPatchData.controlPoints.size()[2]
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
-      //FIXME check sanity of knotvector and degree
+      // FIXME check sanity of knotvector and degree
       finestPatches_->emplace_back(currentPatchRepresentation_);
       leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
       idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
@@ -96,7 +99,7 @@ namespace Dune::IGA {
               const std::array<int, dim>& order)
         : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints, order)},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()} ,
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
@@ -181,25 +184,23 @@ namespace Dune::IGA {
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto levelGridView(
-      const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid, int level) {
+  auto levelGridView(const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid, int level) {
     return grid.levelGridView(level);
   }
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto leafGridView(
-      const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid) {
+  auto leafGridView(const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid) {
     return grid.leafGridView();
   }
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   struct NurbsGridFamily {
     using GridImpl = Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
-    using Traits = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator, NURBSintersection,
-                            NURBSintersection, NURBSGridInterSectionIterator, NURBSGridInterSectionIterator, NurbsHierarchicIterator,
-                            NURBSGridLeafIterator, NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>,
-                            int, IgaIdSet<GridImpl>, int, CollectiveCommunication<No_Comm>, NurbsLeafGridViewTraits,
-                            NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
+    using Traits   = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator, NURBSintersection,
+                                   NURBSintersection, NURBSGridInterSectionIterator, NURBSGridInterSectionIterator, NurbsHierarchicIterator,
+                                   NURBSGridLeafIterator, NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>,
+                                   IgaIdSet<GridImpl>, int, IgaIdSet<GridImpl>, int, CollectiveCommunication<No_Comm>,
+                                   NurbsLeafGridViewTraits, NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 
 }  // namespace Dune::IGA

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 16.11.21.
 //
@@ -20,16 +23,16 @@ namespace Dune::IGA {
     static constexpr std::integral auto mydimension = mydim;
 
     static constexpr std::integral auto coorddimension = dimworld;
-    static constexpr std::integral auto griddim     = GridImpl::dimension;
+    static constexpr std::integral auto griddim        = GridImpl::dimension;
 
-    using ctype = typename GridImpl::LinearAlgebraTraits::value_type;
-    using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
-    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
-    using GlobalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
-    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
+    using ctype                     = typename GridImpl::LinearAlgebraTraits::value_type;
+    using LinearAlgebraTraits       = typename GridImpl::LinearAlgebraTraits;
+    using LocalCoordinate           = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
+    using GlobalCoordinate          = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
+    using JacobianTransposed        = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
     using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
 
-    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
+    using ControlPointType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
 
   private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -48,25 +51,25 @@ namespace Dune::IGA {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
           scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
-        offset_[i]  = patchData_->knotSpans[i][thisSpanIndices[i]];
+        offset_[i] = patchData_->knotSpans[i][thisSpanIndices[i]];
       }
       for (int i = 0; i < griddim; ++i)
         thisSpanIndices_[i] = (thisSpanIndices[i] == patchData->knotSpans[i].size() - 1) ? thisSpanIndices[i] - patchData->degree[i] - 1
                                                                                          : thisSpanIndices[i];
 
-      //If we are a vertex and on the rightmost end of the knotspan, we receive here the last index,
-      // For the proper construction of the nurbs and controlpoint net we need the indices end -degree -2
-      // To properly extract for the last span and not for the span after the last one
-      if constexpr( mydim==0)
+      // If we are a vertex and on the rightmost end of the knotspan, we receive here the last index,
+      //  For the proper construction of the nurbs and controlpoint net we need the indices end -degree -2
+      //  To properly extract for the last span and not for the span after the last one
+      if constexpr (mydim == 0)
         for (int i = 0; i < griddim; ++i)
-          if (thisSpanIndices[i] == patchData->knotSpans[i].size()-1)
+          if (thisSpanIndices[i] == patchData->knotSpans[i].size() - 1)
             thisSpanIndices_[i] = patchData->knotSpans[i].size() - patchData->degree[i] - 2;
 
       nurbs_           = Dune::IGA::Nurbs<griddim, LinearAlgebraTraits>(*patchData, thisSpanIndices_);
       cpCoordinateNet_ = netOfSpan(thisSpanIndices_, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
     }
 
-    NURBSGeometry() =default;
+    NURBSGeometry() = default;
 
     /** \brief Map the center of the element to the geometry */
     [[nodiscard]] GlobalCoordinate center() const {
@@ -76,8 +79,9 @@ namespace Dune::IGA {
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
-      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
-      ctype vol       = 0.0;
+      const auto rule
+          = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
+      ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
@@ -97,7 +101,6 @@ namespace Dune::IGA {
 
     [[nodiscard]] bool affine() const { return false; }
 
-
     /** \brief evaluates the geometric position
      *
      *  \param[in] local local coordinates for each dimension in [0,1] domain
@@ -105,7 +108,7 @@ namespace Dune::IGA {
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
       const auto localInSpan = transformLocalToSpan(local);
 
-      auto basis             = nurbs_.basisFunctionNet(localInSpan);
+      auto basis = nurbs_.basisFunctionNet(localInSpan);
       return dot(basis, cpCoordinateNet_);
     }
 
@@ -187,7 +190,6 @@ namespace Dune::IGA {
       return metric;
     }
 
-
     auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
       const auto secDerivatives = secondDerivativeOfPosition(local);
       const auto unitnormal     = unitNormal(local);
@@ -229,6 +231,7 @@ namespace Dune::IGA {
 
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
+
   private:
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto transformLocalToSpan(const LocalCoordinate& local) const {
@@ -237,7 +240,6 @@ namespace Dune::IGA {
         for (int loci = 0, i = 0; i < griddim; ++i) {
           localInSpan[i]
               = (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free) ? local[loci++] * scaling_[i] + offset_[i] : offset_[i];
-
         }
       } else
         for (int i = 0; i < griddim; ++i)

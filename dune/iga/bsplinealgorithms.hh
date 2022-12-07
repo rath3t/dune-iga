@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 07.11.21.
 //
@@ -9,8 +12,8 @@
 
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/concepts.hh>
+#include <dune/iga/dunelinearalgebratraits.hh>
 
 namespace Dune::IGA {
 
@@ -24,9 +27,9 @@ namespace Dune::IGA {
    * @return
    */
   template <std::ranges::random_access_range Range>
-  auto findSpan(const int p,  typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
+  auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    if (u >= U.back()) return static_cast<long int>(U.size()-p-2); // if the coordinate is to big we return to the last non-end span
+    if (u >= U.back()) return static_cast<long int>(U.size() - p - 2);  // if the coordinate is to big we return to the last non-end span
     auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
@@ -112,7 +115,7 @@ namespace Dune::IGA {
         N[j + 1] = saved;
       }
       for ([[maybe_unused]] auto& Ni : N)
-        assert(Dune::FloatCmp::ge(Ni, 0.0)); // The basis functions are always >=0!
+        assert(Dune::FloatCmp::ge(Ni, 0.0));  // The basis functions are always >=0!
 
       return N;
     }

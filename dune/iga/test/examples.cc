@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #include <config.h>
 #include <vector>
 
@@ -14,13 +17,12 @@
 // { include_matrix_vector_end }
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/iga/controlpoint.hh>
+#include <dune/iga/nurbsgrid.hh>
 #include <dune/istl/matrixindexset.hh>
 #include <dune/istl/matrixmarket.hh>
 #include <dune/istl/preconditioners.hh>
 #include <dune/istl/solvers.hh>
-
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/controlpoint.hh>
 // { using_namespace_dune_begin }
 using namespace Dune;
 // { using_namespace_dune_end }
@@ -66,10 +68,10 @@ void assembleElementStiffnessMatrix(const LocalView& localView, Matrix& elementM
     // { get_quad_point_info_end }
     // { compute_gradients_begin }
     // The gradients of the shape functions on the reference element
-    std::vector<FieldMatrix<double, 1, dim> > referenceGradients;
+    std::vector<FieldMatrix<double, 1, dim>> referenceGradients;
     localFiniteElement.localBasis().evaluateJacobian(quadPos, referenceGradients);
     // Compute the shape function gradients on the grid element
-    std::vector<FieldVector<double, dim> > gradients(referenceGradients.size());
+    std::vector<FieldVector<double, dim>> gradients(referenceGradients.size());
     for (size_t i = 0; i < gradients.size(); i++)
       jacobian.mv(referenceGradients[i][0], gradients[i]);
     // { compute_gradients_end }
@@ -108,7 +110,7 @@ void assembleElementVolumeTerm(const LocalView& localView, BlockVector<double>& 
     const double integrationElement = element.geometry().integrationElement(quadPos);
     double functionValue            = volumeTerm(element.geometry().global(quadPos));
     // Evaluate all shape function values at this point
-    std::vector<FieldVector<double, 1> > shapeFunctionValues;
+    std::vector<FieldVector<double, 1>> shapeFunctionValues;
     localFiniteElement.localBasis().evaluateFunction(quadPos, shapeFunctionValues);
     // Actually compute the vector entries
     for (size_t p = 0; p < localB.size(); p++) {
@@ -204,8 +206,8 @@ int main(int argc, char* argv[]) {
   // { mpi_setup_end }
   //////////////////////////////////
   //  Generate the grid
-      //////////////////////////////////
-      // { create_grid_begin }
+  //////////////////////////////////
+  // { create_grid_begin }
   const auto dim                   = 2;
   const auto dimworld              = 3;
   const std::array<int, dim> order = {2, 2};
@@ -225,8 +227,8 @@ int main(int argc, char* argv[]) {
   auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
-  patchData.knotSpans = knotSpans;
-  patchData.degree            = order;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
   patchData.controlPoints = controlNet;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
   grid->globalRefine(2);
@@ -236,20 +238,18 @@ int main(int argc, char* argv[]) {
   // { create_grid_end }
   /////////////////////////////////////////////////////////
   //  Stiffness matrix and right hand side vector
-      /////////////////////////////////////////////////////////
-      // { create_matrix_vector_begin }
-      using Matrix
-      = BCRSMatrix<double>;
+  /////////////////////////////////////////////////////////
+  // { create_matrix_vector_begin }
+  using Matrix = BCRSMatrix<double>;
   using Vector = BlockVector<double>;
   Matrix stiffnessMatrix;
   Vector b;
   // { create_matrix_vector_end }
   /////////////////////////////////////////////////////////
   //  Assemble the system
-      /////////////////////////////////////////////////////////
-      // { setup_basis_begin }
-      Functions::LagrangeBasis<GridView, 1>
-          basis(gridView);
+  /////////////////////////////////////////////////////////
+  // { setup_basis_begin }
+  Functions::LagrangeBasis<GridView, 1> basis(gridView);
   auto sourceTerm = [](const FieldVector<double, dim>& x) { return -5.0; };
   // { setup_basis_end }
   // { call_assembler_begin }

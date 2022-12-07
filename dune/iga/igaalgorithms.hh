@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 21.10.21.
 //
@@ -24,7 +27,7 @@ namespace Dune::IGA {
     }
 
     template <std::integral auto dim>
-    void createPartialSubDerivativPermutations(const FieldVector<int, dim>& v,std::vector<FieldVector<int, dim>>& perm) {
+    void createPartialSubDerivativPermutations(const FieldVector<int, dim>& v, std::vector<FieldVector<int, dim>>& perm) {
       perm.resize(0);
       for (int i = 1; i < std::pow(2, v.size()); ++i) {
         FieldVector<int, dim> x{};
@@ -64,20 +67,21 @@ namespace Dune::IGA {
     return additionalKnots;
   }
 
-
-
-
-  /** \brief Function return a copy of the subNet of a knotspan, i.e. it is used to return the weights or controlpoints defined on one element
+  /** \brief Function return a copy of the subNet of a knotspan, i.e. it is used to return the weights or controlpoints defined on one
+   * element
    *
    * @tparam dim dimension of the patch/net
-   * @tparam NetValueType The type inside the net. It should be scalar for weights, Controlpoint<> or some vector type which satisfies Vector for the controlpoint coordinates
-   * @param subNetStart The start of the controlpointnet in terms of knot span indices. From this the degree is substracted to get the correct Controlpoint index start
+   * @tparam NetValueType The type inside the net. It should be scalar for weights, Controlpoint<> or some vector type which satisfies
+   * Vector for the controlpoint coordinates
+   * @param subNetStart The start of the controlpointnet in terms of knot span indices. From this the degree is substracted to get the
+   * correct Controlpoint index start
    * @param degree array of degrees per direction
    * @param net the full net itself
    * @return subNet with the size degree+1 per direction
    */
-  template <std::integral auto dim, typename NetValueType> requires (std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint,NetValueType>::value )
-  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
+  template <std::integral auto dim, typename NetValueType>
+  requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+      std::array<int, dim> subNetStart, const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
@@ -85,9 +89,10 @@ namespace Dune::IGA {
   }
 
   /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
-  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType> requires (std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint,NetValueType>::value )
-  auto netOfSpan(const std::array<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim>& knots,
-                 const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
+  template <std::floating_point ScalarType, std::integral auto dim, typename NetValueType>
+  requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+      const std::array<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
+      const MultiDimensionNet<dim, NetValueType>& net) {
     auto subNetStart = findSpan(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
@@ -185,24 +190,24 @@ namespace Dune::IGA {
         netsOfWeightfunctions.directGet(j) = dot(netOfDerivativeNets.directGet(j), subNetWeights);
       }
 
-      std::vector<FieldVector<int,dim>> perms;
+      std::vector<FieldVector<int, dim>> perms;
       for (int j = 0; j < R.directSize(); ++j) {
         const auto derivOrders = R.template directToMultiIndex<FieldVector<int, dim>>(j);
         if (triangleDerivatives)
           if (std::accumulate(derivOrders.begin(), derivOrders.end(), derivativeOrder)) continue;
-        Impl::createPartialSubDerivativPermutations(derivOrders,perms);
+        Impl::createPartialSubDerivativPermutations(derivOrders, perms);
 
         for (const auto& perm : perms) {
           const MultiDimensionNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
           auto startMultiIndex = perm;
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](auto& v) { return (v != 0); });
           for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
-            const auto multik = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
-            const ScalarType fac = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
+            const auto multik     = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
+            const ScalarType fac  = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
             const auto& Rdirect_d = R.get(derivOrders - multik);
-            auto& Rdirect = R.directGet(j);
+            auto& Rdirect         = R.directGet(j);
             for (int i = 0; i < R.directGet(j).directSize(); ++i)
-              Rdirect.directGet(i) -= fac * Rdirect_d.directGet(i); // generalized Piegl Tiller (4.20)
+              Rdirect.directGet(i) -= fac * Rdirect_d.directGet(i);  // generalized Piegl Tiller (4.20)
           }
         }
         R.directGet(j) /= netsOfWeightfunctions.directGet(0);

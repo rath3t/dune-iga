@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #pragma once
 
@@ -10,7 +12,7 @@
 namespace Dune::IGA {
 
   template <class GridImpl>
-  class NURBSGridLeafIndexSet : public IndexSet< GridImpl, NURBSGridLeafIndexSet< GridImpl >, int ,std::array<GeometryType, 1>> {
+  class NURBSGridLeafIndexSet : public IndexSet<GridImpl, NURBSGridLeafIndexSet<GridImpl>, int, std::array<GeometryType, 1>> {
   public:
     using Types                    = std::array<GeometryType, 1>;
     using IndexType                = unsigned int;
@@ -34,20 +36,20 @@ namespace Dune::IGA {
       return e.impl().getIndex();
     }
 
-    template<class Entity>
-    IndexType index(const  Entity& e) const {
+    template <class Entity>
+    IndexType index(const Entity& e) const {
       return e.impl().getIndex();
     }
 
     template <int codimElement>
     IndexType subIndex(const typename GridImpl::Traits::template Codim<codimElement>::Entity& e, int i, unsigned int codim) const {
-      if (codimElement == 0 && NURBSGridEntity<codimElement,griddim, GridImpl>::mydimension == codim)
+      if (codimElement == 0 && NURBSGridEntity<codimElement, griddim, GridImpl>::mydimension == codim)
         return gridView_->getPatch(0).getGlobalVertexIndexFromElementIndex(e.impl().getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
         return this->index(e);
-      else if ((codim == 1 && codimElement == 0 && griddim == 2 )|| (codim == 2 && codimElement == 0 && griddim == 3))
+      else if ((codim == 1 && codimElement == 0 && griddim == 2) || (codim == 2 && codimElement == 0 && griddim == 3))
         return gridView_->getPatch(0).getGlobalEdgeIndexFromElementIndex(e.impl().getIndex(), i);
-      else if (codim==1 && griddim == 3) // surface case
+      else if (codim == 1 && griddim == 3)  // surface case
         return gridView_->getPatch(0).getGlobalSurfaceIndexFromElementIndex(e.impl().getIndex(), i);
       else
         throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");

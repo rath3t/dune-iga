@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 21.10.21.
 //
@@ -469,7 +472,7 @@ namespace Dune::IGA {
 
   /** \brief class holds a n-dim net */
   template <std::size_t netdim>
-  class MultiDimensionNetIndex //FIXME merge with Net
+  class MultiDimensionNetIndex  // FIXME merge with Net
   {
   public:
     explicit MultiDimensionNetIndex(const FieldVector<int, netdim>& dimSize) {
@@ -516,10 +519,10 @@ namespace Dune::IGA {
       return index;
     }
 
-    int directSize() const { return size_;}
+    int directSize() const { return size_; }
+
   private:
     std::array<int, netdim> dimSize_;
     int size_;
-
   };
 }  // namespace Dune::IGA
