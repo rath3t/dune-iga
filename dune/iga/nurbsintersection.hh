@@ -1,9 +1,14 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 23.11.21.
 //
 
 #pragma once
 
+#include "nurbsleafgridview.hh"
+#include "nurbslocalgeometry.hh"
 namespace Dune::IGA {
   namespace Impl {
     static constexpr int noNeighbor = -1;
@@ -14,7 +19,7 @@ namespace Dune::IGA {
 
   template <typename GridImp>
   class NURBSintersection {
-  public:
+   public:
     using Iterator      = NURBSGridInterSectionIterator<NURBSintersection>;
     using Entity        = typename GridImp::Traits::template Codim<0>::Entity;
     using Geometry      = typename GridImp::Traits::template Codim<1>::Geometry;
@@ -24,13 +29,14 @@ namespace Dune::IGA {
     using ctype = typename GridImp::LinearAlgebraTraits::value_type;
 
     static constexpr std::integral auto mydimension = GridImp::dimension - 1;
-    static constexpr std::integral auto dimworld = GridImp::dimensionworld;
-    using LocalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
+    static constexpr std::integral auto dimworld    = GridImp::dimensionworld;
+    using LocalCoordinate  = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
     using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
 
-    NURBSintersection()=default;
+    NURBSintersection() = default;
 
-    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex, const GridView& gridView)
+    NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex,
+                      const NURBSLeafGridView<GridImp>& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -42,7 +48,8 @@ namespace Dune::IGA {
 
     /** \brief Returns true if the intersection has no outer neighbor */
     [[nodiscard]] bool neighbor() const { return outerDirectIndex_ != Impl::noNeighbor; }
-    /** \brief Returns true if the intersection is conforming, i.e. inside the patch this is true but between patches not necessarily */
+    /** \brief Returns true if the intersection is conforming, i.e. inside the patch this is true but between patches
+     * not necessarily */
     [[nodiscard]] bool conforming() const { return true; }
 
     /** \brief Returns the cube type this intersection, i.e. vertex, edge or quadrilateral */
@@ -60,24 +67,29 @@ namespace Dune::IGA {
     /** \brief Returns the index of the inside element */
     [[nodiscard]] int indexInInside() const { return innerLocalIndex_; }
 
-    /** \brief Returns the index of the outside element, this return Impl::noNeighbor if the outside element does not exist */
+    /** \brief Returns the index of the outside element, this return Impl::noNeighbor if the outside element does not
+     * exist */
     [[nodiscard]] int indexInOutside() const {
       assert(neighbor() && "Outer Element does not exist.");
       return outerLocalIndex_;
     }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element inside */
-    LocalGeometry geometryInInside() const { return LocalGeometry(innerLocalIndex_); }
+    LocalGeometry geometryInInside() const {
+      return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(innerLocalIndex_));
+    }
 
     /** \brief Returns the local geometry of the intersection in the coordinates of the element outside */
-    LocalGeometry geometryInOutside() const { return LocalGeometry(outerLocalIndex_); }
+    LocalGeometry geometryInOutside() const {
+      return LocalGeometry(NURBSLocalGeometry<mydimension, GridImp::dimension, GridImp>(outerLocalIndex_));
+    }
 
-    /** \brief Returns the global geometry of the intersection, currently this returns the geometry of the intersection as seen from the
-     * inside element. This could differ from the outside element */
+    /** \brief Returns the global geometry of the intersection, currently this returns the geometry of the intersection
+     * as seen from the inside element. This could differ from the outside element */
     Geometry geometry() const { return inside().template subEntity<1>(innerLocalIndex_).geometry(); }
 
-    /** \brief Returns the normal which lies in the tangent plane of the inside element and is perpendicular on the intersection (edge or
-     * surface) */
+    /** \brief Returns the normal which lies in the tangent plane of the inside element and is perpendicular on the
+     * intersection (edge or surface) */
     [[nodiscard]] GlobalCoordinate outerNormal(const LocalCoordinate& xi) const {
       if constexpr (mydimension == 0) {
         const auto xiInElementCoords        = geometryInInside().global(xi);
@@ -88,10 +100,13 @@ namespace Dune::IGA {
           const auto innerJacobianTransposed = this->geometry().jacobianTransposed(xi)[0];
           switch (innerLocalIndex_) {
             case 0:
-            case 3: return GlobalCoordinate({-innerJacobianTransposed[1], innerJacobianTransposed[0]});
+            case 3:
+              return GlobalCoordinate({-innerJacobianTransposed[1], innerJacobianTransposed[0]});
             case 1:
-            case 2: return GlobalCoordinate({innerJacobianTransposed[1], -innerJacobianTransposed[0]});
-            default: __builtin_unreachable();
+            case 2:
+              return GlobalCoordinate({innerJacobianTransposed[1], -innerJacobianTransposed[0]});
+            default:
+              __builtin_unreachable();
           }
         } else if constexpr (dimworld == 3)  // edges in R3
         {
@@ -99,11 +114,16 @@ namespace Dune::IGA {
           const auto insideJacobianTransposed = inside().geometry().jacobianTransposed(xiInElementCoords);
           auto normal                         = cross(insideJacobianTransposed[0], insideJacobianTransposed[1]);
           switch (innerLocalIndex_) {
-            case 0: return cross(normal, insideJacobianTransposed[1]);
-            case 1: return cross(insideJacobianTransposed[1], normal);
-            case 2: return cross(insideJacobianTransposed[0], normal);
-            case 3: return cross(normal, insideJacobianTransposed[0]);
-            default: __builtin_unreachable();
+            case 0:
+              return cross(normal, insideJacobianTransposed[1]);
+            case 1:
+              return cross(insideJacobianTransposed[1], normal);
+            case 2:
+              return cross(insideJacobianTransposed[0], normal);
+            case 3:
+              return cross(normal, insideJacobianTransposed[0]);
+            default:
+              __builtin_unreachable();
           }
         }
       } else if constexpr (mydimension == 2 && dimworld == 3) {  // surfaces in R3
@@ -111,11 +131,14 @@ namespace Dune::IGA {
         switch (innerLocalIndex_) {
           case 0:
           case 3:
-          case 4: return cross(innerJacobianTransposed[1], innerJacobianTransposed[0]);
+          case 4:
+            return cross(innerJacobianTransposed[1], innerJacobianTransposed[0]);
           case 1:
           case 2:
-          case 5: return cross(innerJacobianTransposed[0], innerJacobianTransposed[1]);
-          default: __builtin_unreachable();
+          case 5:
+            return cross(innerJacobianTransposed[0], innerJacobianTransposed[1]);
+          default:
+            __builtin_unreachable();
         }
       }
       __builtin_unreachable();
@@ -136,13 +159,14 @@ namespace Dune::IGA {
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-      return gridView_->getPatch(0).patchBoundaryIndex(geomEntity.getIndex());
+      return gridView_->getPatch(0).patchBoundaryIndex(geomEntity.impl().getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
+    bool equals(const NURBSintersection& r) const { return *this == r; }
 
-  private:
-    const GridView* gridView_;
+   private:
+    const NURBSLeafGridView<GridImp>* gridView_;
     int innerDirectIndex_;
     int innerLocalIndex_;
     int outerDirectIndex_;

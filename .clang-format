@@ -1,42 +1,37 @@
 ---
-  BasedOnStyle: Google
-  AccessModifierOffset: '-2'
-  AlignTrailingComments: true
-  AllowAllParametersOfDeclarationOnNextLine: false
-  AlwaysBreakTemplateDeclarations: 'Yes'
-  AllowShortLoopsOnASingleLine: false
-  BreakBeforeBraces: Attach
-  ColumnLimit: 140
-  ConstructorInitializerAllOnOneLineOrOnePerLine: true
-  SortIncludes: true
-  AllowShortCaseLabelsOnASingleLine: true
-  IndentPPDirectives: AfterHash
-  AlignConsecutiveAssignments: Consecutive
-  IndentWidth: '2'
-  NamespaceIndentation: All
-  BreakBeforeBinaryOperators: All
-  BreakBeforeTernaryOperators: 'true'
-  IncludeBlocks: Regroup
-  IncludeCategories:
-    - Regex: '^(<|")(gmock|gtest)/'
-      Priority: 0
-      SortPriority: 0
-    - Regex: '^(<|")dune/'
-      Priority: 3
-      SortPriority: 3
-    - Regex: '^(<|")spdlog/'
-      Priority: 4
-      SortPriority: 4
-    - Regex: '^(<|")Eigen/'
-      Priority: 5
-      SortPriority: 5
-    - Regex: '^(<|")ikarus/'
-      Priority: 10
-      SortPriority: 10
-    - Regex:           '<([A-Za-z0-9.\/-_])+>'
-      Priority:        2
-      SortPriority: 2
-    - Regex:           '"([A-Za-z0-9.\/-_])+"'
-      Priority:        1
-      SortPriority: 1
+# SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+BasedOnStyle: Google
+AccessModifierOffset: '-1'
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakTemplateDeclarations: 'Yes'
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+ColumnLimit: 120
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+SortIncludes: true
+IndentPPDirectives: AfterHash
+AlignConsecutiveAssignments: Consecutive
+IndentWidth: '2'
+NamespaceIndentation: All
+BreakBeforeBinaryOperators: All
+BreakBeforeTernaryOperators: 'true'
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: 'config.h'
+    Priority: -1
+    SortPriority: -1
+  - Regex: '^(<|")dune/'
+    Priority: 3
+    SortPriority: 3
+  - Regex: '^(<|")Eigen/'
+    Priority: 5
+    SortPriority: 5
+  - Regex:           '<([A-Za-z0-9.\/-_])+>'
+    Priority:        2
+    SortPriority: 2
+  - Regex:           '"([A-Za-z0-9.\/-_])+"'
+    Priority:        1
+    SortPriority: 1
 ...

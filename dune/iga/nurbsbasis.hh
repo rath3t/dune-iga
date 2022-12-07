@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH
@@ -30,7 +33,8 @@ namespace Dune::Functions {
   template <typename GV, typename R, typename MI>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
+  template <typename GV, class MI,
+            Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -48,7 +52,7 @@ namespace Dune::Functions {
     typedef typename GV::ctype D;
     enum { dim = GV::dimension };
 
-  public:
+   public:
     //! \brief export type traits for function signature
     using Traits = LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>>;
 
@@ -111,7 +115,7 @@ namespace Dune::Functions {
      */
     [[nodiscard]] std::size_t size() const { return lFE_.size(); }
 
-  private:
+   private:
     const NurbsPreBasis<GV, MI>& preBasis_;
 
     const NurbsLocalFiniteElement<GV, R, MI>& lFE_;
@@ -206,7 +210,7 @@ namespace Dune::Functions {
       assert(size() == lastIndex);
     }
 
-  public:
+   public:
     void init(const std::array<unsigned, dim>& sizes) {
       sizes_ = sizes;
 
@@ -257,12 +261,14 @@ namespace Dune::Functions {
     }
 
     //! number of coefficients
-    [[nodiscard]] std::size_t size() const { return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<>()); }
+    [[nodiscard]] std::size_t size() const {
+      return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<>());
+    }
 
     //! get i'th index
     [[nodiscard]] const LocalKey& localKey(std::size_t i) const { return li_[i]; }
 
-  private:
+   private:
     // Number of shape functions on this element per coordinate direction
     std::array<unsigned, dim> sizes_;
 
@@ -275,7 +281,7 @@ namespace Dune::Functions {
    */
   template <int dim, class LB>
   class NurbsLocalInterpolation {
-  public:
+   public:
     //! \brief Local interpolation of a function
     template <typename F, typename C>
     void interpolate(const F& f, std::vector<C>& out) const {
@@ -287,7 +293,8 @@ namespace Dune::Functions {
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * This class ties together the implementation classes NurbsLocalBasis, NurbsLocalCoefficients, and NurbsLocalInterpolation
+   * This class ties together the implementation classes NurbsLocalBasis, NurbsLocalCoefficients, and
+   * NurbsLocalInterpolation
    *
    * \tparam D Number type used for domain coordinates
    * \tparam R Number type used for spline function values
@@ -299,7 +306,7 @@ namespace Dune::Functions {
     enum { dim = GV::dimension };
     friend class NurbsLocalBasis<GV, R, MI>;
 
-  public:
+   public:
     /** \brief Export various types related to this LocalFiniteElement
      */
     typedef LocalFiniteElementTraits<NurbsLocalBasis<GV, R, MI>, NurbsLocalCoefficients<dim>,
@@ -308,14 +315,16 @@ namespace Dune::Functions {
 
     /** \brief Constructor with a given B-spline basis
      */
-    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, MI>& preBasis) : preBasis_(preBasis), localBasis_(preBasis, *this) {}
+    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, MI>& preBasis)
+        : preBasis_(preBasis), localBasis_(preBasis, *this) {}
 
     /** \brief Copy constructor
      */
-    NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other) : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
+    NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other)
+        : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
       if (other.isBound) {
         this->bind(other.elementIdx_);
-        isBound=true;
+        isBound = true;
       }
     }
 
@@ -328,13 +337,14 @@ namespace Dune::Functions {
     void bind(const std::array<unsigned, dim>& elementIdx) {
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
-        currentKnotSpan_[i] = Dune::IGA::findSpan(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
-                                                  patchData.knotSpans[i], elementIdx[i]);
+        currentKnotSpan_[i]
+            = Dune::IGA::findSpan(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
+                                  patchData.knotSpans[i], elementIdx[i]);
 
         // Compute the geometric transformation from knotspan-local to global coordinates
-        localBasis_.offset_[i] = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
-        localBasis_.scaling_[i][i]
-            = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i] + 1] - preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
+        localBasis_.offset_[i]     = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
+        localBasis_.scaling_[i][i] = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i] + 1]
+                                     - preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
       }
 
       // Set up the LocalCoefficients object
@@ -349,17 +359,20 @@ namespace Dune::Functions {
     /** \brief Hand out a LocalBasis object */
     const NurbsLocalBasis<GV, R, MI>& localBasis() const {
       assert(isBound && "This element is not bound!");
-      return localBasis_; }
+      return localBasis_;
+    }
 
     /** \brief Hand out a LocalCoefficients object */
     const NurbsLocalCoefficients<dim>& localCoefficients() const {
       assert(isBound && "This element is not bound!");
-      return localCoefficients_; }
+      return localCoefficients_;
+    }
 
     /** \brief Hand out a LocalInterpolation object */
     const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>& localInterpolation() const {
       assert(isBound && "This element is not bound!");
-      return localInterpolation_; }
+      return localInterpolation_;
+    }
 
     /** \brief Number of shape functions in this finite element */
     [[nodiscard]] unsigned size() const {
@@ -408,7 +421,7 @@ namespace Dune::Functions {
 
     /** \brief Simple dim-dimensional multi-index class */
     class MultiDigitCounter {
-    public:
+     public:
       /** \brief Constructs a new multi-index, and sets all digits to zero
        *  \param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
        */
@@ -440,7 +453,7 @@ namespace Dune::Functions {
         return r;
       }
 
-    private:
+     private:
       /** \brief The number of different digit values for each place */
       const std::array<unsigned int, dim> limits_;
 
@@ -448,7 +461,7 @@ namespace Dune::Functions {
       std::array<unsigned int, dim> counter_;
     };
 
-  public:
+   public:
     /** \brief The grid view that the FE space is defined on */
     using GridView  = GV;
     using size_type = std::size_t;
@@ -466,7 +479,7 @@ namespace Dune::Functions {
     // Type used for function values
     using R = typename NurbsGridLinearAlgebraTraits::value_type;
 
-    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.getPatchData()) {}
+    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
     NurbsPreBasis(const GridView& gridView, const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
         : gridView_{gridView}, patchData_{patchData} {
@@ -524,7 +537,8 @@ namespace Dune::Functions {
 
         std::array<unsigned int, dim> globalIJK;
         for (int j = 0; j < dim; j++)
-          globalIJK[j] = std::max((int)currentKnotSpan[j] - (int)order[j], 0) + localIJK[j];  // needs to be a signed type!
+          globalIJK[j]
+              = std::max((int)currentKnotSpan[j] - (int)order[j], 0) + localIJK[j];  // needs to be a signed type!
 
         // Make one global flat index from the globalIJK tuple
         size_type globalIdx = globalIJK[dim - 1];
@@ -546,7 +560,9 @@ namespace Dune::Functions {
     }
 
     //! \brief Number of shape functions in one direction
-    [[nodiscard]] unsigned int sizePerDirection(size_t d) const { return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1; }
+    [[nodiscard]] unsigned int sizePerDirection(size_t d) const {
+      return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1;
+    }
 
     /** \brief Evaluate all B-spline basis functions at a given point
      */
@@ -570,7 +586,8 @@ namespace Dune::Functions {
       std::array<typename GV::ctype, dim> inArray;
       std::ranges::copy(in, inArray.begin());
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
-          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false, currentKnotSpan);
+          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false,
+          currentKnotSpan);
       out.resize(dN.get(std::array<int, dim>{}).directSize());
       for (int j = 0; j < dim; ++j) {
         std::array<int, dim> multiIndex{};
@@ -601,7 +618,8 @@ namespace Dune::Functions {
      * \warning This method makes strong assumptions about the grid, namely that it is
      *   structured, and that indices are given in a x-fastest fashion.
      */
-    static std::array<unsigned int, dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<unsigned int, dim> elements) {
+    static std::array<unsigned int, dim> getIJK(typename GridView::IndexSet::IndexType idx,
+                                                std::array<unsigned int, dim> elements) {
       std::array<unsigned, dim> result;
       for (int i = 0; i < dim; i++) {
         result[i] = idx % elements[i];
@@ -625,7 +643,7 @@ namespace Dune::Functions {
   class NurbsNode : public LeafBasisNode {
     static const int dim = GV::dimension;
 
-  public:
+   public:
     using size_type     = std::size_t;
     using Element       = typename GV::template Codim<0>::Entity;
     using FiniteElement = NurbsLocalFiniteElement<GV, double, MI>;
@@ -649,7 +667,7 @@ namespace Dune::Functions {
       this->setSize(finiteElement_.size());
     }
 
-  protected:
+   protected:
     const NurbsPreBasis<GV, MI>* preBasis_;
 
     FiniteElement finiteElement_;
@@ -662,17 +680,18 @@ namespace Dune::Functions {
 
       template <std::integral auto dim, std::integral auto dimworld>
       class NurbsPreBasisFactory {
-      public:
+       public:
         static const std::size_t requiredMultiIndexSize = 1;
 
-        explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData) : patchData_(patchData) {}
+        explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
+            : patchData_(patchData) {}
 
         template <class MultiIndex, class GridView>
         auto makePreBasis(const GridView& gridView) const {
           return NurbsPreBasis<GridView, MultiIndex>(gridView, patchData_);
         }
 
-      private:
+       private:
         const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData_;
       };
 

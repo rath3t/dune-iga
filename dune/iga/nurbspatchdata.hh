@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //
 // Created by lex on 15.11.21.
 //
@@ -16,7 +19,8 @@ namespace Dune::IGA {
    * @tparam dimworld Dimension of the control point coordinates , i.e. where the patch lives in
    * @tparam NurbsGridLinearAlgebraTraits Traits where FixedVectorType is derived
    */
-  template <std::size_t dim, std::size_t dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <std::size_t dim, std::size_t dimworld,
+            LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   struct NURBSPatchData {
     using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
     using ControlPointType     = ControlPoint<GlobalCoordinateType>;

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2022 The dune-iga developers developers mueller@ibb.uni-stuttgart.de
+SPDX-License-Identifier: LGPL-2.1-or-later
+-->
+# dune-iga
+[![codecov](https://codecov.io/github/rath3t/dune-iga/branch/main/graph/badge.svg?token=4O9UV99UR6)](https://codecov.io/github/rath3t/dune-iga)
+
 Preparing the Sources
 =========================
 
