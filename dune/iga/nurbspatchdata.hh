@@ -19,7 +19,8 @@ namespace Dune::IGA {
    * @tparam dimworld Dimension of the control point coordinates , i.e. where the patch lives in
    * @tparam NurbsGridLinearAlgebraTraits Traits where FixedVectorType is derived
    */
-  template <std::size_t dim, std::size_t dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <std::size_t dim, std::size_t dimworld,
+            LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   struct NURBSPatchData {
     using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
     using ControlPointType     = ControlPoint<GlobalCoordinateType>;

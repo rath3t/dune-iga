@@ -14,7 +14,7 @@ namespace Dune::IGA {
   /** \brief a geometry implementation for NURBS*/
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   class NURBSLocalGeometry {
-  public:
+   public:
     /** coordinate type */
     typedef double ctype;
 
@@ -37,20 +37,22 @@ namespace Dune::IGA {
     using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
 
     /** \brief Type for the transposed inverse Jacobian matrix */
-    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
+    using JacobianInverseTransposed =
+        typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
 
     using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointNetType;
 
-  private:
+   private:
     /* Helper class to compute a matrix pseudo inverse */
     typedef MultiLinearGeometryTraits<ctype>::MatrixHelper MatrixHelper;
 
-  public:
+   public:
     /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
      *
      *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
-     *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
+     *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to
+     * operate
      */
     explicit NURBSLocalGeometry(int localSubEntityIndex)
         : localIndexInElement_{localSubEntityIndex}
@@ -85,7 +87,8 @@ namespace Dune::IGA {
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
-    /** \brief Evaluates the mapping from a subKnotSpan to the global one, e.g. from an edge of an surface it construct the 2d coordinates
+    /** \brief Evaluates the mapping from a subKnotSpan to the global one, e.g. from an edge of an surface it construct
+     * the 2d coordinates
      *
      * @param  local local coordinates for each dimension in [0,1]^(dim)
      * @return global coordinates in [0,1]^(griddim)
@@ -96,28 +99,40 @@ namespace Dune::IGA {
         return (localIndexInElement_ == 0) ? GlobalCoordinate(0) : GlobalCoordinate(1 - offset);
       else if constexpr (mydimension == 1)
         switch (localIndexInElement_) {
-          case 0: return GlobalCoordinate({0, local[0]});
-          case 1: return GlobalCoordinate({1 - offset, local[0]});
-          case 2: return GlobalCoordinate({local[0], 0});
-          case 3: return GlobalCoordinate({local[0], 1 - offset});
-          default: __builtin_unreachable();
+          case 0:
+            return GlobalCoordinate({0, local[0]});
+          case 1:
+            return GlobalCoordinate({1 - offset, local[0]});
+          case 2:
+            return GlobalCoordinate({local[0], 0});
+          case 3:
+            return GlobalCoordinate({local[0], 1 - offset});
+          default:
+            __builtin_unreachable();
         }
       else if constexpr (mydimension == 3)
         switch (localIndexInElement_) {
-          case 0: return GlobalCoordinate({0, local[0], local[1]});
-          case 1: return GlobalCoordinate({1 - offset, local[0], local[1]});
-          case 2: return GlobalCoordinate({local[0], 0, local[1]});
-          case 3: return GlobalCoordinate({local[0], 1 - offset, local[1]});
-          case 4: return GlobalCoordinate({local[0], local[1], 0});
-          case 5: return GlobalCoordinate({local[0], local[1], 1 - offset});
-          default: __builtin_unreachable();
+          case 0:
+            return GlobalCoordinate({0, local[0], local[1]});
+          case 1:
+            return GlobalCoordinate({1 - offset, local[0], local[1]});
+          case 2:
+            return GlobalCoordinate({local[0], 0, local[1]});
+          case 3:
+            return GlobalCoordinate({local[0], 1 - offset, local[1]});
+          case 4:
+            return GlobalCoordinate({local[0], local[1], 0});
+          case 5:
+            return GlobalCoordinate({local[0], local[1], 1 - offset});
+          default:
+            __builtin_unreachable();
         }
       __builtin_unreachable();
     }
 
     /** \brief Evaluates the mapping from the grid coordinates to the lcaol one, e.g. from an surface to an edge
-     * The local coordinates are obtained from global ones by orthogonal projection, therefore if the global coordinates are [0.5,0.7] and
-     * the edge points into the second direction the local coordinate [0.7] is returned
+     * The local coordinates are obtained from global ones by orthogonal projection, therefore if the global coordinates
+     * are [0.5,0.7] and the edge points into the second direction the local coordinate [0.7] is returned
      *
      * @param  global global coordinates for each dimension in [0,1]^(griddim)
      * @return local coordinates in [0,1]^(dim)
@@ -128,20 +143,27 @@ namespace Dune::IGA {
       else if constexpr (mydimension == 1)
         switch (localIndexInElement_) {
           case 0:
-          case 1: return LocalCoordinate({global[1]});
+          case 1:
+            return LocalCoordinate({global[1]});
           case 2:
-          case 3: return LocalCoordinate({global[0]});
-          default: __builtin_unreachable();
+          case 3:
+            return LocalCoordinate({global[0]});
+          default:
+            __builtin_unreachable();
         }
       else if constexpr (mydimension == 3)
         switch (localIndexInElement_) {
           case 0:
-          case 1: return LocalCoordinate({global[1], global[2]});
+          case 1:
+            return LocalCoordinate({global[1], global[2]});
           case 2:
-          case 3: return LocalCoordinate({global[0], global[2]});
+          case 3:
+            return LocalCoordinate({global[0], global[2]});
           case 4:
-          case 5: return LocalCoordinate({global[0], global[1]});
-          default: __builtin_unreachable();
+          case 5:
+            return LocalCoordinate({global[0], global[1]});
+          default:
+            __builtin_unreachable();
         }
       __builtin_unreachable();
     }
@@ -156,20 +178,30 @@ namespace Dune::IGA {
       else if constexpr (mydimension == 1)
         switch (localIndexInElement_) {
           case 0:
-          case 1: return JacobianTransposed({FieldVector<ctype, mydimension>({0, 1})});
+          case 1:
+            return JacobianTransposed({FieldVector<ctype, mydimension>({0, 1})});
           case 2:
-          case 3: return JacobianTransposed({FieldVector<ctype, mydimension>({1, 0})});
-          default: __builtin_unreachable();
+          case 3:
+            return JacobianTransposed({FieldVector<ctype, mydimension>({1, 0})});
+          default:
+            __builtin_unreachable();
         }
       else if constexpr (mydimension == 3)
         switch (localIndexInElement_) {
           case 0:
-          case 1: return LocalCoordinate({FieldVector<ctype, mydimension>({0, 1, 0}), FieldVector<ctype, mydimension>({0, 0, 1})});
+          case 1:
+            return LocalCoordinate(
+                {FieldVector<ctype, mydimension>({0, 1, 0}), FieldVector<ctype, mydimension>({0, 0, 1})});
           case 2:
-          case 3: return LocalCoordinate({FieldVector<ctype, mydimension>({1, 0, 0}), FieldVector<ctype, mydimension>({0, 0, 1})});
+          case 3:
+            return LocalCoordinate(
+                {FieldVector<ctype, mydimension>({1, 0, 0}), FieldVector<ctype, mydimension>({0, 0, 1})});
           case 4:
-          case 5: return LocalCoordinate({FieldVector<ctype, mydimension>({1, 0, 0}), FieldVector<ctype, mydimension>({0, 1, 0})});
-          default: __builtin_unreachable();
+          case 5:
+            return LocalCoordinate(
+                {FieldVector<ctype, mydimension>({1, 0, 0}), FieldVector<ctype, mydimension>({0, 1, 0})});
+          default:
+            __builtin_unreachable();
         }
       __builtin_unreachable();
     }
@@ -188,7 +220,8 @@ namespace Dune::IGA {
      */
     JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
       JacobianInverseTransposed jacobianInverseTransposed1;
-      MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local), jacobianInverseTransposed1);
+      MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local),
+                                                                    jacobianInverseTransposed1);
       return jacobianInverseTransposed1;
     }
 
@@ -202,7 +235,7 @@ namespace Dune::IGA {
       return N / N.two_norm();
     }
 
-  private : Dune::Geo::ReferenceElements<ctype, mydimension> referenceElement_;
+   private : Dune::Geo::ReferenceElements<ctype, mydimension> referenceElement_;
     int localIndexInElement_;
   };
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>

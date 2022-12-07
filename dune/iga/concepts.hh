@@ -36,8 +36,8 @@ namespace Dune::IGA {
   concept LinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<
       typename LinearAlgebraTraits::
           DynamicMatrixType> && Vector<typename LinearAlgebraTraits::
-                                           template FixedVectorType<
-                                               a>> && Vector<typename LinearAlgebraTraits::DynamicVectorType> && requires() {
+                                           template FixedVectorType<a>> && Vector<typename LinearAlgebraTraits::
+                                                                                      DynamicVectorType> && requires() {
     typename LinearAlgebraTraits::value_type;
     typename LinearAlgebraTraits::template FixedMatrixType<a, a>;
     typename LinearAlgebraTraits::template FixedVectorType<a>;

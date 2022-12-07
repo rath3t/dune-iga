@@ -30,7 +30,7 @@ namespace Dune::IGA {
   class MultiDimensionNet {
     using value_type = ValueType;
 
-  public:
+   public:
     MultiDimensionNet() = default;
 
     MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>> values) {
@@ -109,7 +109,8 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values vector with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<ValueType>& values) : values_(values), dimSize_{dimSize} {}
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<ValueType>& values)
+        : values_(values), dimSize_{dimSize} {}
 
     MultiDimensionNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
         : values_(values.begin(), values.end()), dimSize_{dimSize} {}
@@ -119,7 +120,8 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>> values) : dimSize_(dimSize) {
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>> values)
+        : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size());
       for (int i = 0; i < values.size(); ++i)
         for (int j = 0; j < values[0].size(); ++j)
@@ -131,7 +133,8 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>> values) : dimSize_(dimSize) {
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>> values)
+        : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size() * values[0][0].size());
 
       for (int i = 0; i < values.size(); ++i)
@@ -271,7 +274,8 @@ namespace Dune::IGA {
     requires DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->size() == rnet.size() && "The net dimensions need to match in each direction!");
-      std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), [](auto& lval, auto& rval) { return lval / rval; });
+      std::ranges::transform(values_, rnet.directGetAll(), values_.begin(),
+                             [](auto& lval, auto& rval) { return lval / rval; });
       return *this;
     }
 
@@ -301,7 +305,8 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; }) && "The passed multiIndex has negative values");
+      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; })
+             && "The passed multiIndex has negative values");
       assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
              && "The passed multiIndex has too large values");
 
@@ -323,10 +328,12 @@ namespace Dune::IGA {
       return true;
     }
 
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(
+        const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, 0);
     }
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
+    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(
+        const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       int directionEnd;
       if constexpr (netdim != 0) {
         for (int dirI = 0, i = 0; i < netdim; ++i) {
@@ -340,7 +347,7 @@ namespace Dune::IGA {
       return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, directionEnd);
     }
 
-  private:
+   private:
     std::array<int, netdim> dimSize_;
     std::vector<ValueType> values_;
   };
@@ -348,8 +355,9 @@ namespace Dune::IGA {
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
     class HyperSurfaceIterator {
-    public:
-      HyperSurfaceIterator(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction, int at)
+     public:
+      HyperSurfaceIterator(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction,
+                           int at)
           : net_{&net}, direction_{direction}, at_{at} {
         std::array<int, netdim - 1> indicesSurface;
         for (int i = 0; i < indicesSurface.size(); ++i)
@@ -357,12 +365,14 @@ namespace Dune::IGA {
 
         const int cpSize = std::accumulate(indicesSurface.begin(), indicesSurface.end(), 1, std::multiplies{});
         std::function<std::array<int, netdim - 1>(int)> func = [indicesSurface](auto i) {
-          return MultiDimensionNet<netdim - 1, int>::template directToMultiIndex<std::array<int, netdim - 1>>(indicesSurface, i);
+          return MultiDimensionNet<netdim - 1, int>::template directToMultiIndex<std::array<int, netdim - 1>>(
+              indicesSurface, i);
         };
         viewOverIndices_ = std::ranges::iota_view(0, cpSize) | std::views::transform(func);
       }
 
-      std::ranges::transform_view<std::ranges::iota_view<int, int>, std::function<std::array<int, netdim - 1>(int)>> viewOverIndices_;
+      std::ranges::transform_view<std::ranges::iota_view<int, int>, std::function<std::array<int, netdim - 1>(int)>>
+          viewOverIndices_;
 
       HyperSurfaceIterator& operator++() {
         ++at_;
@@ -374,7 +384,9 @@ namespace Dune::IGA {
         return *this;
       }
 
-      HyperSurfaceIterator operator[](int index) { return HyperSurfaceIterator<netdim, ValueType>(*(this->net_), this->direction_, index); }
+      HyperSurfaceIterator operator[](int index) {
+        return HyperSurfaceIterator<netdim, ValueType>(*(this->net_), this->direction_, index);
+      }
 
       HyperSurfaceIterator& operator-=(int index) {
         at_ -= index;
@@ -414,14 +426,16 @@ namespace Dune::IGA {
 
       auto operator->() { return *this; }
 
-    private:
+     private:
       MultiDimensionNet<netdim, ValueType>* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
       template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l,
+                                                                 int inc);
       template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
+      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l,
+                                                                 int inc);
     };
     template <std::integral auto netdim, typename ValueType>
     HyperSurfaceIterator<netdim, ValueType> operator+(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {
@@ -438,7 +452,8 @@ namespace Dune::IGA {
   auto dot(const MultiDimensionNet<netdim, lValueType>& lnet, const MultiDimensionNet<netdim, rValueType>& rnet) {
     using ResultType = decltype(lnet.directGetAll()[0] * rnet.directGetAll()[0]);
     assert(lnet.size() == rnet.size() && "The net dimensions need to match in each direction!");
-    return std::inner_product(lnet.directGetAll().begin(), lnet.directGetAll().end(), rnet.directGetAll().begin(), ResultType(0.0));
+    return std::inner_product(lnet.directGetAll().begin(), lnet.directGetAll().end(), rnet.directGetAll().begin(),
+                              ResultType(0.0));
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
@@ -474,7 +489,7 @@ namespace Dune::IGA {
   template <std::size_t netdim>
   class MultiDimensionNetIndex  // FIXME merge with Net
   {
-  public:
+   public:
     explicit MultiDimensionNetIndex(const FieldVector<int, netdim>& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       size_ = 1;
@@ -505,7 +520,8 @@ namespace Dune::IGA {
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
       int index{}, help;
-      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; }) && "The passed multiIndex has negative values");
+      assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; })
+             && "The passed multiIndex has negative values");
       assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
              && "The passed multiIndex has too large values");
 
@@ -521,7 +537,7 @@ namespace Dune::IGA {
 
     int directSize() const { return size_; }
 
-  private:
+   private:
     std::array<int, netdim> dimSize_;
     int size_;
   };

@@ -10,7 +10,7 @@
 namespace Dune::IGA {
   template <typename GridImpl>
   class IgaIdSet : public IdSet<GridImpl, IgaIdSet<GridImpl>, int> {
-  public:
+   public:
     using IdType   = int;
     using GridView = typename GridImpl::Traits::LeafGridView;
     explicit IgaIdSet(GridView const& g) : gridView_(&g) {}
@@ -25,11 +25,12 @@ namespace Dune::IGA {
       return this->id(entity);
     }
 
-    [[nodiscard]] IdType subId(const typename GridImpl::Traits::template Codim<0>::Entity& entity, int i, unsigned int codim) const {
+    [[nodiscard]] IdType subId(const typename GridImpl::Traits::template Codim<0>::Entity& entity, int i,
+                               unsigned int codim) const {
       return this->offset(codim) + gridView_->indexSet().subIndex(entity, i, codim);
     }
 
-  private:
+   private:
     [[nodiscard]] IdType offset(const int codim) const {
       IdType sum = 0;
       for (int i = 0; i < codim; ++i)

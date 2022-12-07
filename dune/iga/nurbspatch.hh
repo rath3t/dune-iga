@@ -28,7 +28,7 @@ namespace Dune::IGA {
   template <std::integral auto dim, std::integral auto dimworld,
             LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
   class NURBSPatch {
-  public:
+   public:
     using GridImpl = NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>;
     friend class NURBSLeafGridView<GridImpl>;
     template <int codim, int dim1, typename GridImpl1>
@@ -39,9 +39,10 @@ namespace Dune::IGA {
      *  \param controlPoints a dim-dimensional net of control points
      *  \param degree degree of the spline basis for each dimension
      */
-    NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
-               const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
-               const std::array<int, dim> degree)
+    NURBSPatch(
+        const std::array<std::vector<double>, dim>& knotSpans,
+        const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
+        const std::array<int, dim> degree)
         : NURBSPatch(NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>(knotSpans, controlPoints, degree)) {}
 
     explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData)
@@ -173,34 +174,37 @@ namespace Dune::IGA {
       __builtin_unreachable();
     }
 
-    /** \brief Returns span indices  in the knot vectors and the fixed or free directions of the entity from the directindex
+    /** \brief Returns span indices  in the knot vectors and the fixed or free directions of the entity from the
+     * directindex
      *
      * @tparam codim codim of the entity
      * @param directIndex index of the entity This index starts from 0 for each codim.
      * @return pair of spanindices and free or fixed direction array
      */
     template <std::integral auto codim>
-    std::pair<std::array<int, dim>, std::array<Impl::FixedOrFree, dim>> spanAndDirectionFromDirectIndex(const int directIndex) const {
+    std::pair<std::array<int, dim>, std::array<Impl::FixedOrFree, dim>> spanAndDirectionFromDirectIndex(
+        const int directIndex) const {
       std::array<int, dim> currentKnotSpan;
       std::array<Impl::FixedOrFree, dim> fixedOrFreeDirection;
       if constexpr (codim == 0) {  // elements
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
         const auto multiIndex = elementNet_->directToMultiIndex(directIndex);
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]],
+                                                   patchData_->knotSpans[i], multiIndex[i]);
       } else if constexpr (codim == dim) {  // vertex
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
         const auto multiIndex = vertexNet_->directToMultiIndex(directIndex);
 
         for (size_t i = 0; i < dim; ++i) {
           if (Dune::FloatCmp::eq(uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i].back())) {
-            // If we are the vertex on the rightmost end of the knotspan, we set the knot span index by hand to the last entry
-            // This is needed since findSpan return to use the end - degree -2 index, which is wrong for the rightmost end
+            // If we are the vertex on the rightmost end of the knotspan, we set the knot span index by hand to the last
+            // entry This is needed since findSpan return to use the end - degree -2 index, which is wrong for the
+            // rightmost end
             currentKnotSpan[i] = patchData_->knotSpans[i].size() - 1;
           } else
-            currentKnotSpan[i]
-                = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
+            currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]],
+                                                     patchData_->knotSpans[i], multiIndex[i]);
         }
 
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
@@ -218,30 +222,34 @@ namespace Dune::IGA {
             edgesPerDir += edgeSizes.at(j + 1);
 
         assert(((edgeDir < 2 && dim == 2) || (edgeDir < 3 && dim == 3)) && edgeDir >= 0);
-        const int indexInDir = (directIndex - std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0)) % edgeSizes[edgeDir];
+        const int indexInDir
+            = (directIndex - std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0)) % edgeSizes[edgeDir];
         std::array<int, dim> spanIndices{};
-        spanIndices[edgeDir] = std::fmod(std::floor(indexInDir
-                                                    / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + edgeDir, 1,
-                                                                       [](auto res, auto r) { return res * (r + 1); }))),
-                                         uniqueSpanSize_[edgeDir]);
+        spanIndices[edgeDir]
+            = std::fmod(std::floor(indexInDir
+                                   / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + edgeDir, 1,
+                                                      [](auto res, auto r) { return res * (r + 1); }))),
+                        uniqueSpanSize_[edgeDir]);
 
         if (edgeDir == 0) {
           spanIndices[1] = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[0])), uniqueSpanSize_[1] + 1);
           if constexpr (dim == 3)
-            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1))), uniqueSpanSize_[2] + 1);
+            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1))),
+                                       uniqueSpanSize_[2] + 1);
         } else {
           spanIndices[0] = std::fmod(indexInDir, uniqueSpanSize_[0] + 1);
           if (edgeDir == 1)
             if constexpr (dim == 3) {
-              spanIndices[2]
-                  = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0] + 1)), uniqueSpanSize_[2] + 1);
+              spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0] + 1)),
+                                         uniqueSpanSize_[2] + 1);
             }
           if constexpr (dim == 3)
-            if (edgeDir == 2) spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1))), uniqueSpanSize_[1] + 1);
+            if (edgeDir == 2)
+              spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1))), uniqueSpanSize_[1] + 1);
         }
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]],
+                                                   patchData_->knotSpans[i], spanIndices[i]);
       } else if constexpr (dim - codim == 2 && dim > 2)  // surface case
       {
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
@@ -258,26 +266,30 @@ namespace Dune::IGA {
             edgesPerDir += surfaceSizes.at(j + 1);
         assert((surfFixedDir < 3 && dim == 3) && surfFixedDir >= 0);
         const int indexInDir
-            = (directIndex - std::accumulate(surfaceSizes.begin(), surfaceSizes.begin() + surfFixedDir, 0)) % surfaceSizes[surfFixedDir];
+            = (directIndex - std::accumulate(surfaceSizes.begin(), surfaceSizes.begin() + surfFixedDir, 0))
+              % surfaceSizes[surfFixedDir];
         std::array<int, dim> spanIndices{};
-        spanIndices[surfFixedDir] = std::fmod(
-            std::floor(indexInDir
-                       / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + surfFixedDir, 1, std::multiplies{}))),
-            uniqueSpanSize_[surfFixedDir] + 1);
+        spanIndices[surfFixedDir]
+            = std::fmod(std::floor(indexInDir
+                                   / (std::accumulate(uniqueSpanSize_.begin(), uniqueSpanSize_.begin() + surfFixedDir,
+                                                      1, std::multiplies{}))),
+                        uniqueSpanSize_[surfFixedDir] + 1);
 
         if (surfFixedDir == 0) {
           spanIndices[1] = std::fmod(std::floor(indexInDir / (uniqueSpanSize_[0] + 1)), uniqueSpanSize_[1]);
-          spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1])), uniqueSpanSize_[2]);
+          spanIndices[2]
+              = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1])), uniqueSpanSize_[2]);
         } else {
           spanIndices[0] = std::fmod(indexInDir, uniqueSpanSize_[0]);
           if (surfFixedDir == 1)
-            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0])), uniqueSpanSize_[2]);
+            spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0])),
+                                       uniqueSpanSize_[2]);
           else if (surfFixedDir == 2)
             spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]))), uniqueSpanSize_[1]);
         }
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]],
+                                                   patchData_->knotSpans[i], spanIndices[i]);
       }
       return std::make_pair(currentKnotSpan, fixedOrFreeDirection);
     };
@@ -298,8 +310,9 @@ namespace Dune::IGA {
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
     std::array<int, dim> validKnotSize() const { return uniqueSpanSize_; }
 
-  private:
-    [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const int elementDirectIndex, const int localVertexIndex) const {
+   private:
+    [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const int elementDirectIndex,
+                                                           const int localVertexIndex) const {
       auto multiIndexOfVertex = elementNet_->directToMultiIndex(elementDirectIndex);
       const auto bs           = std::bitset<dim>(localVertexIndex);
       for (int i = 0; i < bs.size(); ++i)
@@ -336,18 +349,23 @@ namespace Dune::IGA {
       if constexpr (dim == 2)
         edgeDir = (eI == 0 || eI == 1) ? 1 : 0;  // 2,3 edgeDir =0
       else
-        edgeDir = (eI >= 0 && eI < 4) ? 2 : ((eI == 4 || eI == 5 || eI == 8 || eI == 9) ? 1 : 0);  // 6,7,10,11 edgeDir=0
+        edgeDir
+            = (eI >= 0 && eI < 4) ? 2 : ((eI == 4 || eI == 5 || eI == 8 || eI == 9) ? 1 : 0);  // 6,7,10,11 edgeDir=0
 
       assert((edgeDir < 2 && dim == 2) || (edgeDir < 3 && dim == 3));
-      int dIndex = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0);  // move index to correct subset
-                                                                                        //    directIndex += eleI[edgeDir];
+      int dIndex
+          = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + edgeDir, 0);  // move index to correct subset
+                                                                                 //    directIndex += eleI[edgeDir];
       if constexpr (dim == 3) {
         if (edgeDir == 0)
-          dIndex += eleI[0] + (uniqueSpanSize_[0]) * (eleI[1]) + (uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1) * (eleI[2]);
+          dIndex += eleI[0] + (uniqueSpanSize_[0]) * (eleI[1])
+                    + (uniqueSpanSize_[0]) * (uniqueSpanSize_[1] + 1) * (eleI[2]);
         else if (edgeDir == 1)
-          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1]) + ((uniqueSpanSize_[1]) * (uniqueSpanSize_[0] + 1)) * eleI[2];
+          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1])
+                    + ((uniqueSpanSize_[1]) * (uniqueSpanSize_[0] + 1)) * eleI[2];
         else if (edgeDir == 2)
-          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1]) + ((uniqueSpanSize_[1] + 1) * (uniqueSpanSize_[0] + 1)) * eleI[2];
+          dIndex += eleI[0] + ((uniqueSpanSize_[0] + 1) * eleI[1])
+                    + ((uniqueSpanSize_[1] + 1) * (uniqueSpanSize_[0] + 1)) * eleI[2];
       } else if constexpr (dim == 2) {
         if (edgeDir == 0)
           dIndex += eleI[0] + (uniqueSpanSize_[0]) * (eleI[1]);
@@ -356,19 +374,39 @@ namespace Dune::IGA {
       }
 
       switch (dim) {
-        case 2: dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0] : 0; break;
+        case 2:
+          dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0] : 0;
+          break;
         case 3:
           assert(uniqueSpanSize_.size() == dim);
           switch (eI) {
-            case 1: dIndex += 1; break;
-            case 2: dIndex += uniqueSpanSize_[0] + 1; break;
-            case 3: dIndex += uniqueSpanSize_[0] + 2; break;
-            case 5: dIndex += 1; break;
-            case 8: dIndex += (uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1]; break;
-            case 9: dIndex += (uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1] + 1; break;
-            case 7: dIndex += uniqueSpanSize_[0]; break;
-            case 10: dIndex += uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 1); break;
-            case 11: dIndex += uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 2); break;
+            case 1:
+              dIndex += 1;
+              break;
+            case 2:
+              dIndex += uniqueSpanSize_[0] + 1;
+              break;
+            case 3:
+              dIndex += uniqueSpanSize_[0] + 2;
+              break;
+            case 5:
+              dIndex += 1;
+              break;
+            case 8:
+              dIndex += (uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1];
+              break;
+            case 9:
+              dIndex += (uniqueSpanSize_[0] + 1) * uniqueSpanSize_[1] + 1;
+              break;
+            case 7:
+              dIndex += uniqueSpanSize_[0];
+              break;
+            case 10:
+              dIndex += uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 1);
+              break;
+            case 11:
+              dIndex += uniqueSpanSize_[0] * (uniqueSpanSize_[1] + 2);
+              break;
             default:  // edges 0,4,6
               break;
           }
@@ -386,21 +424,29 @@ namespace Dune::IGA {
           edgeSizes[i] *= (i == k) ? uniqueSpanSize_[k] + 1 : uniqueSpanSize_[k];
       assert((dim == 2 && eI < 4) || (dim == 3 && eI < 12));
       const int surfaceFixedDir = std::floor(eI / 2);
-      int dIndex = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + surfaceFixedDir, 0);  // move index to correct subset
+      int dIndex
+          = std::accumulate(edgeSizes.begin(), edgeSizes.begin() + surfaceFixedDir, 0);  // move index to correct subset
 
       assert(surfaceFixedDir < 3 && dim == 3);
 
       if (surfaceFixedDir == 0)
-        dIndex += eleI[0] + (uniqueSpanSize_[0] + 1) * (eleI[1]) + (uniqueSpanSize_[0] + 1) * (uniqueSpanSize_[1]) * (eleI[2]);
+        dIndex += eleI[0] + (uniqueSpanSize_[0] + 1) * (eleI[1])
+                  + (uniqueSpanSize_[0] + 1) * (uniqueSpanSize_[1]) * (eleI[2]);
       else if (surfaceFixedDir == 1)
         dIndex += eleI[0] + (uniqueSpanSize_[0] * eleI[1]) + ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0]) * eleI[2];
       else if (surfaceFixedDir == 2)
         dIndex += eleI[0] + (uniqueSpanSize_[0] * eleI[1]) + (uniqueSpanSize_[1] * uniqueSpanSize_[0]) * eleI[2];
 
       switch (eI) {
-        case 1: ++dIndex; break;
-        case 3: dIndex += uniqueSpanSize_[0]; break;
-        case 5: dIndex += uniqueSpanSize_[1] * uniqueSpanSize_[0]; break;
+        case 1:
+          ++dIndex;
+          break;
+        case 3:
+          dIndex += uniqueSpanSize_[0];
+          break;
+        case 5:
+          dIndex += uniqueSpanSize_[1] * uniqueSpanSize_[0];
+          break;
         default:  // surface local indices 0,2,4
           break;
       }

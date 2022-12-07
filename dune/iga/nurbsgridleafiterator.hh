@@ -18,7 +18,7 @@ namespace Dune::IGA {
   class NURBSGridLeafIterator {
     constexpr static int dim = GridImp::dimension;
 
-  public:
+   public:
     using Entity                     = typename GridImp::Traits::template Codim<codim>::Entity;
     constexpr static int codimension = codim;
 
@@ -32,9 +32,11 @@ namespace Dune::IGA {
     const Entity& dereference() const { return *virtualEntity_; }
 
     //! equality
-    bool equals(const NURBSGridLeafIterator<codim, pitype, GridImp>& other) const { return virtualEntity_ == other.virtualEntity_; }
+    bool equals(const NURBSGridLeafIterator<codim, pitype, GridImp>& other) const {
+      return virtualEntity_ == other.virtualEntity_;
+    }
 
-  private:
+   private:
     //    /** \brief This increment makes the iterator wander over all entities on all levels */
     //    void globalIncrement() {
     //
@@ -65,7 +67,8 @@ namespace Dune::IGA {
 
   template <class GridImp>
   struct NurbsHierarchicIterator {
-    explicit NurbsHierarchicIterator(const typename GridImp::Traits::template Codim<0>::Entity& ent) : nurbsEntity{&ent} {}
+    explicit NurbsHierarchicIterator(const typename GridImp::Traits::template Codim<0>::Entity& ent)
+        : nurbsEntity{&ent} {}
     using Entity                                           = typename GridImp::Traits::template Codim<0>::Entity;
     auto operator<=>(const NurbsHierarchicIterator&) const = default;
     auto operator*() { return *nurbsEntity; }
@@ -83,7 +86,7 @@ namespace Dune::IGA {
     using Intersection = typename GridImp::Traits::LeafIntersection;
     using Base         = typename std::vector<typename GridImp::Traits::LeafIntersection>::const_iterator;
 
-  public:
+   public:
     //! copy constructor
     NURBSGridInterSectionIterator(const NURBSGridInterSectionIterator& other) = default;
 

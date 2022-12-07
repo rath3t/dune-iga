@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2022 The dune-iga developers
+# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-2.1-or-later
 
 cmake_minimum_required(VERSION 3.16)
 project(dune-iga CXX)
@@ -27,7 +27,6 @@ dune_project()
 
 add_subdirectory(src)
 add_subdirectory(dune)
-add_subdirectory(doc)
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/FormatTarget)
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include <config.h>
+
 #include <vector>
 
 #include <dune/geometry/quadraturerules.hh>
@@ -89,8 +90,9 @@ void assembleElementStiffnessMatrix(const LocalView& localView, Matrix& elementM
 }
 // Compute the source term for a single element
 template <class LocalView>
-void assembleElementVolumeTerm(const LocalView& localView, BlockVector<double>& localB,
-                               const std::function<double(FieldVector<double, LocalView::Element::dimension>)> volumeTerm) {
+void assembleElementVolumeTerm(
+    const LocalView& localView, BlockVector<double>& localB,
+    const std::function<double(FieldVector<double, LocalView::Element::dimension>)> volumeTerm) {
   using Element     = typename LocalView::Element;
   auto element      = localView.element();
   constexpr int dim = Element::dimension;

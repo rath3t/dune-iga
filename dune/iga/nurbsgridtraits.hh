@@ -13,14 +13,16 @@
 /** \brief This class is a copy of GridTraits dune-grid/grid/common/grid.hh.
  * This class removes all fascade class from GridTraits since some exported types do not work with c++20
  * ranges ,eg.  Dune::IteratorRange<Dune::EntityIterator<0, con*/
-template <int dim, int dimw, class GridImp, template <int, int, class> class GeometryImp, template <int, int, class> class EntityImp,
-          template <int, Dune::PartitionIteratorType, class> class LevelIteratorImp, template <class> class LeafIntersectionImp,
-          template <class> class LevelIntersectionImp, template <class> class LeafIntersectionIteratorImp,
-          template <class> class LevelIntersectionIteratorImp, template <class> class HierarchicIteratorImp,
-          template <int, Dune::PartitionIteratorType, class> class LeafIteratorImp, class LevelIndexSetImp, class LeafIndexSetImp,
-          class GlobalIdSetImp, class GIDType, class LocalIdSetImp, class LIDType, class CCType, template <class> class LevelGridViewTraits,
-          template <class> class LeafGridViewTraits, template <int, class> class EntitySeedImp,
-          template <int, int, class> class LocalGeometryImp = GeometryImp>
+template <int dim, int dimw, class GridImp, template <int, int, class> class GeometryImp,
+          template <int, int, class> class EntityImp,
+          template <int, Dune::PartitionIteratorType, class> class LevelIteratorImp,
+          template <class> class LeafIntersectionImp, template <class> class LevelIntersectionImp,
+          template <class> class LeafIntersectionIteratorImp, template <class> class LevelIntersectionIteratorImp,
+          template <class> class HierarchicIteratorImp,
+          template <int, Dune::PartitionIteratorType, class> class LeafIteratorImp, class LevelIndexSetImp,
+          class LeafIndexSetImp, class GlobalIdSetImp, class GIDType, class LocalIdSetImp, class LIDType, class CCType,
+          template <class> class LevelGridViewTraits, template <class> class LeafGridViewTraits,
+          template <int, class> class EntitySeedImp, template <int, int, class> class LocalGeometryImp = GeometryImp>
 struct NurbsGridTraits {
   /** \brief The type that implements the grid. */
   typedef GridImp Grid;
@@ -30,9 +32,11 @@ struct NurbsGridTraits {
   /** \brief The type of the intersection at the levels of the grid. */
   using LevelIntersection = Dune::Intersection<GridImp, LeafIntersectionImp<GridImp>>;
   /** \brief The type of the intersection iterator at the leafs of the grid. */
-  using LeafIntersectionIterator = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
+  using LeafIntersectionIterator
+      = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
   /** \brief The type of the intersection iterator at the levels of the grid. */
-  using LevelIntersectionIterator = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
+  using LevelIntersectionIterator
+      = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
 
   /** \brief The type of the  hierarchic iterator. */
   using HierarchicIterator = Dune::EntityIterator<0, GridImp, HierarchicIteratorImp<GridImp>>;
@@ -43,7 +47,7 @@ struct NurbsGridTraits {
    */
   template <int cd>
   struct Codim {
-  public:
+   public:
     typedef GridImp GeometryImpl;
     typedef GridImp LocalGeometryImpl;
     //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
@@ -76,7 +80,7 @@ struct NurbsGridTraits {
     /** \brief The type of the entity pointer for entities of this codim.*/
     typedef typename Partition<Dune::All_Partition>::LevelIterator LevelIterator;
 
-  private:
+   private:
     friend class Dune::Entity<cd, dim, GridImp, EntityImp>;
   };
 

@@ -17,14 +17,16 @@ namespace Dune::IGA {
   class NURBSGrid;
 }
 namespace Dune::Capabilities {
-  template <std::integral auto dim, std::integral auto dimworld, int codim, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <std::integral auto dim, std::integral auto dimworld, int codim,
+            Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
   requires(dim <= 3) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>, codim> {
     static const bool v = true;
   };
 }  // namespace Dune::Capabilities
 
 template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>> : public std::true_type {};
+struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>>
+    : public std::true_type {};
 template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
 struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>> {
   static const bool v = true;

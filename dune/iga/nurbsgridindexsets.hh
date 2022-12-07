@@ -12,8 +12,9 @@
 namespace Dune::IGA {
 
   template <class GridImpl>
-  class NURBSGridLeafIndexSet : public IndexSet<GridImpl, NURBSGridLeafIndexSet<GridImpl>, int, std::array<GeometryType, 1>> {
-  public:
+  class NURBSGridLeafIndexSet
+      : public IndexSet<GridImpl, NURBSGridLeafIndexSet<GridImpl>, int, std::array<GeometryType, 1>> {
+   public:
     using Types                    = std::array<GeometryType, 1>;
     using IndexType                = unsigned int;
     using GridView                 = typename GridImpl::Traits::LeafGridView;
@@ -42,7 +43,8 @@ namespace Dune::IGA {
     }
 
     template <int codimElement>
-    IndexType subIndex(const typename GridImpl::Traits::template Codim<codimElement>::Entity& e, int i, unsigned int codim) const {
+    IndexType subIndex(const typename GridImpl::Traits::template Codim<codimElement>::Entity& e, int i,
+                       unsigned int codim) const {
       if (codimElement == 0 && NURBSGridEntity<codimElement, griddim, GridImpl>::mydimension == codim)
         return gridView_->getPatch(0).getGlobalVertexIndexFromElementIndex(e.impl().getIndex(), i);
       else if (i == 0 && codim == 0 && codimElement == 0)
@@ -59,7 +61,7 @@ namespace Dune::IGA {
     auto size(int codim) const { return gridView_->size(codim); }
     auto size(const GeometryType& gt) const { return gridView_->size(griddim - gt.dim()); }
 
-  private:
+   private:
     std::array<std::array<GeometryType, 1>, griddim + 1> types_;
     NURBSLeafGridView<GridImpl> const* gridView_;
   };

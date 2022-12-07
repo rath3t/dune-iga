@@ -31,36 +31,18 @@ jobs:
 #            lib: "-stdlib=libc++",
 #           }
           - {
-            name: "GCC-Debug-Dune",
+            name: "GCC-Debug",
             config: Debug,
             compilerC: gcc-12,
             compilerCxx: g++-12,
-            lib: "",
-            enableEigen: 0
+            lib: ""
           }
           - {
-            name: "GCC-Release-Dune",
+            name: "GCC-Release",
             config: Release,
             compilerC: gcc-12,
             compilerCxx: g++-12,
-            lib: "",
-            enableEigen: 0
-          }
-          - {
-            name: "GCC-Debug-Eigen",
-            config: Debug,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: "",
-            enableEigen: 1
-          }
-          - {
-            name: "GCC-Release-Eigen",
-            config: Release,
-            compilerC: gcc-12,
-            compilerCxx: g++-12,
-            lib: 1,
-            enableEigen: 1
+            lib: ""
           }
     steps:
       - uses: actions/checkout@v2
