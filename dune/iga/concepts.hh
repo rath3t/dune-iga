@@ -19,8 +19,6 @@ namespace Dune::IGA {
     { v -= v } -> std::same_as<VectorType&>;
     { v *= a } -> std::same_as<VectorType&>;
     { v /= a } -> std::same_as<VectorType&>;
-    { dot(v, v) } -> std::same_as<typename VectorType::value_type>;
-    { two_norm(v) } -> std::same_as<typename VectorType::value_type>;
   };
 
   template <typename MatrixType>
