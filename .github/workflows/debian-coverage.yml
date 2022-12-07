@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir cmake-build-debug
           cd cmake-build-debug
-          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DENABLE_TEST_COVERAGE=1 -DDUNE_LOCALFEFUNCTIONS_ENABLE_TESTING=1
+          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DENABLE_TEST_COVERAGE=1 
           cmake --build . --parallel 2 --target build_tests
 
       - name: Tests
