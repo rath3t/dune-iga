@@ -139,11 +139,11 @@ namespace Dune::IGA {
             index -= fac2 * (uniqueSpanSize_[0] * (uniqueSpanSize_[1] - 1));
           }
 
-          std::array<int, dim> boundarys;
-          std::ranges::transform(uniqueSpanSize_, boundarys.begin(), [](auto& i) { return i * 2; });
+          std::array<int, dim> boundaries;
+          std::ranges::transform(uniqueSpanSize_, boundaries.begin(), [](auto& i) { return i * 2; });
 
           // move back to correct index, e.g. the first y - boundary index comes after all x-boundary indices
-          index += std::accumulate(boundarys.begin(), boundarys.begin() + surfFixedDir, 0);
+          index += std::accumulate(boundaries.begin(), boundaries.begin() + surfFixedDir, 0);
         } else if constexpr (dim == 3) {
           if (surfFixedDir == 0) {
             const int fac = (index + 1) / (uniqueSpanSize_[0] + 1);
@@ -156,16 +156,16 @@ namespace Dune::IGA {
             index -= fac * (uniqueSpanSize_[1] * uniqueSpanSize_[0] * (uniqueSpanSize_[2] - 1));
           }
 
-          std::array<int, dim> boundarys;
-          std::ranges::fill(boundarys, 2);
+          std::array<int, dim> boundaries;
+          std::ranges::fill(boundaries, 2);
           for (int i = 0; i < dim; ++i)
             for (int k = 0; k < dim; ++k) {
               if (i == k) continue;
-              boundarys[i] *= uniqueSpanSize_[k];
+              boundaries[i] *= uniqueSpanSize_[k];
             }
 
           // move back to correct index, e.g. the first y - boundary index comes after all x-boundary indices
-          index += std::accumulate(boundarys.begin(), boundarys.begin() + surfFixedDir, 0);
+          index += std::accumulate(boundaries.begin(), boundaries.begin() + surfFixedDir, 0);
         }
         assert(index >= 0);
         return index;
