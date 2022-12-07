@@ -15,7 +15,7 @@
 namespace Dune::IGA {
 
   /** \brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than u
-   *                                        -p+1-times-      returned       -p+1-times-
+   *                                       -p+1-times-     returned        -p+1-times-
    * @tparam Range knotvector range
    * @param p polynomial degree of the underlying spline
    * @param u span value which is searched for
@@ -24,9 +24,9 @@ namespace Dune::IGA {
    * @return
    */
   template <std::ranges::random_access_range Range>
-  auto findSpan(const int p, const typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
+  auto findSpan(const int p,  typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
-    if (u >= U.back()) return static_cast<long int>(U.size()-1);
+    if (u >= U.back()) return static_cast<long int>(U.size()-p-2); // if the coordinate is to big we return to the last non-end span
     auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }

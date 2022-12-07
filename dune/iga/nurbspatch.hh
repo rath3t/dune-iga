@@ -189,9 +189,17 @@ namespace Dune::IGA {
       } else if constexpr (codim == dim) {  // vertex
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
         const auto multiIndex = vertexNet_->directToMultiIndex(directIndex);
-        for (size_t i = 0; i < dim; ++i)
-          currentKnotSpan[i]
-              = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
+
+        for (size_t i = 0; i < dim; ++i) {
+          if (Dune::FloatCmp::eq(uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i].back())) {
+            // If we are the vertex on the rightmost end of the knotspan, we set the knot span index by hand to the last entry
+            // This is needed since findSpan return to use the end - degree -2 index, which is wrong for the rightmost end
+            currentKnotSpan[i] = patchData_->knotSpans[i].size() - 1;
+          } else
+            currentKnotSpan[i]
+                = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
+        }
+
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
       {
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);

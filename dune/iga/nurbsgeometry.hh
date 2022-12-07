@@ -39,7 +39,8 @@ namespace Dune::IGA {
     /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
      *
      *  \param Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
-     *  \param corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to operate
+     *  \param fixedOrVaryingDirections indicates if the direction free or fixed. This means that the geometry does not "run" in the fixed
+     *  direction, e.g. an edge in the first direction is fixed in the second direction and a vertex is fixed in all directions
      */
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections, const std::array<int, griddim>& thisSpanIndices)
@@ -52,6 +53,14 @@ namespace Dune::IGA {
       for (int i = 0; i < griddim; ++i)
         thisSpanIndices_[i] = (thisSpanIndices[i] == patchData->knotSpans[i].size() - 1) ? thisSpanIndices[i] - patchData->degree[i] - 1
                                                                                          : thisSpanIndices[i];
+
+      //If we are a vertex and on the rightmost end of the knotspan, we receive here the last index,
+      // For the proper construction of the nurbs and controlpoint net we need the indices end -degree -2
+      // To properly extract for the last span and not for the span after the last one
+      if constexpr( mydim==0)
+        for (int i = 0; i < griddim; ++i)
+          if (thisSpanIndices[i] == patchData->knotSpans[i].size()-1)
+            thisSpanIndices_[i] = patchData->knotSpans[i].size() - patchData->degree[i] - 2;
 
       nurbs_           = Dune::IGA::Nurbs<griddim, LinearAlgebraTraits>(*patchData, thisSpanIndices_);
       cpCoordinateNet_ = netOfSpan(thisSpanIndices_, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
@@ -95,6 +104,7 @@ namespace Dune::IGA {
      */
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
       const auto localInSpan = transformLocalToSpan(local);
+
       auto basis             = nurbs_.basisFunctionNet(localInSpan);
       return dot(basis, cpCoordinateNet_);
     }
@@ -227,6 +237,7 @@ namespace Dune::IGA {
         for (int loci = 0, i = 0; i < griddim; ++i) {
           localInSpan[i]
               = (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::free) ? local[loci++] * scaling_[i] + offset_[i] : offset_[i];
+
         }
       } else
         for (int i = 0; i < griddim; ++i)
