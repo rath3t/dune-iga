@@ -611,6 +611,7 @@ namespace Dune::Functions {
 
       auto& dNpart = dN.get(order).directGetAll();
       out.reserve(dNpart.size());
+      out.clear();
       std::ranges::copy(std::move(dNpart), std::back_inserter(out));
     }
 
