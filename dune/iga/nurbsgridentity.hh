@@ -107,7 +107,7 @@ namespace Dune::IGA {
         multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
             += ((innerLocalIndex % 2)
                     ? 1
-                    : Impl::noNeighbor);  // increase the multiIndex depending where the outer element should lie
+                    : Impl::noNeighbor);  // increase the multiIndex depending on where the outer element should lie
         auto directOuterIndex = (eleNet->isValid(multiIndex)) ? eleNet->index(multiIndex) : Impl::noNeighbor;
         intersections_->emplace_back(NURBSintersection<GridImpl>(innerLocalIndex, outerLocalIndex, directIndex_,
                                                                  directOuterIndex, *NURBSGridView_));
