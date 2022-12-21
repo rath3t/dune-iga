@@ -190,8 +190,8 @@ namespace Dune::IGA {
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
         const auto multiIndex = elementNet_->directToMultiIndex(directIndex);
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]],
-                                                   patchData_->knotSpans[i], multiIndex[i]);
+          currentKnotSpan[i] = Dune::IGA::findSpanCorrected(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]],
+                                                            patchData_->knotSpans[i], multiIndex[i]);
       } else if constexpr (codim == dim) {  // vertex
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::fixed);
         const auto multiIndex = vertexNet_->directToMultiIndex(directIndex);
@@ -203,8 +203,8 @@ namespace Dune::IGA {
             // rightmost end
             currentKnotSpan[i] = patchData_->knotSpans[i].size() - 1;
           } else
-            currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]],
-                                                     patchData_->knotSpans[i], multiIndex[i]);
+            currentKnotSpan[i] = Dune::IGA::findSpanCorrected(
+                patchData_->degree[i], uniqueKnotVector_[i][multiIndex[i]], patchData_->knotSpans[i], multiIndex[i]);
         }
 
       } else if constexpr (dim - codim == 1 && dim > 1)  // edge case
@@ -240,7 +240,7 @@ namespace Dune::IGA {
           spanIndices[0] = std::fmod(indexInDir, uniqueSpanSize_[0] + 1);
           if (edgeDir == 1)
             if constexpr (dim == 3) {
-              spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1] + 1) * uniqueSpanSize_[0] + 1)),
+              spanIndices[2] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[1]) * uniqueSpanSize_[0] + 1)),
                                          uniqueSpanSize_[2] + 1);
             }
           if constexpr (dim == 3)
@@ -248,8 +248,13 @@ namespace Dune::IGA {
               spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0] + 1))), uniqueSpanSize_[1] + 1);
         }
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]],
-                                                   patchData_->knotSpans[i], spanIndices[i]);
+          if (fixedOrFreeDirection[i] == Impl::FixedOrFree::free) {
+            currentKnotSpan[i] = Dune::IGA::findSpanCorrected(
+                patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          } else {
+            currentKnotSpan[i] = Dune::IGA::findSpanUncorrected(
+                patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          }
       } else if constexpr (dim - codim == 2 && dim > 2)  // surface case
       {
         std::ranges::fill(fixedOrFreeDirection, Impl::FixedOrFree::free);
@@ -288,8 +293,16 @@ namespace Dune::IGA {
             spanIndices[1] = std::fmod(std::floor(indexInDir / ((uniqueSpanSize_[0]))), uniqueSpanSize_[1]);
         }
         for (size_t i = 0; i < dim; i++)
-          currentKnotSpan[i] = Dune::IGA::findSpan(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]],
-                                                   patchData_->knotSpans[i], spanIndices[i]);
+          currentKnotSpan[i] = Dune::IGA::findSpanCorrected(patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]],
+                                                            patchData_->knotSpans[i], spanIndices[i]);
+        for (size_t i = 0; i < dim; i++)
+          if (fixedOrFreeDirection[i] == Impl::FixedOrFree::free) {
+            currentKnotSpan[i] = Dune::IGA::findSpanCorrected(
+                patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          } else {
+            currentKnotSpan[i] = Dune::IGA::findSpanUncorrected(
+                patchData_->degree[i], uniqueKnotVector_[i][spanIndices[i]], patchData_->knotSpans[i], spanIndices[i]);
+          }
       }
       return std::make_pair(currentKnotSpan, fixedOrFreeDirection);
     };

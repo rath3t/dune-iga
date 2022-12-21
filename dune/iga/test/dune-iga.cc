@@ -36,6 +36,60 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
+template<typename T,int worldDim, int Items>
+struct Compare
+{
+  constexpr bool operator()( const std::array<FieldVector<double,worldDim>,Items>& lhs, const std::array<FieldVector<double,worldDim>,Items>& rhs ) const
+  {
+    return std::ranges::lexicographical_compare(std::ranges::join_view(lhs),std::ranges::join_view(rhs)) ;
+  };
+};
+
+auto checkUniqueEdges(const auto& gridView)
+{
+  TestSuite t;
+
+  constexpr int  gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
+  constexpr int  gridDimension = std::remove_cvref_t<decltype(gridView)>::dimension;
+  std::set<std::array<FieldVector<double,gridDimensionworld>,2>,Compare<double,gridDimensionworld,2>> edgeVertexPairSet;
+  for (int eleIndex=0;auto&& element : elements(gridView)) {
+    edgeVertexPairSet.clear();
+    for (int edgeIndex = 0; edgeIndex < element.subEntities(gridDimension-1); ++edgeIndex) {
+      std::cout<<"Edge: "<<edgeIndex<<std::endl;
+      auto edge = element.template subEntity<gridDimension-1>(edgeIndex);
+      std::array<FieldVector<double,gridDimensionworld>,2> pair;
+      for(int c= 0; c< edge.geometry().corners(); ++c)
+        pair[c] = edge.geometry().corner(c);
+      bool inserted = edgeVertexPairSet.insert(pair).second;
+      t.require(inserted)<<"Duplicate edge detected in Element "<<eleIndex<<" Edges: "<<pair[0]<<", "<<pair[1];
+    }
+    ++eleIndex;
+  }
+  return t;
+}
+
+auto checkUniqueSurfaces(const auto& gridView)
+{
+  TestSuite t;
+
+  constexpr int  gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
+  std::set<std::array<FieldVector<double,gridDimensionworld>,4>,Compare<double,gridDimensionworld,4>> edgeVertexPairSet;
+  for (int eleIndex=0;auto&& element : elements(gridView)) {
+    edgeVertexPairSet.clear();
+    for (int edgeIndex = 0; edgeIndex < element.subEntities(2); ++edgeIndex) {
+      auto edge = element.template subEntity<2>(edgeIndex);
+      std::array<FieldVector<double,gridDimensionworld>,4> tuple;
+      for(int c= 0; c< edge.geometry().corners(); ++c)
+        tuple[c] = edge.geometry().corner(c);
+
+      t.require(edgeVertexPairSet.insert(tuple).second)<<"Duplicate surface detected in Element "<<eleIndex<<" Surfaces: "<<tuple[0]<<", "<<tuple[1]<<", "<<tuple[2]<<", "<<tuple[3];
+    }
+    ++eleIndex;
+  }
+  return t;
+}
+
+
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   //  Second test
@@ -101,6 +155,7 @@ auto testNURBSGridCurve() {
 }
 
 void testNURBSGridSurface() {
+  TestSuite t;
   int subSampling = 10;
 
   //////////////////////////////////////////////////////////////
@@ -136,9 +191,11 @@ void testNURBSGridSurface() {
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("NURBSGridTest-Surface");
+
+  t.subTest(checkUniqueEdges(gridView));
 }
 
-void test3DGrid() {
+auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
   const std::array<int, dim> order = {2, 2, 2};
@@ -174,28 +231,31 @@ void test3DGrid() {
   additionalKnots[1]   = 0.3;
   //  additionalKnots[2] = 0.6;
   //  additionalKnots[1] = 3.5;
-  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
+//  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
   //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
+//  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
   //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid<3, 3> grid(nurbsPatchData);
-  grid.globalRefine(1);
+//  grid.globalRefine(1);
   //  gridcheck(grid);
   //  grid.globalRefineInDirection(0,1);
   //  gridcheck(grid);
   //  grid.globalRefineInDirection(1,2);
   //  gridcheck(grid);
-  grid.globalRefineInDirection(2, 3);
+//  grid.globalRefineInDirection(2, 3);
   //  gridcheck(grid);
 
   auto gridView = grid.leafGridView();
+  TestSuite t;
+ t.subTest(checkUniqueEdges(gridView));
+ t.subTest(checkUniqueSurfaces(gridView));
 
   const int subSampling = 10;
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("NURBSGridTest-Solid2");
 
-  TestSuite test;
+
   Dune::GeometryChecker<decltype(grid)> geometryChecker;
   //  geometryChecker.checkGeometry(gridView);
   Dune::checkIndexSet(grid, gridView, std::cout);
@@ -206,6 +266,8 @@ void test3DGrid() {
     checkJacobians(elegeo);
 
   checkIterators(gridView);
+
+  return t;
 }
 
 void testFactory() {
@@ -231,11 +293,6 @@ void testFactory() {
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   nurbsPatchData.controlPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
   nurbsPatchData.degree        = order;
-
-  //    IGA::GridFactory<2UL,3UL> gridFactory;
-  //    gridFactory.insert(nurbsPatchData,linesIndices(0,1,2,3),gluedat(0,1)
-  //
-  //    auto grid = gridFactory.createGrid();
 };
 
 auto testTorusGeometry() {
@@ -297,6 +354,7 @@ auto testTorusGeometry() {
   checkIterators(gridView);
 
   gridcheck(grid);
+  test.subTest(checkUniqueEdges(gridView));
   return test;
 }
 
@@ -332,6 +390,7 @@ auto testNURBSSurface() {
   testSuite.check(patch.size(0) == 1);
   testSuite.check(patch.size(1) == 4);
   testSuite.check(patch.size(2) == 9);
+
   return testSuite;
 }
 
@@ -421,7 +480,7 @@ void testNurbsGridCylinder() {
 
   vtkWriter.write("ZylRefine");
 
-  ////////////////////////////////////////////////////////////////
+  testSuite.subTest(checkUniqueEdges(gridView));
 }
 
 // template <int dim>
@@ -922,13 +981,17 @@ auto testPlate() {
       t.check(checkIfFinite(ddNi02));
     }
   }
+  t.subTest(checkUniqueEdges(gridView));
   return t;
 }
+
+
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
+  t.subTest(test3DGrid());
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());
   testNurbsGridCylinder();

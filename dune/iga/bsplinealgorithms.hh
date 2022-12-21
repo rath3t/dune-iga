@@ -27,7 +27,7 @@ namespace Dune::IGA {
    * @return
    */
   template <std::ranges::random_access_range Range>
-  auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
+  auto findSpanCorrected(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
     if (u >= U.back())
       return static_cast<long int>(U.size() - p - 2);  // if the coordinate is to big we return to the last non-end span
@@ -35,13 +35,30 @@ namespace Dune::IGA {
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
-  /** \brief Same as findSpan() but for dim - knotvectors  */
+  template <std::ranges::random_access_range Range>
+  auto findSpanUncorrected(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
+    if (u <= U[0]) return static_cast<long int>(p);
+    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
+    return static_cast<long int>(std::distance(U.begin(), it) - 1);
+  }
+
+  /** \brief Same as findSpanCorrected() but for dim - knotvectors  */
   template <std::size_t dim, typename ValueType>
-  auto findSpan(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
+  auto findSpanCorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
                 const std::array<std::vector<ValueType>, dim>& U) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
-      res[i] = findSpan(p[i], u[i], U[i]);
+      res[i] = findSpanCorrected(p[i], u[i], U[i]);
+    return res;
+  }
+
+  /** \brief Same as findSpanUncorrected() but for dim - knotvectors  */
+  template <std::size_t dim, typename ValueType>
+  auto findSpanUncorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
+                const std::array<std::vector<ValueType>, dim>& U) {
+    std::array<int, dim> res;
+    for (auto i = 0; i < dim; ++i)
+      res[i] = findSpanUncorrected(p[i], u[i], U[i]);
     return res;
   }
 
@@ -98,7 +115,7 @@ namespace Dune::IGA {
         return N;
       }
 
-      const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
+      const int sp = spIndex ? spIndex.value() : findSpanCorrected(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)),
                                   [&u](auto& kn) { return u - kn; });
@@ -137,7 +154,7 @@ namespace Dune::IGA {
                                          const int derivativeOrder, std::optional<int> spIndex = std::nullopt) {
       assert(spIndex < knots.size() - p - 1);
       const int order = p + 1;
-      const int sp    = spIndex ? spIndex.value() : findSpan(p, u, knots);
+      const int sp    = spIndex ? spIndex.value() : findSpanCorrected(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + sp + 1 - p, p)),
                                   [&u](auto& kn) { return u - kn; });

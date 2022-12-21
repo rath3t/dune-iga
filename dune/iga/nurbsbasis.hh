@@ -338,7 +338,7 @@ namespace Dune::Functions {
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
         currentKnotSpan_[i]
-            = Dune::IGA::findSpan(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
+            = Dune::IGA::findSpanCorrected(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
                                   patchData.knotSpans[i], elementIdx[i]);
 
         // Compute the geometric transformation from knotspan-local to global coordinates

@@ -96,7 +96,7 @@ namespace Dune::IGA {
   requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
       const std::array<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim>& knots,
       const std::array<int, dim>& degree, const MultiDimensionNet<dim, NetValueType>& net) {
-    auto subNetStart = findSpan(degree, u, knots);
+    auto subNetStart = findSpanCorrected(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
 
@@ -151,7 +151,7 @@ namespace Dune::IGA {
             u[i], knots[i], degree[i], (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
       auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
-      auto subNetStart = spIndex ? spIndex.value() : findSpan(degree, u, knots);
+      auto subNetStart = spIndex ? spIndex.value() : findSpanCorrected(degree, u, knots);
 
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
@@ -197,7 +197,7 @@ namespace Dune::IGA {
 
       MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
-      auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
+      auto subNetStart         = spIndex ? spIndex.value() : findSpanCorrected(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       for (int j = 0; j < R.directSize(); ++j) {
@@ -449,8 +449,8 @@ namespace Dune::IGA {
     auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
 
     const int p = oldData.degree[refinementDirection];
-    const int a = findSpan(p, newKnots.front(), oldKnotVec);
-    const int b = findSpan(p, newKnots.back(), oldKnotVec);
+    const int a = findSpanCorrected(p, newKnots.front(), oldKnotVec);
+    const int b = findSpanCorrected(p, newKnots.back(), oldKnotVec);
 
     auto newSurfI = newCPv.hyperSurfBegin(otherDirections);
     auto oldSurfI = oldCPv.hyperSurfBegin(otherDirections);
