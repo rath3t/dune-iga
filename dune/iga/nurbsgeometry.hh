@@ -136,8 +136,7 @@ namespace Dune::IGA {
         x -= dx;
         // if local is outside the maximum knot vector span bound, thus we clamp it to it and hope for convergence
         for (int i = 0; i < mydim; ++i)
-          if(Dune::FloatCmp::gt(x[i],patchData_->knotSpans[i].back()))
-            x[i]=patchData_->knotSpans[i].back();
+          if (Dune::FloatCmp::gt(x[i], patchData_->knotSpans[i].back())) x[i] = patchData_->knotSpans[i].back();
 
       } while (dx.two_norm2() > tolerance);
       return x;

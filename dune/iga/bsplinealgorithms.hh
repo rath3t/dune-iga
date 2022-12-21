@@ -45,7 +45,7 @@ namespace Dune::IGA {
   /** \brief Same as findSpanCorrected() but for dim - knotvectors  */
   template <std::size_t dim, typename ValueType>
   auto findSpanCorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
-                const std::array<std::vector<ValueType>, dim>& U) {
+                         const std::array<std::vector<ValueType>, dim>& U) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpanCorrected(p[i], u[i], U[i]);
@@ -55,7 +55,7 @@ namespace Dune::IGA {
   /** \brief Same as findSpanUncorrected() but for dim - knotvectors  */
   template <std::size_t dim, typename ValueType>
   auto findSpanUncorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
-                const std::array<std::vector<ValueType>, dim>& U) {
+                           const std::array<std::vector<ValueType>, dim>& U) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpanUncorrected(p[i], u[i], U[i]);
