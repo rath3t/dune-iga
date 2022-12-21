@@ -257,7 +257,7 @@ auto test3DGrid() {
 
 
   Dune::GeometryChecker<decltype(grid)> geometryChecker;
-  //  geometryChecker.checkGeometry(gridView);
+  geometryChecker.checkGeometry(gridView);
   Dune::checkIndexSet(grid, gridView, std::cout);
 
   checkEntityLifetime(gridView, gridView.size(0));
@@ -995,17 +995,9 @@ int main(int argc, char** argv) try {
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());
   testNurbsGridCylinder();
-  //  std::cout << "done with NURBS surface cylinder" << std::endl;
-
-  //    std::cout << "done with NURBS grid Curve" << std::endl;
-  test3DGrid();
-  //    std::cout << "3dGrid " << std::endl;
   t.subTest(testTorusGeometry());
-  //    std::cout << "done with NURBS torus " << std::endl;
 
   t.subTest(testNurbsBasis());
-  //    std::cout << "done with NURBS basis test " << std::endl;
-  //
 
   gridCheck();
   t.subTest(testBsplineBasisFunctions());
