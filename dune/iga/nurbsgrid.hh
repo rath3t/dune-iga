@@ -208,7 +208,7 @@ namespace Dune::IGA {
                           NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
                           NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,
                           NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>, int,
-                          IgaIdSet<GridImpl>, int, CollectiveCommunication<No_Comm>, NurbsLeafGridViewTraits,
+                          IgaIdSet<GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
                           NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 

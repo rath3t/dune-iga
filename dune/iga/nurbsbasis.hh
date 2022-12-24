@@ -30,10 +30,10 @@
 namespace Dune::Functions {
 
   // A maze of dependencies between the different parts of this.  We need a few forward declarations
-  template <typename GV, typename R, typename MI>
+  template <typename GV, typename R>
   class NurbsLocalFiniteElement;
 
-  template <typename GV, class MI,
+  template <typename GV,
             Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
   class NurbsPreBasis;
 
@@ -45,9 +45,9 @@ namespace Dune::Functions {
    * \tparam GV Grid view that the basis is defined on
    * \tparam R Number type used for spline function values
    */
-  template <class GV, class R, class MI>
+  template <class GV, class R>
   class NurbsLocalBasis {
-    friend class NurbsLocalFiniteElement<GV, R, MI>;
+    friend class NurbsLocalFiniteElement<GV,R>;
 
     typedef typename GV::ctype D;
     enum { dim = GV::dimension };
@@ -60,7 +60,7 @@ namespace Dune::Functions {
      *
      * The patch object does all the work.
      */
-    NurbsLocalBasis(const NurbsPreBasis<GV, MI>& preBasis, const NurbsLocalFiniteElement<GV, R, MI>& lFE)
+    NurbsLocalBasis(const NurbsPreBasis<GV>& preBasis, const NurbsLocalFiniteElement<GV, R>& lFE)
         : preBasis_(preBasis), lFE_(lFE) {}
 
     /** \brief Evaluate all shape functions
@@ -116,9 +116,9 @@ namespace Dune::Functions {
     [[nodiscard]] std::size_t size() const { return lFE_.size(); }
 
    private:
-    const NurbsPreBasis<GV, MI>& preBasis_;
+    const NurbsPreBasis<GV>& preBasis_;
 
-    const NurbsLocalFiniteElement<GV, R, MI>& lFE_;
+    const NurbsLocalFiniteElement<GV, R>& lFE_;
 
     // Coordinates in a single knot span differ from coordinates on the B-spline patch
     // by an affine transformation.  This transformation is stored in offset_ and scaling_.
@@ -298,24 +298,23 @@ namespace Dune::Functions {
    *
    * \tparam D Number type used for domain coordinates
    * \tparam R Number type used for spline function values
-   * \tparam MI Global multi-index type.  Only here for technical reasons
    */
-  template <class GV, class R, class MI>
+  template <class GV, class R>
   class NurbsLocalFiniteElement {
     typedef typename GV::ctype D;
     enum { dim = GV::dimension };
-    friend class NurbsLocalBasis<GV, R, MI>;
+    friend class NurbsLocalBasis<GV, R>;
 
    public:
     /** \brief Export various types related to this LocalFiniteElement
      */
-    typedef LocalFiniteElementTraits<NurbsLocalBasis<GV, R, MI>, NurbsLocalCoefficients<dim>,
-                                     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>>
+    typedef LocalFiniteElementTraits<NurbsLocalBasis<GV, R>, NurbsLocalCoefficients<dim>,
+                                     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>>>
         Traits;
 
     /** \brief Constructor with a given B-spline basis
      */
-    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, MI>& preBasis)
+    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV>& preBasis)
         : preBasis_(preBasis), localBasis_(preBasis, *this) {}
 
     /** \brief Copy constructor
@@ -357,7 +356,7 @@ namespace Dune::Functions {
     }
 
     /** \brief Hand out a LocalBasis object */
-    const NurbsLocalBasis<GV, R, MI>& localBasis() const {
+    const NurbsLocalBasis<GV, R>& localBasis() const {
       assert(isBound && "This element is not bound!");
       return localBasis_;
     }
@@ -369,7 +368,7 @@ namespace Dune::Functions {
     }
 
     /** \brief Hand out a LocalInterpolation object */
-    const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>>& localInterpolation() const {
+    const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>>& localInterpolation() const {
       assert(isBound && "This element is not bound!");
       return localInterpolation_;
     }
@@ -389,19 +388,19 @@ namespace Dune::Functions {
     /** \brief Number of degrees of freedom for one coordinate direction */
     [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.degree[i] + 1; }
 
-    const NurbsPreBasis<GV, MI>& preBasis_;
+    const NurbsPreBasis<GV>& preBasis_;
 
     NurbsLocalCoefficients<dim> localCoefficients_;
-    NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R, MI>> localInterpolation_;
+    NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>> localInterpolation_;
 
     // The knot span we are bound to
     std::array<int, dim> currentKnotSpan_;
-    NurbsLocalBasis<GV, R, MI> localBasis_;
+    NurbsLocalBasis<GV, R> localBasis_;
     std::array<unsigned, dim> elementIdx_{};
     bool isBound{false};
   };
 
-  template <typename GV, typename MI>
+  template <typename GV>
   class NurbsNode;
 
   /** \brief Pre-basis for B-spline basis
@@ -409,12 +408,11 @@ namespace Dune::Functions {
    * \ingroup FunctionSpaceBasesImplementations
    *
    * \tparam GV The GridView that the space is defined on
-   * \tparam MI Type to be used for multi-indices
    *
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
    */
-  template <typename GV, class MI, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <typename GV, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
   class NurbsPreBasis {
     static const auto dim      = GV::dimension;
     static const auto dimworld = GV::dimensionworld;
@@ -466,15 +464,15 @@ namespace Dune::Functions {
     using GridView  = GV;
     using size_type = std::size_t;
 
-    using Node = NurbsNode<GV, MI>;
+    using Node = NurbsNode<GV>;
 
     //! Type of created tree node index set. \deprecated
-    using IndexSet = Impl::DefaultNodeIndexSet<NurbsPreBasis>;
+//    using IndexSet = Dune::Functions::Impl::DefaultNodeIndexSet<NurbsPreBasis>;
+    static constexpr size_type maxMultiIndexSize = 1;
+    static constexpr size_type minMultiIndexSize = 1;
+    static constexpr size_type multiIndexBufferSize = 1;
 
-    /** \brief Type used for global numbering of the basis vectors */
-    using MultiIndex = MI;
-
-    using SizePrefix = Dune::ReservedVector<size_type, 1>;
+//    using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
     // Type used for function values
     using R = typename NurbsGridLinearAlgebraTraits::value_type;
@@ -505,6 +503,7 @@ namespace Dune::Functions {
     Node makeNode() const { return Node{this}; }
 
     //! Return number of possible values for next position in multi index
+    template<typename SizePrefix>
     [[nodiscard]] size_type size(const SizePrefix prefix) const {
       assert(prefix.empty() || prefix.size() == 1);
       return (prefix.empty()) ? size() : 0;
@@ -640,16 +639,16 @@ namespace Dune::Functions {
     GridView gridView_;
   };
 
-  template <typename GV, typename MI>
+  template <typename GV>
   class NurbsNode : public LeafBasisNode {
     static const int dim = GV::dimension;
 
    public:
     using size_type     = std::size_t;
     using Element       = typename GV::template Codim<0>::Entity;
-    using FiniteElement = NurbsLocalFiniteElement<GV, double, MI>;
+    using FiniteElement = NurbsLocalFiniteElement<GV, double>;
 
-    NurbsNode(const NurbsPreBasis<GV, MI>* preBasis) : preBasis_(preBasis), finiteElement_(*preBasis) {}
+    NurbsNode(const NurbsPreBasis<GV>* preBasis) : preBasis_(preBasis), finiteElement_(*preBasis) {}
 
     //! Return current element, throw if unbound
     const Element& element() const { return element_; }
@@ -669,7 +668,7 @@ namespace Dune::Functions {
     }
 
    protected:
-    const NurbsPreBasis<GV, MI>* preBasis_;
+    const NurbsPreBasis<GV>* preBasis_;
 
     FiniteElement finiteElement_;
     Element element_;
@@ -687,9 +686,9 @@ namespace Dune::Functions {
         explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
             : patchData_(patchData) {}
 
-        template <class MultiIndex, class GridView>
-        auto makePreBasis(const GridView& gridView) const {
-          return NurbsPreBasis<GridView, MultiIndex>(gridView, patchData_);
+        template < class GridView>
+        auto operator()(const GridView& gridView) const {
+          return NurbsPreBasis<GridView>(gridView, patchData_);
         }
 
        private:
@@ -722,7 +721,7 @@ namespace Dune::Functions {
    * \tparam GV The GridView that the space is defined on
    */
   template <typename GV>
-  using NurbsBasis = DefaultGlobalBasis<NurbsPreBasis<GV, FlatMultiIndex<std::size_t>>>;
+  using NurbsBasis = DefaultGlobalBasis<NurbsPreBasis<GV>>;
 
 }  // namespace Dune::Functions
 
