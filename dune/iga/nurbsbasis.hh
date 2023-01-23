@@ -47,7 +47,7 @@ namespace Dune::Functions {
    */
   template <class GV, class R>
   class NurbsLocalBasis {
-    friend class NurbsLocalFiniteElement<GV,R>;
+    friend class NurbsLocalFiniteElement<GV, R>;
 
     typedef typename GV::ctype D;
     enum { dim = GV::dimension };
@@ -467,12 +467,12 @@ namespace Dune::Functions {
     using Node = NurbsNode<GV>;
 
     //! Type of created tree node index set. \deprecated
-//    using IndexSet = Dune::Functions::Impl::DefaultNodeIndexSet<NurbsPreBasis>;
-    static constexpr size_type maxMultiIndexSize = 1;
-    static constexpr size_type minMultiIndexSize = 1;
+    //    using IndexSet = Dune::Functions::Impl::DefaultNodeIndexSet<NurbsPreBasis>;
+    static constexpr size_type maxMultiIndexSize    = 1;
+    static constexpr size_type minMultiIndexSize    = 1;
     static constexpr size_type multiIndexBufferSize = 1;
 
-//    using SizePrefix = Dune::ReservedVector<size_type, 1>;
+    //    using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
     // Type used for function values
     using R = typename NurbsGridLinearAlgebraTraits::value_type;
@@ -503,7 +503,7 @@ namespace Dune::Functions {
     Node makeNode() const { return Node{this}; }
 
     //! Return number of possible values for next position in multi index
-    template<typename SizePrefix>
+    template <typename SizePrefix>
     [[nodiscard]] size_type size(const SizePrefix prefix) const {
       assert(prefix.empty() || prefix.size() == 1);
       return (prefix.empty()) ? size() : 0;
@@ -686,7 +686,7 @@ namespace Dune::Functions {
         explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
             : patchData_(patchData) {}
 
-        template < class GridView>
+        template <class GridView>
         auto operator()(const GridView& gridView) const {
           return NurbsPreBasis<GridView>(gridView, patchData_);
         }

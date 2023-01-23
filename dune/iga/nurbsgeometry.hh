@@ -214,7 +214,7 @@ namespace Dune::IGA {
     }
 
     auto secondDerivativeOfPosition(const LocalCoordinate& local) const {
-      FieldMatrix<ctype, coorddimension, mydimension*(mydimension + 1) / 2> result;
+      FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension> result;
       std::array<unsigned int, mydimension> subDirs;
       for (int subI = 0, i = 0; i < griddim; ++i) {
         if (fixedOrVaryingDirections_[i] == Dune::IGA::Impl::FixedOrFree::fixed) continue;

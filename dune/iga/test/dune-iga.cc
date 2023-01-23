@@ -908,6 +908,24 @@ bool checkIfFinite(const C& v) {
   return true;
 };
 
+template <typename C>
+bool checkIfZero(const C& v) {
+  for (auto& vi : v) {
+    if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
+      if (Dune::FloatCmp::ne(vi, 0.0)) return false;
+    } else {
+      for (auto& vii : vi)
+        if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vii)>>) {
+          if (Dune::FloatCmp::ne(vii, 0.0)) return false;
+        } else {
+          for (auto& viii : vii)
+            if (Dune::FloatCmp::ne(viii, 0.0)) return false;
+        }
+    }
+  }
+  return true;
+};
+
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -919,8 +937,8 @@ auto testPlate() {
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 5}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 10}, {.p = {1, 0.5}, .w = 1}},
+      = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
          {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
@@ -963,9 +981,11 @@ auto testPlate() {
       auto local  = localGeometry.corner(i);
       auto global = geo.global(local);
       auto J      = geo.jacobianTransposed(local);
+      auto J2     = geo.impl().secondDerivativeOfPosition(local);
 
       t.check(checkIfFinite(global));
       t.check(checkIfFinite(J));
+      t.check(checkIfZero(J2));  // J2 should be zero since the grid is linearly parametrized
 
       localBasis.evaluateFunction(local, N);
       localBasis.evaluateJacobian(local, dN);

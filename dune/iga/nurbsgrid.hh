@@ -203,13 +203,12 @@ namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
   struct NurbsGridFamily {
     using GridImpl = Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
-    using Traits
-        = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator,
-                          NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
-                          NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,
-                          NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>, int,
-                          IgaIdSet<GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
-                          NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
+    using Traits   = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator,
+                                   NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
+                                   NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,
+                                   NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>,
+                                   int, IgaIdSet<GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
+                                   NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 
 }  // namespace Dune::IGA
