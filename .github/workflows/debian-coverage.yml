@@ -44,3 +44,4 @@ jobs:
           flags: tests
           fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
+          gcov_ignore: ./cmake-build-debug/dune/iga/test/
