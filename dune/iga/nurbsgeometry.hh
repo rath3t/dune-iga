@@ -111,7 +111,7 @@ namespace Dune::IGA {
      *  \param[in] local local coordinates for each dimension in [0,1] domain
      */
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
-      const auto localInSpan = transformLocalToSpan(local);
+      const auto localInSpan = localToSpan(local);
 
       auto basis = nurbs_.basisFunctionNet(localInSpan);
       return dot(basis, cpCoordinateNet_);
@@ -154,7 +154,7 @@ namespace Dune::IGA {
         subDirs[subI++] = i;
       }
 
-      const auto localInSpan              = transformLocalToSpan(local);
+      const auto localInSpan              = localToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 1);
 
       for (int dir = 0; dir < mydimension; ++dir) {
@@ -220,7 +220,7 @@ namespace Dune::IGA {
         if (fixedOrVaryingDirections_[i] == Dune::IGA::Impl::FixedOrFree::fixed) continue;
         subDirs[subI++] = i;
       }
-      const auto localInSpan              = transformLocalToSpan(local);
+      const auto localInSpan              = localToSpan(local);
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
@@ -245,9 +245,9 @@ namespace Dune::IGA {
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
-   private:
+    /** \brief Return from the 0 to 1 domain the position in the current knot span */
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
-    auto transformLocalToSpan(const LocalCoordinate& local) const {
+    auto localToSpan(const LocalCoordinate& local) const {
       ReturnType localInSpan;
       if constexpr (LocalCoordinate::dimension != 0) {
         for (int loci = 0, i = 0; i < griddim; ++i) {
@@ -260,6 +260,11 @@ namespace Dune::IGA {
           localInSpan[i] = offset_[i];
       return localInSpan;
     }
+
+    [[nodiscard]] const auto& nurbs() const { return nurbs_; }
+
+    [[nodiscard]] const auto& controlPoints() const { return cpCoordinateNet_; }
+
     std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData_;
     std::array<int, griddim> thisSpanIndices_;
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{Impl::FixedOrFree::free};
