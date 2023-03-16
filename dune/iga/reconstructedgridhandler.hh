@@ -106,17 +106,16 @@ namespace Dune::IGA {
 
       int n_ele = (int)meshTemplate.size() / 3;
 
-      for (int i = 0; i < n_ele; ++i)
+      for (int i = 0; i < n_ele; ++i) {
         gridFactory.insertElement(Dune::GeometryTypes::triangle,
                                   {meshTemplate[3 * i], meshTemplate[3 * i + 1], meshTemplate[3 * i + 2]});
+      }
 
-      /*
-        for (auto& boundary : boundaries) {
-          auto idx = getControlPointIndices(vertices, boundary);
-          gridFactory.insertBoundarySegment({idx[0], idx[1]}, std::make_shared<GridBoundarySegment<worldDim>>(boundary,
-        transferToGlobal));
-        }
-  */
+      for (auto& boundary : boundaries) {
+        auto idx = getControlPointIndices(vertices, boundary);
+        gridFactory.insertBoundarySegment({idx[0], idx[1]}, std::make_shared<GridBoundarySegment<worldDim>>(boundary, transferToGlobal));
+      }
+
       // Setze Idx boundarySegmentIdx welche refined werden müssen
       auto boundaryToRefineMap = determineBoundariesToRefine();
 

@@ -290,7 +290,7 @@ namespace Dune::IGA {
 
     void trimElement() {
       // Nothing to do
-      std::cout << "No trim functionality for grids that arent dim == 2" << std::endl;
+      std::cout << "No trim functionality for grids that arent dim == 2 and worldDim = 2" << std::endl;
     }
 
     void trimElement()
@@ -314,7 +314,7 @@ namespace Dune::IGA {
       auto parameterSpaceGridView = paraGrid->leafGridView();
 
       // Some Lambdas // (move into functionality)
-      const double tolerance  = 1e-8;
+      constexpr double tolerance  = 1e-8;
       auto approximatelyEqual = [tolerance](auto a, auto b) {
         // const double tolerance = double(16) * std::numeric_limits<double>::epsilon();
         return fabs(a - b) < tolerance;

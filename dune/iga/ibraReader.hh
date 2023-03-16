@@ -17,7 +17,7 @@ namespace Dune::IGA {
 
   // At the moment only gridDim und worldDim == 2 supported
   template <int gridDim, int worldDim>
-    requires(gridDim == 2 && worldDim == 2)
+    requires(gridDim == 2) && (worldDim == 2 || worldDim == 3)
   class IbraReader {
    public:
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim>;
@@ -80,7 +80,7 @@ namespace Dune::IGA {
       auto _surface = brep.surfaces[0];
 
       const std::array<std::vector<double>, gridDim> knotSpans   = _surface.compileKnotVectors();
-      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.compileControlPoints<ControlPoint>();
+      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.compileControlPoints<worldDim>();
 
       std::array<int, gridDim> dimsize = _surface.n_controlPoints;
 

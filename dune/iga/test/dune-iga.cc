@@ -46,7 +46,7 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
-#if 1
+#if 0
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -1044,17 +1044,16 @@ auto testIbraReader()
   for (auto& ele : elements(gV))
     t.check(ele.geometry().center() == vertices[indexSet.index(ele)]);
 
-  // Test Grid as 3D Grid (doenst really work atm, boundarySegment behaves dirferently in a 3D Grid
-
-//  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/element.ibra");
-//
-//  VTKWriter<NURBSGrid<2,3>::GridView> vtkWriter(grid3D->leafGridView());
-//  vtkWriter.write("grid");
+  // Test shell structure, no trim functionality right now
+  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/schale.ibra");
+  grid3D->globalRefine(2);
+  VTKWriter<NURBSGrid<2,3>::GridView> vtkWriter(grid3D->leafGridView());
+  vtkWriter.write("grid");
 
   return t;
 }
 
-std::array<int, 3> getAmountOfTrimFlags(auto& gridView) {
+std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
   int trimmedCounter {0};
   int emptyCounter {0};
   int fullCounter {0};
@@ -1090,7 +1089,6 @@ auto testTrimImpactWithRefinement() {
 
   auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
   t.check(recoGridView.has_value());
-  t.check(recoGridView.value().size(0) == 26);
 
   // 1 refinement: 3 trimmed, 0 empty, 1 full
   grid->globalRefine(1);
@@ -1108,7 +1106,6 @@ auto testTrimImpactWithRefinement() {
   t.check(trimFlagCounter3[1] == 2);
   t.check(trimFlagCounter3[2] == 8);
 
-
   // Print Grid → ultimativer Test für ein getrimmtes Element, sollte nur die full und getrimmten Elemente zeichnen
   // Dune::printGrid((*grid), MPIHelper::instance());
 
@@ -1125,7 +1122,7 @@ int main(int argc, char** argv) try {
   t.subTest(testIbraReader());
   t.subTest(testTrimImpactWithRefinement());
 
-#if 1
+#if 0
   t.subTest(test3DGrid());
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());

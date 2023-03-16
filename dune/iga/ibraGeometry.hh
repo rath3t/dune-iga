@@ -5,6 +5,8 @@
 #ifndef DUNE_IGA_IBRAGEOMETRY_HH
 #define DUNE_IGA_IBRAGEOMETRY_HH
 
+#include "nurbspatchdata.hh"
+
 #include <nlohmann/json.hpp>
 
 namespace Dune::IGA::Ibra {
@@ -21,7 +23,7 @@ namespace Dune::IGA::Ibra {
     NoType
   };
 
-  Type typeForTypeString(std::string& typeString) {
+  Type typeForTypeString(const std::string& typeString) {
     if (typeString == "NurbsCurveGeometry2D")
       return Type::NurbsCurveGeometry2D;
     else if (typeString == "NurbsCurveGeometry3D")
@@ -54,26 +56,26 @@ namespace Dune::IGA::Ibra {
     }
   };
 
+  // The surface is inherently 3D, you can request ControlPoints with worldDim 2 or 3
   struct Surface : Geometry {
     std::array<int, 2> degree{};
     std::array<int, 2> n_controlPoints{};
     std::array<std::vector<double>, 2> knots;
     Dune::DynamicMatrix<double> controlPoints;
 
-    template <typename ControlPointType>
-    std::vector<std::vector<ControlPointType>> compileControlPoints() {
-      constexpr int worldDim{ControlPointType::VectorType::dimension};
-      constexpr int gridDim{2};
+    template <int outputDim> requires(outputDim == 2 || outputDim == 3)
+    std::vector<std::vector<typename NURBSPatchData<2, outputDim>::ControlPointType>> compileControlPoints() {
 
-      auto cpAt = [this](int u, int v) -> Dune::FieldVector<double, worldDim> {
+      auto cpAt = [this](int u, int v) -> Dune::FieldVector<double, outputDim> {
         int idx = u * n_controlPoints[1] + v;
 
-        Dune::FieldVector<double, worldDim> p;
-        for (int k = 0; k < worldDim; ++k)
+        Dune::FieldVector<double, outputDim> p;
+        for (int k = 0; k < outputDim; ++k)
           p[k] = controlPoints[idx][k];
 
         return p;
       };
+      using ControlPointType = NURBSPatchData<2, outputDim>::ControlPointType ;
       std::vector<std::vector<ControlPointType>> vec;
 
       for (int i = 0; i < n_controlPoints[0]; ++i) {
@@ -101,23 +103,11 @@ namespace Dune::IGA::Ibra {
       return knotVec;
     }
 
-    std::array<std::array<double, 2>, 2> minMaxKnots() {
-      std::array<double, 2> m1{};
-      m1[0] = std::min_element(knots[0].begin(), knots[0].end())[0];
-      m1[1] = std::max_element(knots[0].begin(), knots[0].end())[0];
-
-      std::array<double, 2> m2{};
-      m2[0] = std::min_element(knots[1].begin(), knots[1].end())[0];
-      m2[1] = std::max_element(knots[1].begin(), knots[1].end())[0];
-
-      return {m1, m2};
-    }
   };
 
-  template <int inputDim>
   struct Curve : Geometry {
    public:
-    static constexpr int dim = inputDim;
+    static constexpr int dim = 2;
     int degree               = 0;
     int n_controlPoints      = 0;
     std::vector<double> knots;
@@ -125,10 +115,8 @@ namespace Dune::IGA::Ibra {
 
     std::vector<double> weights;
 
-    template <typename ControlPointType>
-    std::vector<ControlPointType> compileControlPoints() {
-      constexpr int worldDim{ControlPointType::VectorType::dimension};
-      assert(dim >= worldDim);
+    std::vector<typename NURBSPatchData<1, 2>::ControlPointType> compileControlPoints() {
+      constexpr int worldDim {2};
 
       auto cpAt = [this](int j) -> Dune::FieldVector<double, worldDim> {
         Dune::FieldVector<double, worldDim> p;
@@ -136,6 +124,7 @@ namespace Dune::IGA::Ibra {
           p[k] = controlPoints[j][k];
         return p;
       };
+      using ControlPointType = NURBSPatchData<1, 2>::ControlPointType;
       std::vector<ControlPointType> vec;
       for (int i = 0; i < n_controlPoints; ++i) {
         vec.push_back({.p = cpAt(i), .w = weights[i]});
@@ -143,21 +132,20 @@ namespace Dune::IGA::Ibra {
 
       return vec;
     }
+    // This might be unused and maybe should go away
+    template <typename T> requires std::is_floating_point_v<T>
+    std::vector<Dune::FieldVector<T, 2>> compileControlPoints() {
+      constexpr int outputDim {2};
 
-    template <int outputDim>
-    std::vector<Dune::FieldVector<double, outputDim>> compileControlPoints() {
-      assert(dim >= outputDim);
-      assert(outputDim <= 3 && outputDim > 1);
-
-      auto cpAt = [this](int u) -> Dune::FieldVector<double, outputDim> {
-        Dune::FieldVector<double, outputDim> p;
+      auto cpAt = [this](int u) -> Dune::FieldVector<T, outputDim> {
+        Dune::FieldVector<T, outputDim> p;
         for (int k = 0; k < outputDim; ++k)
           p[k] = controlPoints[u][k];
 
         return p;
       };
 
-      std::vector<Dune::FieldVector<double, outputDim>> vec;
+      std::vector<Dune::FieldVector<T, outputDim>> vec;
       for (int i = 0; i < n_controlPoints; ++i) {
         vec.push_back(cpAt(i));
       }
@@ -175,16 +163,8 @@ namespace Dune::IGA::Ibra {
 
       return knotVec;
     }
-
-    std::array<double, 2> minMaxKnots() {
-      double min = std::min_element(knots.begin(), knots.end())[0];
-      double max = std::max_element(knots.begin(), knots.end())[0];
-
-      return {min, max};
-    }
   };
-  using Curve2D = Curve<2>;
-  using Curve3D = Curve<3>;
+  using Curve2D = Curve;
 
   void getGenerics(const Geometry& from, Geometry& to) {
     to.key        = from.key;
@@ -245,9 +225,6 @@ namespace Dune::IGA::Ibra {
     StringVector surface_geometries_3d;
     StringVector loops;
     StringVector trims;
-
-    // StringVector faces;
-    // StringVector edges;
   };
 
   struct Brep : Geometry {
@@ -306,8 +283,8 @@ namespace Dune::IGA::Ibra {
 
   void from_json(const json& j, Geometry& geometry) { getGenerics(j, geometry); }
 
-  template <int inputDim>
-  void from_json(const json& j, Curve<inputDim>& curve) {
+
+  void from_json(const json& j, Curve& curve) {
     getGenerics(j, curve);
 
     // Degree
@@ -324,10 +301,10 @@ namespace Dune::IGA::Ibra {
     // Poles aka Control Points
     j.at("nb_poles").get_to(curve.n_controlPoints);
 
-    curve.controlPoints.resize(curve.n_controlPoints, inputDim);
+    curve.controlPoints.resize(curve.n_controlPoints, 2);
 
     for (int i = 0; i < curve.n_controlPoints; ++i)
-      for (int k = 0; k < inputDim; ++k)
+      for (int k = 0; k < 2; ++k)
         curve.controlPoints[i][k] = j.at("poles")[i][k];
 
     std::vector<double> unit_weights(curve.n_controlPoints);

@@ -103,7 +103,7 @@ namespace Dune::IGA {
     NurbsCurveHandler() = default;
 
     explicit NurbsCurveHandler(Ibra::Curve2D& _curve) {
-      const std::vector<ControlPoint> controlPoints = _curve.template compileControlPoints<ControlPoint>();
+      const std::vector<ControlPoint> controlPoints = _curve.compileControlPoints();
 
       std::array<std::vector<double>, gridDim> knotSpans;
       knotSpans[0] = _curve.compileKnotVectors();
