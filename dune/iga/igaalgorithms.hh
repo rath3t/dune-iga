@@ -132,7 +132,7 @@ namespace Dune::IGA {
           const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    auto operator()(const std::array<ScalarType, dim>& u) {
+    auto operator()(const std::array<ScalarType, dim>& u) const {
       return basisFunctions(u, knots_, degree_, weights_, spIndex_).directGetAll();
     }
 
