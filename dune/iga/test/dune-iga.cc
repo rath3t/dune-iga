@@ -26,16 +26,27 @@
 #include <dune/grid/test/checkjacobians.hh>
 // template <class Grid, class IdSet>
 // void checkIdSet ( const Grid &grid, const IdSet& idSet);
+#include <dune/grid/io/file/printgrid.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/gridcapabilities.hh>
+#include <dune/iga/ibraReader.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatch.hh>
 
+#include <dune/iga/ibraReader.hh>
+#include <dune/iga/nurbstrimutils.hh>
+
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/grid/io/file/printgrid.hh>
+
+
 using namespace Dune;
 using namespace Dune::IGA;
 
+#if 1
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -1003,11 +1014,118 @@ auto testPlate() {
   t.subTest(checkUniqueEdges(gridView));
   return t;
 }
+#endif
+
+
+auto testIbraReader()
+{
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
+
+  // Check n_ele = 1, n_vert = 4
+  t.check(grid->size(0) == 1);
+  t.check(grid->size(2) == 4);
+
+  grid->globalRefine(1);
+
+  // Check n_ele = 4, n_vert = 9 after refinement
+  t.check(grid->size(0) == 4);
+  t.check(grid->size(2) == 9);
+
+  // Test degree (maybe test degree elevate)
+  t.check(grid->leafGridView().impl().getPatchData().degree[0] == 1);
+  t.check(grid->leafGridView().impl().getPatchData().degree[1] == 1);
+
+  // Enumerate elements and check position of centers
+  auto gV = grid->leafGridView();
+  std::vector<FieldVector<double, 2>> vertices{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  const auto& indexSet = grid->leafGridView().indexSet();
+  for (auto& ele : elements(gV))
+    t.check(ele.geometry().center() == vertices[indexSet.index(ele)]);
+
+  // Test Grid as 3D Grid (doenst really work atm, boundarySegment behaves dirferently in a 3D Grid
+
+//  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/element.ibra");
+//
+//  VTKWriter<NURBSGrid<2,3>::GridView> vtkWriter(grid3D->leafGridView());
+//  vtkWriter.write("grid");
+
+  return t;
+}
+
+std::array<int, 3> getAmountOfTrimFlags(auto& gridView) {
+  int trimmedCounter {0};
+  int emptyCounter {0};
+  int fullCounter {0};
+  for (auto& ele : elements(gridView))
+    switch (ele.impl().getTrimFlag()) {
+      case ElementTrimFlag::full:
+        fullCounter++;
+        break;
+      case ElementTrimFlag::empty:
+        emptyCounter++;
+        break;
+      case ElementTrimFlag::trimmed:
+        trimmedCounter++;
+        break;
+    }
+
+  return {trimmedCounter, emptyCounter, fullCounter};
+}
+
+auto testTrimImpactWithRefinement() {
+  TestSuite t;
+
+  // Setze Parameters auf Standard, falls hier was geändert wird, werden wohl einige der Tests hier nicht durchlaufen
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+
+  auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter1[0] == 1);
+  t.check(trimFlagCounter1[1] == 0);
+  t.check(trimFlagCounter1[2] == 0);
+
+  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
+  t.check(recoGridView.has_value());
+  t.check(recoGridView.value().size(0) == 26);
+
+  // 1 refinement: 3 trimmed, 0 empty, 1 full
+  grid->globalRefine(1);
+
+  auto trimFlagCounter2 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter2[0] == 3);
+  t.check(trimFlagCounter2[1] == 0);
+  t.check(trimFlagCounter2[2] == 1);
+
+  // 2 refinement: 6 trimmed, 2 empty, 8 full
+  grid->globalRefine(1);
+  auto trimFlagCounter3 = getAmountOfTrimFlags(grid->leafGridView());
+
+  t.check(trimFlagCounter3[0] == 6);
+  t.check(trimFlagCounter3[1] == 2);
+  t.check(trimFlagCounter3[2] == 8);
+
+
+  // Print Grid → ultimativer Test für ein getrimmtes Element, sollte nur die full und getrimmten Elemente zeichnen
+  // Dune::printGrid((*grid), MPIHelper::instance());
+
+
+  return t;
+}
+
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
+
+  t.subTest(testIbraReader());
+  t.subTest(testTrimImpactWithRefinement());
+
+#if 1
   t.subTest(test3DGrid());
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());
@@ -1018,6 +1136,9 @@ int main(int argc, char** argv) try {
 
   gridCheck();
   t.subTest(testBsplineBasisFunctions());
+
+#endif
+
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

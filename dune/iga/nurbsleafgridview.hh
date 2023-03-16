@@ -11,6 +11,7 @@
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
 #include <dune/iga/nurbsgridleafiterator.hh>
+#include <dune/iga/nurbsgridtraits.hh>
 #include <dune/iga/nurbspatch.hh>
 
 namespace Dune::IGA {
@@ -86,23 +87,19 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
 
+    // Hier werden die Elemente erstellt
     NURBSLeafGridView(
         const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>>
             &leafpatches,
-        const GridImpl &grid)
+        const GridImpl &grid, const std::optional<std::vector<ElementTrimFlag>> &_trimFlags = std::nullopt)
         : leafPatches_(leafpatches),
           grid_{&grid},
           entityVector_{std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
-              std::make_integer_sequence<int, dimension + 1>()))>()} {
-      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
-        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
-          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
-          for (unsigned int j = 0; j < patch.size(i); ++j)
-            std::get<i>(*entityVector_.get())
-                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
-        });
-        ++currentPatchId;
-      }
+              std::make_integer_sequence<int, dimension + 1>()))>()},
+          trimFlags(_trimFlags) {
+      // Make Entities
+      createEntities();
+
       indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
     }
 
@@ -111,6 +108,7 @@ namespace Dune::IGA {
       leafPatches_ = other.leafPatches_;
       grid_        = other.grid_;
 
+      trimFlags = other.trimFlags;
       indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
       updateGridViewForEntities();
     }
@@ -120,6 +118,7 @@ namespace Dune::IGA {
       leafPatches_ = other.leafPatches_;
       grid_        = other.grid_;
 
+      trimFlags = other.trimFlags;
       indexSet_.reset();
       indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
       updateGridViewForEntities();
@@ -202,19 +201,43 @@ namespace Dune::IGA {
     }
 
    private:
+    void createEntities() {
+      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
+        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
+          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
+
+          // TrimFlag has to be asked from the patchdata -> also correct number of elements / edges / vertices
+          // Make Elements (codim = 0)
+          if (i == 0) {
+            for (unsigned int j = 0; j < patch.size(i); ++j) {
+              if (trimFlags.has_value()) {
+                // Es wurden Trim Flags gesetzt, element überprüfen
+                std::get<0>(*entityVector_.get())
+                    .emplace_back(
+                        NURBSGridEntity<0, dimension, GridImpl>(*this, j, currentPatchId, trimFlags.value()[j]));
+              } else {
+                // Keine Trim Flags gesetzt
+                std::get<0>(*entityVector_.get())
+                    .emplace_back(NURBSGridEntity<0, dimension, GridImpl>(*this, j, currentPatchId));
+              }
+            }
+          } else {
+            // Codim != 0
+            for (unsigned int j = 0; j < patch.size(i); ++j) {
+              std::get<i>(*entityVector_.get())
+                  .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
+            }
+          }
+        });
+        ++currentPatchId;
+      }
+    }
+
     void updateGridViewForEntities() {
       entityVector_ = std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
           std::make_integer_sequence<int, dimension + 1>()))>();
 
-      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
-        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
-          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
-          for (unsigned int j = 0; j < patch.size(i); ++j)
-            std::get<i>(*entityVector_.get())
-                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
-        });
-        ++currentPatchId;
-      }
+      createEntities();
     }
     template <int codim>
     typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
@@ -242,6 +265,8 @@ namespace Dune::IGA {
     std::unique_ptr<EntityVectorType> entityVector_{};
     std::unique_ptr<NURBSGridLeafIndexSet<GridImpl>> indexSet_;
     int level_{};
+
+    std::optional<std::vector<ElementTrimFlag>> trimFlags;
   };
 
   //  template <typename GridImpl>

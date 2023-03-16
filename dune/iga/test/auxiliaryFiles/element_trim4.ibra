@@ -1,0 +1,129 @@
+[
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<0>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 2,
+    "knots": [-0.89402487608127013,-0.89402487608127013,-0.28338101017719525,-0.28338101017719525],
+    "nb_poles": 3,
+    "poles": [[1.0,0.79179675411566075],[0.4876541049892742,0.91869562850937625],[0.0,0.60230096586352966]]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<1>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.39769903413647034,1.0],
+    "nb_poles": 2,
+    "poles": [[0.0,0.60230096586352966],[0.0,0.0]]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<2>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,1.0],
+    "nb_poles": 2,
+    "poles": [[0.0,0.0],[1.0,0.0]]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<3>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,0.79179675411566075],
+    "nb_poles": 2,
+    "poles": [[1.0,0.0],[1.0,0.79179675411566075]]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsSurfaceGeometry3D<0>",
+    "type": "NurbsSurfaceGeometry3D",
+    "degree_u": 1,
+    "degree_v": 1,
+    "knots_u": [0.0,1.0],
+    "knots_v": [0.0,1.0],
+    "nb_poles_u": 2,
+    "nb_poles_v": 2,
+    "poles": [[0.0,-1.2929037269824892,0.0],[0.0,-0.29290372698248923,0.0],[1.0,-1.2929037269824892,0.0],[1.0,-0.29290372698248923,0.0]]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepFace<0>",
+    "type": "BrepFace",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "loops": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>"],
+    "geometry": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsSurfaceGeometry3D<0>"
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>",
+    "type": "BrepLoop",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "face": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepFace<0>",
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<0>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<1>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<2>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<0>",
+    "type": "BrepTrim",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "loop": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>",
+    "Edge": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<2>",
+    "geometry": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<0>",
+    "domain": [-0.89402487608127013,-0.28338101017719525]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<1>",
+    "type": "BrepTrim",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "loop": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>",
+    "Edge": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<3>",
+    "geometry": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<1>",
+    "domain": [0.39769903413647034,1.0]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<2>",
+    "type": "BrepTrim",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "loop": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>",
+    "Edge": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<0>",
+    "geometry": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<2>",
+    "domain": [0.0,1.0]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<3>",
+    "type": "BrepTrim",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "loop": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>",
+    "Edge": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<1>",
+    "geometry": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<3>",
+    "domain": [0.0,0.79179675411566075]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<0>",
+    "type": "BrepEdge",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<2>"]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<1>",
+    "type": "BrepEdge",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<2>",
+    "type": "BrepEdge",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<0>"]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<3>",
+    "type": "BrepEdge",
+    "brep": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<1>"]
+  },
+  {
+    "key": "rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>",
+    "type": "Brep",
+    "curve_geometries_2d": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<0>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<1>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<2>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsCurveGeometry2D<3>"],
+    "surface_geometries_3d": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.NurbsSurfaceGeometry3D<0>"],
+    "faces": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepFace<0>"],
+    "loops": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepLoop<0>"],
+    "trims": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<0>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<1>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<2>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepTrim<3>"],
+    "edges": ["rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<0>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<1>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<2>","rhino<387dd3f6-5911-48d8-a2c5-24f4e6af6991>.BrepEdge<3>"]
+  }
+]

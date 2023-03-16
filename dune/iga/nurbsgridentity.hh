@@ -50,6 +50,7 @@ namespace Dune::IGA {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
 
+    // Hier nichts zu tun für trimm Funktionalität, weil codim 0 keine trim Flag hat und somit immer Cube ist
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridView::dimension - codim); }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] EntitySeed seed() const {
@@ -94,11 +95,13 @@ namespace Dune::IGA {
     using GridView             = typename GridImpl::Traits::LeafGridView;
     NURBSGridEntity()          = default;
 
-    NURBSGridEntity(const NURBSLeafGridView<GridImpl>& gridView, unsigned int directIndex, unsigned int patchID)
+    NURBSGridEntity(const NURBSLeafGridView<GridImpl>& gridView, unsigned int directIndex, unsigned int patchID,
+                    ElementTrimFlag _trimFlag = ElementTrimFlag::full)
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           patchID_{patchID},
-          parType_{PartitionType::InteriorEntity} {
+          parType_{PartitionType::InteriorEntity},
+          trimFlag{_trimFlag} {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
@@ -138,6 +141,8 @@ namespace Dune::IGA {
       return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
 
+    [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
+
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
       if constexpr (codimSub == 0) {
@@ -176,6 +181,7 @@ namespace Dune::IGA {
     HierarchicIterator hend([[maybe_unused]] int lvl) const { return NurbsHierarchicIterator<GridImpl>(*this); }
 
     [[nodiscard]] bool isLeaf() const { return true; }
+    // Todo : Type
     [[nodiscard]] auto type() const { return GeometryTypes::cube(mydimension); }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
@@ -199,8 +205,11 @@ namespace Dune::IGA {
     PartitionType parType_{PartitionType::InteriorEntity};
     unsigned int patchID_{};
 
+    ElementTrimFlag trimFlag;
+
   };  // end of OneDGridEntity codim = 0
 
+  // Todo: Evtl spezialisierung für codim 0 machen und dann unterscheidung machen für cube() oder none()
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<codim, dim, GridImp>& e) {
     return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydimension>::cube();

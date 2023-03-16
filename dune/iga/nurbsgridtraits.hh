@@ -5,7 +5,7 @@
 // Created by lex on 29/11/2021.
 //
 
-#pragma
+#pragma once
 
 #include <dune/grid/common/gridenums.hh>
 #include <dune/iga/nurbsleafgridview.hh>
@@ -104,3 +104,5 @@ struct NurbsGridTraits {
   /** \brief The type of the collective communication. */
   typedef CCType CollectiveCommunication;
 };
+
+enum ElementTrimFlag { full, empty, trimmed };
