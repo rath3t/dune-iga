@@ -4,10 +4,21 @@
 name: CodeCoverage
 on:
   push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'      
+
+  pull_request:
+    branches:
+      - main
     paths-ignore:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
+      
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -15,7 +26,7 @@ jobs:
   GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ikarus-dev:latest
+      image: ikarusproject/ikarus-dev:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
 
     steps:
