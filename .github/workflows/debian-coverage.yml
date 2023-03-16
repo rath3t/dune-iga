@@ -4,10 +4,21 @@
 name: CodeCoverage
 on:
   push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'      
+
+  pull_request:
+    branches:
+      - main
     paths-ignore:
       - 'docs/**'
       - '.github/workflows/ghpages.yml'
       - '.github/workflows/createDockerContainer.yml'
+      
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -15,14 +26,12 @@ jobs:
   GCC-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
-      image: rath3t/ikarus-dev:latest
+      image: ikarusproject/ikarus-dev:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
 
     steps:
       - uses: actions/checkout@v2
       - name: Set compiler aliases
-        run: |
-          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 110 --slave /usr/bin/g++ g++ /usr/bin/g++-12 --slave /usr/bin/gcov gcov /usr/bin/gcov-12 --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-12 --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-12
       - name: Build
         run: |
           mkdir cmake-build-debug
