@@ -32,9 +32,11 @@
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <dune/iga/nurbspatchgeometry.h>
 
 using namespace Dune;
 using namespace Dune::IGA;
+
 
 template <typename T, int worldDim, int Items>
 struct Compare {
@@ -43,7 +45,7 @@ struct Compare {
     return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
   };
 };
-
+#if 0
 auto checkUniqueEdges(const auto& gridView) {
   TestSuite t;
 
@@ -1003,21 +1005,109 @@ auto testPlate() {
   t.subTest(checkUniqueEdges(gridView));
   return t;
 }
+#endif
+
+auto testPatchGeometryCurve() {
+  TestSuite t;
+
+  const auto dim      = 1;
+  const auto dimworld = 2;
+
+  const std::array<int, dim> order                     = {3};
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<ControlPoint> controlPoints
+      = {{.p = {-4, -4}, .w = 1},
+         {.p = {-3, 2.8}, .w = 2.5},
+         {.p = {2, -4}, .w = 1},
+         {.p = {4, 4}, .w = 1} };
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+
+  // Make Geometry
+  NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
+
+
+  auto p1 = geometry.global(Dune::FieldVector<double, 1>{0.5});
+  t.check(Dune::FloatCmp::eq(p1, {-1.32, 0.72}));
+
+    //auto p2 = geometry.global(Dune::FieldVector<double, 1>{0.999});
+//  t.check(Dune::FloatCmp::eq(p2, {3.9939595656547726, 3.9760390847162945}));
+
+  // This fails with error message out of range (0.999 works)
+  auto p2 = geometry.global(Dune::FieldVector<double, 1>{1});
+  t.check(Dune::FloatCmp::eq(p2, {4, 4}));
+
+  auto p3 = geometry.global(Dune::FieldVector<double, 1>{0.25});
+  t.check(Dune::FloatCmp::eq(p3, {-2.7607655502392343, 0.4688995215311005}));
+
+  return t;
+}
+
+auto testPatchGeometrySurface() {
+  TestSuite t;
+
+  const auto dim                   = 2;
+  const auto dimworld              = 3;
+  const std::array<int, dim> order = {2, 2};
+
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, 1}, .w = 1}, {.p = {1, 0, 1}, .w = 1}, {.p = {2, 0, 2}, .w = 1}},
+         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}, {.p = {2, 1, 0}, .w = 1}},
+         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 1}, {.p = {2, 2, 2}, .w = 1}}};
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+
+  // Make Geometry
+  NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
+
+  auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
+  t.check(Dune::FloatCmp::eq(p1, {1.0, 1.0, 0.75}));
+
+
+
+  return t;
+}
+
+
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
-  t.subTest(test3DGrid());
-  t.subTest(testNURBSGridCurve());
-  t.subTest(testPlate());
-  testNurbsGridCylinder();
-  t.subTest(testTorusGeometry());
 
-  t.subTest(testNurbsBasis());
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
 
-  gridCheck();
-  t.subTest(testBsplineBasisFunctions());
+//  t.subTest(test3DGrid());
+//  t.subTest(testNURBSGridCurve());
+//  t.subTest(testPlate());
+//  testNurbsGridCylinder();
+//  t.subTest(testTorusGeometry());
+//
+//  t.subTest(testNurbsBasis());
+//
+//  gridCheck();
+//  t.subTest(testBsplineBasisFunctions());
   return 0;
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;

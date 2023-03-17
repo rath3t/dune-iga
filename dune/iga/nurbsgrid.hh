@@ -15,6 +15,7 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <dune/iga/nurbspatchgeometry.h>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
