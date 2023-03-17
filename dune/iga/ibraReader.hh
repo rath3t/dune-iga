@@ -15,9 +15,9 @@
 
 namespace Dune::IGA {
 
-  // At the moment only gridDim und worldDim == 2 supported
+  // At the moment only gridDim und worldDim == 2 or 3 supported
   template <int gridDim, int worldDim>
-    requires(gridDim == 2) && (worldDim == 2 || worldDim == 3)
+    requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim)
   class IbraReader {
    public:
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim>;
@@ -26,8 +26,6 @@ namespace Dune::IGA {
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
     static std::shared_ptr<Grid> read(const std::string& fileName) {
-      static_assert(gridDim == 2);
-      assert(gridDim <= worldDim);
 
       using json = nlohmann::json;
 
@@ -49,18 +47,25 @@ namespace Dune::IGA {
         for (auto& j : ibraJson) {
           auto geo = j.get<Ibra::Geometry>();
 
-          // Surface
-          if (geo.type == Ibra::Type::NurbsSurfaceGeometry3D) surfaces.push_back(j.get<Ibra::Surface>());
-          // Curve
-          else if (geo.type == Ibra::Type::NurbsCurveGeometry2D)
-            curves2D.push_back(j.get<Ibra::Curve2D>());
-          // BrepType Representation
-          else if (geo.type == Ibra::Type::BrepType)
-            brepRepresentations.push_back(j.get<Ibra::BrepRepresentation>());
-          else if (geo.type == Ibra::Type::BrepLoopType)
-            brepLoopRepresentations.push_back(j.get<Ibra::BrepLoopRepresentation>());
-          else if (geo.type == Ibra::Type::BrepTrimType)
-            brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
+          switch (geo.type) {
+            case Ibra::Type::NurbsSurfaceGeometry3D:
+              surfaces.push_back(j.get<Ibra::Surface>());
+              break;
+            case Ibra::Type::NurbsCurveGeometry2D:
+              curves2D.push_back(j.get<Ibra::Curve2D>());
+              break;
+            case Ibra::Type::BrepType:
+              brepRepresentations.push_back(j.get<Ibra::BrepRepresentation>());
+              break;
+            case Ibra::Type::BrepLoopType:
+              brepLoopRepresentations.push_back(j.get<Ibra::BrepLoopRepresentation>());
+              break;
+            case Ibra::Type::BrepTrimType:
+              brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
+              break;
+            case Ibra::Type::NoType:
+              DUNE_THROW(Dune::InvalidStateException, "Unknown IbraType: "<< geo.type);
+          }
         }
       } catch (json::parse_error& ex) {
         DUNE_THROW(Dune::IOError, "Error in file: " << fileName << ", parse error at byte " << ex.byte);
@@ -107,7 +112,7 @@ namespace Dune::IGA {
     static std::vector<Boundary> constructGlobalBoundaries(Ibra::Brep& brep) {
       auto trims = brep.trims;
 
-      // Get Boundarys
+      // Get Boundaries
       std::vector<Boundary> boundaries;
       for (auto& trim : trims) {
         boundaries.emplace_back(trim);

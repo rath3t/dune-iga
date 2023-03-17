@@ -13,12 +13,9 @@ namespace Dune::IGA::Ibra {
 
   enum Type {
     NurbsCurveGeometry2D,
-    NurbsCurveGeometry3D,
     NurbsSurfaceGeometry3D,
-    BrepFace,
     BrepLoopType,
     BrepTrimType,
-    BrepEdge,
     BrepType,
     NoType
   };
@@ -26,18 +23,12 @@ namespace Dune::IGA::Ibra {
   Type typeForTypeString(const std::string& typeString) {
     if (typeString == "NurbsCurveGeometry2D")
       return Type::NurbsCurveGeometry2D;
-    else if (typeString == "NurbsCurveGeometry3D")
-      return Type::NurbsCurveGeometry3D;
     else if (typeString == "NurbsSurfaceGeometry3D")
       return Type::NurbsSurfaceGeometry3D;
-    else if (typeString == "BrepFace")
-      return Type::BrepFace;
     else if (typeString == "BrepLoop")
       return Type::BrepLoopType;
     else if (typeString == "BrepTrim")
       return Type::BrepTrimType;
-    else if (typeString == "BrepEdge")
-      return Type::BrepEdge;
     else if (typeString == "Brep")
       return Type::BrepType;
     else
@@ -78,12 +69,13 @@ namespace Dune::IGA::Ibra {
       using ControlPointType = NURBSPatchData<2, outputDim>::ControlPointType ;
       std::vector<std::vector<ControlPointType>> vec;
 
+      std::vector<ControlPointType> cpTemp(n_controlPoints[1]);
       for (int i = 0; i < n_controlPoints[0]; ++i) {
-        std::vector<ControlPointType> cp;
+        cpTemp.clear();
         for (int j = 0; j < n_controlPoints[1]; ++j) {
-          cp.push_back({.p = cpAt(i, j), .w = 1});
+          cpTemp.push_back({.p = cpAt(i, j), .w = 1});
         }
-        vec.push_back(cp);
+        vec.push_back(cpTemp);
       }
       return vec;
     }
@@ -92,13 +84,14 @@ namespace Dune::IGA::Ibra {
       std::array<std::vector<double>, 2> knotVec;
 
       // Insert first and last knot repeatedly
+      std::vector<double> subKnotVector;
       for (int i = 0; i < 2; ++i) {
-        std::vector<double> vector;
-        vector.insert(vector.end(), knots[i][0]);
-        vector.insert(vector.end(), knots[i].begin(), knots[i].end());
-        vector.insert(vector.end(), knots[i].back());
+        subKnotVector.clear();
+        subKnotVector.insert(subKnotVector.end(), knots[i][0]);
+        subKnotVector.insert(subKnotVector.end(), knots[i].begin(), knots[i].end());
+        subKnotVector.insert(subKnotVector.end(), knots[i].back());
 
-        knotVec[i] = vector;
+        knotVec[i] = subKnotVector;
       }
       return knotVec;
     }
@@ -213,7 +206,7 @@ namespace Dune::IGA::Ibra {
         if (it != allTrims.end())
           trims.push_back(*it);
         else
-          std::cerr << "Couldn't find trim in BrepLoop: " << key << std::endl;
+          DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: "<< key);
       }
     }
   };
@@ -261,7 +254,7 @@ namespace Dune::IGA::Ibra {
         if (objectIsInList(representation.loops, loopRepr.key)) loops.emplace_back(loopRepr, trims);
       }
 
-      // Asserts (Anzahl vergleichen, um sicherzugehen, dass alle / genug Geometrien gefunden wurden)
+      // Asserts if all geometries were found
       assert(curves2D.size() == representation.curve_geometries_2d.size());
       assert(surfaces.size() == representation.surface_geometries_3d.size());
       assert(loops.size() == representation.loops.size());

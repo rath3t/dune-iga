@@ -10,6 +10,8 @@
 
 namespace Dune::IGA {
 
+  // TODO Replace with GlobalPatchGeometry
+
   /** \brief this is a dummy of the geometry implementation for NURBS. Doenst depend on the NURBSGrid as template
    * parameter*/
   template <std::integral auto mydim, std::integral auto dimworld>
@@ -143,10 +145,9 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] std::array<double, 2> domain() const {
-      double min = std::min_element(patchData->knotSpans[0].begin(), patchData->knotSpans[0].end())[0];
-      double max = std::max_element(patchData->knotSpans[0].begin(), patchData->knotSpans[0].end())[0];
+      auto [min, max] = std::ranges::minmax_element(patchData->knotSpans[0]);
 
-      return {min, max};
+      return {*min, *max};
     }
 
     [[nodiscard]] int degree() const { return patchData->degree[0]; }
@@ -237,7 +238,7 @@ namespace Dune::IGA {
   };
 
   class Boundary {
-    // Abkürzungen
+
     using Point       = Dune::FieldVector<double, 2>;
     using PointVector = std::vector<Point>;
     using Domain      = std::array<double, 2>;

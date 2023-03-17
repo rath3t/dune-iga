@@ -1039,10 +1039,10 @@ auto testIbraReader()
 
   // Enumerate elements and check position of centers
   auto gV = grid->leafGridView();
-  std::vector<FieldVector<double, 2>> vertices{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  std::vector<FieldVector<double, 2>> expectedElementCenters{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
   const auto& indexSet = grid->leafGridView().indexSet();
   for (auto& ele : elements(gV))
-    t.check(ele.geometry().center() == vertices[indexSet.index(ele)]);
+    t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
 
   // Test shell structure, no trim functionality right now
   std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/schale.ibra");

@@ -13,6 +13,7 @@
 #include <dune/iga/nurbsgridleafiterator.hh>
 #include <dune/iga/nurbsgridtraits.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <dune/iga/nurbstrimmedpatch.hh>
 
 namespace Dune::IGA {
 

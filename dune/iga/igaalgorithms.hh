@@ -15,6 +15,7 @@
 #include <dune/iga/linearalgebra.hh>
 #include <dune/iga/multidimensionNet.hh>
 #include <dune/iga/nurbspatchdata.hh>
+#include <dune/iga/nurbstrimmedpatchdata.hh>
 #include <dune/iga/typetraits.hh>
 namespace Dune::IGA {
 

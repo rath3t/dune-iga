@@ -20,6 +20,7 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <dune/iga/nurbstrimmedpatch.hh>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
 #include <dune/iga/reconstructedgridhandler.hh>
@@ -423,13 +424,23 @@ namespace Dune::IGA {
           return -1;
         };
 
+        // Create a local pointMap to store the intersection points in regard to their corresponding edges or nodes
         IntersectionPointMap pointMap;
 
+        // The following numbering is used for edges and nodes:
+        /*
+         * 3 -- 2 -- 2
+         * |         |
+         * 3         1
+         * |         |
+         * 0 -- 0 -- 1
+         */
+
+        // This keeps track of how many intersection Points there are at a given edge
         std::array<int, 4> edgeCounter{0, 0, 0, 0};
-        std::array<int, 4> nodeCounter{0, 0, 0, 0};  // IBB Zählung nicht Dune
+        std::array<int, 4> nodeCounter{0, 0, 0, 0};
 
         for (int i = 0; const auto& point : intersectionPoints) {
-          assert(i >= 0);
           int edgeNodeNr{whichEdgeOrNode(point)};
           pointMap[edgeNodeNr].emplace_back(intersectionPoints[i]);
 
@@ -460,20 +471,21 @@ namespace Dune::IGA {
         struct LoopState {
           bool isCurrentlyOnNode            = true;
           bool moreIntersectionPointsOnEdge = false;
-          int edgeTheLoopIsOn               = -1;  // Diese Variable wird nur gefüllt wenn !loopIsCurrentlyOnNode
-          bool onlyOneSide                  = false;
+          int edgeTheLoopIsOn               = -1;     // This variable is only filed when !loopIsCurrentlyOnNode
+          bool onlyOneSide                  = false;  // Currently not used
         };
 
         // Find the first IntersectionPointOnNode
         auto it_nodes = std::find_if(nodeCounter.begin(), nodeCounter.end(), [](auto x) { return x > 0; });
-        // Find the first IntersectionPointOnNode
+
+        // Find the first IntersectionPointOnEdge (currently not used)
         auto it_edges = std::find_if(edgeCounter.begin(), edgeCounter.end(), [](auto x) { return x > 0; });
 
         int nodeToBegin;
         LoopState state{};
         if (it_nodes == nodeCounter.end()) {
           std::cout << "Not implemented" << std::endl;
-          // Todo: For now those elements are skipped and marked as empty
+          // TODO: For now those elements are skipped and marked as empty
           trimFlags[index] = ElementTrimFlag::empty;
           continue;
         } else
