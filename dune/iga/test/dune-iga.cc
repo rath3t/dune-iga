@@ -1035,14 +1035,12 @@ auto testPatchGeometryCurve() {
   // Make Geometry
   NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
 
+  auto p0 = geometry.global(Dune::FieldVector<double, 1>{0.0});
+  t.check(Dune::FloatCmp::eq(p0, {-4, -4}));
 
   auto p1 = geometry.global(Dune::FieldVector<double, 1>{0.5});
   t.check(Dune::FloatCmp::eq(p1, {-1.32, 0.72}));
 
-    //auto p2 = geometry.global(Dune::FieldVector<double, 1>{0.999});
-//  t.check(Dune::FloatCmp::eq(p2, {3.9939595656547726, 3.9760390847162945}));
-
-  // This fails with error message out of range (0.999 works)
   auto p2 = geometry.global(Dune::FieldVector<double, 1>{1});
   t.check(Dune::FloatCmp::eq(p2, {4, 4}));
 
@@ -1083,7 +1081,11 @@ auto testPatchGeometrySurface() {
   auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
   t.check(Dune::FloatCmp::eq(p1, {1.0, 1.0, 0.75}));
 
+  auto p2 = geometry.global(FieldVector<double, 2>{0, 0});
+  t.check(Dune::FloatCmp::eq(p2, {0, 0, 1}));
 
+  auto p3 = geometry.global(FieldVector<double, 2>{0, 1});
+  t.check(Dune::FloatCmp::eq(p3, {2, 0, 2}));
 
   return t;
 }

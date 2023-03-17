@@ -21,7 +21,7 @@ namespace Dune::IGA {
         typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, patchDim>;
 
     using ControlPointType = typename NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>::ControlPointType;
-    using MultiDimNet = MultiDimensionNet<patchDim, ControlPointType>;
+
 
     NURBSPatchGeometry() = default;
 
@@ -29,16 +29,12 @@ namespace Dune::IGA {
       nurbs_ = Nurbs<patchDim, LinearAlgebraTraits>(*patchData);
     }
 
-
     [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& local) const {
-      // Bad workaround -> into array<double, dim>
       std::array<double, dim> u{};
-      for (int i = 0; i < dim; ++i)
-        u[i] = local[i];
+      std::ranges::copy(local, std::begin(u));
 
       auto spanIndex = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
-
-      auto cpCoordinateNet = netOfSpan(spanIndex, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
+      auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
       auto basis     = nurbs_.basisFunctionNet(u);
 
       return Dune::IGA::dot(basis, cpCoordinateNet);
