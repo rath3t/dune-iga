@@ -453,7 +453,7 @@ namespace Dune::IGA {
     using ResultType = decltype(lnet.directGetAll()[0] * rnet.directGetAll()[0]);
     assert(lnet.size() == rnet.size() && "The net dimensions need to match in each direction!");
     return std::inner_product(lnet.directGetAll().begin(), lnet.directGetAll().end(), rnet.directGetAll().begin(),
-                              ResultType(0.0));
+                              ResultType (0.0));
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>

@@ -24,6 +24,7 @@
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
 #include <dune/iga/reconstructedgridhandler.hh>
+#include <dune/iga/nurbspatchgeometry.h>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
