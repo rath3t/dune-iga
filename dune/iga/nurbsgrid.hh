@@ -547,7 +547,7 @@ namespace Dune::IGA {
 
             // Then we need the parametrisation for the curve to come
             Boundary boundaryToTrace       = (*boundaries)[boundaryIndexThatHasIntersectionPoint];
-            NurbsCurveHandler curveToTrace = boundaryToTrace.nurbsGeometry;
+            CurveGeometry curveToTrace = boundaryToTrace.nurbsGeometry;
 
             // Call traceCurve
             // Todo: as for now we are only checking against edge Intersection Points, next intersection could be on a
@@ -597,7 +597,7 @@ namespace Dune::IGA {
 
             // Then we need the parametrisation for the curve to come
             Boundary boundaryToTrace       = (*boundaries)[boundaryIndexThatHasIntersectionPoint];
-            NurbsCurveHandler curveToTrace = boundaryToTrace.nurbsGeometry;
+            CurveGeometry curveToTrace = boundaryToTrace.nurbsGeometry;
 
             // Call traceCurve
             double beginU = edgeIntersectResult.localResult;
@@ -633,9 +633,6 @@ namespace Dune::IGA {
               continue;
           }
         }
-
-        // Gebe Ergebnis aus:
-        std::cout << "Anzahl an Boundaries: " << elementBoundaries.size() << std::endl;
 
         // ReconstructGrid and save in a GridHandler
         auto transferToGlobal

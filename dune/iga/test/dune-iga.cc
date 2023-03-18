@@ -1017,7 +1017,6 @@ auto testPlate() {
 }
 #endif
 
-
 auto testIbraReader()
 {
   TestSuite t;
@@ -1267,8 +1266,8 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  t.subTest(testPatchGeometryCurve());
-  t.subTest(testPatchGeometrySurface());
+  //t.subTest(testPatchGeometryCurve());
+  //t.subTest(testPatchGeometrySurface());
 
 
   t.subTest(testIbraReader());

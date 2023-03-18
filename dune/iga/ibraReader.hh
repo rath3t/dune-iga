@@ -63,8 +63,6 @@ namespace Dune::IGA {
             case Ibra::Type::BrepTrimType:
               brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
               break;
-            case Ibra::Type::NoType:
-              DUNE_THROW(Dune::InvalidStateException, "Unknown IbraType: "<< geo.type);
           }
         }
       } catch (json::parse_error& ex) {

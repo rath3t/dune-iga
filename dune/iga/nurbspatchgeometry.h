@@ -168,10 +168,10 @@ namespace Dune::IGA {
 
       return result;
     }
-
+   public:
+    std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData_;
 
    private:
-    std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData_;
     Dune::IGA::Nurbs<patchDim, LinearAlgebraTraits> nurbs_;
 
   };
