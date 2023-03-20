@@ -6,6 +6,7 @@
 #define IKARUS_RECONSTRUCTEDGRIDHANDLER_H
 
 #include <mapbox/earcut.hpp>
+#include <dune/iga/nurbspatchgeometry.h>
 
 #include <dune/grid/uggrid.hh>
 
@@ -28,8 +29,7 @@ namespace Dune::IGA {
   template <int worldDim>
   struct GridBoundarySegment : Dune::BoundarySegment<2, worldDim, double> {
     // Types
-    using LocalPoint  = Dune::FieldVector<double, 2>;
-    using GlobalPoint = Dune::FieldVector<double, worldDim>;
+
 
     // Constructor
     explicit GridBoundarySegment(Boundary& _boundary, auto _transferToGlobal)
@@ -42,11 +42,11 @@ namespace Dune::IGA {
       auto res       = boundary.nurbsGeometry(u);
 
       // Transfer to global Surface Coordinates
-      return (*transferToGlobal)({res[0], res[1]});
+      return transferToGlobal(res);
     }
 
     Boundary boundary;
-    std::shared_ptr<std::function<GlobalPoint(LocalPoint)>> transferToGlobal;
+    NURBSPatchGeometry<2, worldDim> transferToGlobal;
   };
 
   template <int worldDim>
@@ -68,13 +68,13 @@ namespace Dune::IGA {
 
    private:
     BoundaryVector boundaries;
-    std::shared_ptr<std::function<GlobalPoint(LocalPoint)>> transferToGlobal;
+    NURBSPatchGeometry<2, worldDim> patchGeometry;
     std::array<int, 2> gridDegree;
 
    public:
     // Construct with igaGrid and boundaries
-    ReconstructedGridHandler(BoundaryVector& _boundaries, auto _transferToGlobal, std::array<int, 2> _gridDegree)
-        : boundaries(_boundaries), transferToGlobal(_transferToGlobal), gridDegree(_gridDegree) {
+    ReconstructedGridHandler(BoundaryVector& _boundaries, auto _patchGeometry, std::array<int, 2> _gridDegree)
+        : boundaries(_boundaries), patchGeometry(_patchGeometry), gridDegree(_gridDegree) {
       reconstructTrimmedElement();
     }
 
@@ -92,7 +92,7 @@ namespace Dune::IGA {
 
       GlobalPointVector globalVertices;
       for (auto& point : vertices) {
-        globalVertices.push_back((*transferToGlobal)({point[0], point[1]}));
+        globalVertices.push_back(patchGeometry({point[0], point[1]}));
       }
 
       // Grid Factory
@@ -113,15 +113,14 @@ namespace Dune::IGA {
 
       for (auto& boundary : boundaries) {
         auto idx = getControlPointIndices(vertices, boundary);
-        gridFactory.insertBoundarySegment({idx[0], idx[1]}, std::make_shared<GridBoundarySegment<worldDim>>(boundary, transferToGlobal));
+        gridFactory.insertBoundarySegment({idx[0], idx[1]}, std::make_shared<GridBoundarySegment<worldDim>>(boundary, patchGeometry));
       }
 
       // Setze Idx boundarySegmentIdx welche refined werden müssen
       auto boundaryToRefineMap = determineBoundariesToRefine();
 
       // Calculate the area of the trimmed element
-      auto area = calculateArea<double>();
-      std::cout << "The area of the trimmed element is: " << area << std::endl;
+      // auto area = calculateArea<double>();
 
       // Create Grid
       grid = gridFactory.createGrid();

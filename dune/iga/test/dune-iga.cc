@@ -47,7 +47,7 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
-#if 0
+#if 1
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -1089,6 +1089,7 @@ auto testTrimImpactWithRefinement() {
 
   auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
   t.check(recoGridView.has_value());
+  Dune::printGrid(recoGridView->grid(), MPIHelper::instance(), "reco_0_0");
 
   // 1 refinement: 3 trimmed, 0 empty, 1 full
   grid->globalRefine(1);
@@ -1106,8 +1107,9 @@ auto testTrimImpactWithRefinement() {
   t.check(trimFlagCounter3[1] == 2);
   t.check(trimFlagCounter3[2] == 8);
 
-  // Print Grid → ultimativer Test für ein getrimmtes Element, sollte nur die full und getrimmten Elemente zeichnen
-  // Dune::printGrid((*grid), MPIHelper::instance());
+  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(14);
+  t.check(recoGridView2.has_value());
+  Dune::printGrid(recoGridView2->grid(), MPIHelper::instance(), "reco_2_14");
 
 
   return t;
@@ -1273,7 +1275,7 @@ int main(int argc, char** argv) try {
   t.subTest(testIbraReader());
   t.subTest(testTrimImpactWithRefinement());
 
-#if 0
+#if 1
   t.subTest(test3DGrid());
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());

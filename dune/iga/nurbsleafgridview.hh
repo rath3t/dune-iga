@@ -88,7 +88,6 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
 
-    // Hier werden die Elemente erstellt
     NURBSLeafGridView(
         const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>>
             &leafpatches,
@@ -207,17 +206,14 @@ namespace Dune::IGA {
         Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
           std::get<i>(*entityVector_.get()).reserve(patch.size(i));
 
-          // TrimFlag has to be asked from the patchdata -> also correct number of elements / edges / vertices
           // Make Elements (codim = 0)
           if (i == 0) {
             for (unsigned int j = 0; j < patch.size(i); ++j) {
               if (trimFlags.has_value()) {
-                // Es wurden Trim Flags gesetzt, element überprüfen
                 std::get<0>(*entityVector_.get())
                     .emplace_back(
                         NURBSGridEntity<0, dimension, GridImpl>(*this, j, currentPatchId, trimFlags.value()[j]));
               } else {
-                // Keine Trim Flags gesetzt
                 std::get<0>(*entityVector_.get())
                     .emplace_back(NURBSGridEntity<0, dimension, GridImpl>(*this, j, currentPatchId));
               }

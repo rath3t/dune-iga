@@ -63,6 +63,9 @@ namespace Dune::IGA {
             case Ibra::Type::BrepTrimType:
               brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
               break;
+            default:
+              // Do nothing -- keep the compiler happy
+              break;
           }
         }
       } catch (json::parse_error& ex) {
