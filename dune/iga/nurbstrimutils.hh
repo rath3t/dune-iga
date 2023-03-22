@@ -40,7 +40,7 @@ namespace Dune::IGA::Utilities {
   void setStandardParameters() {
     Utilities::Parameters parameters{};
 
-    // Fill in standard Werte (ohne File)
+    // Fill in default parameters (witho File)
     parameters.preSample                = 1;
     parameters.preSampleOnlyCurvedEdges = true;
     parameters.preGlobalRefine          = 0;
@@ -67,7 +67,7 @@ namespace Dune::IGA::Utilities {
     getParameters() = parameters;
   }
 
-  template <typename T>
+  template <std::floating_point T>
   std::vector<T> linspace(T a, T b, unsigned int N) {
     T inc    = (b - a) / static_cast<T>(N - 1);
     auto val = [a, inc](int i) -> T { return a + i * inc; };
@@ -85,7 +85,6 @@ namespace Dune::IGA::Utilities {
 
   template <std::floating_point T>
   double map(T value, T inputMin, T inputMax, T outputMin, T outputMax) {
-    static_assert(!(std::is_integral<T>::value), "map function invoked with Integer-like datatype");
     return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
   }
 
@@ -97,13 +96,6 @@ namespace Dune::IGA::Utilities {
     result[1] = {halfPoint, domain[1]};
 
     return result;
-  }
-
-  void printVec(auto vec, std::string&& name = "Vec") {
-    std::cout << name << ": ";
-    for (auto& item : vec)
-      std::cout << item << " ";
-    std::cout << std::endl;
   }
 
 }  // namespace Dune::IGA::Utilities

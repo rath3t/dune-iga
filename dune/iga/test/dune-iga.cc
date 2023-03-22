@@ -1263,6 +1263,41 @@ auto testPatchGeometrySurface() {
   return t;
 }
 
+auto testMultiParametrisation() {
+  TestSuite t;
+
+  // Setze Parameters auf Standard, falls hier was geändert wird, werden wohl einige der Tests hier nicht durchlaufen
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // 0 refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_2p.ibra");
+  auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter1[0] == 1);
+
+  // Print Grid
+  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
+  Dune::printGrid(recoGridView->grid(), MPIHelper::instance(), "reco_2p_0_0");
+
+  auto vtkWriter = VTKWriter(*recoGridView);
+  vtkWriter.write("reco_2p_0_0");
+
+  // 1 refinement 3 trimmed, 1 full
+  grid->globalRefine(1);
+
+  auto trimFlagCounter2 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter2[0] == 3);
+  t.check(trimFlagCounter2[1] == 0);
+  t.check(trimFlagCounter2[2] == 1);
+
+  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(2);
+  Dune::printGrid(recoGridView2->grid(), MPIHelper::instance(), "reco_2p_1_2");
+
+  auto vtkWriter2 = VTKWriter(*recoGridView2);
+  vtkWriter2.write("reco_2p_1_2");
+
+  return t;
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
@@ -1271,8 +1306,9 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
-  t.subTest(testIbraReader());
+  //t.subTest(testIbraReader());
   t.subTest(testTrimImpactWithRefinement());
+  t.subTest(testMultiParametrisation());
 
 #if 0
   t.subTest(test3DGrid());

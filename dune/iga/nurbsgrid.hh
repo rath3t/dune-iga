@@ -272,12 +272,9 @@ namespace Dune::IGA {
       // Use Trim namespace for more concise function names
       using namespace Impl::Trim;
 
-      // Parameters and Preferences for Clip
-      constexpr int clipperPrecision = 8;
-      constexpr int pathSamples      = 200;
 
       // Get Clip as ClipperPath
-      Clipper2Lib::PathsD clip = getClip(*boundaries, pathSamples, clipperPrecision);
+      Clipper2Lib::PathsD clip = getClip(*boundaries);
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
       for (auto& element : elements(parameterSpaceGridView)) {
