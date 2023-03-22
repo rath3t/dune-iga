@@ -244,10 +244,8 @@ namespace Dune::IGA {
       using ParametricGrid         = YaspGrid<dimension, TensorSpaceCoordinates>;
 
       std::array<std::vector<double>, dimension> tensorProductCoordinates;
-      for (int i = 0; i < dimension; ++i) {
-        auto unique_it              = std::unique(patchData.knotSpans[i].begin(), patchData.knotSpans[i].end());
-        tensorProductCoordinates[i] = std::vector<double>(patchData.knotSpans[i].begin(), unique_it);
-      }
+      for (int i = 0; i < dimension; ++i)
+        std::ranges::unique_copy(patchData.knotSpans[i], std::back_inserter(tensorProductCoordinates[i]));
 
       return std::make_unique<ParametricGrid>(tensorProductCoordinates);
     }
@@ -260,9 +258,12 @@ namespace Dune::IGA {
     {
       // Set up trimFlags
       trimFlags = std::vector<ElementTrimFlag>(size(0));
-      std::fill(trimFlags.begin(), trimFlags.end(), ElementTrimFlag::full);
+      std::ranges::fill(trimFlags, ElementTrimFlag::full);
 
-      if (!boundaries.has_value()) return;
+      if (!boundaries.has_value()) {
+        leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this, trimFlags));
+        return;
+      }
 
       // Trimming is done in th 2d parameterSpace of the Grid
       auto paraGrid               = parameterSpaceGrid();

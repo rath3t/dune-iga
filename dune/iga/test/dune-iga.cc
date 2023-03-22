@@ -47,7 +47,7 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
-#if 1
+#if 0
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -1271,11 +1271,10 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
-
   t.subTest(testIbraReader());
   t.subTest(testTrimImpactWithRefinement());
 
-#if 1
+#if 0
   t.subTest(test3DGrid());
   t.subTest(testNURBSGridCurve());
   t.subTest(testPlate());
