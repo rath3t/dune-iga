@@ -18,6 +18,7 @@ namespace Dune::IGA::Impl::Trim {
   constexpr int clipperPrecision = 8;
   constexpr int pathSamples      = 200;
   constexpr double tolerance     = 1e-8;
+  constexpr double fullElementTolerance = 1e-5;
   // constexpr double epsilonPrecision = double(16) * std::numeric_limits<double>::epsilon();
 
   using ctype        = double;
@@ -36,7 +37,6 @@ namespace Dune::IGA::Impl::Trim {
   };
 
   using IntersectionPointMap    = std::map<int, std::vector<IntersectionPoint>>;
-  using IntersectionPointMapPtr = std::shared_ptr<std::map<int, std::vector<IntersectionPoint>>>;
 
   // Helper functions
   double distance(const ClipperPoint p1, const ClipperPoint p2) {
@@ -65,28 +65,20 @@ namespace Dune::IGA::Impl::Trim {
   PointVector getElementCorners(const auto& element) {
     auto geo = element.geometry();
 
-    std::vector<Point> corners(4);
-    corners[0] = geo.corner(0);
-    corners[1] = geo.corner(1);
-    corners[2] = geo.corner(3);  // see dune book page 127 Figure 5.12
-    corners[3] = geo.corner(2);
+    // The corners are sorted counter-clockwise to get a closed loop, also see top of this file for numbering
+    return {geo.corner(0), geo.corner(1), geo.corner(3), geo.corner(2)};
+  }
 
-    return corners;
+  Clipper2Lib::PathD getElementEdgesFromElementCorners(const PointVector& corners) {
+    Clipper2Lib::PathD edges;
+    for (int i = 0; i < 4; ++i)
+      edges.emplace_back(corners[i][0], corners[i][1]);
+    return edges;
   }
 
   Clipper2Lib::PathD getElementEdges(const auto& element) {
     auto corners = getElementCorners(element);
-    Clipper2Lib::PathD edges;
-    for (int i = 0; i < 4; ++i)
-      edges.emplace_back(corners[i][0], corners[i][1]);
-    return edges;
-  }
-
-  Clipper2Lib::PathD getElementEdges(const PointVector& corners) {
-    Clipper2Lib::PathD edges;
-    for (int i = 0; i < 4; ++i)
-      edges.emplace_back(corners[i][0], corners[i][1]);
-    return edges;
+    return getElementEdgesFromElementCorners(corners);
   }
 
   Clipper2Lib::PathsD getClip(std::vector<Boundary>& boundaries) {
@@ -121,8 +113,8 @@ namespace Dune::IGA::Impl::Trim {
     return std::make_pair(false, -1);
   }
 
-  // Sorts the intersectinPoints countr-clockwise arund the element (crucial step!)
-  void sortIntersectionPoints(const IntersectionPointMapPtr& pointMapPtr, const int edge) {
+  // Sorts the Intersection Points counter-clockwise around the element (crucial step!)
+  void sortIntersectionPoints(const std::shared_ptr<IntersectionPointMap>& pointMapPtr, const int edge) {
     auto orientation = getEdgeOrientation(edge);
     auto cmp         = [orientation, edge](const IntersectionPoint& a, const IntersectionPoint& b) {
       return (edge == 0 || edge == 1) ? a.point[orientation] < b.point[orientation]
@@ -137,7 +129,7 @@ namespace Dune::IGA::Impl::Trim {
   }
 
   struct ClippingResult {
-    IntersectionPointMapPtr pointMapPtr;
+    std::shared_ptr<IntersectionPointMap> pointMapPtr;
     std::array<int, 4> edgeCounter;
     std::array<int, 4> nodeCounter;
   };
@@ -161,7 +153,7 @@ namespace Dune::IGA::Impl::Trim {
     if (clippedEdges.empty())
       trimFlag = ElementTrimFlag::empty;
     else {
-      if (FloatCmp::eq(Clipper2Lib::Area(clippedEdges), element.geometry().volume(), tolerance))
+      if (FloatCmp::eq(Clipper2Lib::Area(clippedEdges), element.geometry().volume(), fullElementTolerance))
         trimFlag = ElementTrimFlag::full;
       else
         trimFlag = ElementTrimFlag::trimmed;
@@ -201,7 +193,7 @@ namespace Dune::IGA::Impl::Trim {
     }
 
     // Make a shared Pointer out of pointMap
-    IntersectionPointMapPtr pointMapPtr = std::make_shared<IntersectionPointMap>(pointMap);
+    std::shared_ptr<IntersectionPointMap> pointMapPtr = std::make_shared<IntersectionPointMap>(pointMap);
 
     // Sort IntersectionPoints counter-clockwise
     for (int i = 0; i < 4; ++i)
@@ -211,11 +203,11 @@ namespace Dune::IGA::Impl::Trim {
                           std::make_optional<ClippingResult>({std::move(pointMapPtr), edgeCounter, nodeCounter}));
   }
 
-  bool areEdgesParallel(CurveGeometry& curve1, CurveGeometry& curve2) {
-    if (curve1.degree()[0] > 1 || curve2.degree()[0] > 1) return false;
+  bool areLinesParallel(CurveGeometry& line1, CurveGeometry& line2) {
+    if (line1.degree()[0] > 1 || line2.degree()[0] > 1) return false;
 
-    auto [p1, p2] = curveStartEndPoint(curve1);
-    auto [p3, p4] = curveStartEndPoint(curve2);
+    auto [p1, p2] = curveStartEndPoint(line1);
+    auto [p3, p4] = curveStartEndPoint(line2);
 
     // Compute direction vectors of both curves
     auto d1 = p2 - p1;
@@ -280,11 +272,10 @@ namespace Dune::IGA::Impl::Trim {
   }
 
   Boundary boundaryForEdge(const PointVector& corners, int edge) {
-    PointVector v{corners[iPlusX(edge, 0)], corners[iPlusX(edge, 1)]};
-    return Boundary{v};
+    return Boundary{corners[iPlusX(edge, 0)], corners[iPlusX(edge, 1)]};
   }
 
-  std::pair<Point, bool> getNextIntersectionPointOnEdge(const IntersectionPointMapPtr& pointMapPtr, int edge) {
+  std::pair<Point, bool> getNextIntersectionPointOnEdge(const std::shared_ptr<IntersectionPointMap>& pointMapPtr, int edge) {
     if ((*pointMapPtr)[edge].empty()) return {Point(), false};
 
     for (const IntersectionPoint& ip : (*pointMapPtr)[edge]) {
@@ -293,23 +284,22 @@ namespace Dune::IGA::Impl::Trim {
     return {Point(), false};
   }
 
-  // TODO Use FloatCmp::eq here
-  void markIntersectionPointAsVisited(const IntersectionPointMapPtr& pointMapPtr, int edge, Point& point) {
+  void markIntersectionPointAsVisited(const std::shared_ptr<IntersectionPointMap>& pointMapPtr, int edge, Point& point) {
     auto it = std::find_if((*pointMapPtr)[edge].begin(), (*pointMapPtr)[edge].end(), [&point](IntersectionPoint x) {
-      return (x.point[0] == point[0] && x.point[1] == point[1]);
+      return (Dune::FloatCmp::eq(x.point, point));
     });
     assert(it != (*pointMapPtr)[edge].end());
     (*it).alreadyVisited = true;
   }
 
   std::tuple<int, IntersectionResult, bool> findBoundaryThatHasIntersectionPoint(
-      const IntersectionPointMapPtr& pointMapPtr, int edge, PointVector& corners,
+      const std::shared_ptr<IntersectionPointMap>& pointMapPtr, int edge, PointVector& corners,
       std::vector<Boundary>& globalBoundaries) {
     auto edgeCurve               = boundaryForEdge(corners, edge);
     Point intersectionPointGuess = getNextIntersectionPointOnEdge(pointMapPtr, edge).first;
 
     for (int i = 0; auto& boundary : globalBoundaries) {
-      if (areEdgesParallel(boundary.nurbsGeometry, edgeCurve.nurbsGeometry)) {
+      if (areLinesParallel(boundary.nurbsGeometry, edgeCurve.nurbsGeometry)) {
         ++i;
         continue;
       }
@@ -331,7 +321,7 @@ namespace Dune::IGA::Impl::Trim {
     int foundOnEdge;
   };
 
-  std::optional<TraceCurveResult> traceCurveImpl(const IntersectionPointMapPtr& pointMapPtr,
+  std::optional<TraceCurveResult> traceCurveImpl(const std::shared_ptr<IntersectionPointMap>& pointMapPtr,
                                                   CurveGeometry& curveToTrace, int startEdge) {
 
     // Look through edges and determine the next Intersection Point (the IPs are sorted counter-clockwise)
@@ -356,7 +346,7 @@ namespace Dune::IGA::Impl::Trim {
     const int nodeToBegin;
     PointVector corners;
     std::vector<Boundary> boundaries;
-    IntersectionPointMapPtr pointMapPtr;
+    std::shared_ptr<IntersectionPointMap> pointMapPtr;
     const std::array<int, 4> edgeCounter;
     const std::array<int, 4> nodeCounter;
 
@@ -412,7 +402,7 @@ namespace Dune::IGA::Impl::Trim {
           {{traceCurveInput.boundaryIdx, traceCurveInput.startU, traceCurveResult->intersectU, traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}});
 
     // Now check if the start or endPoint of the curve is in the element
-    auto elementEdges = getElementEdges(state->corners);
+    auto elementEdges = getElementEdgesFromElementCorners(state->corners);
     int status        = -1;  // -1 means not found, 0 means start, 1 means end
     auto [start, end] = curveStartEndPoint(curveToTrace);
 
@@ -500,14 +490,13 @@ namespace Dune::IGA::Impl::Trim {
       if (!found) throw std::runtime_error("No Intersection Point found on a edge where there has to be one.");
 
       // Make a parametrisation of the section before the intersectionPoint
-      PointVector newEdgeParametrisation{state->currentNodePoint, edgeIntersectResult.globalResult};
-      elementBoundaries.emplace_back(newEdgeParametrisation);
+      elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
 
       ////////
       // Curve Tracing
       ////////
 
-      auto elementEdges = getElementEdges(state->corners);
+      auto elementEdges = getElementEdgesFromElementCorners(state->corners);
       auto traceResult  = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, edge});
 
       if (!(traceResult.has_value()))
@@ -546,8 +535,7 @@ namespace Dune::IGA::Impl::Trim {
       if (!found) throw std::runtime_error("No Intersection Point found on a edge where there has to be one.");
 
       // Make a parametrisation of the section before the intersectionPoint
-      PointVector newEdgeParametrisation{state->currentNodePoint, edgeIntersectResult.globalResult};
-      elementBoundaries.emplace_back(newEdgeParametrisation);
+      elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
 
       ////////
       // Curve Tracing
@@ -577,8 +565,7 @@ namespace Dune::IGA::Impl::Trim {
     }
 
     if (!(state->isCurrentlyOnNode) && !(state->moreIntersectionPointsOnEdge)) {
-      PointVector v1{state->currentNodePoint, state->corners[iPlusX(state->edgeTheLoopIsOn, 1)]};
-      elementBoundaries.emplace_back(v1);
+      elementBoundaries.emplace_back(state->currentNodePoint, state->corners[iPlusX(state->edgeTheLoopIsOn, 1)]);
 
       state->isCurrentlyOnNode = true;
       node                     = iPlusX(state->edgeTheLoopIsOn, 1);

@@ -30,7 +30,7 @@ namespace Dune::IGA {
       using json = nlohmann::json;
 
       // Result
-      std::vector<Ibra::Surface> surfaces;
+      std::vector<Ibra::Surface<worldDim>> surfaces;
       std::vector<Ibra::Curve2D> curves2D;
 
       std::vector<Ibra::BrepRepresentation> brepRepresentations;
@@ -45,11 +45,11 @@ namespace Dune::IGA {
         ibraJson = json::parse(ibraInputFile);
 
         for (auto& j : ibraJson) {
-          auto geo = j.get<Ibra::Geometry>();
+          auto geo = j.get<Ibra::IbraBase>();
 
           switch (geo.type) {
             case Ibra::Type::NurbsSurfaceGeometry3D:
-              surfaces.push_back(j.get<Ibra::Surface>());
+              surfaces.push_back(j.get<Ibra::Surface<worldDim>>());
               break;
             case Ibra::Type::NurbsCurveGeometry2D:
               curves2D.push_back(j.get<Ibra::Curve2D>());
@@ -83,19 +83,15 @@ namespace Dune::IGA {
 
       // Reader has done its job, now NURBSGrid can be constructed
 
-      auto _surface = brep.surfaces[0];
+      Ibra::Surface<worldDim> _surface = brep.surfaces[0];
 
       const std::array<std::vector<double>, gridDim> knotSpans   = _surface.compileKnotVectors();
-      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.compileControlPoints<worldDim>();
+      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.transformControlPoints();
 
       std::array<int, gridDim> dimsize = _surface.n_controlPoints;
 
-      PatchData _patchData;
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
-
-      _patchData.knotSpans     = knotSpans;
-      _patchData.degree        = _surface.degree;
-      _patchData.controlPoints = controlNet;
+      PatchData _patchData {knotSpans, controlNet, _surface.degree};
 
       // Make the boundaries, and pass them into the grid
       // So the grid can figure out what to do with it
@@ -110,7 +106,7 @@ namespace Dune::IGA {
     IbraReader() = delete;
 
    private:
-    static std::vector<Boundary> constructGlobalBoundaries(Ibra::Brep& brep) {
+    static std::vector<Boundary> constructGlobalBoundaries(Ibra::Brep<worldDim>& brep) {
       auto trims = brep.trims;
 
       // Get Boundaries

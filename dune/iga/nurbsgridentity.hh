@@ -39,7 +39,7 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView), directIndex_(directIndex), patchID_{patchID} {}
 
     using LocalIntersectionGeometry = typename GridView::Traits::template Codim<1>::LocalGeometry;
-    //! Geometry of this entity
+    //! IbraBase of this entity
     typename GridView::template Codim<codim>::Geometry geometry() const {
       return NURBSGridView_->getPatch(patchID_).template geometry<codim>(directIndex_);
     }
@@ -118,7 +118,7 @@ namespace Dune::IGA {
       }
     }
 
-    //! Geometry of this entity
+    //! IbraBase of this entity
     typename GridImpl::Traits::template Codim<0>::Geometry geometry() const {
       return NURBSGridView_->getPatch(patchID_).template geometry<0>(directIndex_);
     }

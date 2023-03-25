@@ -50,13 +50,13 @@ struct NurbsGridTraits {
    public:
     typedef GridImp GeometryImpl;
     typedef GridImp LocalGeometryImpl;
-    //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
+    //! IMPORTANT: Codim<codim>::IbraBase == IbraBase<dim-codim,dimw>
     /** \brief The type of the geometry associated with the entity.*/
     using Geometry = Dune::Geometry<dim - cd, dimw, GridImp, GeometryImp>;
     /** \brief The type of the local geometry associated with the entity.*/
     using LocalGeometry = Dune::Geometry<dim - cd, dim, GridImp, LocalGeometryImp>;
     /** \brief The type of the entity. */
-    // we could - if needed - introduce another struct for dimglobal of Geometry
+    // we could - if needed - introduce another struct for dimglobal of IbraBase
     using Entity = Dune::Entity<cd, dim, GridImp, EntityImp>;
 
     /** \brief The type of the entity seed of this codim.*/

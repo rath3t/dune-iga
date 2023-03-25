@@ -6,9 +6,9 @@
 #define IKARUS_RECONSTRUCTEDGRIDHANDLER_H
 
 #include <mapbox/earcut.hpp>
-#include <dune/iga/nurbspatchgeometry.h>
 
 #include <dune/grid/uggrid.hh>
+#include <dune/iga/nurbspatchgeometry.h>
 
 // Add support for Dune::Fieldvector in Earcut
 namespace mapbox::util {
@@ -29,7 +29,6 @@ namespace Dune::IGA {
   template <int worldDim>
   struct GridBoundarySegment : Dune::BoundarySegment<2, worldDim, double> {
     // Types
-
 
     // Constructor
     explicit GridBoundarySegment(Boundary& _boundary, auto _transferToGlobal)
@@ -87,7 +86,7 @@ namespace Dune::IGA {
 
       LocalPointVector vertices;
       for (auto& boundary : boundaries) {
-        vertices.push_back(boundary.controlPoints[0]);
+        vertices.push_back(boundary.endPoints[0]);
       }
 
       GlobalPointVector globalVertices;
@@ -113,14 +112,12 @@ namespace Dune::IGA {
 
       for (auto& boundary : boundaries) {
         auto idx = getControlPointIndices(vertices, boundary);
-        gridFactory.insertBoundarySegment({idx[0], idx[1]}, std::make_shared<GridBoundarySegment<worldDim>>(boundary, patchGeometry));
+        gridFactory.insertBoundarySegment({idx[0], idx[1]},
+                                          std::make_shared<GridBoundarySegment<worldDim>>(boundary, patchGeometry));
       }
 
       // Setze Idx boundarySegmentIdx welche refined werden müssen
       auto boundaryToRefineMap = determineBoundariesToRefine();
-
-      // Calculate the area of the trimmed element
-      // auto area = calculateArea<double>();
 
       // Create Grid
       grid = gridFactory.createGrid();
@@ -146,13 +143,13 @@ namespace Dune::IGA {
 
       GridView gridViewRefined = grid->leafGridView();
 
-      std::cout << "This gridview contains: ";
-      std::cout << gridViewRefined.size(0) << " elements" << std::endl;
+      double areaRefinedGrid
+          = std::accumulate(elements(gridViewRefined).begin(), elements(gridViewRefined).end(), 0.0,
+                            [](double rhs, const auto& element) { return rhs + element.geometry().volume(); });
 
-      double areaRefinedGrid = 0.0;
-      for (auto& element : elements(gridViewRefined))
-        areaRefinedGrid += element.geometry().volume();
-      std::cout << "The area of all elements in the refined grid is: " << areaRefinedGrid << std::endl;
+      std::cout << "Reconstructed Grid with " << gridViewRefined.size(0)
+                << " elements. Area of elements: " << areaRefinedGrid
+                << ". Approx area of trimmed element: " << calculateArea() << std::endl;
     }
 
     template <typename N>
@@ -163,7 +160,7 @@ namespace Dune::IGA {
       // Create array of points
       LocalPointVector polygon;
       for (auto& boundary : boundaries)
-        polygon.push_back(boundary.controlPoints[0]);
+        polygon.push_back(boundary.endPoints[0]);
 
       std::vector<std::vector<LocalPoint>> polygonInput;
       polygonInput.push_back(polygon);
@@ -173,24 +170,16 @@ namespace Dune::IGA {
       return indices;
     }
 
-    template <typename T>
-    T calculateArea(unsigned int div = 200) {
-      using namespace Clipper2Lib;
-
-      Path<T> polygon;
+    double calculateArea(unsigned int div = 200) {
+      Clipper2Lib::PathD polygon;
       for (auto& boundary : boundaries) {
-        auto path = boundary.path<T>(div);
+        auto path = boundary.path(div);
         polygon.insert(polygon.end(), path.begin(), path.end());
       }
-
-      return Area(polygon);
+      return Clipper2Lib::Area(polygon);
     }
 
-    bool approximatelySamePoint(const LocalPoint& a, const LocalPoint& b) {
-      const double tolerance = 16.0 * std::numeric_limits<double>::epsilon();
-
-      return std::abs(a[0] - b[0]) < tolerance && std::abs(a[1] - b[1]) < tolerance;
-    };
+    bool approxSamePoint(const LocalPoint& a, const LocalPoint& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
 
     void splitBoundaries() {
       auto parameters = Utilities::getParameters();
@@ -236,22 +225,15 @@ namespace Dune::IGA {
     }
 
     std::array<unsigned int, 2> getControlPointIndices(LocalPointVector& vertices, Boundary& boundary) {
-      auto it1 = std::find_if(vertices.begin(), vertices.end(), [&](const LocalPoint& v) {
-        return approximatelySamePoint(v, boundary.controlPoints.front());
-      });
-      if (it1 == vertices.end()) {
-        std::cerr << "Vertex 1 not found" << std::endl;
-        return {0, 0};
-      }
-      const unsigned int idx1 = std::distance(vertices.begin(), it1);
+      auto it1 = std::find_if(vertices.begin(), vertices.end(),
+                              [&](const LocalPoint& v) { return approxSamePoint(v, boundary.endPoints.front()); });
+      if (it1 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 1 not found");
 
-      auto it2 = std::find_if(vertices.begin(), vertices.end(), [&](const LocalPoint& v) {
-        return approximatelySamePoint(v, boundary.controlPoints.back());
-      });
-      if (it2 == vertices.end()) {
-        std::cerr << "Vertex 2 not found" << std::endl;
-        return {0, 0};
-      }
+      auto it2 = std::find_if(vertices.begin(), vertices.end(),
+                              [&](const LocalPoint& v) { return approxSamePoint(v, boundary.endPoints.back()); });
+      if (it2 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 2 not found");
+
+      const unsigned int idx1 = std::distance(vertices.begin(), it1);
       const unsigned int idx2 = std::distance(vertices.begin(), it2);
 
       assert(idx1 != idx2);

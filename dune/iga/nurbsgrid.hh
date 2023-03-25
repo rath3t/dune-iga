@@ -222,7 +222,7 @@ namespace Dune::IGA {
         trimElement();
       }
     }
-
+   public:
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;
@@ -249,7 +249,7 @@ namespace Dune::IGA {
 
       return std::make_unique<ParametricGrid>(tensorProductCoordinates);
     }
-
+   private:
     // For dim != 2
     void trimElement() {}
 

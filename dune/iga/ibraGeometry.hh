@@ -35,57 +35,57 @@ namespace Dune::IGA::Ibra {
       return Type::NoType;
   }
 
-  class Geometry {
+  class IbraBase {
    public:
     std::string typeString;
     std::string key;
     Type type{Type::NoType};
 
-    friend std::ostream& operator<<(std::ostream& stream, const Geometry& geo) {
+    friend std::ostream& operator<<(std::ostream& stream, const IbraBase& geo) {
       stream << "Type: " << geo.typeString << ",\n Key: " << geo.key << "\n";
       return stream;
     }
   };
 
-  // The surface is inherently 3D, you can request ControlPoints with worldDim 2 or 3
-  struct Surface : Geometry {
-    std::array<int, 2> degree{};
-    std::array<int, 2> n_controlPoints{};
-    std::array<std::vector<double>, 2> knots;
+  template <int dim, int worldDim> requires (dim < 3) && (worldDim >= dim)
+  struct IbraNURBSData : IbraBase {
+    std::array<int, dim> degree{};
+    std::array<int, dim> n_controlPoints{};
+    std::array<std::vector<double>, dim> knots;
     Dune::DynamicMatrix<double> controlPoints;
+    std::vector<double> weights;
 
-    template <int outputDim> requires(outputDim == 2 || outputDim == 3)
-    std::vector<std::vector<typename NURBSPatchData<2, outputDim>::ControlPointType>> compileControlPoints() {
+    using ControlPointType = typename NURBSPatchData<dim, worldDim>::ControlPointType;
 
-      auto cpAt = [this](int u, int v) -> Dune::FieldVector<double, outputDim> {
-        int idx = u * n_controlPoints[1] + v;
-
-        Dune::FieldVector<double, outputDim> p;
-        for (int k = 0; k < outputDim; ++k)
-          p[k] = controlPoints[idx][k];
-
-        return p;
-      };
-      using ControlPointType = NURBSPatchData<2, outputDim>::ControlPointType ;
-      std::vector<std::vector<ControlPointType>> vec;
-
-      std::vector<ControlPointType> cpTemp(n_controlPoints[1]);
-      for (int i = 0; i < n_controlPoints[0]; ++i) {
-        cpTemp.clear();
-        for (int j = 0; j < n_controlPoints[1]; ++j) {
-          cpTemp.push_back({.p = cpAt(i, j), .w = 1});
+    [[nodiscard]] std::vector<std::vector<ControlPointType>> transformControlPoints() const  {
+      if constexpr (dim == 1) {
+        std::vector<ControlPointType> cps;
+        for (int i = 0; i < n_controlPoints[0]; ++i) {
+          cps.push_back(controlPointAt({i}));
         }
-        vec.push_back(cpTemp);
+        return {cps};
+      } else if constexpr (dim == 2) {
+        std::vector<std::vector<ControlPointType>> vec;
+        std::vector<ControlPointType> cpTemp(n_controlPoints[1]);
+        for (int i = 0; i < n_controlPoints[0]; ++i) {
+          cpTemp.clear();
+          for (int j = 0; j < n_controlPoints[1]; ++j) {
+            cpTemp.push_back(controlPointAt({i, j}));
+          }
+          vec.push_back(cpTemp);
+        }
+        return vec;
       }
-      return vec;
+      __builtin_unreachable();
     }
 
-    std::array<std::vector<double>, 2> compileKnotVectors() {
-      std::array<std::vector<double>, 2> knotVec;
+
+    [[nodiscard]] std::array<std::vector<double>, dim> compileKnotVectors() const {
+      std::array<std::vector<double>, dim> knotVec;
 
       // Insert first and last knot repeatedly
       std::vector<double> subKnotVector;
-      for (int i = 0; i < 2; ++i) {
+      for (int i = 0; i < dim; ++i) {
         subKnotVector.clear();
         subKnotVector.insert(subKnotVector.end(), knots[i][0]);
         subKnotVector.insert(subKnotVector.end(), knots[i].begin(), knots[i].end());
@@ -96,81 +96,39 @@ namespace Dune::IGA::Ibra {
       return knotVec;
     }
 
+   private:
+    [[nodiscard]] ControlPointType controlPointAt(std::array<int, dim> idx) const  {
+      int row = (dim == 1) ? idx[0] : idx[0] * n_controlPoints[1] + idx[1];
+
+      Dune::FieldVector<double, worldDim> p;
+      for (int k = 0; k < worldDim; ++k)
+        p[k] = controlPoints[row][k];
+
+      double w = weights[row];
+
+      return {p, w};
+    }
+
   };
+  template <int worldDim>
+  using Curve = IbraNURBSData<1, worldDim>;
+  using Curve2D = IbraNURBSData<1, 2>;
 
-  struct Curve : Geometry {
-   public:
-    static constexpr int dim = 2;
-    int degree               = 0;
-    int n_controlPoints      = 0;
-    std::vector<double> knots;
-    DynamicMatrix<double> controlPoints;
+  template <int worldDim>
+  using Surface = IbraNURBSData<2, worldDim>;
 
-    std::vector<double> weights;
-
-    std::vector<typename NURBSPatchData<1, 2>::ControlPointType> compileControlPoints() {
-      constexpr int worldDim {2};
-
-      auto cpAt = [this](int j) -> Dune::FieldVector<double, worldDim> {
-        Dune::FieldVector<double, worldDim> p;
-        for (int k = 0; k < worldDim; ++k)
-          p[k] = controlPoints[j][k];
-        return p;
-      };
-      using ControlPointType = NURBSPatchData<1, 2>::ControlPointType;
-      std::vector<ControlPointType> vec;
-      for (int i = 0; i < n_controlPoints; ++i) {
-        vec.push_back({.p = cpAt(i), .w = weights[i]});
-      }
-
-      return vec;
-    }
-    // This might be unused and maybe should go away
-    template <typename T> requires std::is_floating_point_v<T>
-    std::vector<Dune::FieldVector<T, 2>> compileControlPoints() {
-      constexpr int outputDim {2};
-
-      auto cpAt = [this](int u) -> Dune::FieldVector<T, outputDim> {
-        Dune::FieldVector<T, outputDim> p;
-        for (int k = 0; k < outputDim; ++k)
-          p[k] = controlPoints[u][k];
-
-        return p;
-      };
-
-      std::vector<Dune::FieldVector<T, outputDim>> vec;
-      for (int i = 0; i < n_controlPoints; ++i) {
-        vec.push_back(cpAt(i));
-      }
-
-      return vec;
-    }
-
-    std::vector<double> compileKnotVectors() {
-      std::vector<double> knotVec;
-
-      // Insert first and last knot repeatedly
-      knotVec.insert(knotVec.end(), knots[0]);
-      knotVec.insert(knotVec.end(), knots.begin(), knots.end());
-      knotVec.insert(knotVec.end(), knots.back());
-
-      return knotVec;
-    }
-  };
-  using Curve2D = Curve;
-
-  void getGenerics(const Geometry& from, Geometry& to) {
+  void getGenerics(const IbraBase& from, IbraBase& to) {
     to.key        = from.key;
     to.typeString = from.typeString;
     to.type       = from.type;
   }
 
-  struct BrepTrimRepresentation : Geometry {
+  struct BrepTrimRepresentation : IbraBase {
     std::string geometry;
     std::array<double, 2> domain;
   };
 
-  struct BrepTrim : Geometry {
+  struct BrepTrim : IbraBase {
     Curve2D geometry;
     std::array<double, 2> domain = {-1, -1};
 
@@ -184,18 +142,18 @@ namespace Dune::IGA::Ibra {
       if (it != allCurves.end())
         geometry = *it;
       else
-        std::cerr << "Couldn't find geometry in BrepTrim: " << key << std::endl;
+        DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: "<< key);
     }
   };
 
-  struct BrepLoopRepresentation : Geometry {
+  struct BrepLoopRepresentation : IbraBase {
     using StringVector = std::vector<std::string>;
 
     std::string brep;
     std::string face;
     StringVector trims;
   };
-  struct BrepLoop : Geometry {
+  struct BrepLoop : IbraBase {
     std::vector<BrepTrim> trims;
 
     BrepLoop(BrepLoopRepresentation& loopRepresentation, std::vector<BrepTrim>& allTrims) {
@@ -211,7 +169,7 @@ namespace Dune::IGA::Ibra {
     }
   };
 
-  struct BrepRepresentation : Geometry {
+  struct BrepRepresentation : IbraBase {
     using StringVector = std::vector<std::string>;
 
     StringVector curve_geometries_2d;
@@ -220,13 +178,14 @@ namespace Dune::IGA::Ibra {
     StringVector trims;
   };
 
-  struct Brep : Geometry {
+  template <int worldDim>
+  struct Brep : IbraBase {
     std::vector<Curve2D> curves2D;
-    std::vector<Surface> surfaces;
+    std::vector<Surface<worldDim>> surfaces;
     std::vector<BrepLoop> loops;
     std::vector<BrepTrim> trims;
 
-    Brep(const BrepRepresentation& representation, std::vector<Curve2D>& allCurves, std::vector<Surface>& allSurfaces,
+    Brep(const BrepRepresentation& representation, std::vector<Curve2D>& allCurves, std::vector<Surface<worldDim>>& allSurfaces,
          std::vector<Ibra::BrepLoopRepresentation>& allBrepLoopRepresentations,
          std::vector<Ibra::BrepTrimRepresentation>& allBrepTrimRepresentations) {
       getGenerics(representation, *this);
@@ -267,48 +226,45 @@ namespace Dune::IGA::Ibra {
   //////
   using json = nlohmann::json;
 
-  void getGenerics(const json& j, Geometry& geometry) {
+  void getGenerics(const json& j, IbraBase& geometry) {
     j.at("type").get_to(geometry.typeString);
     j.at("key").get_to(geometry.key);
 
     geometry.type = typeForTypeString(geometry.typeString);
   }
 
-  void from_json(const json& j, Geometry& geometry) { getGenerics(j, geometry); }
+  void from_json(const json& j, IbraBase& geometry) { getGenerics(j, geometry); }
 
-
-  void from_json(const json& j, Curve& curve) {
+  template <int worldDim>
+  void from_json(const json& j, Curve<worldDim>& curve) {
     getGenerics(j, curve);
 
     // Degree
-    j.at("degree").get_to(curve.degree);
+    j.at("degree").get_to(curve.degree[0]);
 
     // Knots (u)
-    const auto& knots = j.at("knots");
-
-    curve.knots.resize(knots.size());
-
-    for (size_t k = 0; k < knots.size(); ++k)
-      curve.knots[k] = knots[k];
+    std::ranges::copy( j.at("knots"), std::back_inserter(curve.knots[0]));
 
     // Poles aka Control Points
-    j.at("nb_poles").get_to(curve.n_controlPoints);
+    j.at("nb_poles").get_to(curve.n_controlPoints[0]);
 
-    curve.controlPoints.resize(curve.n_controlPoints, 2);
+    curve.controlPoints.resize(curve.n_controlPoints[0], worldDim);
 
-    for (int i = 0; i < curve.n_controlPoints; ++i)
-      for (int k = 0; k < 2; ++k)
+    for (int i = 0; i < curve.n_controlPoints[0]; ++i)
+      for (int k = 0; k < worldDim; ++k)
         curve.controlPoints[i][k] = j.at("poles")[i][k];
 
-    std::vector<double> unit_weights(curve.n_controlPoints);
-    std::fill(unit_weights.begin(), unit_weights.end(), 1.0);
+    if (j.contains("weights"))
+      std::ranges::copy(j.at("weights"), std::back_inserter(curve.weights));
+    else {
+      curve.weights.resize(curve.n_controlPoints[0]);
+      std::ranges::fill(curve.weights, 1.0);
+    }
 
-    // Access with default value
-    auto weights  = j.value("weights", unit_weights);
-    curve.weights = weights;
   }
 
-  void from_json(const json& j, Surface& surface) {
+  template <int worldDim>
+  void from_json(const json& j, Surface<worldDim>& surface) {
     getGenerics(j, surface);
 
     // Degree
@@ -316,27 +272,27 @@ namespace Dune::IGA::Ibra {
     j.at("degree_v").get_to(surface.degree[1]);
 
     // Knots (u,v)
-    const auto& knots_u = j.at("knots_u");
-    const auto& knots_v = j.at("knots_v");
-
-    surface.knots[0].resize(knots_u.size());
-    surface.knots[1].resize(knots_v.size());
-
-    for (size_t k = 0; k < knots_u.size(); ++k)
-      surface.knots[0][k] = knots_u[k];
-
-    for (size_t k = 0; k < knots_v.size(); ++k)
-      surface.knots[1][k] = knots_v[k];
+    std::ranges::copy( j.at("knots_u"), std::back_inserter(surface.knots[0]));
+    std::ranges::copy( j.at("knots_v"), std::back_inserter(surface.knots[1]));
 
     // Poles aka Control Points
     j.at("nb_poles_u").get_to(surface.n_controlPoints[0]);
     j.at("nb_poles_v").get_to(surface.n_controlPoints[1]);
 
-    surface.controlPoints.resize(surface.n_controlPoints[0] * surface.n_controlPoints[1], 3);
+    int total_controlPoints = surface.n_controlPoints[0] * surface.n_controlPoints[1];
+    surface.controlPoints.resize(total_controlPoints, worldDim);
 
-    for (int i = 0; i < surface.n_controlPoints[0] * surface.n_controlPoints[1]; ++i)
-      for (int k = 0; k < 3; ++k)
+    for (int i = 0; i < total_controlPoints; ++i)
+      for (int k = 0; k < worldDim; ++k)
         surface.controlPoints[i][k] = j.at("poles")[i][k];
+
+    if (j.contains("weights"))
+      std::ranges::copy(j.at("weights"), std::back_inserter(surface.weights));
+    else {
+      surface.weights.resize(total_controlPoints);
+      std::ranges::fill(surface.weights, 1.0);
+    }
+
   }
 
   void from_json(const json& j, BrepRepresentation& brep) {

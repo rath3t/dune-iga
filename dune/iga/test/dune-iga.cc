@@ -42,6 +42,7 @@
 
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/grid/io/file/printgrid.hh>
+#include "plotFunctionality.h"
 
 
 using namespace Dune;
@@ -119,18 +120,18 @@ auto testNURBSGridCurve() {
   //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
+  const std::vector<ControlPoint> endPoints
       = {{.p = {1, 3, 4}, .w = 1}, {.p = {2, 2, 2}, .w = 3}, {.p = {3, 4, 5}, .w = 1},
          {.p = {5, 1, 7}, .w = 2}, {.p = {4, 7, 2}, .w = 1}, {.p = {8, 6, 2}, .w = 1},
          {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
 
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.controlPoints = controlNet;
+  patchData.endPoints = controlNet;
   auto additionalKnots    = std::vector<double>(2);
   additionalKnots[0]      = 0.5;
   additionalKnots[1]      = 3.5;
@@ -183,19 +184,19 @@ void testNURBSGridSurface() {
   //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
+  const std::vector<std::vector<ControlPoint>> endPoints
       = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
          {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
          {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size()), static_cast<int>(endPoints[0].size())};
 
-  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
 
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.controlPoints = controlNet;
+  patchData.endPoints = controlNet;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -235,7 +236,7 @@ auto test3DGrid() {
     }
   }
 
-  nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
+  nurbsPatchData.endPoints = MultiDimensionNet(dimSize, controlp);
   nurbsPatchData.degree        = order;
 
   auto additionalKnots = std::vector<double>(2);
@@ -295,14 +296,14 @@ void testFactory() {
   nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<std::vector<ControlPoint>> controlPoints
+  const std::vector<std::vector<ControlPoint>> endPoints
       = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
          {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
          //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
-  nurbsPatchData.controlPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size()), static_cast<int>(endPoints[0].size())};
+  nurbsPatchData.endPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
   nurbsPatchData.degree        = order;
 };
 
@@ -384,16 +385,16 @@ auto testNURBSSurface() {
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
   using ControlPoint                                   = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
+  const std::vector<std::vector<ControlPoint>> endPoints
       = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
          {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
          {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size()), static_cast<int>(endPoints[0].size())};
   //
 
   //  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
-  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
 
@@ -420,19 +421,19 @@ auto testNURBSCurve() {
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<ControlPoint> controlPoints
+  const std::vector<ControlPoint> endPoints
       = {{.p = {1, 3, 4}, .w = 2}, {.p = {2, 2, 2}, .w = 2}, {.p = {3, 4, 5}, .w = 1},
          {.p = {5, 1, 7}, .w = 1}, {.p = {4, 7, 2}, .w = 4}, {.p = {8, 6, 2}, .w = 2},
          {.p = {2, 9, 9}, .w = 1}, {.p = {1, 4, 3}, .w = 2}, {.p = {1, 7, 1}, .w = 4}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
 
   TestSuite testSuite;
   testSuite.check(patch.size(0) == 5);
-  testSuite.check(patch.size(1) == controlPoints.size());
+  testSuite.check(patch.size(1) == endPoints.size());
   return testSuite;
 }
 
@@ -459,19 +460,19 @@ void testNurbsGridCylinder() {
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<std::vector<ControlPoint>> controlPoints
+  const std::vector<std::vector<ControlPoint>> endPoints
       = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
          {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
          //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
 
-  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  std::array<int, dim> dimsize = {static_cast<int>(endPoints.size()), static_cast<int>(endPoints[0].size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
 
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.controlPoints = controlNet;
+  patchData.endPoints = controlNet;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
   grid.globalRefine(5);
   auto gridView        = grid.leafGridView();
@@ -520,7 +521,7 @@ auto testNurbsBasis() {
   Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
   nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
-  nurbsPatchData.controlPoints
+  nurbsPatchData.endPoints
       = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
          {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
          //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
@@ -891,7 +892,7 @@ void gridCheck() {
   TestSuite test;
 
   auto circle = makeCircularArc();
-  circle.controlPoints.directGet(0).p[1] += 3;
+  circle.endPoints.directGet(0).p[1] += 3;
   const auto patch = makeSurfaceOfRevolution(circle, {2.0, 0, 0}, {0, 1, 0}, 360.0);
 
   IGA::NURBSGrid<2UL, 3UL> grid(patch);
@@ -948,20 +949,20 @@ auto testPlate() {
 
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
+  const std::vector<std::vector<ControlPoint>> endPoints
       = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
          {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
          {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
 
-  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+  std::array<int, gridDim> dimsize = {(int)(endPoints.size()), (int)(endPoints[0].size())};
 
-  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, endPoints);
   using Grid      = Dune::IGA::NURBSGrid<gridDim, dimworld>;
 
   Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.controlPoints = controlNet;
+  patchData.endPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
   grid->globalRefine(0);
   auto gridView = grid->leafGridView();
@@ -1076,7 +1077,7 @@ std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
 auto testTrimImpactWithRefinement() {
   TestSuite t;
 
-  // Setze Parameters auf Standard, falls hier was geändert wird, werden wohl einige der Tests hier nicht durchlaufen
+  // Get Standard Parameter for trimming
   Dune::IGA::Utilities::setStandardParameters();
 
   // O refinement, 1 trimmed
@@ -1142,7 +1143,7 @@ auto testPatchGeometryCurve() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
 
-  // Make Geometry
+  // Make IbraBase
   NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
 
   auto p0 = geometry.global({0.0});
@@ -1217,7 +1218,7 @@ auto testPatchGeometrySurface() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
 
-  // Make Geometry
+  // Make IbraBase
   NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
 
   auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
@@ -1266,7 +1267,7 @@ auto testPatchGeometrySurface() {
 auto testMultiParametrisation() {
   TestSuite t;
 
-  // Setze Parameters auf Standard, falls hier was geändert wird, werden wohl einige der Tests hier nicht durchlaufen
+  // Get Standard Parameter for trimming
   Dune::IGA::Utilities::setStandardParameters();
 
   // 0 refinement, 1 trimmed
@@ -1298,6 +1299,17 @@ auto testMultiParametrisation() {
   return t;
 }
 
+auto testNURBSSurface() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
+
+  grid->globalRefine(4);
+  t.check(grid->size(0) == 256);
+
+  return t;
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
@@ -1306,9 +1318,10 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
-  //t.subTest(testIbraReader());
+  t.subTest(testIbraReader());
   t.subTest(testTrimImpactWithRefinement());
   t.subTest(testMultiParametrisation());
+  t.subTest(testNURBSSurface());
 
 #if 0
   t.subTest(test3DGrid());

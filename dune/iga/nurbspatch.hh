@@ -309,7 +309,7 @@ namespace Dune::IGA {
 
     /** \brief creates a NURBSGeometry object
      *  this function finds the i-th knot span where knot[i] < knot[i+1] for each dimension
-     *  and generates a Geometry object
+     *  and generates a IbraBase object
      *
      *  \param[in] ijk array of indices for each dimension
      */

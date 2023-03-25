@@ -6,7 +6,15 @@ option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 foreach(_test ${TESTS})
   dune_add_test(SOURCES ${_test}.cc TIMEOUT 10000)
   target_compile_options(${_test} PRIVATE -g)
-  target_link_libraries(${_test} PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp)
+
+  find_package(Matplot++ REQUIRED)
+
+  target_link_libraries(${_test} PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
+
+  target_compile_options(
+          ${_test} PRIVATE -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
+          -Wno-deprecated-copy -ftemplate-backtrace-limit=0
+  )
 
   if(ENABLE_TEST_COVERAGE)
     message("Enable Test Coverage")
