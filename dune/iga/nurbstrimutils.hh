@@ -40,11 +40,11 @@ namespace Dune::IGA::Utilities {
   void setStandardParameters() {
     Utilities::Parameters parameters{};
 
-    // Fill in default parameters (witho File)
-    parameters.preSample                = 1;
+    // Fill in default parameters (without File)
+    parameters.preSample                = 3;
     parameters.preSampleOnlyCurvedEdges = true;
     parameters.preGlobalRefine          = 0;
-    parameters.edgeRefinements          = 2;
+    parameters.edgeRefinements          = 0;
 
     getParameters() = parameters;
   }
@@ -81,6 +81,11 @@ namespace Dune::IGA::Utilities {
     xs.back()  = b;
 
     return xs;
+  }
+
+  template <std::floating_point T>
+  std::vector<T> linspace(std::array<T, 2> ab, unsigned int N) {
+    return linspace(ab[0], ab[1], N);
   }
 
   template <std::floating_point T>

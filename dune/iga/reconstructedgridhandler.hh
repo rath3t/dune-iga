@@ -84,30 +84,15 @@ namespace Dune::IGA {
 
       if (parameters.preSample > 0) splitBoundaries();
 
-      LocalPointVector vertices;
-      for (auto& boundary : boundaries) {
-        vertices.push_back(boundary.endPoints[0]);
-      }
-
-      GlobalPointVector globalVertices;
-      for (auto& point : vertices) {
-        globalVertices.push_back(patchGeometry({point[0], point[1]}));
-      }
-
-      // Grid Factory
       Dune::GridFactory<Grid> gridFactory;
+      auto [indices, vertices] = createMesh();
 
-      for (auto& vertex : globalVertices)
+      for (auto& vertex : vertices)
         gridFactory.insertVertex(vertex);
 
-      // Make Grid Template
-      auto meshTemplate = createOriginalMeshTemplate<unsigned int>();
-
-      int n_ele = (int)meshTemplate.size() / 3;
-
+      int n_ele = (int)indices.size() / 3;
       for (int i = 0; i < n_ele; ++i) {
-        gridFactory.insertElement(Dune::GeometryTypes::triangle,
-                                  {meshTemplate[3 * i], meshTemplate[3 * i + 1], meshTemplate[3 * i + 2]});
+        gridFactory.insertElement(Dune::GeometryTypes::triangle, {indices[3 * i], indices[3 * i + 1], indices[3 * i + 2]});
       }
 
       for (auto& boundary : boundaries) {
@@ -116,7 +101,6 @@ namespace Dune::IGA {
                                           std::make_shared<GridBoundarySegment<worldDim>>(boundary, patchGeometry));
       }
 
-      // Setze Idx boundarySegmentIdx welche refined werden müssen
       auto boundaryToRefineMap = determineBoundariesToRefine();
 
       // Create Grid
@@ -152,31 +136,34 @@ namespace Dune::IGA {
                 << ". Approx area of trimmed element: " << calculateArea() << std::endl;
     }
 
-    template <typename N>
-    std::vector<N> createOriginalMeshTemplate() {
+
+    std::pair<std::vector<unsigned int>, std::vector<GlobalPoint>> createMesh() {
       // Construct mesh with Earcut
       // C.f. https://github.com/mapbox/earcut.hpp
 
       // Create array of points
-      LocalPointVector polygon;
+      GlobalPointVector vertices;
       for (auto& boundary : boundaries)
-        polygon.push_back(boundary.endPoints[0]);
+        vertices.push_back(patchGeometry({boundary.endPoints.front()}));
 
       std::vector<std::vector<LocalPoint>> polygonInput;
-      polygonInput.push_back(polygon);
+      polygonInput.push_back(vertices);
 
-      std::vector<N> indices = mapbox::earcut<N>(polygonInput);
+      std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
 
-      return indices;
+      return {indices, vertices};
     }
 
     double calculateArea(unsigned int div = 200) {
       Clipper2Lib::PathD polygon;
       for (auto& boundary : boundaries) {
-        auto path = boundary.path(div);
-        polygon.insert(polygon.end(), path.begin(), path.end());
+        auto path = boundary.path(div, false);
+        for (Clipper2Lib::PointD point : path) {
+          auto globalPoint = patchGeometry({point.x, point.y});
+          polygon.emplace_back(globalPoint[0], globalPoint[1]);
+        }
       }
-      return Clipper2Lib::Area(polygon);
+      return std::fabs(Clipper2Lib::Area(polygon));
     }
 
     bool approxSamePoint(const LocalPoint& a, const LocalPoint& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
@@ -215,7 +202,7 @@ namespace Dune::IGA {
       }
       tempDomains.clear();
 
-      // Create Splittet boundaries
+      // Create Splittet trimData
       std::vector<Boundary> newBoundaries;
       for (const auto& domain_info : domains) {
         const int i = domain_info.second;
@@ -224,13 +211,13 @@ namespace Dune::IGA {
       boundaries = newBoundaries;
     }
 
-    std::array<unsigned int, 2> getControlPointIndices(LocalPointVector& vertices, Boundary& boundary) {
+    std::array<unsigned int, 2> getControlPointIndices(GlobalPointVector& vertices, Boundary& boundary) {
       auto it1 = std::find_if(vertices.begin(), vertices.end(),
-                              [&](const LocalPoint& v) { return approxSamePoint(v, boundary.endPoints.front()); });
+                              [&](const GlobalPoint& v) { return approxSamePoint(v, patchGeometry(boundary.endPoints.front())); });
       if (it1 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 1 not found");
 
       auto it2 = std::find_if(vertices.begin(), vertices.end(),
-                              [&](const LocalPoint& v) { return approxSamePoint(v, boundary.endPoints.back()); });
+                              [&](const LocalPoint& v) { return approxSamePoint(v, patchGeometry(boundary.endPoints.back())); });
       if (it2 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 2 not found");
 
       const unsigned int idx1 = std::distance(vertices.begin(), it1);
@@ -249,11 +236,13 @@ namespace Dune::IGA {
         if (boundary.degree() > 1) {
           shouldRefine = true;
         } else {
-          Boundary::EdgeOrientation orientation = boundary.getOrientation();
+          Boundary::EdgeOrientation orientation = boundary.getEdgeOrientation();
           int degree = (orientation == Boundary::EdgeOrientation::u) ? gridDegree[0] : gridDegree[1];
           if (degree > 1 || orientation == Boundary::EdgeOrientation::Unknown) {
             shouldRefine = true;
           }
+          if (gridDegree[0] == 1 && gridDegree[1] == 1)
+            shouldRefine = false;
         }
         boundaryToRefineMap[i] = shouldRefine;
         ++i;

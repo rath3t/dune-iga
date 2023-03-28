@@ -77,17 +77,16 @@ namespace Dune::IGA {
     NURBSGrid()         = default;
 
     // Boundaries can be given as an optional
-    using BoundariesOpt = std::optional<std::vector<Boundary>>;
 
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData,
-                       BoundariesOpt _boundaries = std::nullopt)
+                       std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
         : coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
-          boundaries(std::move(_boundaries)),
+          trimData(std::move(_trimData)),
           nurbsSurface{Dune::IGA::Nurbs<dim>(currentPatchRepresentation_)} {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
@@ -109,7 +108,7 @@ namespace Dune::IGA {
       trimFlags = std::vector<ElementTrimFlag>(size(0));
       std::fill(trimFlags.begin(), trimFlags.end(), ElementTrimFlag::full);
 
-      if (boundaries.has_value()) trimElement();
+      if (trimData.has_value()) trimElement();
     }
 
     /** \brief  constructor
@@ -200,7 +199,7 @@ namespace Dune::IGA {
     std::optional<typename ReconstructedGridHandler<dimworld>::GridView> getReconstructedGridViewForTrimmedElement(
         int index) {
       if constexpr (dimworld == 2 && dim == 2) {
-        if ((boundaries.has_value()) && (trimFlags[index] == ElementTrimFlag::trimmed))
+        if ((trimData.has_value()) && (trimFlags[index] == ElementTrimFlag::trimmed))
           return std::make_optional<typename ReconstructedGridHandler<dimworld>::GridView>(
               trimResultMap[index]->grid->leafGridView());
         else
@@ -216,7 +215,7 @@ namespace Dune::IGA {
       indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
       idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
 
-      if (boundaries.has_value()) {
+      if (trimData.has_value()) {
         nurbsSurface = Dune::IGA::Nurbs<dim>(currentPatchRepresentation_);
         trimResultMap.clear();
         trimElement();
@@ -233,7 +232,7 @@ namespace Dune::IGA {
 
     Dune::IGA::Nurbs<dim> nurbsSurface;
     std::vector<ElementTrimFlag> trimFlags;
-    BoundariesOpt boundaries;
+    std::optional<std::shared_ptr<TrimData>> trimData;
     std::map<int, std::unique_ptr<ReconstructedGridHandler<dimworld>>> trimResultMap;
 
     auto parameterSpaceGrid() {
@@ -260,7 +259,7 @@ namespace Dune::IGA {
       trimFlags = std::vector<ElementTrimFlag>(size(0));
       std::ranges::fill(trimFlags, ElementTrimFlag::full);
 
-      if (!boundaries.has_value()) {
+      if (!trimData.has_value()) {
         leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this, trimFlags));
         return;
       }
@@ -274,7 +273,7 @@ namespace Dune::IGA {
 
 
       // Get Clip as ClipperPath
-      Clipper2Lib::PathsD clip = getClip(*boundaries);
+      Clipper2Lib::PathsD clip = getClip(*trimData);
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
       for (auto& element : elements(parameterSpaceGridView)) {
@@ -288,7 +287,7 @@ namespace Dune::IGA {
         trimFlags[index] = trimFlag;
 
         if (clippingResultOpt.has_value()) {
-          auto elementBoundariesOpt = constructElementBoundaries(*clippingResultOpt, corners, *boundaries);
+          auto elementBoundariesOpt = constructElementBoundaries(*clippingResultOpt, corners, *trimData);
 
           if (elementBoundariesOpt.has_value()) {
             // ReconstructGrid and save in a GridHandler

@@ -34,7 +34,9 @@ namespace Dune::IGA {
     Boundary(Geometry& _nurbsGeometry, std::array<double, 2> _domain)
         : nurbsGeometry(_nurbsGeometry),
           domain(_domain),
-          endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
+          endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {
+      assert(domain[1] > domain[0]);
+    }
 
     explicit Boundary(Ibra::BrepTrim& _trim)
         : nurbsGeometry(geometryFromTrim(_trim.geometry)),
@@ -77,7 +79,7 @@ namespace Dune::IGA {
     [[nodiscard]] int degree() const { return nurbsGeometry.degree()[0]; };
 
     enum class EdgeOrientation { u, v, Unknown };
-    [[nodiscard]] EdgeOrientation getOrientation(const double tolerance = 1e-6) const {
+    [[nodiscard]] EdgeOrientation getEdgeOrientation(const double tolerance = 1e-6) const {
       if (Dune::FloatCmp::eq(endPoints[0][0], endPoints[1][0], tolerance))
         return EdgeOrientation::v;
       else if (Dune::FloatCmp::eq(endPoints[0][1], endPoints[1][1], tolerance))
@@ -102,5 +104,70 @@ namespace Dune::IGA {
       }
       return path;
     }
+
   };
+  struct BoundaryLoop {
+    enum class Orientation {ClockWise, CounterClockWise};
+    std::vector<Boundary> boundaries;
+    Orientation orientation;
+  };
+
+  class TrimData {
+   public:
+    std::vector<BoundaryLoop> boundaryLoops;
+
+    TrimData() = default;
+
+    void addLoop(std::vector<Boundary> _boundaries) {
+      auto orientation = determineOrientation(_boundaries);
+      boundaryLoops.push_back({_boundaries, orientation});
+    }
+   private:
+
+    static auto determineOrientation(std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
+      // extract some vertices to test
+      std::vector<Dune::FieldVector<double, 2>> vertices;
+      if (_boundaries.size() == 1) {
+        auto boundary = _boundaries[0];
+        auto linSpace = Utilities::linspace(boundary.domain, 4);
+        linSpace.pop_back();
+        for (auto u : linSpace)
+          vertices.push_back(boundary.nurbsGeometry(u));
+      } else {
+        for (const auto& boundary : _boundaries)
+          vertices.push_back(boundary.endPoints[0]);
+      }
+
+      // C.f. https://stackoverflow.com/a/1180256 and http://www.faqs.org/faqs/graphics/algorithms-faq/ Subject 2.07
+      // Find lowest and rightmost vertex
+      auto it = std::ranges::min_element(vertices, [](auto v1, auto v2) {
+        if (Dune::FloatCmp::eq(v1[1], v2[1]))
+          return v1[0] > v2[0];
+        return v1[1] < v2[1];
+      });
+
+      auto idxA = std::ranges::distance(vertices.begin(), it);
+      auto idxB = (idxA + 1) % vertices.size();
+      auto idxC = (idxA - 1) % vertices.size();
+
+      auto a = vertices[idxA];
+      auto b = vertices[idxB];
+      auto c = vertices[idxC];
+
+      auto ab = b-a;
+      auto ac = c-a;
+
+      auto isCrossPositive = [](Dune::FieldVector<double, 2>& a, Dune::FieldVector<double, 2>& b) {
+        double cross =  a[0] * b[1] - b[0] * a[1];
+        if (cross > 0)
+          return true;
+        else return false;
+      };
+      if (isCrossPositive(ab, ac))
+        return BoundaryLoop::Orientation::CounterClockWise;
+      else
+        return BoundaryLoop::Orientation::ClockWise;
+    }
+  };
+
 }  // namespace Dune::IGA

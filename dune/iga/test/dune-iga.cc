@@ -40,8 +40,6 @@
 #include <dune/iga/ibraReader.hh>
 #include <dune/iga/nurbstrimutils.hh>
 
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <dune/grid/io/file/printgrid.hh>
 #include "plotFunctionality.h"
 
 
@@ -131,7 +129,7 @@ auto testNURBSGridCurve() {
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.endPoints = controlNet;
+  patchData.controlPoints = controlNet;
   auto additionalKnots    = std::vector<double>(2);
   additionalKnots[0]      = 0.5;
   additionalKnots[1]      = 3.5;
@@ -196,7 +194,7 @@ void testNURBSGridSurface() {
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.endPoints = controlNet;
+  patchData.controlPoints = controlNet;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -236,7 +234,7 @@ auto test3DGrid() {
     }
   }
 
-  nurbsPatchData.endPoints = MultiDimensionNet(dimSize, controlp);
+  nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
   nurbsPatchData.degree        = order;
 
   auto additionalKnots = std::vector<double>(2);
@@ -303,7 +301,7 @@ void testFactory() {
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
 
   std::array<int, dim> dimsize = {static_cast<int>(endPoints.size()), static_cast<int>(endPoints[0].size())};
-  nurbsPatchData.endPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
+  nurbsPatchData.controlPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, endPoints);
   nurbsPatchData.degree        = order;
 };
 
@@ -472,7 +470,7 @@ void testNurbsGridCylinder() {
   Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.endPoints = controlNet;
+  patchData.controlPoints = controlNet;
   IGA::NURBSGrid<dim, dimworld> grid(patchData);
   grid.globalRefine(5);
   auto gridView        = grid.leafGridView();
@@ -521,7 +519,7 @@ auto testNurbsBasis() {
   Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
   nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
-  nurbsPatchData.endPoints
+  nurbsPatchData.controlPoints
       = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
          {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
          //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
@@ -892,7 +890,7 @@ void gridCheck() {
   TestSuite test;
 
   auto circle = makeCircularArc();
-  circle.endPoints.directGet(0).p[1] += 3;
+  circle.controlPoints.directGet(0).p[1] += 3;
   const auto patch = makeSurfaceOfRevolution(circle, {2.0, 0, 0}, {0, 1, 0}, 360.0);
 
   IGA::NURBSGrid<2UL, 3UL> grid(patch);
@@ -962,7 +960,7 @@ auto testPlate() {
   Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
-  patchData.endPoints = controlNet;
+  patchData.controlPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
   grid->globalRefine(0);
   auto gridView = grid->leafGridView();
@@ -1088,9 +1086,11 @@ auto testTrimImpactWithRefinement() {
   t.check(trimFlagCounter1[1] == 0);
   t.check(trimFlagCounter1[2] == 0);
 
+  Plot::plotParametricGridAndPhysicalGrid(grid, "0");
+  Plot::plotEveryReconstructedGrid(grid, "0");
+
   auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
   t.check(recoGridView.has_value());
-  Dune::printGrid(recoGridView->grid(), MPIHelper::instance(), "reco_0_0");
 
   // 1 refinement: 3 trimmed, 0 empty, 1 full
   grid->globalRefine(1);
@@ -1099,6 +1099,9 @@ auto testTrimImpactWithRefinement() {
   t.check(trimFlagCounter2[0] == 3);
   t.check(trimFlagCounter2[1] == 0);
   t.check(trimFlagCounter2[2] == 1);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "1");
+  Plot::plotEveryReconstructedGrid(grid, "1");
 
   // 2 refinement: 6 trimmed, 2 empty, 8 full
   grid->globalRefine(1);
@@ -1110,8 +1113,9 @@ auto testTrimImpactWithRefinement() {
 
   auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(14);
   t.check(recoGridView2.has_value());
-  Dune::printGrid(recoGridView2->grid(), MPIHelper::instance(), "reco_2_14");
 
+  Plot::plotParametricGridAndPhysicalGrid(grid, "2");
+  Plot::plotEveryReconstructedGrid(grid, "2");
 
   return t;
 }
@@ -1218,7 +1222,7 @@ auto testPatchGeometrySurface() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
 
-  // Make IbraBase
+  // Make Geometry
   NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
 
   auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
@@ -1275,12 +1279,8 @@ auto testMultiParametrisation() {
   auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
   t.check(trimFlagCounter1[0] == 1);
 
-  // Print Grid
-  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
-  Dune::printGrid(recoGridView->grid(), MPIHelper::instance(), "reco_2p_0_0");
-
-  auto vtkWriter = VTKWriter(*recoGridView);
-  vtkWriter.write("reco_2p_0_0");
+  Plot::plotParametricGridAndPhysicalGrid(grid, "0");
+  Plot::plotEveryReconstructedGrid(grid, "0");
 
   // 1 refinement 3 trimmed, 1 full
   grid->globalRefine(1);
@@ -1290,22 +1290,82 @@ auto testMultiParametrisation() {
   t.check(trimFlagCounter2[1] == 0);
   t.check(trimFlagCounter2[2] == 1);
 
-  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(2);
-  Dune::printGrid(recoGridView2->grid(), MPIHelper::instance(), "reco_2p_1_2");
-
-  auto vtkWriter2 = VTKWriter(*recoGridView2);
-  vtkWriter2.write("reco_2p_1_2");
+  Plot::plotParametricGridAndPhysicalGrid(grid, "1");
+  Plot::plotEveryReconstructedGrid(grid, "1");
 
   return t;
 }
 
-auto testNURBSSurface() {
+auto testNURBSSurfaceTrim() {
   TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
 
   std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
 
   grid->globalRefine(4);
   t.check(grid->size(0) == 256);
+
+  // 2nd surface trimmed circle
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/circle_trim.ibra");
+
+  Plot::plotParametricGridAndPhysicalGrid(grid2, "0");
+  Plot::plotEveryReconstructedGrid(grid2, "0");
+
+  grid2->globalRefine(1);
+  Plot::plotParametricGridAndPhysicalGrid(grid2, "1");
+  Plot::plotEveryReconstructedGrid(grid2, "1");
+
+  return t;
+}
+
+auto testPipeGeometry() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
+  grid->globalRefine(1);
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_pipe");
+  Plot::plotEveryReconstructedGrid(grid, "_pipe");
+
+  return t;
+}
+
+auto testHoleGeometry() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
+  grid->globalRefine(1);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid);
+  Plot::plotEveryReconstructedGrid(grid);
+
+  return t;
+}
+
+auto furhterExamples() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim4.ibra");
+  grid->globalRefine(1);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_ex1");
+
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  grid2->globalRefine(1);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid2, "_ex2");
+  Plot::plotEveryReconstructedGrid(grid2, "_ex2");
+
 
   return t;
 }
@@ -1318,10 +1378,13 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
-  t.subTest(testIbraReader());
-  t.subTest(testTrimImpactWithRefinement());
-  t.subTest(testMultiParametrisation());
-  t.subTest(testNURBSSurface());
+//  t.subTest(testIbraReader());
+  //t.subTest(testTrimImpactWithRefinement());
+  //t.subTest(testMultiParametrisation());
+  //t.subTest(testNURBSSurfaceTrim());
+  //t.subTest(testHoleGeometry());
+  t.subTest(testPipeGeometry());
+  //t.subTest(furhterExamples());
 
 #if 0
   t.subTest(test3DGrid());

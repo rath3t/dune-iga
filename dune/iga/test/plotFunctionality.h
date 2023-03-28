@@ -10,6 +10,7 @@
 #include <string>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
+#include <dune/iga/nurbsgrid.hh>
 
 namespace Plot {
 
@@ -20,17 +21,10 @@ void drawElements(const GridView& gridView, double lineWidth = 1, std::string&& 
                   std::string&& nodeColor = "red") {
     using namespace matplot;
 
-    auto f{gcf()};
     auto ax = gca();
-
-    // Scheint keinerlei Einfluss zu haben!
-    ax->font("Arial");
-
     hold(ax, true);
 
-    const auto& indexSet = gridView.indexSet();
-
-    // Code von Alex, nur 2D
+    // Code from Ikarus
     constexpr int edgeCodim = GridView::dimension - 1;
 
     for (auto& element : elements(gridView)) {
@@ -48,8 +42,6 @@ void drawElements(const GridView& gridView, double lineWidth = 1, std::string&& 
             l->marker_size(lineWidth * 2);
             l->marker_face_color(nodeColor);
         }
-
-        // Draw
     }
 }
 void drawPoints(std::vector<Clipper2Lib::PointD>& points) {
@@ -57,8 +49,6 @@ void drawPoints(std::vector<Clipper2Lib::PointD>& points) {
 
     // auto figure{gcf()};
     auto ax{gca()};
-
-    // Hold bedeutet in gleiche Axis reinmalen
     hold(ax, true);
 
     // prepare data
@@ -79,10 +69,7 @@ void drawPaths(Clipper2Lib::Paths<T> paths, std::string&& lineColor, auto lineWi
 
     using namespace matplot;
 
-    auto figure{gcf()};
     auto ax{gca()};
-
-    // Hold bedeutet in gleiche Axis reinmalen
     hold(ax, true);
 
     // Loop über paths
@@ -124,7 +111,7 @@ void plotGridView(auto& gridView, std::string&& file_name) {
     axis(matplot::gca(), matplot::equal);
     figure->size(1000, 800);
 
-    //figure->save(file_name + ".png");
+    figure->save(file_name + ".svg");
     figure->save(file_name + ".jpg");
 }
 
@@ -160,39 +147,49 @@ void plotGridViewAndPaths(auto& gridView, Clipper2Lib::PathsD& paths, std::strin
     figure->save(file_name + ".jpg");
 }
 
-void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid) {
-    if (!(grid->boundaries.has_value()))
+void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+    if (!(grid->trimData.has_value()))
       return;
 
     auto geometry = Dune::IGA::NURBSPatchGeometry<2, 2>(std::make_shared<Dune::IGA::NURBSPatchData<2, 2>>(grid->currentPatchRepresentation_));
-    auto boundaries = grid->boundaries.value();
+    auto boundarieLoops = grid->trimData.value();
 
     Clipper2Lib::PathsD transformedPaths;
     Clipper2Lib::PathsD parametricPaths;
 
-    for (auto& trimInfo : boundaries) {
-      auto path = trimInfo.path(200, false);
-      Clipper2Lib::PathD transformedPath;
-      for (auto& point : path) {
-        auto transformedPoint = geometry.global({point.x, point.y});
-        transformedPath.emplace_back(transformedPoint[0], transformedPoint[1]);
+    for (auto& loop : boundarieLoops->boundaryLoops) {
+      for (auto& trimInfo : loop.boundaries) {
+        auto path = trimInfo.path(200, false);
+        Clipper2Lib::PathD transformedPath;
+        for (auto& point : path) {
+            auto transformedPoint = geometry.global({point.x, point.y});
+            transformedPath.emplace_back(transformedPoint[0], transformedPoint[1]);
+        }
+        parametricPaths.push_back(path);
+        transformedPaths.push_back(transformedPath);
       }
-      parametricPaths.push_back(path);
-      transformedPaths.push_back(transformedPath);
     }
-
 
     auto paraGrid = grid->parameterSpaceGrid();
 
     auto paraGridView = paraGrid->leafGridView();
-    plotGridViewAndPaths(paraGridView, parametricPaths, "plot/parametricGrid");
+    plotGridViewAndPaths(paraGridView, parametricPaths, "plot" + postfix + "/parametricGrid");
 
     // Print Brep in physical Space
     auto patchGridView = grid->leafGridView();
-    Plot::plotGridViewAndPaths(patchGridView, transformedPaths, "plot/grid");
+    Plot::plotGridViewAndPaths(patchGridView, transformedPaths, "plot"+ postfix +"/grid");
 
 }
 
+void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+  for (int i = 0; auto& ele : elements(grid->leafGridView())) {
+      if (ele.impl().getTrimFlag() == ElementTrimFlag::trimmed) {
+        auto gV = grid->getReconstructedGridViewForTrimmedElement(i).value();
+        Plot::plotGridView(gV, "plot" + postfix + "/reconstruction/grid_" + std::to_string(i));
+      }
+      ++i;
+  }
+}
 
 }  // namespace Plot
 

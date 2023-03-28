@@ -93,12 +93,11 @@ namespace Dune::IGA {
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData _patchData {knotSpans, controlNet, _surface.degree};
 
-      // Make the boundaries, and pass them into the grid
+      // Make the trimData, and pass them into the grid
       // So the grid can figure out what to do with it
-      std::vector<Boundary> globalBoundaries = constructGlobalBoundaries(brep);
+      auto trimData = constructGlobalBoundaries(brep);
 
-      // Create Grid as unique_ptr and move to its destination
-      auto grid = std::make_unique<Grid>(_patchData, globalBoundaries);
+      auto grid = std::make_unique<Grid>(_patchData, trimData);
       return std::move(grid);
     }
 
@@ -106,16 +105,20 @@ namespace Dune::IGA {
     IbraReader() = delete;
 
    private:
-    static std::vector<Boundary> constructGlobalBoundaries(Ibra::Brep<worldDim>& brep) {
-      auto trims = brep.trims;
+    static auto constructGlobalBoundaries(Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
+      TrimData data{};
 
-      // Get Boundaries
       std::vector<Boundary> boundaries;
-      for (auto& trim : trims) {
-        boundaries.emplace_back(trim);
+      auto loops = brep.loops;
+      for (Ibra::BrepLoop& loop : loops) {
+        boundaries.clear();
+        for (auto& trim : loop.trims) {
+          boundaries.emplace_back(trim);
+        }
+        data.addLoop(boundaries);
       }
 
-      return boundaries;
+      return std::make_shared<TrimData>(data);
     }
   };
 
