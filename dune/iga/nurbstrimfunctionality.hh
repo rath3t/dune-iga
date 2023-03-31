@@ -3,6 +3,9 @@
 //
 
 #pragma once
+namespace Dune::IGA {
+  enum class ElementTrimFlag { full, empty, trimmed };
+}
 
 namespace Dune::IGA::Impl::Trim {
 
@@ -16,7 +19,6 @@ namespace Dune::IGA::Impl::Trim {
    */
 
   constexpr int clipperPrecision        = 8;
-  constexpr int scalingParameter = clipperPrecision + 1;
   constexpr int pathSamples             = 200;
   constexpr double tolerance            = 1e-8;
   constexpr double fullElementTolerance = 1e-5;
@@ -28,12 +30,6 @@ namespace Dune::IGA::Impl::Trim {
   using PointVector  = std::vector<Point>;
 
   using CurveGeometry = NURBSPatchGeometry<1, 2>;
-//
-//  Clipper2Lib::Point64 toInt(Dune::FieldVector<double, 2> _p) {
-//    int scaling = std::pow(10, scalingParameter);
-//    return { _p.front() * scaling,  _p.back().end() * scaling};
-//  }
-
 
   // To keep track of which point belongs to which edge or node we will use a pointMap with so called IntersectionPoints
   struct IntersectionPoint {

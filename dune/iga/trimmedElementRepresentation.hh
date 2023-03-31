@@ -2,13 +2,14 @@
 // Created by Henri on 08.03.2023.
 //
 
-#ifndef IKARUS_RECONSTRUCTEDGRIDHANDLER_H
-#define IKARUS_RECONSTRUCTEDGRIDHANDLER_H
+#pragma once
+
 
 #include <mapbox/earcut.hpp>
 
 #include <dune/grid/uggrid.hh>
-#include <dune/iga/nurbspatchgeometry.h>
+#include <dune/iga/nurbstrimboundary.hh>
+#include <dune/iga/nurbstrimutils.hh>
 
 // Add support for Dune::Fieldvector in Earcut
 namespace mapbox::util {
@@ -26,54 +27,40 @@ namespace mapbox::util {
 
 namespace Dune::IGA {
 
-  template <int worldDim>
-  struct GridBoundarySegment : Dune::BoundarySegment<2, worldDim, double> {
-    // Types
+  template <int dim>
+  struct GridBoundarySegment : Dune::BoundarySegment<2, dim, double> {
+    explicit GridBoundarySegment(Boundary& _boundary)
+        : boundary(_boundary) {}
 
-    // Constructor
-    explicit GridBoundarySegment(Boundary& _boundary, auto _transferToGlobal)
-        : boundary(_boundary), transferToGlobal{_transferToGlobal} {}
-
-    Dune::FieldVector<double, worldDim> operator()(const Dune::FieldVector<double, 1>& local) const override {
-      // u muss auf die Domäne gemappt werden, local[0] ist zwischen 0 und 1
+    Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
+      // u has to be mapped on the domain of 0 to 1
       double u_local = local[0];
-      double u       = Utilities::map<double>(u_local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
-      auto res       = boundary.nurbsGeometry(u);
-
-      // Transfer to global Surface Coordinates
-      return transferToGlobal(res);
+      double u       = Utilities::map(u_local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
+      return boundary.nurbsGeometry(u);
     }
 
     Boundary boundary;
-    NURBSPatchGeometry<2, worldDim> transferToGlobal;
   };
 
-  template <int worldDim>
+  template <int dim, typename Grid = Dune::UGGrid<dim>>
   class TrimmedElementRepresentation {
    public:
-    using Grid     = Dune::UGGrid<worldDim>;
     using GridView = Grid::LeafGridView;
 
     // Abkürzungen
     using BoundaryVector = std::vector<Boundary>;
-    using LocalPoint     = Dune::FieldVector<double, 2>;
-    using GlobalPoint    = Dune::FieldVector<double, worldDim>;
-
-    using LocalPointVector  = std::vector<LocalPoint>;
-    using GlobalPointVector = std::vector<GlobalPoint>;
+    using Point          = Dune::FieldVector<double, dim>;
 
     // Grid
     std::unique_ptr<Grid> grid;
 
    private:
     BoundaryVector boundaries;
-    NURBSPatchGeometry<2, worldDim> patchGeometry;
-    std::array<int, 2> gridDegree;
 
    public:
     // Construct with igaGrid and boundaries
-    TrimmedElementRepresentation(BoundaryVector& _boundaries, auto _patchGeometry, std::array<int, 2> _gridDegree)
-        : boundaries(_boundaries), patchGeometry(_patchGeometry), gridDegree(_gridDegree) {
+    explicit TrimmedElementRepresentation(BoundaryVector& _boundaries)
+        : boundaries(_boundaries){
       reconstructTrimmedElement();
     }
 
@@ -98,7 +85,7 @@ namespace Dune::IGA {
       for (auto& boundary : boundaries) {
         auto idx = getControlPointIndices(vertices, boundary);
         gridFactory.insertBoundarySegment({idx[0], idx[1]},
-                                          std::make_shared<GridBoundarySegment<worldDim>>(boundary, patchGeometry));
+                                          std::make_shared<GridBoundarySegment<dim>>(boundary));
       }
 
       auto boundaryToRefineMap = determineBoundariesToRefine();
@@ -137,16 +124,16 @@ namespace Dune::IGA {
     }
 
 
-    std::pair<std::vector<unsigned int>, std::vector<GlobalPoint>> createMesh() {
+    std::pair<std::vector<unsigned int>, std::vector<Point>> createMesh() {
       // Construct mesh with Earcut
       // C.f. https://github.com/mapbox/earcut.hpp
 
       // Create array of points
-      GlobalPointVector vertices;
+      std::vector<Point> vertices;
       for (auto& boundary : boundaries)
-        vertices.push_back(patchGeometry({boundary.endPoints.front()}));
+        vertices.push_back({boundary.endPoints.front()});
 
-      std::vector<std::vector<LocalPoint>> polygonInput;
+      std::vector<std::vector<Point>> polygonInput;
       polygonInput.push_back(vertices);
 
       std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
@@ -159,24 +146,24 @@ namespace Dune::IGA {
       for (auto& boundary : boundaries) {
         auto path = boundary.path(div, false);
         for (Clipper2Lib::PointD point : path) {
-          auto globalPoint = patchGeometry({point.x, point.y});
-          polygon.emplace_back(globalPoint[0], globalPoint[1]);
+          polygon.emplace_back(point);
         }
       }
       return std::fabs(Clipper2Lib::Area(polygon));
     }
 
-    bool approxSamePoint(const LocalPoint& a, const LocalPoint& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
+    bool approxSamePoint(const Point& a, const Point& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
 
     void splitBoundaries() {
       auto parameters = Utilities::getParameters();
 
-      std::map<int, bool> refineMap = determineBoundariesToRefine();
+      auto refineMap = determineBoundariesToRefine();
 
       using Domain            = std::array<double, 2>;
       using DomainInformation = std::pair<Domain, int>;
 
       // Get all domains
+      // TODO Use std::ranges::copy
       std::vector<DomainInformation> domains;
       for (int i = 0; i < boundaries.size(); ++i) {
         domains.emplace_back(boundaries[i].domain, i);
@@ -202,7 +189,7 @@ namespace Dune::IGA {
       }
       tempDomains.clear();
 
-      // Create Splittet trimData
+      // Create split boundaries from DomainInformation 
       std::vector<Boundary> newBoundaries;
       for (const auto& domain_info : domains) {
         const int i = domain_info.second;
@@ -210,14 +197,14 @@ namespace Dune::IGA {
       }
       boundaries = newBoundaries;
     }
-
-    std::array<unsigned int, 2> getControlPointIndices(GlobalPointVector& vertices, Boundary& boundary) {
+    
+    std::array<unsigned int, 2> getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) {
       auto it1 = std::find_if(vertices.begin(), vertices.end(),
-                              [&](const GlobalPoint& v) { return approxSamePoint(v, patchGeometry(boundary.endPoints.front())); });
+                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.front()); });
       if (it1 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 1 not found");
 
       auto it2 = std::find_if(vertices.begin(), vertices.end(),
-                              [&](const LocalPoint& v) { return approxSamePoint(v, patchGeometry(boundary.endPoints.back())); });
+                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.back()); });
       if (it2 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 2 not found");
 
       const unsigned int idx1 = std::distance(vertices.begin(), it1);
@@ -227,29 +214,16 @@ namespace Dune::IGA {
       return {idx1, idx2};
     }
 
-    std::map<int, bool> determineBoundariesToRefine() {
-      std::map<int, bool> boundaryToRefineMap;
+    std::vector<bool> determineBoundariesToRefine() {
+      std::vector<bool> result;
 
-      for (int i = 0; const auto& boundary : boundaries) {
-        // Determine whether to refine this boundary based on its degree and orientation
-        bool shouldRefine = false;
-        if (boundary.degree() > 1) {
-          shouldRefine = true;
-        } else {
-          Boundary::EdgeOrientation orientation = boundary.getEdgeOrientation();
-          int degree = (orientation == Boundary::EdgeOrientation::u) ? gridDegree[0] : gridDegree[1];
-          if (degree > 1 || orientation == Boundary::EdgeOrientation::Unknown) {
-            shouldRefine = true;
-          }
-          if (gridDegree[0] == 1 && gridDegree[1] == 1)
-            shouldRefine = false;
-        }
-        boundaryToRefineMap[i] = shouldRefine;
-        ++i;
+      for (const auto& boundary : boundaries) {
+        if (boundary.degree() > 1)
+          result.push_back(true);
+        else
+          result.push_back(false);
       }
-      return boundaryToRefineMap;
+      return result;
     }
   };
 }  // namespace Dune::IGA
-
-#endif  // IKARUS_RECONSTRUCTEDGRIDHANDLER_H

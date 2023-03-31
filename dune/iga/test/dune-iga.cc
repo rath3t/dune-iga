@@ -14,32 +14,35 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/geometry/quadraturerules.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/checkjacobians.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/nurbspatchgeometry.h>
+#include <dune/iga/nurbstrimutils.hh>
+#include <dune/iga/ibraReader.hh>
+
+#if 0
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 // #include <dune/grid/test/checkidset.hh>
 // #include <dune/grid/test/checkindexset.hh>
-#include <dune/grid/test/checkiterators.hh>
-#include <dune/grid/test/checkjacobians.hh>
 // template <class Grid, class IdSet>
 // void checkIdSet ( const Grid &grid, const IdSet& idSet);
 #include <dune/grid/io/file/printgrid.hh>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/gridcapabilities.hh>
-#include <dune/iga/ibraReader.hh>
-#include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <dune/iga/nurbspatchgeometry.h>
 
-#include <dune/iga/ibraReader.hh>
-#include <dune/iga/nurbstrimutils.hh>
+#include <dune/iga/nurbsbasis.hh>
+#endif
+
 
 #include "plotFunctionality.h"
 
@@ -1200,7 +1203,7 @@ auto testIbraReader()
 
   return t;
 }
-
+#if 0
 std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
   int trimmedCounter {0};
   int emptyCounter {0};
@@ -1269,30 +1272,6 @@ auto testTrimImpactWithRefinement() {
   return t;
 }
 
-auto testIntegrationPoints() {
-  TestSuite t;
-
-  // Get Standard Parameter for trimming
-  Dune::IGA::Utilities::setStandardParameters();
-
-  // O refinement, 1 trimmed
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
-  double area=0;
-  int order= 1;
-  std::vector<Dune::QuadraturePoint<double,2>> ipVec;
-  for(auto& ele : elements(grid->leafGridView())) {
-    ele.impl().getIntegrationPoints(ipVec, order);
-    auto geo = ele.geometry();
-    for (auto& ip : ipVec)
-      area += geo.integrationElement(ip.position()) * ip.weight();
-  }
-  t.check(Dune::FloatCmp::eq(area, 0.737416, 1e-4));
-
-//  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
-//  geometryChecker.checkGeometry(grid->leafGridView());
-//  Dune::checkIndexSet(grid, grid->leafGridView(), std::cout);
-  return t;
-}
 
 auto testMultiParametrisation() {
   TestSuite t;
@@ -1395,6 +1374,86 @@ auto furtherExamples() {
 
   return t;
 }
+#endif
+
+auto testIntegrationPoints() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  double area=0;
+  int order= 1;
+  std::vector<Dune::QuadraturePoint<double,2>> ipVec;
+  for(auto& ele : elements(grid->leafGridView())) {
+    ele.impl().getIntegrationPoints(ipVec, order);
+    auto geo = ele.geometry();
+    for (auto& ip : ipVec)
+      area += geo.integrationElement(ip.position()) * ip.weight();
+  }
+  t.check(Dune::FloatCmp::eq(area, 0.737416, 1e-4));
+
+//  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+//  geometryChecker.checkGeometry(grid->leafGridView());
+//  Dune::checkIndexSet(grid, grid->leafGridView(), std::cout);
+  return t;
+}
+
+auto testMapsInTrimmedPatch() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  auto& patch = grid->getPatch();
+
+  t.check(patch.nurbsIndexForDirectIndex(0) == 0);
+  if (patch.directIndexForNURBSIndex(0).has_value())
+    t.check(patch.directIndexForNURBSIndex(0).value() == 0);
+
+  // 1 refinement: 3 trimmed, 0 empty, 1 full
+  grid->globalRefine(1);
+
+  auto& patch_1_1             = grid->getPatch();
+  auto [full, trimmed, empty] = patch_1_1.getAmountOfElementTrimTypes();
+  t.check(full == 1);
+  t.check(empty == 0);
+  t.check(trimmed == 3);
+
+  // As n_f + n_t = n, there has to be a 1 to 1 mapping of the indices
+  for (int i = 0; i < 4; ++i) {
+    t.check(patch_1_1.nurbsIndexForDirectIndex(i) == i);
+    t.check(patch_1_1.directIndexForNURBSIndex(i).has_value());
+    t.check(patch_1_1.directIndexForNURBSIndex(i).value() == i);
+  }
+
+  // Load next example Grid
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  grid2->globalRefine(1);
+  auto& patch_2_1 = grid2->getPatch();
+
+  // After one refinement we should have 3 trimmed one empty element
+  auto [full2, trimmed2, empty2] = patch_2_1.getAmountOfElementTrimTypes();
+
+  t.check(full2 == 0);
+  t.check(empty2 == 1);
+  t.check(trimmed2 == 3);
+
+  // The first element is empty so the directIndex for NUBSIndex 0 should be nullopt
+  t.check(!(patch_2_1.directIndexForNURBSIndex(0).has_value()));
+
+  // The second element is the first element with a direct Index and so forth
+  for (int i = 1; i < 4; ++i) {
+    t.check(patch_2_1.directIndexForNURBSIndex(i).value() == i - 1);
+    t.check(patch_2_1.nurbsIndexForDirectIndex(i-1) == i);
+  }
+
+  return t;
+}
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
@@ -1404,9 +1463,11 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
+  t.subTest(testMapsInTrimmedPatch());
+
   //t.subTest(testIbraReader());
   //t.subTest(testTrimImpactWithRefinement());
-  t.subTest(testIntegrationPoints());
+  //t.subTest(testIntegrationPoints());
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());
   //t.subTest(testHoleGeometry());

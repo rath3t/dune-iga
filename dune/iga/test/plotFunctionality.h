@@ -146,7 +146,7 @@ void plotGridViewAndPaths(auto& gridView, Clipper2Lib::PathsD& paths, std::strin
     //figure->save(file_name + ".png");
     figure->save(file_name + ".jpg");
 }
-
+#if 0
 void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
     if (!(grid->trimData.has_value()))
       return;
@@ -190,7 +190,7 @@ void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>
       ++i;
   }
 }
-
+#endif
 }  // namespace Plot
 
 #endif  // IKARUS_DRAWFUNCTIONS_H

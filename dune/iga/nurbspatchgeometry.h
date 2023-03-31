@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <dune/iga/igaalgorithms.hh>
+
 namespace Dune::IGA {
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl =  DuneLinearAlgebraTraits<double>>

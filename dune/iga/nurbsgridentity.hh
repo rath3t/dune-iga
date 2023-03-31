@@ -95,13 +95,13 @@ namespace Dune::IGA {
     using GridView             = typename GridImpl::Traits::LeafGridView;
     NURBSGridEntity()          = default;
 
-    NURBSGridEntity(const NURBSLeafGridView<GridImpl>& gridView, unsigned int directIndex, unsigned int patchID,
-                    ElementTrimFlag _trimFlag = ElementTrimFlag::full)
+    // TODO getTrimFlagForNURBSIndex change to getTrimFlag when correct size is implemented
+    NURBSGridEntity(const NURBSLeafGridView<GridImpl>& gridView, unsigned int directIndex, unsigned int patchID)
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           patchID_{patchID},
           parType_{PartitionType::InteriorEntity},
-          trimFlag{_trimFlag} {
+          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlagForNURBSIndex(directIndex_)} {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
@@ -126,20 +126,17 @@ namespace Dune::IGA {
         order = p_order.value();
       else
         order = mydimension * (*std::ranges::max_element( NURBSGridView_->getPatchData(patchID_).degree));
-      if(trimFlag==ElementTrimFlag::trimmed) {
+      if(trimFlag == ElementTrimFlag::trimmed) {
         auto gridView = NURBSGridView_->grid().getReconstructedGridViewForTrimmedElement(NURBSGridView_->indexSet().index(*this));
         for (auto triangulationElement : elements(gridView.value())) {
           auto geo        = triangulationElement.geometry();
           const auto rule = Dune::QuadratureRules<double, mydimension>::rule(triangulationElement.type(), order);
-          for(auto ip: rule)
-          {
-            //Dune::QuadraturePoint<double,dim> newIp();
+
+          for (auto ip: rule)
             vector.emplace_back(geo.global(ip.position()),geo.integrationElement(ip.position())*ip.weight());
-          }
-          //vector.insert(vector.end(), rule.begin(), rule.end());
+
         }
-      }else
-      {
+      }else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
         vector.insert(vector.end(), rule.begin(), rule.end());
       }
@@ -232,6 +229,7 @@ namespace Dune::IGA {
     PartitionType parType_{PartitionType::InteriorEntity};
     unsigned int patchID_{};
 
+    // TODO maybe use const?
     ElementTrimFlag trimFlag;
 
   };  // end of OneDGridEntity codim = 0

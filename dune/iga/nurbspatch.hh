@@ -4,6 +4,7 @@
 #pragma once
 
 #include "igaalgorithms.hh"
+
 #include <memory>
 
 #include <dune/common/float_cmp.hh>
@@ -11,6 +12,9 @@
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/nurbsgeometry.hh>
+#include <dune/iga/nurbstrimboundary.hh>
+#include <dune/iga/nurbstrimfunctionality.hh>
+#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
 
@@ -33,6 +37,9 @@ namespace Dune::IGA {
     template <int codim, int dim1, typename GridImpl1>
     friend class NURBSGridEntity;
 
+    using NURBSIndex = unsigned int;
+    using DirectIndex = unsigned int;
+
     /** \brief Constructor of NURBS from knots, control points, weights and degree
      *  \param knotSpans vector of knotSpans for each dimension
      *  \param controlPoints a dim-dimensional net of control points
@@ -44,8 +51,8 @@ namespace Dune::IGA {
         const std::array<int, dim> degree)
         : NURBSPatch(NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>(knotSpans, controlPoints, degree)) {}
 
-    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData)
-        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)} {
+    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData, std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
+        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)}, trimData_(std::move(trimData)) {
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -55,7 +62,10 @@ namespace Dune::IGA {
 
       elementNet_ = std::make_shared<MultiDimensionNet<dim, double>>(uniqueSpanSize_);
       vertexNet_  = std::make_shared<MultiDimensionNet<dim, double>>(uniqueKnotVector_);
+
+      computeElementTrimInfo();
     }
+    // TODO size for codim 0 should report correct size
 
     /** \brief Returns the number of entities of a given codimension */
     [[nodiscard]] int size(int codim) const {
@@ -465,6 +475,132 @@ namespace Dune::IGA {
       return dIndex;
     }
 
+    auto parameterSpaceGrid() const {
+      using TensorSpaceCoordinates = TensorProductCoordinates<double, dim>;
+      using ParameterSpaceGrid     = YaspGrid<dim, TensorSpaceCoordinates>;
+
+      std::array<std::vector<double>, dim> tensorProductCoordinates;
+      for (int i = 0; i < dim; ++i)
+        std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(tensorProductCoordinates[i]));
+
+      return std::make_unique<ParameterSpaceGrid>(tensorProductCoordinates);
+    }
+
+    // In the following a NURBSIndex is the flat index of the knot span in the tensor-product net of the untrimmed patch
+    // The index or TrimmedIndex refers to a flat index that runs from 0 ... j with j = n_T + n_F
+   public:
+    // TODO Delete (this is for intermediate testing)
+    std::tuple<int, int, int> getAmountOfElementTrimTypes() {
+      return {n_fullElement, n_trimmedElement, size(0) - n_fullElement - n_trimmedElement};
+    }
+
+    [[nodiscard]] auto nurbsIndexForDirectIndex(DirectIndex idx) const -> int {
+      return directIndexMap.at(idx);
+    }
+
+    [[nodiscard]] auto directIndexForNURBSIndex(NURBSIndex idx) const -> std::optional<int> {
+      //auto it = directIndexMap.find(idx);
+      auto it = std::ranges::find_if(directIndexMap, [idx](auto value){
+        return  value.second == idx;
+      });
+      if (it != directIndexMap.end())
+        return std::make_optional<int>(it->first);
+      else
+        return std::nullopt;
+    }
+
+    [[nodiscard]] auto getTrimFlagForNURBSIndex(NURBSIndex nurbsIdx) const -> ElementTrimFlag  {
+      return trimFlags.at(nurbsIdx);
+    }
+    [[nodiscard]] auto getTrimFlag(DirectIndex directIdx) const -> ElementTrimFlag  {
+      int nurbsIdx = nurbsIndexForDirectIndex(directIdx);
+      return getTrimFlagForNURBSIndex(nurbsIdx);
+    }
+
+    void prepareForNoTrim() {
+      auto n_ele = size(0);
+      trimFlags = std::vector<ElementTrimFlag>(n_ele);
+      std::ranges::fill(trimFlags, ElementTrimFlag::full);
+
+      // 1 to 1 relation between directIndex and NURBSIndex
+      for (unsigned int i = 0; i < n_ele; ++i) {
+        directIndexMap.insert({i, i});
+      }
+      n_fullElement = n_ele;
+    }
+
+    void computeElementTrimInfo() {
+      prepareForNoTrim();
+    }
+
+    void computeElementTrimInfo() requires (dim == 2 && dimworld == 2) {
+      if (!trimData_.has_value()) {
+        prepareForNoTrim();
+        return;
+      }
+      // Prepare Results
+      n_fullElement = 0;
+      n_trimmedElement = 0;
+      trimFlags.resize(size(0));
+      elementMap.clear();
+      directIndexMap.clear();
+
+      auto paraGrid     = parameterSpaceGrid();
+      auto parameterSpaceGridView = paraGrid->leafGridView();
+
+      // Use Trim namespace for more concise function names
+      using namespace Impl::Trim;
+
+      // Get Clip as ClipperPath
+      Clipper2Lib::PathsD clip = getClip(*trimData_);
+
+      const auto& indexSet = parameterSpaceGridView.indexSet();
+      for (auto& element : elements(parameterSpaceGridView)) {
+        NURBSIndex nurbsIndex{indexSet.index(element)};
+        //auto multiIndex = elementNet_->directToMultiIndex(index);
+        auto directIndex = n_fullElement + n_trimmedElement;
+
+        auto corners = getElementCorners(element);
+
+        using namespace Dune::IGA::Impl::Trim;
+
+        auto [trimFlag, clippingResultOpt] = clipElement(element, clip);
+
+        trimFlags[nurbsIndex] = trimFlag;
+
+        if (trimFlag == ElementTrimFlag::trimmed) {
+          ++n_trimmedElement;
+          auto elementBoundaries = constructElementBoundaries(*clippingResultOpt, corners, *trimData_);
+
+          if (elementBoundaries.has_value()) {
+              elementMap.insert(std::make_pair(
+                nurbsIndex,
+                ElementTrimInfo{.directIndex = directIndex, .repr = std::make_optional(
+                     std::make_unique<TrimmedElementRepresentation<2>>(elementBoundaries.value()))}
+                ));
+
+          } else
+            trimFlags[nurbsIndex] = ElementTrimFlag::empty;
+        } else if (trimFlag == ElementTrimFlag::full) {
+          ++n_fullElement;
+          elementMap.insert({
+              nurbsIndex,
+              ElementTrimInfo{.directIndex = directIndex, .repr = std::nullopt}
+          });
+        }
+
+      }  // Element Loop End
+
+      // Construct directIndexMap
+      for (auto& [nurbsIndex, info] : elementMap) {
+        directIndexMap.insert({
+           info.directIndex, nurbsIndex
+        });
+      }
+
+    }
+
+   private:
     template <typename GridImpl>
     friend class NURBSGridLeafIndexSet;
     template <typename GridImpl>
@@ -472,18 +608,25 @@ namespace Dune::IGA {
     std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;
-//
-//    struct ElementTrimInfo{
-//      int index{};
-//      int directIndex{};
-//      std::optional<TrimData> data = std::nullopt;
-//    };
 
     std::shared_ptr<MultiDimensionNet<dim, double>> elementNet_;
     std::shared_ptr<MultiDimensionNet<dim, double>> vertexNet_;
-//
-//    std::map<std::array<int, 2>, ElementTrimInfo> trimmedIndices;
-//    std::map<std::array<int, 2>, ElementTrimInfo> fullIndices;
+
+    std::optional<std::shared_ptr<TrimData>> trimData_;
+    std::vector<ElementTrimFlag> trimFlags;
+    std::map<DirectIndex, NURBSIndex> directIndexMap;
+
+    unsigned int n_fullElement = std::numeric_limits<unsigned int>::signaling_NaN();
+    unsigned int n_trimmedElement = 0;
+
+    struct ElementTrimInfo{
+      DirectIndex directIndex{};
+      std::optional<std::unique_ptr<TrimmedElementRepresentation<2>>> repr = std::nullopt;
+
+      //[[nodiscard]] bool isTrimmed() const {return repr.has_value();};
+    };
+
+    std::map<NURBSIndex, ElementTrimInfo> elementMap;
 
   };
 

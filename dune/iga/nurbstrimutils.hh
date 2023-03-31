@@ -89,7 +89,7 @@ namespace Dune::IGA::Utilities {
   }
 
   template <std::floating_point T>
-  double map(T value, T inputMin, T inputMax, T outputMin, T outputMax) {
+  T map(T value, T inputMin, T inputMax, T outputMin, T outputMax) {
     return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
   }
 

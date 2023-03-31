@@ -23,7 +23,7 @@
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
-#include <dune/iga/reconstructedgridhandler.hh>
+#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -75,8 +75,6 @@ namespace Dune::IGA {
     using GlobalIdSet   = typename Traits::GlobalIdSet;
     NURBSGrid()         = default;
 
-    // Boundaries can be given as an optional
-
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData,
                        std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
         : coarsestPatchRepresentation_{nurbsPatchData},
@@ -85,8 +83,7 @@ namespace Dune::IGA {
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
-          trimData(std::move(_trimData)),
-          nurbsSurface{Dune::IGA::Nurbs<dim>(currentPatchRepresentation_)} {
+      trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -99,15 +96,10 @@ namespace Dune::IGA {
                    == nurbsPatchData.controlPoints.size()[2]
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
       // FIXME check sanity of knotvector and degree
-      finestPatches_->emplace_back(currentPatchRepresentation_);
+      finestPatches_->emplace_back(currentPatchRepresentation_, std::move(_trimData));
       leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
       idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
       indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
-
-      trimFlags = std::vector<ElementTrimFlag>(size(0));
-      std::fill(trimFlags.begin(), trimFlags.end(), ElementTrimFlag::full);
-
-      if (trimData.has_value()) trimElement();
     }
 
     /** \brief  constructor
@@ -125,8 +117,7 @@ namespace Dune::IGA {
           finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
-          nurbsSurface{Dune::IGA::Nurbs<dim>(currentPatchRepresentation_)} {}
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
 
     void globalRefine(int refinementLevel) {
       if (refinementLevel == 0) return;
@@ -197,28 +188,25 @@ namespace Dune::IGA {
     // dimwold == 2))
     std::optional<const typename TrimmedElementRepresentation<dimworld>::GridView> getReconstructedGridViewForTrimmedElement(
         int index) const {
-      if constexpr (dimworld == 2 && dim == 2) {
-        if ((trimData.has_value()) && (trimFlags[index] == ElementTrimFlag::trimmed))
-          return std::make_optional<const typename TrimmedElementRepresentation<dimworld>::GridView>(
-              trimResultMap.at(index)->grid->leafGridView());
-        else
-          return std::nullopt;
-      } else
-        return std::nullopt;
+//      if constexpr (dimworld == 2 && dim == 2) {
+//        if ((trimData.has_value()) && (trimFlags[index] == ElementTrimFlag::trimmed))
+//          return std::make_optional<const typename TrimmedElementRepresentation<dimworld>::GridView>(
+//              trimResultMap.at(index)->grid->leafGridView());
+//        else
+//          return std::nullopt;
+//      } else
+      return std::nullopt;
     }
 
    private:
     void updateStateAfterRefinement() {
-      finestPatches_.get()->front() = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
+      // TODO memory leek? Maybe write a std::vector of shared ptr?
+      finestPatches_->clear();
+      finestPatches_->emplace_back(currentPatchRepresentation_, trimData_);
+      //finestPatches_.get()->front() = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_, trimData_);
       leafGridView_                 = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
       indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
       idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
-
-      if (trimData.has_value()) {
-        nurbsSurface = Dune::IGA::Nurbs<dim>(currentPatchRepresentation_);
-        trimResultMap.clear();
-        trimElement();
-      }
     }
    public:
     typename Traits::CollectiveCommunication ccobj;
@@ -228,29 +216,16 @@ namespace Dune::IGA {
     std::shared_ptr<GridView> leafGridView_;
     std::unique_ptr<LeafIndexSet> indexdSet_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
+    std::optional<std::shared_ptr<TrimData>> trimData_ = std::nullopt;
 
-    Dune::IGA::Nurbs<dim> nurbsSurface;
-    std::vector<ElementTrimFlag> trimFlags;
-    std::optional<std::shared_ptr<TrimData>> trimData;
-    std::map<int, std::unique_ptr<const TrimmedElementRepresentation<dimworld>>> trimResultMap;
-
-    auto parameterSpaceGrid() {
-      auto gV        = leafGridView();
-      auto patchData = gV.impl().getPatchData();
-
-      using TensorSpaceCoordinates = TensorProductCoordinates<double, dimension>;
-      using ParametricGrid         = YaspGrid<dimension, TensorSpaceCoordinates>;
-
-      std::array<std::vector<double>, dimension> tensorProductCoordinates;
-      for (int i = 0; i < dimension; ++i)
-        std::ranges::unique_copy(patchData.knotSpans[i], std::back_inserter(tensorProductCoordinates[i]));
-
-      return std::make_unique<ParametricGrid>(tensorProductCoordinates);
+    auto& getPatch() {
+      //static_assert(std::is_same_v<decltype(finestPatches_->front()),double>);
+      return finestPatches_->front();
     }
    private:
     // For dim != 2
     void trimElement() {}
-
+/*
     void trimElement()
       requires(dim == 2 && dimworld == 2)
     {
@@ -325,6 +300,7 @@ namespace Dune::IGA {
       // Update the GridView with the set trimFlags
       leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this, trimFlags));
     }
+    */
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>

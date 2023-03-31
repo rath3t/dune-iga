@@ -104,5 +104,3 @@ struct NurbsGridTraits {
   /** \brief The type of the collective communication. */
   typedef CCType CollectiveCommunication;
 };
-
-enum ElementTrimFlag { full, empty, trimmed };
