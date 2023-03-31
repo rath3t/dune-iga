@@ -16,6 +16,7 @@ namespace Dune::IGA::Impl::Trim {
    */
 
   constexpr int clipperPrecision        = 8;
+  constexpr int scalingParameter = clipperPrecision + 1;
   constexpr int pathSamples             = 200;
   constexpr double tolerance            = 1e-8;
   constexpr double fullElementTolerance = 1e-5;
@@ -27,8 +28,14 @@ namespace Dune::IGA::Impl::Trim {
   using PointVector  = std::vector<Point>;
 
   using CurveGeometry = NURBSPatchGeometry<1, 2>;
+//
+//  Clipper2Lib::Point64 toInt(Dune::FieldVector<double, 2> _p) {
+//    int scaling = std::pow(10, scalingParameter);
+//    return { _p.front() * scaling,  _p.back().end() * scaling};
+//  }
 
-  // To keep track of which point belongs to which edge or node we will use a pointMap
+
+  // To keep track of which point belongs to which edge or node we will use a pointMap with so called IntersectionPoints
   struct IntersectionPoint {
     Point point;
     bool alreadyVisited = false;
@@ -118,6 +125,7 @@ namespace Dune::IGA::Impl::Trim {
     return std::make_pair(false, -1);
   }
 
+  // TODO Write Test
   // Sorts the Intersection Points counter-clockwise around the element (crucial step!)
   void sortIntersectionPoints(const std::shared_ptr<IntersectionPointMap>& pointMapPtr, const int edge) {
     auto orientation = getEdgeOrientation(edge);
@@ -147,7 +155,7 @@ namespace Dune::IGA::Impl::Trim {
     auto corners      = getElementCorners(element);
     auto elementEdges = getElementEdges(element);
 
-    Clipper2Lib::RectD elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
+    //Clipper2Lib::RectD elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
 
     // Clip with RectClip (more efficient than normal Intersect Clip, works because our ParameterSpace Grid
     // has always rectangular elements
@@ -155,8 +163,9 @@ namespace Dune::IGA::Impl::Trim {
     Clipper2Lib::PathsD clippedEdges = Clipper2Lib::Intersect(Clipper2Lib::PathsD{getElementEdges(element)}, clip,
                                                               Clipper2Lib::FillRule::EvenOdd, clipperPrecision);
 
-    // If the clippedEdges are empty, this means the element is outside of the clip -> empty
+    // If the clippedEdges are empty, this means the element is outside the clip -> empty
     // And if the area of the clip is equal to the area of the element -> full
+    // TODO Check if there are only 4 points in clip, then check volume?
     if (clippedEdges.empty())
       trimFlag = ElementTrimFlag::empty;
     else {
@@ -350,10 +359,19 @@ namespace Dune::IGA::Impl::Trim {
     return std::nullopt;
   }
 
+  std::vector<Boundary> extractBoundaries(const std::shared_ptr<TrimData>& data) {
+    std::vector<Boundary> boundaries;
+    for (auto& loop : data->boundaryLoops) {
+      std::ranges::copy(loop.boundaries, std::back_inserter(boundaries));
+    }
+    return std::move(boundaries);
+  }
+
   struct FindNextBoundaryLoopState {
     // Variables that need to be set
     const int nodeToBegin;
     PointVector corners;
+    std::shared_ptr<TrimData> trimData;
     std::vector<Boundary> boundaries;
     std::shared_ptr<IntersectionPointMap> pointMapPtr;
     const std::array<int, 4> edgeCounter;
@@ -373,13 +391,13 @@ namespace Dune::IGA::Impl::Trim {
     constexpr bool hasIntersectionPointOnNodeNr(int nr) { return nodeCounter[nr] > 0; };
 
     FindNextBoundaryLoopState(int _nodeToBegin, PointVector& _corners, ClippingResult& _result,
-                              std::vector<Boundary>& _boundaries)
+                              const std::shared_ptr<TrimData>& _trimData)
         : nodeToBegin(_nodeToBegin),
           corners(_corners),
           pointMapPtr(std::move(_result.pointMapPtr)),
           edgeCounter(_result.edgeCounter),
           nodeCounter(_result.nodeCounter),
-          boundaries(_boundaries) {
+          trimData(_trimData), boundaries(extractBoundaries(_trimData)) {
       currentNode      = nodeToBegin;
       currentNodePoint = corners[currentNode];
     };
@@ -400,6 +418,7 @@ namespace Dune::IGA::Impl::Trim {
     int foundOnEdge;
   };
 
+
   std::optional<std::vector<TraceCurveOutput>> traceCurve(const std::unique_ptr<FindNextBoundaryLoopState>& state,
                                                           TraceCurveInput traceCurveInput) {
     CurveGeometry curveToTrace = state->boundaries[traceCurveInput.boundaryIdx].nurbsGeometry;
@@ -409,7 +428,6 @@ namespace Dune::IGA::Impl::Trim {
     // and that point is in the element
     auto elementEdges = getElementEdgesFromElementCorners(state->corners);
     if (Dune::FloatCmp::eq(startPoint, endPoint) && pointInElement(startPoint, elementEdges)) {
-      std::cerr << "Circle point" << std::endl;
       auto traceCurveResult = traceCurveImpl(state->pointMapPtr, curveToTrace, traceCurveInput.startEdge);
       if (traceCurveResult.has_value())
         return std::make_optional<std::vector<TraceCurveOutput>>(
@@ -430,16 +448,16 @@ namespace Dune::IGA::Impl::Trim {
     // Now check if the startPoint or endPoint of the curve is in the element
     int status = -1;  // -1 means not found, 0 means startPoint, 1 means endPoint
 
-    // TODO Check if startPoint or endPoint is on an Edge
-
     if (pointInElement(endPoint, elementEdges))
       status = 1;
     else if (pointInElement(startPoint, elementEdges))
       status = 0;
 
+    // If neither start nor endpoint is in the elment then traceCurve most likely made a mistake
     if (status == -1) return std::nullopt;
 
     // TODO take into account orientation of curve -> Simplification possible
+
     // Now we check if there is another boundary that begins at this point and trace this potential curve
     Point checkPoint = (status == 1) ? endPoint : startPoint;
     double endUOfCurve1 = (status == 1) ? curveToTrace.domain()[0].back() : curveToTrace.domain()[0].front();
@@ -613,17 +631,9 @@ namespace Dune::IGA::Impl::Trim {
     __builtin_unreachable();
   }
 
-  std::vector<Boundary> extractBoundaries(const std::shared_ptr<TrimData>& data) {
-    std::vector<Boundary> boundaries;
-    for (auto& loop : data->boundaryLoops) {
-      std::ranges::copy(loop.boundaries, std::back_inserter(boundaries));
-    }
-    return std::move(boundaries);
-  }
 
   std::optional<std::vector<Boundary>> constructElementBoundaries(ClippingResult& result, PointVector& corners,
                                                                   const std::shared_ptr<TrimData>& data) {
-    auto boundaries = extractBoundaries(data);
     try {
       std::vector<Boundary> elementBoundaries;
 
@@ -636,7 +646,7 @@ namespace Dune::IGA::Impl::Trim {
             "No Curve tracing scheme implemented for elements that are only trimmed on single element edges.");
 
       auto nodeToBegin = std::distance(nodeCounter.begin(), it_nodes);
-      auto state       = std::make_unique<FindNextBoundaryLoopState>(nodeToBegin, corners, result, boundaries);
+      auto state       = std::make_unique<FindNextBoundaryLoopState>(nodeToBegin, corners, result, data);
 
       // Iteratively find all the elementBoundaries
       bool found;

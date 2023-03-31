@@ -4,7 +4,6 @@
 #pragma once
 
 #include "igaalgorithms.hh"
-
 #include <memory>
 
 #include <dune/common/float_cmp.hh>
@@ -473,8 +472,19 @@ namespace Dune::IGA {
     std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;
+//
+//    struct ElementTrimInfo{
+//      int index{};
+//      int directIndex{};
+//      std::optional<TrimData> data = std::nullopt;
+//    };
+
     std::shared_ptr<MultiDimensionNet<dim, double>> elementNet_;
     std::shared_ptr<MultiDimensionNet<dim, double>> vertexNet_;
+//
+//    std::map<std::array<int, 2>, ElementTrimInfo> trimmedIndices;
+//    std::map<std::array<int, 2>, ElementTrimInfo> fullIndices;
+
   };
 
 }  // namespace Dune::IGA

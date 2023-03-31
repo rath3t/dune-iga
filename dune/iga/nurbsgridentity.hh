@@ -118,7 +118,34 @@ namespace Dune::IGA {
       }
     }
 
-    //! IbraBase of this entity
+    void getIntegrationPoints(std::vector<Dune::QuadraturePoint<double,dim>>& vector,const std::optional<int>& p_order= std::nullopt) const
+    {
+      vector.clear();
+      int order;
+      if(p_order.has_value())
+        order = p_order.value();
+      else
+        order = mydimension * (*std::ranges::max_element( NURBSGridView_->getPatchData(patchID_).degree));
+      if(trimFlag==ElementTrimFlag::trimmed) {
+        auto gridView = NURBSGridView_->grid().getReconstructedGridViewForTrimmedElement(NURBSGridView_->indexSet().index(*this));
+        for (auto triangulationElement : elements(gridView.value())) {
+          auto geo        = triangulationElement.geometry();
+          const auto rule = Dune::QuadratureRules<double, mydimension>::rule(triangulationElement.type(), order);
+          for(auto ip: rule)
+          {
+            //Dune::QuadraturePoint<double,dim> newIp();
+            vector.emplace_back(geo.global(ip.position()),geo.integrationElement(ip.position())*ip.weight());
+          }
+          //vector.insert(vector.end(), rule.begin(), rule.end());
+        }
+      }else
+      {
+        const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
+        vector.insert(vector.end(), rule.begin(), rule.end());
+      }
+    }
+
+    //! Geometry of this entity
     typename GridImpl::Traits::template Codim<0>::Geometry geometry() const {
       return NURBSGridView_->getPatch(patchID_).template geometry<0>(directIndex_);
     }

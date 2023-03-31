@@ -49,7 +49,7 @@ namespace Dune::IGA {
   };
 
   template <int worldDim>
-  class ReconstructedGridHandler {
+  class TrimmedElementRepresentation {
    public:
     using Grid     = Dune::UGGrid<worldDim>;
     using GridView = Grid::LeafGridView;
@@ -72,7 +72,7 @@ namespace Dune::IGA {
 
    public:
     // Construct with igaGrid and boundaries
-    ReconstructedGridHandler(BoundaryVector& _boundaries, auto _patchGeometry, std::array<int, 2> _gridDegree)
+    TrimmedElementRepresentation(BoundaryVector& _boundaries, auto _patchGeometry, std::array<int, 2> _gridDegree)
         : boundaries(_boundaries), patchGeometry(_patchGeometry), gridDegree(_gridDegree) {
       reconstructTrimmedElement();
     }

@@ -13,7 +13,6 @@
 #include <dune/iga/nurbsgridleafiterator.hh>
 #include <dune/iga/nurbsgridtraits.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <dune/iga/nurbstrimmedpatch.hh>
 
 namespace Dune::IGA {
 
@@ -37,7 +36,7 @@ namespace Dune::IGA {
       typedef typename GridImp::Traits::template Codim<cd>::Geometry Geometry;
       typedef typename GridImp::Traits::template Codim<cd>::LocalGeometry LocalGeometry;
 
-      //      /** \brief Define types needed to iterate over entities of a given partition type */
+      ///** \brief Define types needed to iterate over entities of a given partition type */
       template <PartitionIteratorType pit>
       struct Partition {
         /** \brief iterator over a given codim and partition type */
@@ -97,7 +96,6 @@ namespace Dune::IGA {
           entityVector_{std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
               std::make_integer_sequence<int, dimension + 1>()))>()},
           trimFlags(_trimFlags) {
-      // Make Entities
       createEntities();
 
       indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);

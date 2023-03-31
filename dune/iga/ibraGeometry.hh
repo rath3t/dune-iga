@@ -35,8 +35,7 @@ namespace Dune::IGA::Ibra {
       return Type::NoType;
   }
 
-  class IbraBase {
-   public:
+  struct IbraBase {
     std::string typeString;
     std::string key;
     Type type{Type::NoType};
@@ -48,7 +47,7 @@ namespace Dune::IGA::Ibra {
   };
 
   template <int dim, int worldDim> requires (dim < 3) && (worldDim >= dim)
-  struct IbraNURBSData : IbraBase {
+  struct IbraNURBSData : public IbraBase {
     std::array<int, dim> degree{};
     std::array<int, dim> n_controlPoints{};
     std::array<std::vector<double>, dim> knots;

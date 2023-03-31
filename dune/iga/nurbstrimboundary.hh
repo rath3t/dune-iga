@@ -60,7 +60,7 @@ namespace Dune::IGA {
       return Geometry(std::make_shared<PatchData>(knotSpans, controlNet, degree));
     }
 
-    /** \brief creates a line IbraBase from a to b */
+    /** \brief creates a line geometry from a to b */
     static Geometry lineGeometryFromPoints(const Point& a, const Point b) {
       std::vector<Point> _controlPoints{a, b};
       std::array<ControlPoint, worldDim> _cp{ControlPoint{.p{_controlPoints.front()}, .w = 1},
@@ -122,8 +122,20 @@ namespace Dune::IGA {
       auto orientation = determineOrientation(_boundaries);
       boundaryLoops.push_back({_boundaries, orientation});
     }
-   private:
 
+    [[nodiscard]] auto getOrientationForBoundary(const Boundary& _boundary) const ->BoundaryLoop::Orientation {
+      for (const auto& loop : boundaryLoops) {
+        // Find boundary in loop
+        auto sameBoundary = [&_boundary](auto checkBoundary){
+          return _boundary.endPoints == checkBoundary.endPoints;
+        };
+        if (std::ranges::find_if(loop.boundaries, sameBoundary) != loop.boundaries.end())
+          return loop.orientation;
+      }
+    }
+
+   private:
+    // TODO Maybe use Clipper::isPositive
     static auto determineOrientation(std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
       // extract some vertices to test
       std::vector<Dune::FieldVector<double, 2>> vertices;

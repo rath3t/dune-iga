@@ -23,7 +23,6 @@
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
-#include <dune/iga/nurbstrimmedpatch.hh>
 #include <dune/iga/reconstructedgridhandler.hh>
 
 namespace Dune::IGA {
@@ -196,12 +195,12 @@ namespace Dune::IGA {
 
     // Get if available the reconstructedGridView for a particular Element (only valid for dim == 2 (and also only for
     // dimwold == 2))
-    std::optional<typename ReconstructedGridHandler<dimworld>::GridView> getReconstructedGridViewForTrimmedElement(
-        int index) {
+    std::optional<const typename TrimmedElementRepresentation<dimworld>::GridView> getReconstructedGridViewForTrimmedElement(
+        int index) const {
       if constexpr (dimworld == 2 && dim == 2) {
         if ((trimData.has_value()) && (trimFlags[index] == ElementTrimFlag::trimmed))
-          return std::make_optional<typename ReconstructedGridHandler<dimworld>::GridView>(
-              trimResultMap[index]->grid->leafGridView());
+          return std::make_optional<const typename TrimmedElementRepresentation<dimworld>::GridView>(
+              trimResultMap.at(index)->grid->leafGridView());
         else
           return std::nullopt;
       } else
@@ -233,7 +232,7 @@ namespace Dune::IGA {
     Dune::IGA::Nurbs<dim> nurbsSurface;
     std::vector<ElementTrimFlag> trimFlags;
     std::optional<std::shared_ptr<TrimData>> trimData;
-    std::map<int, std::unique_ptr<ReconstructedGridHandler<dimworld>>> trimResultMap;
+    std::map<int, std::unique_ptr<const TrimmedElementRepresentation<dimworld>>> trimResultMap;
 
     auto parameterSpaceGrid() {
       auto gV        = leafGridView();
@@ -271,11 +270,13 @@ namespace Dune::IGA {
       // Use Trim namespace for more concise function names
       using namespace Impl::Trim;
 
-
       // Get Clip as ClipperPath
       Clipper2Lib::PathsD clip = getClip(*trimData);
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
+      int trimmedCounter =0;
+      int fullCounter =0;
+      int eleCounter =0;
       for (auto& element : elements(parameterSpaceGridView)) {
         auto index{indexSet.index(element)};
         auto corners = getElementCorners(element);
@@ -291,7 +292,7 @@ namespace Dune::IGA {
 
           if (elementBoundariesOpt.has_value()) {
             // ReconstructGrid and save in a GridHandler
-            trimResultMap[index] = std::move(std::make_unique<ReconstructedGridHandler<dimworld>>(
+            trimResultMap[index] = std::move(std::make_unique<TrimmedElementRepresentation<dimworld>>(
                 *elementBoundariesOpt,
                 NURBSPatchGeometry<dim, dimworld>{
                     std::make_shared<NURBSPatchData<dim, dimworld>>(currentPatchRepresentation_)},
@@ -299,6 +300,25 @@ namespace Dune::IGA {
           } else
             trimFlags[index] = ElementTrimFlag::empty;
         }
+//
+//        if(trimFlags[index]==ElementTrimFlag::trimmed) {
+//          ++trimmedCounter;
+//          ElementData data;
+//          data.index= trimmedCounter;
+//          data.directIndex= index;
+//          data.flag= trimFlags[index];
+//          data.data= trimResultMap[index];
+//          const auto multiIndex = elementNet_->directToMultiIndex(index);
+//          trimmedIndices.insert({multiIndex,data})
+//        }else if(trimFlags[index]==ElementTrimFlag::full) {
+//          ++fullCounter;
+//          ElementData data;
+//          data.index= fullCounter;
+//          data.directIndex= index;
+//          data.flag= trimFlags[index];
+//          const auto multiIndex = elementNet_->directToMultiIndex(index);
+//          trimmedIndices.insert({multiIndex,data})
+//        }
 
       }  // Element Loop End
 

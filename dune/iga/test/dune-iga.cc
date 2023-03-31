@@ -18,6 +18,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 // #include <dune/grid/test/checkidset.hh>
@@ -1016,111 +1017,6 @@ auto testPlate() {
 }
 #endif
 
-auto testIbraReader()
-{
-  TestSuite t;
-
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
-
-  // Check n_ele = 1, n_vert = 4
-  t.check(grid->size(0) == 1);
-  t.check(grid->size(2) == 4);
-
-  grid->globalRefine(1);
-
-  // Check n_ele = 4, n_vert = 9 after refinement
-  t.check(grid->size(0) == 4);
-  t.check(grid->size(2) == 9);
-
-  // Test degree (maybe test degree elevate)
-  t.check(grid->leafGridView().impl().getPatchData().degree[0] == 1);
-  t.check(grid->leafGridView().impl().getPatchData().degree[1] == 1);
-
-  // Enumerate elements and check position of centers
-  auto gV = grid->leafGridView();
-  std::vector<FieldVector<double, 2>> expectedElementCenters{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
-  const auto& indexSet = grid->leafGridView().indexSet();
-  for (auto& ele : elements(gV))
-    t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
-
-  // Test shell structure, no trim functionality right now
-  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/schale.ibra");
-  grid3D->globalRefine(2);
-  VTKWriter<NURBSGrid<2,3>::GridView> vtkWriter(grid3D->leafGridView());
-  vtkWriter.write("grid");
-
-  return t;
-}
-
-std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
-  int trimmedCounter {0};
-  int emptyCounter {0};
-  int fullCounter {0};
-  for (auto& ele : elements(gridView))
-    switch (ele.impl().getTrimFlag()) {
-      case ElementTrimFlag::full:
-        fullCounter++;
-        break;
-      case ElementTrimFlag::empty:
-        emptyCounter++;
-        break;
-      case ElementTrimFlag::trimmed:
-        trimmedCounter++;
-        break;
-    }
-
-  return {trimmedCounter, emptyCounter, fullCounter};
-}
-
-auto testTrimImpactWithRefinement() {
-  TestSuite t;
-
-  // Get Standard Parameter for trimming
-  Dune::IGA::Utilities::setStandardParameters();
-
-  // O refinement, 1 trimmed
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
-
-  auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
-  t.check(trimFlagCounter1[0] == 1);
-  t.check(trimFlagCounter1[1] == 0);
-  t.check(trimFlagCounter1[2] == 0);
-
-  Plot::plotParametricGridAndPhysicalGrid(grid, "0");
-  Plot::plotEveryReconstructedGrid(grid, "0");
-
-  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
-  t.check(recoGridView.has_value());
-
-  // 1 refinement: 3 trimmed, 0 empty, 1 full
-  grid->globalRefine(1);
-
-  auto trimFlagCounter2 = getAmountOfTrimFlags(grid->leafGridView());
-  t.check(trimFlagCounter2[0] == 3);
-  t.check(trimFlagCounter2[1] == 0);
-  t.check(trimFlagCounter2[2] == 1);
-
-  Plot::plotParametricGridAndPhysicalGrid(grid, "1");
-  Plot::plotEveryReconstructedGrid(grid, "1");
-
-  // 2 refinement: 6 trimmed, 2 empty, 8 full
-  grid->globalRefine(1);
-  auto trimFlagCounter3 = getAmountOfTrimFlags(grid->leafGridView());
-
-  t.check(trimFlagCounter3[0] == 6);
-  t.check(trimFlagCounter3[1] == 2);
-  t.check(trimFlagCounter3[2] == 8);
-
-  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(14);
-  t.check(recoGridView2.has_value());
-
-  Plot::plotParametricGridAndPhysicalGrid(grid, "2");
-  Plot::plotEveryReconstructedGrid(grid, "2");
-
-  return t;
-}
-
-
 
 auto testPatchGeometryCurve() {
   TestSuite t;
@@ -1268,6 +1164,136 @@ auto testPatchGeometrySurface() {
   return t;
 }
 
+
+auto testIbraReader()
+{
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
+
+  // Check n_ele = 1, n_vert = 4
+  t.check(grid->size(0) == 1);
+  t.check(grid->size(2) == 4);
+
+  grid->globalRefine(1);
+
+  // Check n_ele = 4, n_vert = 9 after refinement
+  t.check(grid->size(0) == 4);
+  t.check(grid->size(2) == 9);
+
+  // Test degree (maybe test degree elevate)
+  t.check(grid->leafGridView().impl().getPatchData().degree[0] == 1);
+  t.check(grid->leafGridView().impl().getPatchData().degree[1] == 1);
+
+  // Enumerate elements and check position of centers
+  auto gV = grid->leafGridView();
+  std::vector<FieldVector<double, 2>> expectedElementCenters{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  const auto& indexSet = grid->leafGridView().indexSet();
+  for (auto& ele : elements(gV))
+    t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
+
+  // Test shell structure, no trim functionality right now
+  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/schale.ibra");
+  grid3D->globalRefine(2);
+  VTKWriter<NURBSGrid<2,3>::GridView> vtkWriter(grid3D->leafGridView());
+  vtkWriter.write("grid");
+
+  return t;
+}
+
+std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
+  int trimmedCounter {0};
+  int emptyCounter {0};
+  int fullCounter {0};
+  for (auto& ele : elements(gridView))
+    switch (ele.impl().getTrimFlag()) {
+      case ElementTrimFlag::full:
+        fullCounter++;
+        break;
+      case ElementTrimFlag::empty:
+        emptyCounter++;
+        break;
+      case ElementTrimFlag::trimmed:
+        trimmedCounter++;
+        break;
+    }
+
+  return {trimmedCounter, emptyCounter, fullCounter};
+}
+
+auto testTrimImpactWithRefinement() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+
+  auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter1[0] == 1);
+  t.check(trimFlagCounter1[1] == 0);
+  t.check(trimFlagCounter1[2] == 0);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "0");
+  Plot::plotEveryReconstructedGrid(grid, "0");
+
+  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
+  t.check(recoGridView.has_value());
+
+  // 1 refinement: 3 trimmed, 0 empty, 1 full
+  grid->globalRefine(1);
+
+  auto trimFlagCounter2 = getAmountOfTrimFlags(grid->leafGridView());
+  t.check(trimFlagCounter2[0] == 3);
+  t.check(trimFlagCounter2[1] == 0);
+  t.check(trimFlagCounter2[2] == 1);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "1");
+  Plot::plotEveryReconstructedGrid(grid, "1");
+
+  // 2 refinement: 6 trimmed, 2 empty, 8 full
+  grid->globalRefine(1);
+  auto trimFlagCounter3 = getAmountOfTrimFlags(grid->leafGridView());
+
+  t.check(trimFlagCounter3[0] == 6);
+  t.check(trimFlagCounter3[1] == 2);
+  t.check(trimFlagCounter3[2] == 8);
+
+  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(14);
+  t.check(recoGridView2.has_value());
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "2");
+  Plot::plotEveryReconstructedGrid(grid, "2");
+
+  return t;
+}
+
+auto testIntegrationPoints() {
+  TestSuite t;
+
+  // Get Standard Parameter for trimming
+  Dune::IGA::Utilities::setStandardParameters();
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  double area=0;
+  int order= 1;
+  std::vector<Dune::QuadraturePoint<double,2>> ipVec;
+  for(auto& ele : elements(grid->leafGridView())) {
+    ele.impl().getIntegrationPoints(ipVec, order);
+    auto geo = ele.geometry();
+    for (auto& ip : ipVec)
+      area += geo.integrationElement(ip.position()) * ip.weight();
+  }
+  t.check(Dune::FloatCmp::eq(area, 0.737416, 1e-4));
+
+//  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+//  geometryChecker.checkGeometry(grid->leafGridView());
+//  Dune::checkIndexSet(grid, grid->leafGridView(), std::cout);
+  return t;
+}
+
 auto testMultiParametrisation() {
   TestSuite t;
 
@@ -1349,7 +1375,7 @@ auto testHoleGeometry() {
   return t;
 }
 
-auto furhterExamples() {
+auto furtherExamples() {
   TestSuite t;
 
   // Get Standard Parameter for trimming
@@ -1378,13 +1404,14 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 
-//  t.subTest(testIbraReader());
+  //t.subTest(testIbraReader());
   //t.subTest(testTrimImpactWithRefinement());
+  t.subTest(testIntegrationPoints());
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());
   //t.subTest(testHoleGeometry());
-  t.subTest(testPipeGeometry());
-  //t.subTest(furhterExamples());
+  //t.subTest(testPipeGeometry());
+  //t.subTest(furtherExamples());
 
 #if 0
   t.subTest(test3DGrid());
