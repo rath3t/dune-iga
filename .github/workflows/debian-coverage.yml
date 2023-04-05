@@ -31,7 +31,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set compiler aliases
       - name: Build
         run: |
           mkdir cmake-build-debug
