@@ -26,6 +26,8 @@ namespace Dune::IGA {
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
     static std::shared_ptr<Grid> read(const std::string& fileName) {
+      // Get Standard Parameter for trimming
+      Dune::IGA::Utilities::setStandardParameters();
 
       using json = nlohmann::json;
 

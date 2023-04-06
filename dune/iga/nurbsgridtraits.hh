@@ -50,13 +50,13 @@ struct NurbsGridTraits {
    public:
     typedef GridImp GeometryImpl;
     typedef GridImp LocalGeometryImpl;
-    //! IMPORTANT: Codim<codim>::IbraBase == IbraBase<dim-codim,dimw>
+    //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
     /** \brief The type of the geometry associated with the entity.*/
     using Geometry = Dune::Geometry<dim - cd, dimw, GridImp, GeometryImp>;
     /** \brief The type of the local geometry associated with the entity.*/
     using LocalGeometry = Dune::Geometry<dim - cd, dim, GridImp, LocalGeometryImp>;
     /** \brief The type of the entity. */
-    // we could - if needed - introduce another struct for dimglobal of IbraBase
+    // we could - if needed - introduce another struct for dimglobal of Geometry
     using Entity = Dune::Entity<cd, dim, GridImp, EntityImp>;
 
     /** \brief The type of the entity seed of this codim.*/
@@ -91,9 +91,9 @@ struct NurbsGridTraits {
   using LevelGridView = Dune::GridView<LevelGridViewTraits<GridImp>>;
   /** \brief The type of the level index set. */
   //  typedef LevelIndexSetImp LevelIndexSet;
-  using LevelIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::array<Dune::GeometryType, 1>>;
+  using LevelIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the leaf index set. */
-  using LeafIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::array<Dune::GeometryType, 1>>;
+  using LeafIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the global id set. */
   //  typedef GlobalIdSetImp GlobalIdSet;
   using GlobalIdSet = Dune::IdSet<GridImp, GlobalIdSetImp, GIDType>;

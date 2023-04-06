@@ -20,7 +20,7 @@
 /** \file
  * \brief The NURBSGridEntity class
  */
-
+// TODO: Replace directIndex with realIndex ?????
 namespace Dune::IGA {
 
   template <int codim, int dim, typename GridImpl>
@@ -39,7 +39,7 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView), directIndex_(directIndex), patchID_{patchID} {}
 
     using LocalIntersectionGeometry = typename GridView::Traits::template Codim<1>::LocalGeometry;
-    //! IbraBase of this entity
+    //! Geometry of this entity
     typename GridView::template Codim<codim>::Geometry geometry() const {
       return NURBSGridView_->getPatch(patchID_).template geometry<codim>(directIndex_);
     }
@@ -50,7 +50,6 @@ namespace Dune::IGA {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
 
-    // Hier nichts zu tun für trimm Funktionalität, weil codim 0 keine trim Flag hat und somit immer Cube ist
     [[nodiscard]] auto type() const { return GeometryTypes::cube(GridView::dimension - codim); }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] EntitySeed seed() const {
@@ -95,48 +94,58 @@ namespace Dune::IGA {
     using GridView             = typename GridImpl::Traits::LeafGridView;
     NURBSGridEntity()          = default;
 
-    // TODO getTrimFlagForNURBSIndex change to getTrimFlag when correct size is implemented
     NURBSGridEntity(const NURBSLeafGridView<GridImpl>& gridView, unsigned int directIndex, unsigned int patchID)
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           patchID_{patchID},
           parType_{PartitionType::InteriorEntity},
-          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlagForNURBSIndex(directIndex_)} {
+          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)} {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
+      // TODO What exactly does this code?
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
-        const auto& eleNet = NURBSGridView_->getPatch(patchID_).elementNet_;
-        auto multiIndex    = eleNet->directToMultiIndex(directIndex_);
+        const auto& eleNet    = NURBSGridView_->getPatch(patchID_).elementNet_;
+        auto nurbsDirectIndex = NURBSGridView_->getPatch(patchID_).template getDirectIndex<0>(directIndex_);
+        auto multiIndex       = eleNet->directToMultiIndex(nurbsDirectIndex);
         multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
             += ((innerLocalIndex % 2)
                     ? 1
                     : Impl::noNeighbor);  // increase the multiIndex depending on where the outer element should lie
         auto directOuterIndex = (eleNet->isValid(multiIndex)) ? eleNet->index(multiIndex) : Impl::noNeighbor;
+        directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
         intersections_->emplace_back(NURBSintersection<GridImpl>(innerLocalIndex, outerLocalIndex, directIndex_,
                                                                  directOuterIndex, *NURBSGridView_));
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
     }
+    int getRealIndexForOuterIndex(int outerIndex) {
+      if constexpr (dim != 2) return outerIndex;
+      if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
+      try {
+        return NURBSGridView_->getPatch(patchID_).template getRealIndex<0>(outerIndex);
+      } catch (std::runtime_error& e) {
+        return Impl::noNeighbor;
+      }
+    }
 
-    void getIntegrationPoints(std::vector<Dune::QuadraturePoint<double,dim>>& vector,const std::optional<int>& p_order= std::nullopt) const
-    {
+    void getIntegrationPoints(std::vector<Dune::QuadraturePoint<double, dim>>& vector,
+                              const std::optional<int>& p_order = std::nullopt) const {
       vector.clear();
-      int order;
-      if(p_order.has_value())
-        order = p_order.value();
-      else
-        order = mydimension * (*std::ranges::max_element( NURBSGridView_->getPatchData(patchID_).degree));
-      if(trimFlag == ElementTrimFlag::trimmed) {
-        auto gridView = NURBSGridView_->grid().getReconstructedGridViewForTrimmedElement(NURBSGridView_->indexSet().index(*this));
-        for (auto triangulationElement : elements(gridView.value())) {
+      int order
+          = p_order.value_or(mydimension * (*std::ranges::max_element(NURBSGridView_->getPatchData(patchID_).degree)));
+
+      if (trimFlag == ElementTrimFlag::trimmed) {
+        auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_).value();
+        auto gridView    = elementRepr->getGridView();
+
+        for (auto triangulationElement : elements(gridView)) {
           auto geo        = triangulationElement.geometry();
           const auto rule = Dune::QuadratureRules<double, mydimension>::rule(triangulationElement.type(), order);
 
-          for (auto ip: rule)
-            vector.emplace_back(geo.global(ip.position()),geo.integrationElement(ip.position())*ip.weight());
-
+          for (auto ip : rule)
+            vector.emplace_back(geo.global(ip.position()), geo.integrationElement(ip.position()) * ip.weight());
         }
-      }else {
+      } else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
         vector.insert(vector.end(), rule.begin(), rule.end());
       }
@@ -158,15 +167,18 @@ namespace Dune::IGA {
     LocalGeometry geometryInFather() const { throw std::logic_error("geometryInFather function not implemented."); }
     [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
+    // TODO What to do here? What counts as a subentity?
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
+    // TODO in patch
     [[nodiscard]] bool hasBoundaryIntersections() const {
       return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
 
+    // TODO Again what should be a subentity?
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
       if constexpr (codimSub == 0) {
@@ -205,8 +217,13 @@ namespace Dune::IGA {
     HierarchicIterator hend([[maybe_unused]] int lvl) const { return NurbsHierarchicIterator<GridImpl>(*this); }
 
     [[nodiscard]] bool isLeaf() const { return true; }
-    // Todo : Type
-    [[nodiscard]] auto type() const { return GeometryTypes::cube(mydimension); }
+
+    [[nodiscard]] auto type() const {
+      if (trimFlag == ElementTrimFlag::full)
+        return GeometryTypes::cube(mydimension);
+      else
+        return GeometryTypes::none(mydimension);
+    }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
@@ -229,16 +246,22 @@ namespace Dune::IGA {
     PartitionType parType_{PartitionType::InteriorEntity};
     unsigned int patchID_{};
 
-    // TODO maybe use const?
     ElementTrimFlag trimFlag;
 
-  };  // end of OneDGridEntity codim = 0
+  };  // end of Template Spezialisation for codim = 0
 
-  // Todo: Evtl spezialisierung für codim 0 machen und dann unterscheidung machen für cube() oder none()
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<codim, dim, GridImp>& e) {
     return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydimension>::cube();
-  };
+  }
+
+  template <std::integral auto codim, std::integral auto dim, typename GridImp>
+  auto referenceElement(const NURBSGridEntity<0, dim, GridImp>& e) {
+    if (e.getTrimFlag() == ElementTrimFlag::trimmed)
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::none();
+    else
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::cube();
+  }
 
 }  // namespace Dune::IGA
 

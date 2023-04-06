@@ -147,7 +147,7 @@ namespace Dune::IGA {
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(patchDim); }
 
-    // The following are functions are not part of the IbraBase Interface
+    // The following are functions are not part of the Geometry Interface
     [[nodiscard]] std::array<std::array<double, 2>, patchDim> domain() const {
       std::array<std::array<double, 2>, patchDim> result{};
       for (int i = 0; i < patchDim; ++i) {

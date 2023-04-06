@@ -51,7 +51,7 @@ namespace Dune::IGA {
     /** \brief Constructor from NURBSPatchData and an iterator to a specific knot
      *
      *  \param[in] Patchdata shared pointer to an object where the all the data of the NURBSPatch is stored
-     *  \param[in] corner Iterator (for each dimension) to the Knot span where the IbraBase object is supposed to
+     *  \param[in] corner Iterator (for each dimension) to the Knot span where the Geometry object is supposed to
      * operate
      */
     explicit NURBSLocalGeometry(int localSubEntityIndex)

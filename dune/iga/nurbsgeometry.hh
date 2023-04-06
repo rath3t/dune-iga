@@ -10,6 +10,7 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
   namespace Impl {
@@ -49,8 +50,9 @@ namespace Dune::IGA {
      */
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
-                  const std::array<int, griddim>& thisSpanIndices)
-        : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections} {
+                  const std::array<int, griddim>& thisSpanIndices,
+                  const std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>>& trimRepr = std::nullopt)
+        : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, trimRepr_(trimRepr) {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
           scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
@@ -81,6 +83,8 @@ namespace Dune::IGA {
       LocalCoordinate localcenter(0.5);
       return global(localcenter);
     }
+
+    // TODO Use the integration points provided by the trimming implementation
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
@@ -243,7 +247,12 @@ namespace Dune::IGA {
     }
 
     /** \brief Type of the element: a hypercube of the correct dimension */
-    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
+    [[nodiscard]] GeometryType type() const {
+      if (trimRepr_.has_value())
+        return GeometryTypes::none(mydimension);
+      else
+        return GeometryTypes::cube(mydimension);
+    }
 
     /** \brief Return from the 0 to 1 domain the position in the current knot span */
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
@@ -272,6 +281,7 @@ namespace Dune::IGA {
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
+    std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>> trimRepr_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>

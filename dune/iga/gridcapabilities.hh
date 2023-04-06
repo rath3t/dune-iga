@@ -25,18 +25,19 @@ namespace Dune::Capabilities {
 
   template <Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
   struct hasEntity<Dune::IGA::NURBSGrid<2, 2, NurbsGridLinearAlgebraTraits>, 1> {
-    static const bool v = false;
+    static const bool v = true;
   };
 
   template <Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
   struct hasEntity<Dune::IGA::NURBSGrid<2, 2, NurbsGridLinearAlgebraTraits>, 2> {
-    static const bool v = false;
+    static const bool v = true;
   };
 }  // namespace Dune::Capabilities
 
 template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
 struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>>
     : public std::true_type {};
+
 template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
 struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>> {
   static const bool v = true;

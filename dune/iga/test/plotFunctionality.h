@@ -44,6 +44,8 @@ void drawElements(const GridView& gridView, double lineWidth = 1, std::string&& 
         }
     }
 }
+
+
 void drawPoints(std::vector<Clipper2Lib::PointD>& points) {
     using namespace matplot;
 

@@ -13,17 +13,16 @@ namespace Dune::IGA {
 
   template <class GridImpl>
   class NURBSGridLeafIndexSet
-      : public IndexSet<GridImpl, NURBSGridLeafIndexSet<GridImpl>, int, std::array<GeometryType, 1>> {
+      : public IndexSet<GridImpl, NURBSGridLeafIndexSet<GridImpl>, int, std::vector<GeometryType>> {
    public:
-    using Types                    = std::array<GeometryType, 1>;
+    using Types                    = std::vector<GeometryType>;
     using IndexType                = unsigned int;
     using GridView                 = typename GridImpl::Traits::LeafGridView;
     static constexpr auto griddim  = GridImpl::dimension;
     static constexpr auto dimworld = GridImpl::dimensionworld;
 
     explicit NURBSGridLeafIndexSet(NURBSLeafGridView<GridImpl> const& g) : gridView_(&g) {
-      for (int id = 0; auto& entTypes : types_)
-        entTypes = {GeometryTypes::cube(griddim - (id++))};
+      // entTypes = {GeometryTypes::cube(griddim - (id++))};
     }
 
     template <class Entity>
@@ -57,12 +56,16 @@ namespace Dune::IGA {
         throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");
     }
 
-    auto& types(int codim) const { return types_[codim]; }
+    auto& types(int codim) const {
+      for (int id = 0; auto& entTypes : types_)
+        entTypes = gridView_->getPatch().typesInCodim(griddim - (id++));
+      return types_.at(codim);
+    }
     auto size(int codim) const { return gridView_->size(codim); }
     auto size(const GeometryType& gt) const { return gridView_->size(griddim - gt.dim()); }
 
    private:
-    std::array<std::array<GeometryType, 1>, griddim + 1> types_;
+    mutable std::array<Types, griddim + 1> types_;
     NURBSLeafGridView<GridImpl> const* gridView_;
   };
 }  // namespace Dune::IGA

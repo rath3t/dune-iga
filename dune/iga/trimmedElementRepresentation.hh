@@ -58,11 +58,11 @@ namespace Dune::IGA {
     BoundaryVector boundaries;
 
    public:
-    // Construct with igaGrid and boundaries
-    explicit TrimmedElementRepresentation(BoundaryVector& _boundaries)
-        : boundaries(_boundaries){
+    // Construct with boundaries
+    explicit TrimmedElementRepresentation(BoundaryVector& _boundaries) : boundaries(_boundaries) {
       reconstructTrimmedElement();
     }
+    GridView getGridView() const { return grid->leafGridView(); }
 
    private:
     void reconstructTrimmedElement() {

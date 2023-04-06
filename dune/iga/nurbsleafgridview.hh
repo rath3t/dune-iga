@@ -131,12 +131,24 @@ namespace Dune::IGA {
     const auto &grid() const { return *grid_; }
 
     /** \brief obtain how many entities of a give geometry type do live in this grid view */
+    // TODO Test
     [[nodiscard]] int size(const GeometryType &type) const {
-      if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
-          || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
-        return this->size(dimension - type.dim());
-      else
-        return 0;
+      if constexpr (dimension != 2) {
+        if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
+            || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
+          return this->leafGridView().size(dimension - type.dim());
+        else
+          return 0;
+      } else {
+        if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1))
+          return this->size(dimension - type.dim());
+        else if (type == Dune::GeometryTypes::none(2))
+          return getPatch().n_trimmedElement;
+        else if (type == Dune::GeometryTypes::cube(2))
+          return getPatch().n_fullElement;
+        else
+          return 0;
+      }
     }
 
     const auto &getPatchData(int patchID = 0) const { return *(leafPatches_->at(patchID).getPatchData()); }
