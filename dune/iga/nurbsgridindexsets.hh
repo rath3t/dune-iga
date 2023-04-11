@@ -21,9 +21,7 @@ namespace Dune::IGA {
     static constexpr auto griddim  = GridImpl::dimension;
     static constexpr auto dimworld = GridImpl::dimensionworld;
 
-    explicit NURBSGridLeafIndexSet(NURBSLeafGridView<GridImpl> const& g) : gridView_(&g) {
-      // entTypes = {GeometryTypes::cube(griddim - (id++))};
-    }
+    explicit NURBSGridLeafIndexSet(NURBSLeafGridView<GridImpl> const& g) : gridView_(&g) {}
 
     template <class Entity>
     bool contains(const Entity& e) const {
@@ -56,6 +54,7 @@ namespace Dune::IGA {
         throw std::logic_error("subIndex only defined from element to vertices, edges and surfaces");
     }
 
+    // At construction time the types are not yet known, so we obtain them here
     auto& types(int codim) const {
       for (int id = 0; auto& entTypes : types_)
         entTypes = gridView_->getPatch().typesInCodim(griddim - (id++));

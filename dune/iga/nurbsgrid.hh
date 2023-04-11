@@ -4,11 +4,8 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
-#include <clipper2/clipper.h>
 #include <utility>
 
-// #include <dune/common/parallel/communication.hh>
-// #include <dune/grid/io/file/printgrid.hh>
 #include <dune/iga/concepts.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/igaalgorithms.hh>
@@ -19,7 +16,6 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>

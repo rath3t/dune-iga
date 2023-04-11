@@ -12,10 +12,9 @@
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/nurbsgeometry.hh>
 #include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/nurbstrimfunctionality.hh>
 #include <dune/iga/trimmedElementRepresentation.hh>
+#include <dune/iga/nurbsgeometry.hh>
 
 namespace Dune::IGA {
 
@@ -41,6 +40,8 @@ namespace Dune::IGA {
 
     using DirectIndex = unsigned int;
     using RealIndex   = unsigned int;
+
+    using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
 
     /** \brief Constructor of NURBS from knots, control points, weights and degree
      *  \param knotSpans vector of knotSpans for each dimension
@@ -348,7 +349,8 @@ namespace Dune::IGA {
       DirectIndex directIndex = getDirectIndex<codim>(realIndex);
 
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
-      auto geo                                     = (codim == 0) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
+
+      auto geo  = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
                                                                   : NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection,
                                                                                currentKnotSpan);
@@ -522,6 +524,7 @@ namespace Dune::IGA {
       return dIndex;
     }
 
+   public:
     auto parameterSpaceGrid() const {
       using TensorSpaceCoordinates = TensorProductCoordinates<double, dim>;
       using ParameterSpaceGrid     = YaspGrid<dim, TensorSpaceCoordinates>;
@@ -535,24 +538,30 @@ namespace Dune::IGA {
 
     // In the following a DirectIndex is the flat index of the knot span in the tensor-product net of the untrimmed
     // patch The RealIndex refers to a flat index that runs from 0 ... j with j = n_T + n_F
-   public:
+
     [[nodiscard]] bool hasEmptyElements() const { return (n_fullElement + n_trimmedElement < originalSize(0)); }
 
     // TODO Delete (this is for intermediate testing)
     std::tuple<int, int, int> getAmountOfElementTrimTypes() {
       return {n_fullElement, n_trimmedElement, originalSize(0) - n_fullElement - n_trimmedElement};
     }
-    template <unsigned int codim>
-      requires(codim < 3)
-    [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
-      if constexpr (dim != 2) return idx;
-      return getEntityMap<codim>().at(idx);
-    }
 
     template <unsigned int codim>
-      requires(codim < 3)
+    [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
+      return idx;
+    }
+    template <unsigned int codim>
     [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
-      if constexpr (dim != 2) return idx;
+      return idx;
+    }
+    template <unsigned int codim>
+      requires (dim == 2)
+    [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
+      return getEntityMap<codim>().at(idx);
+    }
+    template <unsigned int codim>
+      requires (dim == 2)
+    [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
       auto& map = this->getEntityMap<codim>();
       auto it   = std::ranges::find_if(map, [idx](auto value) { return value.second == idx; });
       if (it != map.end())
@@ -569,7 +578,7 @@ namespace Dune::IGA {
       return getTrimFlagForDirectIndex(nurbsIdx);
     }
     [[nodiscard]] auto getTrimmedElementRepresentation(RealIndex realIndex) const
-        -> std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>> {
+        -> std::optional<std::shared_ptr<TrimmedElementRepresentationType>> {
       auto directIndex = getDirectIndex<0>(realIndex);
       return trimInfoMap.at(directIndex).repr;
     }
@@ -579,15 +588,17 @@ namespace Dune::IGA {
       trimFlags  = std::vector<ElementTrimFlag>(n_ele);
       std::ranges::fill(trimFlags, ElementTrimFlag::full);
 
-      fill1to1Maps<0>();
-      fill1to1Maps<1>();
-      fill1to1Maps<2>();
+      if constexpr (dim == 2) {
+        fill1to1Maps<0>();
+        fill1to1Maps<1>();
+        fill1to1Maps<2>();
+      }
 
       n_fullElement = n_ele;
     }
 
     template <unsigned int codim>
-      requires(codim < 3)
+      requires (dim == 2)
     void fill1to1Maps() {
       int n_entity = originalSize(codim);
       auto& map    = getEntityMap<codim>();
@@ -611,8 +622,6 @@ namespace Dune::IGA {
       n_fullElement    = 0;
       n_trimmedElement = 0;
       trimFlags.resize(originalSize(0));
-      trimInfoMap.clear();
-      elementIndexMap.clear();
 
       auto paraGrid               = parameterSpaceGrid();
       auto parameterSpaceGridView = paraGrid->leafGridView();
@@ -621,7 +630,7 @@ namespace Dune::IGA {
       using namespace Impl::Trim;
 
       // Get Clip as ClipperPath
-      Clipper2Lib::PathsD clip = getClip(*trimData_);
+      Clipper2Lib::PathsD clip = getClip(trimData_.value().get());
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
       for (auto& element : elements(parameterSpaceGridView)) {
@@ -632,19 +641,19 @@ namespace Dune::IGA {
 
         using namespace Dune::IGA::Impl::Trim;
 
-        auto [trimFlag, clippingResultOpt] = clipElement(element, clip);
+        auto [trimFlag, clippingResult] = clipElement(element, clip);
 
         trimFlags[directIndex] = trimFlag;
 
         if (trimFlag == ElementTrimFlag::trimmed) {
           ++n_trimmedElement;
-          auto elementBoundaries = constructElementBoundaries(*clippingResultOpt, corners, *trimData_);
+          auto elementBoundaries = constructElementBoundaries(*clippingResult, corners, trimData_.value());
 
           if (elementBoundaries.has_value()) {
             trimInfoMap.insert(std::make_pair(
                 directIndex,
                 ElementTrimInfo{.realIndex = realIndex, .repr = std::make_optional(
-                                    std::make_unique<TrimmedElementRepresentation<2>>(elementBoundaries.value()))}));
+                                    std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value()))}));
 
           } else
             trimFlags[directIndex] = ElementTrimFlag::empty;
@@ -665,7 +674,7 @@ namespace Dune::IGA {
     }
 
     template <unsigned int codim>
-      requires(codim == 2 || codim == 1)
+      requires (codim == 2 || codim == 1) && (dim == 2)
     void constructSubEntityMaps() {
       int n_entities_original = originalSize(codim);
       std::vector<DirectIndex> indicesOfEntityInTrim;
@@ -708,7 +717,7 @@ namespace Dune::IGA {
     std::vector<ElementTrimFlag> trimFlags;
 
     template <unsigned int codim>
-      requires(codim < 3)
+      requires (dim == 2)
     auto& getEntityMap() const {
       if constexpr (codim == 0)
         return elementIndexMap;
@@ -718,7 +727,7 @@ namespace Dune::IGA {
         return vertexIndexMap;
     }
     template <unsigned int codim>
-      requires(codim < 3)
+      requires (dim == 2)
     auto& getEntityMap() {
       if constexpr (codim == 0)
         return elementIndexMap;
@@ -737,7 +746,7 @@ namespace Dune::IGA {
 
     struct ElementTrimInfo {
       RealIndex realIndex{};
-      std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>> repr = std::nullopt;
+      std::optional<std::shared_ptr<TrimmedElementRepresentationType>> repr = std::nullopt;
 
       //[[nodiscard]] bool isTrimmed() const {return repr.has_value();};
     };

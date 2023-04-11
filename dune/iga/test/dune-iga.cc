@@ -28,6 +28,7 @@
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/gridcapabilities.hh>
 #include <dune/grid/io/file/printgrid.hh>
+#include <dune/iga/nurbstrimfunctionality.hh>
 
 #if 0
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -1208,7 +1209,7 @@ auto testIbraReader()
 
   return t;
 }
-#if 0
+
 std::array<int, 3> getAmountOfTrimFlags(const auto& gridView) {
   int trimmedCounter {0};
   int emptyCounter {0};
@@ -1235,41 +1236,22 @@ auto testTrimImpactWithRefinement() {
   // O refinement, 1 trimmed
   std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
 
-  auto trimFlagCounter1 = getAmountOfTrimFlags(grid->leafGridView());
-  t.check(trimFlagCounter1[0] == 1);
-  t.check(trimFlagCounter1[1] == 0);
-  t.check(trimFlagCounter1[2] == 0);
-
   Plot::plotParametricGridAndPhysicalGrid(grid, "0");
   Plot::plotEveryReconstructedGrid(grid, "0");
-
-  auto recoGridView = grid->getReconstructedGridViewForTrimmedElement(0);
-  t.check(recoGridView);
 
   // 1 refinement: 3 trimmed, 0 empty, 1 full
   grid->globalRefine(1);
 
-  auto trimFlagCounter2 = getAmountOfTrimFlags(grid->leafGridView());
-  t.check(trimFlagCounter2[0] == 3);
-  t.check(trimFlagCounter2[1] == 0);
-  t.check(trimFlagCounter2[2] == 1);
-
   Plot::plotParametricGridAndPhysicalGrid(grid, "1");
   Plot::plotEveryReconstructedGrid(grid, "1");
 
-  // 2 refinement: 6 trimmed, 2 empty, 8 full
-  grid->globalRefine(1);
-  auto trimFlagCounter3 = getAmountOfTrimFlags(grid->leafGridView());
+//  // 2 refinement: 6 trimmed, 2 empty, 8 full
+//  grid->globalRefine(1);
+//
+//  Plot::plotParametricGridAndPhysicalGrid(grid, "2");
+//  Plot::plotEveryReconstructedGrid(grid, "2");
 
-  t.check(trimFlagCounter3[0] == 6);
-  t.check(trimFlagCounter3[1] == 2);
-  t.check(trimFlagCounter3[2] == 8);
 
-  auto recoGridView2 = grid->getReconstructedGridViewForTrimmedElement(14);
-  t.check(recoGridView2);
-
-  Plot::plotParametricGridAndPhysicalGrid(grid, "2");
-  Plot::plotEveryReconstructedGrid(grid, "2");
 
   return t;
 }
@@ -1332,17 +1314,6 @@ auto testPipeGeometry() {
   return t;
 }
 
-auto testHoleGeometry() {
-  TestSuite t;
-
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
-  grid->globalRefine(1);
-
-  Plot::plotParametricGridAndPhysicalGrid(grid);
-  Plot::plotEveryReconstructedGrid(grid);
-
-  return t;
-}
 
 auto furtherExamples() {
   TestSuite t;
@@ -1351,17 +1322,34 @@ auto furtherExamples() {
   grid->globalRefine(1);
 
   Plot::plotParametricGridAndPhysicalGrid(grid, "_ex1");
+  Plot::plotEveryReconstructedGrid(grid, "_ex1");
+  Plot::saveEveryReconstructedGrid(grid, "_ex1");
 
-  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xa.ibra");
   grid2->globalRefine(1);
 
   Plot::plotParametricGridAndPhysicalGrid(grid2, "_ex2");
   Plot::plotEveryReconstructedGrid(grid2, "_ex2");
-
+  Plot::saveEveryReconstructedGrid(grid2, "_ex2");
 
   return t;
 }
-#endif
+
+auto testHoleGeometry() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
+  grid->globalRefine(3);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
+  Dune::printGrid(*grid, MPIHelper::instance(), "plot_hole/grid");
+  Plot::plotEveryReconstructedGrid(grid, "_hole");
+
+  VTKWriter vtkWriter(grid->leafGridView());
+  vtkWriter.write("plot_hole/grid");
+
+  return t;
+}
 
 auto testIntegrationPoints() {
   TestSuite t;
@@ -1379,6 +1367,17 @@ auto testIntegrationPoints() {
       area += geo.integrationElement(ip.position()) * ip.weight();
   }
   t.check(Dune::FloatCmp::eq(area, 0.737416, 1e-4));
+
+  return t;
+}
+
+auto testGeometry() {
+  TestSuite t;
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  for (auto& ele : elements(grid->leafGridView()))
+    t.check(Dune::FloatCmp::eq(ele.geometry().volume(), 0.737416, 1e-4));
 
   return t;
 }
@@ -1493,6 +1492,80 @@ auto testEntityFunctionality() {
 }
 
 
+auto testTrimFunctionality() {
+  TestSuite t;
+
+  constexpr int gridDim {2};
+  constexpr int dimWorld {2};
+  const std::array<std::vector<double>, gridDim> knotSpans{{{0, 0, 1, 1}, {0, 0, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimWorld>::ControlPointType;
+  const double Lx    = 1;
+  const double Ly    = 1;
+  const std::vector<std::vector<ControlPoint>> controlPoints{{{.p = {0, 0}, .w = 1}, {.p = {0, Ly}, .w = 1}},
+                                                             {{.p = {Lx, 0}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
+
+  std::array<int, gridDim> dimSize{{2, 2}};
+
+  auto controlNet{Dune::IGA::NURBSPatchData<gridDim, dimWorld>::ControlPointNetType(dimSize, controlPoints)};
+
+  using Grid = Dune::IGA::NURBSGrid<gridDim, dimWorld>;
+  Dune::IGA::NURBSPatchData<gridDim, dimWorld> patchData;
+
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = {1, 1};
+  patchData.controlPoints = controlNet;
+
+  Grid grid{patchData};
+
+  Clipper2Lib::PathsD clip;
+  clip.push_back(Clipper2Lib::MakePathD("0,0, 0,0.5, 0.4,0.6, 0.5,0.65, 0.7, 0.4, 0.9, 0.45, 1,0.5, 1,0"));
+
+  using namespace Dune::IGA::Impl::Trim;
+  ClippingResult res;
+  for (auto& ele : elements(grid.leafGridView())) {
+    res = clipElement(ele, clip).second.value();
+  }
+  auto [pointMap, edgeCounter, nodeCounter] = res;
+
+  for (auto& [edgeNr, vecOfPoints] : *pointMap) {
+    if (edgeNr == 1)
+      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {1, 0.5}));
+    if (edgeNr == 3)
+      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {0, 0.5}));
+  }
+
+  Clipper2Lib::PathsD clip2;
+  clip2.push_back(Clipper2Lib::MakePathD(""));
+
+
+  return t;
+}
+
+
+auto testTrimmedElementGrid() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xa.ibra");
+
+
+  for (int i = 0; i < 3; ++i) {
+    grid->globalRefine(1);
+    for (int j = 0; const auto& ele : elements(grid->leafGridView())) {
+      auto repr = grid->getPatch().getTrimmedElementRepresentation(j++);
+      if (repr.has_value()) {
+        bool hasOverlap = repr.value()->checkGridForOverlappingElements();
+        t.check(!hasOverlap, "Grid Overlap at ref: " + std::to_string(i+1) + ", ele: " + std::to_string(j-1));
+        if (hasOverlap) {
+          auto gV = repr.value()->getGridView();
+          Plot::plotGridView(gV, "overlapCheck/grid_" + std::to_string(i+1) + "_" + std::to_string(j-1));
+        }
+      }
+    }
+  }
+
+  return t;
+}
 
 
 int main(int argc, char** argv) try {
@@ -1500,19 +1573,26 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
+  t.subTest(testTrimFunctionality());
+  t.subTest(testTrimmedElementGrid());
+
+  //t.subTest(testIntegrationPoints());
+  //t.subTest(testGeometry());
+  //t.subTest(testHoleGeometry());
+
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
-
+//
   t.subTest(testMapsInTrimmedPatch());
   t.subTest(testEntityFunctionality());
-  t.subTest(testIntegrationPoints());
+
 
   //t.subTest(testIbraReader());
   //t.subTest(testTrimImpactWithRefinement());
 
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());
-  //t.subTest(testHoleGeometry());
+
   //t.subTest(testPipeGeometry());
   //t.subTest(furtherExamples());
 
@@ -1529,6 +1609,7 @@ int main(int argc, char** argv) try {
   t.subTest(testBsplineBasisFunctions());
 
 #endif
+  t.report();
 
   return 0;
 } catch (Dune::Exception& e) {

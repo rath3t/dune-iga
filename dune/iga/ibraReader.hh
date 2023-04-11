@@ -3,15 +3,12 @@
 //
 #pragma once
 
-#ifndef DUNE_IGA_IBRAREADER_HH
-#  define DUNE_IGA_IBRAREADER_HH
+#include <clipper2/clipper.h>
+#include <nlohmann/json.hpp>
 
-#  include <clipper2/clipper.h>
-#  include <nlohmann/json.hpp>
-
-#  include <dune/iga/ibraGeometry.hh>
-#  include <dune/iga/nurbsgrid.hh>
-#  include <dune/iga/nurbstrimboundary.hh>
+#include <dune/iga/ibraGeometry.hh>
+#include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/nurbstrimboundary.hh>
 
 namespace Dune::IGA {
 
@@ -126,4 +123,3 @@ namespace Dune::IGA {
 
 }  // namespace Dune::IGA
 
-#endif  // DUNE_IGA_IBRAREADER_HH

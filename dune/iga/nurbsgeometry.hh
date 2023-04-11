@@ -36,6 +36,8 @@ namespace Dune::IGA {
 
     using ControlPointType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
 
+    using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
+
    private:
     /* Helper class to compute a matrix pseudo inverse */
     using MatrixHelper = typename MultiLinearGeometryTraits<ctype>::MatrixHelper;
@@ -51,7 +53,7 @@ namespace Dune::IGA {
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
                   const std::array<int, griddim>& thisSpanIndices,
-                  const std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>>& trimRepr = std::nullopt)
+                  const std::optional<std::shared_ptr<TrimmedElementRepresentationType>>& trimRepr = std::nullopt)
         : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, trimRepr_(trimRepr) {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
@@ -84,12 +86,17 @@ namespace Dune::IGA {
       return global(localcenter);
     }
 
-    // TODO Use the integration points provided by the trimming implementation
+    // TODO Is this the volume in the parameter Space or in the physical space
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
+      if (trimRepr_.has_value())
+        return trimRepr_.value()->calculateArea();
+
+
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
           this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
+      // TODO Maybe use std::accumulate
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -281,7 +288,7 @@ namespace Dune::IGA {
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
-    std::optional<std::shared_ptr<TrimmedElementRepresentation<2>>> trimRepr_;
+    std::optional<std::shared_ptr<TrimmedElementRepresentationType>> trimRepr_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>

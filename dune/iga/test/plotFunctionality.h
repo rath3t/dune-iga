@@ -2,8 +2,7 @@
 // Created by Henri on 10.02.2023.
 //
 
-#ifndef IKARUS_DRAWFUNCTIONS_H
-#define IKARUS_DRAWFUNCTIONS_H
+#pragma once
 
 #include <clipper2/clipper.h>
 #include <matplot/matplot.h>
@@ -11,6 +10,8 @@
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/nurbstrimfunctionality.hh>
+#include <dune/grid/io/file/vtk.hh>
 
 namespace Plot {
 
@@ -148,13 +149,13 @@ void plotGridViewAndPaths(auto& gridView, Clipper2Lib::PathsD& paths, std::strin
     //figure->save(file_name + ".png");
     figure->save(file_name + ".jpg");
 }
-#if 0
+
 void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
-    if (!(grid->trimData.has_value()))
+    if (!(grid->trimData_.has_value()))
       return;
 
     auto geometry = Dune::IGA::NURBSPatchGeometry<2, 2>(std::make_shared<Dune::IGA::NURBSPatchData<2, 2>>(grid->currentPatchRepresentation_));
-    auto boundarieLoops = grid->trimData.value();
+    auto boundarieLoops = grid->trimData_.value();
 
     Clipper2Lib::PathsD transformedPaths;
     Clipper2Lib::PathsD parametricPaths;
@@ -172,7 +173,7 @@ void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGri
       }
     }
 
-    auto paraGrid = grid->parameterSpaceGrid();
+    auto paraGrid = grid->getPatch().parameterSpaceGrid();
 
     auto paraGridView = paraGrid->leafGridView();
     plotGridViewAndPaths(paraGridView, parametricPaths, "plot" + postfix + "/parametricGrid");
@@ -183,16 +184,27 @@ void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGri
 
 }
 
+
 void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
   for (int i = 0; auto& ele : elements(grid->leafGridView())) {
-      if (ele.impl().getTrimFlag() == ElementTrimFlag::trimmed) {
-        auto gV = grid->getReconstructedGridViewForTrimmedElement(i).value();
+      if (ele.impl().getTrimFlag() == Dune::IGA::ElementTrimFlag::trimmed) {
+        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->getGridView();
         Plot::plotGridView(gV, "plot" + postfix + "/reconstruction/grid_" + std::to_string(i));
       }
       ++i;
   }
 }
-#endif
-}  // namespace Plot
 
-#endif  // IKARUS_DRAWFUNCTIONS_H
+void saveEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+  for (int i = 0; auto& ele : elements(grid->leafGridView())) {
+      if (ele.impl().getTrimFlag() == Dune::IGA::ElementTrimFlag::trimmed) {
+        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->getGridView();
+        Dune::VTKWriter vtkWriter(gV);
+        vtkWriter.write("plot" + postfix + "/reconstruction/grid_" + std::to_string(i));
+      }
+      ++i;
+  }
+}
+
+
+}  // namespace Plot

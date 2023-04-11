@@ -13,6 +13,6 @@ Name: @PACKAGE_NAME@
 Version: @VERSION@
 Description: dune-iga module
 URL: http://dune-project.org/
-Requires: dune-grid
+Requires: dune-grid dune-alugrid
 Libs: -L${libdir}
 Cflags: -I${includedir}

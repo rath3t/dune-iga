@@ -3,11 +3,11 @@
 //
 #pragma once
 
-#include "ibraGeometry.hh"
 #include "nurbstrimutils.hh"
 
 #include <clipper2/clipper.core.h>
 
+#include <dune/iga/ibraGeometry.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 
 namespace Dune::IGA {
@@ -24,7 +24,6 @@ namespace Dune::IGA {
 
     using Point  = Dune::FieldVector<double, worldDim>;
 
-    // Member variables
     Geometry nurbsGeometry;
     std::array<double, 2> domain{};
     std::array<Point, 2> endPoints;

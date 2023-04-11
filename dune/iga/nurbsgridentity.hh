@@ -102,7 +102,7 @@ namespace Dune::IGA {
           trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)} {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
-      // TODO What exactly does this code?
+
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
         const auto& eleNet    = NURBSGridView_->getPatch(patchID_).elementNet_;
         auto nurbsDirectIndex = NURBSGridView_->getPatch(patchID_).template getDirectIndex<0>(directIndex_);
@@ -118,8 +118,9 @@ namespace Dune::IGA {
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
     }
-    int getRealIndexForOuterIndex(int outerIndex) {
-      if constexpr (dim != 2) return outerIndex;
+    int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
+
+    int getRealIndexForOuterIndex(int outerIndex) requires (dim == 2)  {
       if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
       try {
         return NURBSGridView_->getPatch(patchID_).template getRealIndex<0>(outerIndex);
