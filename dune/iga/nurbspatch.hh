@@ -12,9 +12,9 @@
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/nurbsgeometry.hh>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/trimmedElementRepresentation.hh>
-#include <dune/iga/nurbsgeometry.hh>
 
 namespace Dune::IGA {
 
@@ -350,10 +350,10 @@ namespace Dune::IGA {
 
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
 
-      auto geo  = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
+      auto geo = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
-                                                                  : NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection,
-                                                                               currentKnotSpan);
+                                                       : NURBSGeometry<dim - codim, dimworld, GridImpl>(
+                                                           patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
     }
 
@@ -399,7 +399,7 @@ namespace Dune::IGA {
             else
               codim1Sizes[i] *= (i == k) ? uniqueSpanSize_[k] : uniqueSpanSize_[k] + 1;  // edges
       } else
-        codim1Sizes[0] = uniqueSpanSize_[0] + 1;  // vertices
+        codim1Sizes[0] = uniqueSpanSize_[0] + 1;                                         // vertices
 
       return codim1Sizes;
     }
@@ -555,12 +555,12 @@ namespace Dune::IGA {
       return idx;
     }
     template <unsigned int codim>
-      requires (dim == 2)
+      requires(dim == 2)
     [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
       return getEntityMap<codim>().at(idx);
     }
     template <unsigned int codim>
-      requires (dim == 2)
+      requires(dim == 2)
     [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
       auto& map = this->getEntityMap<codim>();
       auto it   = std::ranges::find_if(map, [idx](auto value) { return value.second == idx; });
@@ -598,7 +598,7 @@ namespace Dune::IGA {
     }
 
     template <unsigned int codim>
-      requires (dim == 2)
+      requires(dim == 2)
     void fill1to1Maps() {
       int n_entity = originalSize(codim);
       auto& map    = getEntityMap<codim>();
@@ -652,7 +652,8 @@ namespace Dune::IGA {
           if (elementBoundaries.has_value()) {
             trimInfoMap.insert(std::make_pair(
                 directIndex,
-                ElementTrimInfo{.realIndex = realIndex, .repr = std::make_optional(
+                ElementTrimInfo{.realIndex = realIndex,
+                                .repr      = std::make_optional(
                                     std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value()))}));
 
           } else
@@ -674,7 +675,7 @@ namespace Dune::IGA {
     }
 
     template <unsigned int codim>
-      requires (codim == 2 || codim == 1) && (dim == 2)
+      requires(codim == 2 || codim == 1) && (dim == 2)
     void constructSubEntityMaps() {
       int n_entities_original = originalSize(codim);
       std::vector<DirectIndex> indicesOfEntityInTrim;
@@ -717,7 +718,7 @@ namespace Dune::IGA {
     std::vector<ElementTrimFlag> trimFlags;
 
     template <unsigned int codim>
-      requires (dim == 2)
+      requires(dim == 2)
     auto& getEntityMap() const {
       if constexpr (codim == 0)
         return elementIndexMap;
@@ -727,7 +728,7 @@ namespace Dune::IGA {
         return vertexIndexMap;
     }
     template <unsigned int codim>
-      requires (dim == 2)
+      requires(dim == 2)
     auto& getEntityMap() {
       if constexpr (codim == 0)
         return elementIndexMap;

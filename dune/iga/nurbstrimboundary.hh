@@ -96,6 +96,7 @@ namespace Dune::IGA {
         return path;
       }
 
+      path.reserve(samples);
       auto linS = Utilities::linspace<double>(domain[0], domain[1], samples);
       for (auto u : linS) {
         auto vertex = nurbsGeometry(u);

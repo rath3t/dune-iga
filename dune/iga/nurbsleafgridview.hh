@@ -136,7 +136,7 @@ namespace Dune::IGA {
       if constexpr (dimension != 2) {
         if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
             || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
-          return this->leafGridView().size(dimension - type.dim());
+          return this->size(dimension - type.dim());
         else
           return 0;
       } else {

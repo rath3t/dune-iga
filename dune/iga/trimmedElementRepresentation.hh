@@ -4,15 +4,19 @@
 
 #pragma once
 
-
+#include <bits/ranges_algo.h>
+#include <bits/ranges_algobase.h>
+#include <cstddef>
+#include <iterator>
 #include <mapbox/earcut.hpp>
+#include <vector>
 
-#include <dune/grid/uggrid.hh>
 #include <dune/alugrid/grid.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
 
-// Add support for Dune::Fieldvector in Earcut
+// Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
 
   template <typename T>
@@ -30,41 +34,40 @@ namespace Dune::IGA {
 
   template <int dim>
   struct GridBoundarySegment : Dune::BoundarySegment<2, dim, double> {
-    explicit GridBoundarySegment(Boundary& _boundary)
-        : boundary(_boundary) {}
+    explicit GridBoundarySegment(Boundary& _boundary) : boundary(_boundary) {}
 
     Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
       // u has to be mapped on the domain of 0 to 1
       // Interestingly enough ALUGrid asks for values less than 0, e.g. -1e-16, and greater than 1 ??
       double u_local = local[0];
-      if (!Dune::FloatCmp::ge(local[0], 0.0))
-        u_local = 0.0;
-      if (!Dune::FloatCmp::le(local[0], 1.0))
-        u_local = 1.0;
+      if (!Dune::FloatCmp::ge(u_local, 0.0)) u_local = 0.0;
+      if (!Dune::FloatCmp::le(u_local, 1.0)) u_local = 1.0;
 
-      double u       = Utilities::map(u_local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
+      double u = Utilities::mapToRange(u_local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
       return boundary.nurbsGeometry(u);
     }
 
     Boundary boundary;
   };
 
-  /** \brief representation of the trimmed element in the parametric space */
+  /** \brief representation of the trimmed element in the parameter space */
   template <int dim, typename Grid = Dune::UGGrid<dim>>
   class TrimmedElementRepresentation {
    public:
     using GridView = Grid::LeafGridView;
-    using Point          = Dune::FieldVector<double, dim>;
+    using Point    = Dune::FieldVector<double, dim>;
 
     // Grid
     std::unique_ptr<Grid> grid;
 
    private:
     std::vector<Boundary> boundaries;
+    std::vector<Boundary> originalBoundaries;
 
    public:
     // Construct with boundaries
     explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries) {
+      std::ranges::copy(boundaries, std::back_inserter(originalBoundaries));
       reconstructTrimmedElement();
     }
     // Accessors
@@ -91,7 +94,6 @@ namespace Dune::IGA {
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary));
 
-
       // Create Grid
       grid = gridFactory.createGrid();
       if (parameters.preGlobalRefine > 0) grid->globalRefine(parameters.preGlobalRefine);
@@ -106,7 +108,7 @@ namespace Dune::IGA {
     }
 
     void refineGridOnEdges(int refCount) {
-      GridView gridView = grid->leafGridView();
+      GridView gridView       = grid->leafGridView();
       auto boundariesToRefine = determineBoundariesToRefine();
 
       for (int i = 0; i < refCount; ++i) {
@@ -141,12 +143,38 @@ namespace Dune::IGA {
 
       return {indices, vertices};
     }
+
    public:
+    // Obtain boundaries and vertexes
+    [[nodiscard]] std::vector<Boundary> getBoundaries() const {
+      return originalBoundaries;
+    }
+    [[nodiscard]] std::size_t numBoundaries() const {
+      return originalBoundaries.size();
+    }
+    [[nodiscard]] Boundary getBoundaryAt(std::size_t index) const {
+      return originalBoundaries.at(index);
+    }
+    [[nodiscard]] std::vector<Point> getVertexes() const {
+      std::vector<Point> vertexes;
+      std::ranges::transform(originalBoundaries, std::back_inserter(vertexes), [](const auto& boundary){
+        return boundary.endPoints.front();
+      });
+    }
+    [[nodiscard]] std::size_t numVertexes() const {
+      return originalBoundaries.size();
+    }
+    [[nodiscard]] Point getVertexAt(std::size_t index) const {
+      return originalBoundaries.at(index).endPoints.front();
+    }
+
     /// \brief Calculates the area from the actual trim paths (might be expensive)
     double calculateTargetArea(unsigned int div = 200) {
       Clipper2Lib::PathD polygon;
+      polygon.reserve(div*boundaries.size());
+
       for (auto& boundary : boundaries) {
-        auto path = boundary.path(div, false);
+        auto path = boundary.path(div);
         for (Clipper2Lib::PointD point : path) {
           polygon.emplace_back(point);
         }
@@ -158,7 +186,7 @@ namespace Dune::IGA {
     double calculateArea() {
       GridView gv = grid->leafGridView();
       return std::accumulate(elements(gv).begin(), elements(gv).end(), 0.0,
-                            [](double rhs, const auto& element) { return rhs + element.geometry().volume(); });
+                             [](double rhs, const auto& element) { return rhs + element.geometry().volume(); });
     }
 
     /// \brief Checks the grid for overlaps, returns true if any element overlaps another
@@ -166,32 +194,30 @@ namespace Dune::IGA {
       GridView gV = grid->leafGridView();
 
       std::vector<Clipper2Lib::PointD> centers;
-      std::ranges::transform(elements(gV), std::back_inserter(centers), [](const auto& ele) ->Clipper2Lib::PointD{
-            auto c = ele.geometry().center();
+      std::ranges::transform(elements(gV), std::back_inserter(centers), [](const auto& ele) -> Clipper2Lib::PointD {
+        auto c = ele.geometry().center();
         return {c[0], c[1]};
       });
 
       auto getElementEdges = [](const auto& geo) -> Clipper2Lib::PathD {
-        std::vector<Point> corners {geo.corner(0), geo.corner(1), geo.corner(2)};
+        std::vector<Point> corners{geo.corner(0), geo.corner(1), geo.corner(2)};
         Clipper2Lib::PathD edges;
         for (auto& c : corners)
           edges.emplace_back(c[0], c[1]);
         return edges;
       };
       std::vector<Clipper2Lib::PathD> elementEdges;
-      std::ranges::transform(elements(gV), std::back_inserter(elementEdges), [&getElementEdges](const auto& ele){
-        return getElementEdges(ele.geometry());
-      });
+      std::ranges::transform(elements(gV), std::back_inserter(elementEdges),
+                             [&getElementEdges](const auto& ele) { return getElementEdges(ele.geometry()); });
 
       int centerCounter = -1;
-      int edgeCounter = -1;
-      auto hasOverlap = std::ranges::any_of(centers, [&](const Clipper2Lib::PointD& center){
+      int edgeCounter   = -1;
+      auto hasOverlap   = std::ranges::any_of(centers, [&](const Clipper2Lib::PointD& center) {
         ++centerCounter;
         edgeCounter = -1;
         return std::ranges::any_of(elementEdges, [&](const Clipper2Lib::PathD& edges) {
           ++edgeCounter;
-          if (edgeCounter == centerCounter)
-            return false;
+          if (edgeCounter == centerCounter) return false;
           auto res = Clipper2Lib::PointInPolygon(center, edges);
           return (res == Clipper2Lib::PointInPolygonResult::IsInside || res == Clipper2Lib::PointInPolygonResult::IsOn);
         });
@@ -199,7 +225,6 @@ namespace Dune::IGA {
 
       return hasOverlap;
     }
-
 
    private:
     bool approxSamePoint(const Point& a, const Point& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
@@ -239,23 +264,23 @@ namespace Dune::IGA {
       }
       tempDomains.clear();
 
-      // Create split boundaries from DomainInformation 
+      // Create split boundaries from DomainInformation
       std::vector<Boundary> newBoundaries;
-      for (const auto& domain_info : domains) {
-        const int i = domain_info.second;
-        newBoundaries.emplace_back(boundaries[i].nurbsGeometry, domain_info.first);
-      }
-      boundaries = newBoundaries;
+      std::ranges::transform(domains, std::back_inserter(newBoundaries), [&](const auto& domain_info) -> Boundary{
+        return {boundaries[domain_info.second].nurbsGeometry, domain_info.first};
+      });
+      boundaries = std::move(newBoundaries);
     }
-    
-    std::vector<unsigned int> getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) {
-      auto it1 = std::find_if(vertices.begin(), vertices.end(),
-                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.front()); });
-      if (it1 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 1 not found");
 
-      auto it2 = std::find_if(vertices.begin(), vertices.end(),
+    std::vector<unsigned int> getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) {
+      auto it1 = std::ranges::find_if(vertices,
+                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.front()); });
+
+      auto it2 = std::ranges::find_if(vertices,
                               [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.back()); });
-      if (it2 == vertices.end()) throw std::runtime_error("Reconstruction of Grid failed: Vertex 2 not found");
+
+      assert(it1 != vertices.end());
+      assert(it2 != vertices.end());
 
       const unsigned int idx1 = std::distance(vertices.begin(), it1);
       const unsigned int idx2 = std::distance(vertices.begin(), it2);

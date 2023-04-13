@@ -20,10 +20,10 @@ namespace Dune::IGA::Utilities {
   void setStandardParameters() {
     Parameters parameters{};
 
-    parameters.preSample                = 1;
+    parameters.preSample                = 3;
     parameters.preSampleOnlyCurvedEdges = true;
     parameters.preGlobalRefine          = 0;
-    parameters.edgeRefinements          = 4;
+    parameters.edgeRefinements          = 0;
 
     getParameters() = parameters;
   }
@@ -50,11 +50,9 @@ namespace Dune::IGA::Utilities {
     return linspace(ab[0], ab[1], N);
   }
 
-  /** \brief Maps a value of type T that is defined in one domain into another domain
-   *  \tparam T any floating point type
-  */
+  /// \brief Maps a value of type T that is defined in one domain into another domain
   template <std::floating_point T>
-  T map(T value, T inputMin, T inputMax, T outputMin, T outputMax) {
+  T mapToRange(T value, T inputMin, T inputMax, T outputMin, T outputMax) {
     return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
   }
 

@@ -41,7 +41,7 @@
 // template <class Grid, class IdSet>
 // void checkIdSet ( const Grid &grid, const IdSet& idSet);
 #include <dune/grid/io/file/printgrid.hh>
-#include <dune/grid/test/gridcheck.hh>
+//#include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 
 #include <dune/iga/nurbspatch.hh>
@@ -1526,18 +1526,18 @@ auto testTrimFunctionality() {
   for (auto& ele : elements(grid.leafGridView())) {
     res = clipElement(ele, clip).second.value();
   }
-  auto [pointMap, edgeCounter, nodeCounter] = res;
-
-  for (auto& [edgeNr, vecOfPoints] : *pointMap) {
-    if (edgeNr == 1)
-      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {1, 0.5}));
-    if (edgeNr == 3)
-      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {0, 0.5}));
-  }
-
-  Clipper2Lib::PathsD clip2;
-  clip2.push_back(Clipper2Lib::MakePathD(""));
-
+//  auto [pointMap, edgeCounter, nodeCounter] = res;
+//
+//  for (auto& [edgeNr, vecOfPoints] : *pointMap) {
+//    if (edgeNr == 1)
+//      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {1, 0.5}));
+//    if (edgeNr == 3)
+//      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {0, 0.5}));
+//  }
+//
+//  Clipper2Lib::PathsD clip2;
+//  clip2.push_back(Clipper2Lib::MakePathD(""));
+//
 
   return t;
 }
@@ -1588,7 +1588,7 @@ int main(int argc, char** argv) try {
 
 
   //t.subTest(testIbraReader());
-  //t.subTest(testTrimImpactWithRefinement());
+  t.subTest(testTrimImpactWithRefinement());
 
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());

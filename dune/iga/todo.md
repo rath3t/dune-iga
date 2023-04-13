@@ -46,4 +46,4 @@ nurbsleafgridview.hh
 nurbspatch.hh
 - 
 
-- [ ] `int patchBoundaryIndex(const int ocdim1Id)`  simplify with map<int, int> ??
+- [ ] `int patchBoundaryIndex(const int ocdim1Id)`  simplify with mapToRange<int, int> ??

@@ -20,7 +20,6 @@
 /** \file
  * \brief The NURBSGridEntity class
  */
-// TODO: Replace directIndex with realIndex ?????
 namespace Dune::IGA {
 
   template <int codim, int dim, typename GridImpl>
@@ -120,7 +119,9 @@ namespace Dune::IGA {
     }
     int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
 
-    int getRealIndexForOuterIndex(int outerIndex) requires (dim == 2)  {
+    int getRealIndexForOuterIndex(int outerIndex)
+      requires(dim == 2)
+    {
       if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
       try {
         return NURBSGridView_->getPatch(patchID_).template getRealIndex<0>(outerIndex);
@@ -172,7 +173,7 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
-    // TODO in patch
+    // TODO ??
     [[nodiscard]] bool hasBoundaryIntersections() const {
       return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
