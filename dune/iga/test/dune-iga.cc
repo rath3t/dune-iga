@@ -23,30 +23,28 @@
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimutils.hh>
 #include <dune/iga/ibraReader.hh>
+
+#define TEST_ALL
+
+// Uncomment for grid and geometry checks -- makes copilation time way longer
+#ifdef TEST_ALL
+
 #include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkindexset.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/gridcapabilities.hh>
 #include <dune/grid/io/file/printgrid.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
-
-#if 0
+#include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkgeometry.hh>
-// #include <dune/grid/test/checkidset.hh>
-// #include <dune/grid/test/checkindexset.hh>
-// template <class Grid, class IdSet>
-// void checkIdSet ( const Grid &grid, const IdSet& idSet);
 #include <dune/grid/io/file/printgrid.hh>
-//#include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
-
 #include <dune/iga/nurbspatch.hh>
-
 #include <dune/iga/nurbsbasis.hh>
+
 #endif
 
 
@@ -1024,7 +1022,6 @@ auto testPlate() {
   t.subTest(checkUniqueEdges(gridView));
   return t;
 }
-#endif
 
 
 auto testPatchGeometryCurve() {
@@ -1427,6 +1424,69 @@ auto testMapsInTrimmedPatch() {
 
   return t;
 }
+#endif
+
+#ifdef TEST_ALL
+
+auto testEntityFunctionality2() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  grid->globalRefine(1);
+
+  int counter = 0;
+  for (auto& ele : elements(grid->leafGridView())) {
+    counter++;
+    t.check(ele.impl().getTrimFlag() != ElementTrimFlag::empty);
+  }
+  t.check(counter == 4);
+  t.check(grid->size(0) == 4);
+
+  std::vector<Dune::FieldVector<double, 2>> expectedElementCenters {{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  std::vector<Dune::FieldVector<double, 2>> expectedEdgeCenters { {0.5, 0.25}, {1, 0.25}, {0.75, 0}, {0.75, 0.5}};
+  std::vector<Dune::FieldVector<double, 2>> expectedElementCorners { {0.5, 0}, {1, 0}, {0.5, 0.5}, {1, 0.5}};
+
+  Dune::FieldVector<double, 2> shift {1.7573970089500115, 0.0};
+  std::ranges::for_each(expectedElementCenters, [&shift](auto& c) {c += shift;});
+  std::ranges::for_each(expectedEdgeCenters, [&shift](auto& c) {c += shift;});
+  std::ranges::for_each(expectedElementCorners, [&shift](auto& c) {c += shift;});
+
+  for (int i = 0; auto& ele : elements(grid->leafGridView())) {
+    t.check(Dune::FloatCmp::eq(expectedElementCenters.at(i), ele.geometry().center()));
+
+    if (i == 1) {
+      for (int j = 0; auto& intersection : intersections(grid->leafGridView(), ele)) {
+        t.check(Dune::FloatCmp::eq(expectedEdgeCenters.at(j), intersection.geometry().center()));
+        ++j;
+      }
+      for (int j = 0; j < 4; ++j)
+        t.check(Dune::FloatCmp::eq(expectedElementCorners.at(j), ele.subEntity<2>(j).geometry().center()));
+    }
+    ++i;
+  }
+
+  // Test Dune Stuff
+//  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+//  geometryChecker.checkGeometry(grid->leafGridView());
+//  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+//  gridcheck(*grid);
+//
+//  Dune::printGrid(*grid, Dune::MPIHelper::instance());
+
+  // Grid 2
+  std::shared_ptr<NURBSGrid<2,2>> grid3 = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
+  grid3->globalRefine(2);
+
+  // Test Dune Stuff
+  Dune::GeometryChecker<typename decltype(grid3)::element_type> geometryChecker2;
+  geometryChecker2.checkGeometry(grid3->leafGridView());
+  Dune::checkIndexSet(*grid3, grid3->leafGridView(), std::cout);
+  gridcheck(*grid3);
+
+  return t;
+}
+
+
 
 auto testEntityFunctionality() {
   TestSuite t;
@@ -1447,6 +1507,7 @@ auto testEntityFunctionality() {
 
   // Test element geometry (unfortunately the whole thing is shifted to the right and the top
   Dune::FieldVector<double, 2> shift {1.6142394486009448, 2.632929598653166};
+
 
   std::vector<Dune::FieldVector<double, 2>> expectedElementCenters {{0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
   std::vector<Dune::FieldVector<double, 2>> expectedEdgeCenters { {0.5, 0.25}, {1, 0.25}, {0.75, 0}, {0.75, 0.5}};
@@ -1492,6 +1553,29 @@ auto testEntityFunctionality() {
 }
 
 
+auto checkDuneGeometryAndGrid() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid1 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", false);
+  grid1->globalRefine(1);
+  gridcheck(*grid1);
+  printGrid(*grid1, MPIHelper::instance());
+
+
+//  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra", true);
+//  grid->globalRefine(1);
+//
+////  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+////  geometryChecker.checkGeometry(grid->leafGridView());
+////  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+//
+//  gridcheck(*grid);
+
+
+  return t;
+}
+#endif
+
 auto testTrimFunctionality() {
   TestSuite t;
 
@@ -1526,18 +1610,6 @@ auto testTrimFunctionality() {
   for (auto& ele : elements(grid.leafGridView())) {
     res = clipElement(ele, clip).second.value();
   }
-//  auto [pointMap, edgeCounter, nodeCounter] = res;
-//
-//  for (auto& [edgeNr, vecOfPoints] : *pointMap) {
-//    if (edgeNr == 1)
-//      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {1, 0.5}));
-//    if (edgeNr == 3)
-//      t.check(Dune::FloatCmp::eq(vecOfPoints[0].point, {0, 0.5}));
-//  }
-//
-//  Clipper2Lib::PathsD clip2;
-//  clip2.push_back(Clipper2Lib::MakePathD(""));
-//
 
   return t;
 }
@@ -1546,8 +1618,7 @@ auto testTrimFunctionality() {
 auto testTrimmedElementGrid() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xa.ibra");
-
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
 
   for (int i = 0; i < 3; ++i) {
     grid->globalRefine(1);
@@ -1568,13 +1639,57 @@ auto testTrimmedElementGrid() {
 }
 
 
+auto testNurbsBasis2() {
+  TestSuite t;
+
+//  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra", true);
+//  grid->globalRefine(2);
+//
+//  auto gridView = grid->leafGridView();
+//  using GridView = decltype(gridView);
+//  Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.impl().getPatchData());
+//
+//  std::cout << "Grid 1\n";
+//  t.subTest(checkBasis(basis, EnableContinuityCheck(), EnableContinuityCheck()));
+//
+//  // Degree 2
+
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra", true, {1, 1});
+  grid2->globalRefine(1);
+  printGrid(*grid2, MPIHelper::instance());
+
+  auto gridView2 = grid2->leafGridView();
+  using GridView = decltype(gridView2);
+  Dune::Functions::NurbsBasis<GridView> basis2(gridView2);
+
+  std::cout << "Grid 2\n";
+  t.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
+
+  // Hole geometry
+
+//  std::shared_ptr<NURBSGrid<2,2>> grid3 = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra", true, {1, 1});
+//  grid3->globalRefine(3);
+//
+//  auto gridView3 = grid3->leafGridView();
+//  Dune::Functions::NurbsBasis<decltype(gridView3)> basis3(gridView3);
+//
+//  std::cout << "Hole\n";
+//  t.subTest(checkBasis(basis3, EnableContinuityCheck(), EnableContinuityCheck()));
+
+  return t;
+}
+
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  t.subTest(testTrimFunctionality());
-  t.subTest(testTrimmedElementGrid());
+  t.subTest(testNurbsBasis2());
+  //t.subTest(checkDuneGeometryAndGrid());
+
+//  t.subTest(testTrimFunctionality());
+//  t.subTest(testTrimmedElementGrid());
 
   //t.subTest(testIntegrationPoints());
   //t.subTest(testGeometry());
@@ -1583,18 +1698,21 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometryCurve());
   //t.subTest(testPatchGeometrySurface());
 //
-  t.subTest(testMapsInTrimmedPatch());
-  t.subTest(testEntityFunctionality());
-
-
-  //t.subTest(testIbraReader());
-  t.subTest(testTrimImpactWithRefinement());
+//  t.subTest(testMapsInTrimmedPatch());
+ // t.subTest(testEntityFunctionality());
+  //t.subTest(testEntityFunctionality2());
+//
+//
+//  //t.subTest(testIbraReader());
+//  t.subTest(testTrimImpactWithRefinement());
 
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());
 
   //t.subTest(testPipeGeometry());
   //t.subTest(furtherExamples());
+
+  //t.subTest(testNurbsBasis());
 
 #if 0
   t.subTest(test3DGrid());
@@ -1603,7 +1721,7 @@ int main(int argc, char** argv) try {
   testNurbsGridCylinder();
   t.subTest(testTorusGeometry());
 
-  t.subTest(testNurbsBasis());
+
 
   gridCheck();
   t.subTest(testBsplineBasisFunctions());

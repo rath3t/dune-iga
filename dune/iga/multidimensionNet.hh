@@ -8,6 +8,7 @@
 #pragma once
 
 #include <concepts>
+#include <iterator>
 #include <numeric>
 #include <ranges>
 
@@ -85,7 +86,7 @@ namespace Dune::IGA {
      *  \param[in] values netdim vectors of values
      */
     template <typename V>
-    requires StdVectorLikeContainer<V>
+      requires StdVectorLikeContainer<V>
     explicit MultiDimensionNet(const std::array<V, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
@@ -243,6 +244,15 @@ namespace Dune::IGA {
 
     /** \brief returns an array with the size of each dimension */
     std::array<int, netdim> size() const { return dimSize_; }
+
+    /** \brief returns an array with the size of each dimension */
+    template <std::integral T>
+    std::array<T, netdim> sizeAsT() const {
+      std::array<T, netdim> sizeUI;
+      for (int i = 0; i < netdim; ++i)
+        sizeUI[i] = static_cast<T>(dimSize_[i]);
+      return sizeUI;
+    }
 
     [[nodiscard]] std::size_t directSize() const { return values_.size(); }
 

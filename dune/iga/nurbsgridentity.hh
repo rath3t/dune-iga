@@ -98,7 +98,7 @@ namespace Dune::IGA {
           directIndex_(directIndex),
           patchID_{patchID},
           parType_{PartitionType::InteriorEntity},
-          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)} {
+          trimFlag(NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)) {
       intersections_ = std::make_shared<std::vector<Intersection>>();
       intersections_->reserve(this->subEntities(1));
 
@@ -159,6 +159,9 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
+    [[nodiscard]] unsigned int getDirectIndexInPatch() const {
+      return NURBSGridView_->getPatch(patchID_).template getDirectIndex<0>(directIndex_);
+    }
     [[nodiscard]] bool hasFather() const { return false; }
     [[nodiscard]] EntitySeed seed() const {
       EntitySeed e;
@@ -169,18 +172,16 @@ namespace Dune::IGA {
     LocalGeometry geometryInFather() const { throw std::logic_error("geometryInFather function not implemented."); }
     [[nodiscard]] NURBSGridEntity father() const { throw std::logic_error("father function not implemented."); }
 
-    // TODO What to do here? What counts as a subentity?
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
-    // TODO ??
+
     [[nodiscard]] bool hasBoundaryIntersections() const {
       return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
 
-    // TODO Again what should be a subentity?
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
       if constexpr (codimSub == 0) {

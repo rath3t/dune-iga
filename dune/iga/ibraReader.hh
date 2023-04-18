@@ -6,6 +6,7 @@
 #include <clipper2/clipper.h>
 #include <nlohmann/json.hpp>
 
+#include "dune/iga/igaalgorithms.hh"
 #include <dune/iga/ibraGeometry.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
@@ -22,7 +23,7 @@ namespace Dune::IGA {
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
-    static std::shared_ptr<Grid> read(const std::string& fileName) {
+    static std::shared_ptr<Grid> read(const std::string& fileName, const bool trim = true, std::array<int, 2> elevateDegree = {0, 0}) {
       // Get Standard Parameter for trimming
       Dune::IGA::Utilities::setStandardParameters();
 
@@ -90,13 +91,19 @@ namespace Dune::IGA {
       std::array<int, gridDim> dimsize = _surface.n_controlPoints;
 
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
-      PatchData _patchData {knotSpans, controlNet, _surface.degree};
+      PatchData _patchData{knotSpans, controlNet, _surface.degree};
+
+      // Optional Degree Elevate
+      for (int i = 0; i < 2; ++i)
+        if (elevateDegree[i] > 0)
+          _patchData = degreeElevate(_patchData, i, elevateDegree[i]);
+
 
       // Make the trimData, and pass them into the grid
       // So the grid can figure out what to do with it
       auto trimData = constructGlobalBoundaries(brep);
 
-      auto grid = std::make_unique<Grid>(_patchData, trimData);
+      auto grid = (trim) ? std::make_unique<Grid>(_patchData, trimData) : std::make_unique<Grid>(_patchData);
       return std::move(grid);
     }
 

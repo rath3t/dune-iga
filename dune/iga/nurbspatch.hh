@@ -6,6 +6,7 @@
 #include "igaalgorithms.hh"
 
 #include <memory>
+#include <ranges>
 
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
@@ -71,6 +72,15 @@ namespace Dune::IGA {
       computeElementTrimInfo();
     }
 
+    template <unsigned int codim, std::integral T = int>
+      requires(codim == 0 || codim == dim)
+    [[nodiscard]] std::array<unsigned int, dim> originalGridSize() const {
+      if constexpr (codim == 0)
+        return elementNet_->template sizeAsT<T>();
+      else
+        return vertexNet_->template sizeAsT<T>();
+    }
+
     /** \brief Returns the number of entities of a given codimension in the untrimmed case */
     [[nodiscard]] int originalSize(int codim) const {
       assert((codim <= dim) and (codim <= 3) and (codim >= 0));
@@ -123,7 +133,7 @@ namespace Dune::IGA {
     const auto& getPatchData() { return patchData_; }
 
     /** \brief Checks if the element given by it's id is on the patch boundary */
-    // TODO ??
+    // TODO
     [[nodiscard]] bool isPatchBoundary(const int& id) const {
       auto const& knotElementNet = this->elementNet_;
       auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
@@ -139,7 +149,7 @@ namespace Dune::IGA {
      * @param ocdim1Id
      * @return Increasing boundary index
      */
-    // TODO ??? Is used in nurbsintersection
+    // TODO
     [[nodiscard]] int patchBoundaryIndex(const int ocdim1Id) const {
       int index = ocdim1Id;
 
@@ -367,7 +377,7 @@ namespace Dune::IGA {
       else {
         if (n_fullElement == 0)
           return {GeometryTypes::none(codim)};
-        else if (this->hasEmptyElements())
+        else if (n_trimmedElement > 0)
           return {GeometryTypes::cube(codim), GeometryTypes::none(codim)};
         else
           return {GeometryTypes::cube(codim)};
@@ -375,7 +385,6 @@ namespace Dune::IGA {
     }
 
    private:
-    // TODO Altered: Write Test
     [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const RealIndex realIndex, const int localVertexIndex,
                                                            const bool returnOriginal = false) const {
       DirectIndex elementDirectIndex = getDirectIndex<0>(realIndex);
@@ -603,7 +612,7 @@ namespace Dune::IGA {
       int n_entity = originalSize(codim);
       auto& map    = getEntityMap<codim>();
       for (RealIndex i = 0; i < n_entity; ++i) {
-        map.insert({i, i});
+        map.emplace(i, i);
       }
     }
 
@@ -650,17 +659,17 @@ namespace Dune::IGA {
           auto elementBoundaries = constructElementBoundaries(*clippingResult, corners, trimData_.value());
 
           if (elementBoundaries.has_value()) {
-            trimInfoMap.insert(std::make_pair(
+            trimInfoMap.emplace(
                 directIndex,
                 ElementTrimInfo{.realIndex = realIndex,
                                 .repr      = std::make_optional(
-                                    std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value()))}));
+                                    std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value()))});
 
           } else
             trimFlags[directIndex] = ElementTrimFlag::empty;
         } else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
-          trimInfoMap.insert({directIndex, ElementTrimInfo{.realIndex = realIndex, .repr = std::nullopt}});
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex, .repr = std::nullopt});
         }
 
       }  // Element Loop End
@@ -696,7 +705,7 @@ namespace Dune::IGA {
       for (DirectIndex i = 0; i < n_entities_original; ++i) {
         auto it = std::ranges::find(uniqueEntityIndices, i);
         if (it != uniqueEntityIndices.end()) {
-          map.insert({realIndexCounter, i});
+          map.emplace(realIndexCounter, i);
           ++realIndexCounter;
         }
       }

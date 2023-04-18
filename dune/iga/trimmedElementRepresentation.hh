@@ -173,7 +173,11 @@ namespace Dune::IGA {
       Clipper2Lib::PathD polygon;
       polygon.reserve(div*boundaries.size());
 
+
       for (auto& boundary : boundaries) {
+
+
+
         auto path = boundary.path(div);
         for (Clipper2Lib::PointD point : path) {
           polygon.emplace_back(point);

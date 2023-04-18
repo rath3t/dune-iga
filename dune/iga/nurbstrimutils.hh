@@ -35,7 +35,7 @@ namespace Dune::IGA::Utilities {
     auto val = [a, inc](int i) -> T { return a + i * inc; };
 
     std::vector<T> xs(N);
-    for (auto i : std::ranges::iota_view{1u, N - 1})
+    for (auto i : std::views::iota(1u, N - 1))
       xs[i] = val(i);
 
     // Make sure the beginning and end are interpolatory
