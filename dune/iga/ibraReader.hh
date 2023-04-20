@@ -69,7 +69,7 @@ namespace Dune::IGA {
           }
         }
       } catch (json::parse_error& ex) {
-        DUNE_THROW(Dune::IOError, "Error in file: " << fileName << ", parse error at byte " << ex.byte);
+        DUNE_THROW(Dune::IOError, "Error in file: " << fileName << ", parse error at byte " << ex.byte<<" What: "<<ex.what());
       }
 
       // Make Connections

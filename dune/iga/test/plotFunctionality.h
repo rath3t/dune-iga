@@ -188,7 +188,7 @@ void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGri
 void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
   for (int i = 0; auto& ele : elements(grid->leafGridView())) {
       if (ele.impl().getTrimFlag() == Dune::IGA::ElementTrimFlag::trimmed) {
-        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->getGridView();
+        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->gridView();
         Plot::plotGridView(gV, "plot" + postfix + "/reconstruction/grid_" + std::to_string(i));
       }
       ++i;
@@ -198,7 +198,7 @@ void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>
 void saveEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
   for (int i = 0; auto& ele : elements(grid->leafGridView())) {
       if (ele.impl().getTrimFlag() == Dune::IGA::ElementTrimFlag::trimmed) {
-        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->getGridView();
+        auto gV = grid->getPatch().getTrimmedElementRepresentation(i).value()->gridView();
         Dune::VTKWriter vtkWriter(gV);
         vtkWriter.write("plot" + postfix + "/reconstruction/grid_" + std::to_string(i));
       }

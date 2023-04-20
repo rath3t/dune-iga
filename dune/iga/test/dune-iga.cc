@@ -18,6 +18,7 @@
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
@@ -35,7 +36,9 @@
 #include <dune/iga/gridcapabilities.hh>
 #include <dune/grid/io/file/printgrid.hh>
 #include <dune/iga/nurbstrimfunctionality.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
+
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
@@ -44,11 +47,13 @@
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/nurbspatch.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/igaDataCollector.h>
+#include <dune/vtk/vtkwriter.hh>
 
 #endif
 
-
 #include "plotFunctionality.h"
+
 
 
 using namespace Dune;
@@ -1024,6 +1029,7 @@ auto testPlate() {
 }
 
 
+
 auto testPatchGeometryCurve() {
   TestSuite t;
 
@@ -1491,63 +1497,81 @@ auto testEntityFunctionality2() {
 auto testEntityFunctionality() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra");
   grid->globalRefine(1);
 
-  int counter = 0;
-  for (auto& ele : elements(grid->leafGridView())) {
-    counter++;
-    t.check(ele.impl().getTrimFlag() != ElementTrimFlag::empty);
-  }
-  t.check(counter == 3);
-  t.check(grid->size(0) == 3);
-
-  // Reference geometry
-  Plot::plotGridView(grid->leafGridView(), "plot/test1");
-
-  // Test element geometry (unfortunately the whole thing is shifted to the right and the top
-  Dune::FieldVector<double, 2> shift {1.6142394486009448, 2.632929598653166};
-
-
-  std::vector<Dune::FieldVector<double, 2>> expectedElementCenters {{0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
-  std::vector<Dune::FieldVector<double, 2>> expectedEdgeCenters { {0.5, 0.25}, {1, 0.25}, {0.75, 0}, {0.75, 0.5}};
-  std::vector<Dune::FieldVector<double, 2>> expectedElementCorners { {0.5, 0}, {1, 0}, {0.5, 0.5}, {1, 0.5}};
-
-  std::ranges::for_each(expectedElementCenters, [&shift](auto& c) {c += shift;});
-  std::ranges::for_each(expectedEdgeCenters, [&shift](auto& c) {c += shift;});
-  std::ranges::for_each(expectedElementCorners, [&shift](auto& c) {c += shift;});
-
-  for (int i = 0; auto& ele : elements(grid->leafGridView())) {
-    t.check(Dune::FloatCmp::eq(expectedElementCenters.at(i), ele.geometry().center()));
-
-    if (i == 0) {
-      for (int j = 0; auto& intersection : intersections(grid->leafGridView(), ele)) {
-        t.check(Dune::FloatCmp::eq(expectedEdgeCenters.at(j), intersection.geometry().center()));
-        ++j;
-      }
-      for (int j = 0; j < 4; ++j)
-        t.check(Dune::FloatCmp::eq(expectedElementCorners.at(j), ele.subEntity<2>(j).geometry().center()));
+    int counter = 0;
+    for (auto& ele : elements(grid->leafGridView())) {
+      counter++;
+      t.check(ele.impl().getTrimFlag() != ElementTrimFlag::empty);
     }
-    ++i;
-  }
+    t.check(counter == 3);
+    t.check(grid->size(0) == 3);
 
-  // TODO Write tests for subentities
+    // Reference geometry
+    Plot::plotGridView(grid->leafGridView(), "plot/test1");
+
+    // Test element geometry (unfortunately the whole thing is shifted to the right and the top
+    Dune::FieldVector<double, 2> shift {1.6142394486009448, 2.632929598653166};
+
+    std::vector<Dune::FieldVector<double, 2>> expectedElementCenters {{0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+    std::vector<Dune::FieldVector<double, 2>> expectedEdgeCenters { {0.5, 0.25}, {1, 0.25}, {0.75, 0}, {0.75, 0.5}};
+    std::vector<Dune::FieldVector<double, 2>> expectedElementCorners { {0.5, 0}, {1, 0}, {0.5, 0.5}, {1, 0.5}};
+
+    std::ranges::for_each(expectedElementCenters, [&shift](auto& c) {c += shift;});
+    std::ranges::for_each(expectedEdgeCenters, [&shift](auto& c) {c += shift;});
+    std::ranges::for_each(expectedElementCorners, [&shift](auto& c) {c += shift;});
+
+    for (int i = 0; auto& ele : elements(grid->leafGridView())) {
+      t.check(Dune::FloatCmp::eq(expectedElementCenters.at(i), ele.geometry().center()));
+
+      if (i == 0) {
+        for (int j = 0; auto& intersection : intersections(grid->leafGridView(), ele)) {
+          t.check(Dune::FloatCmp::eq(expectedEdgeCenters.at(j), intersection.geometry().center()));
+          ++j;
+        }
+        for (int j = 0; j < 4; ++j)
+          t.check(Dune::FloatCmp::eq(expectedElementCorners.at(j), ele.subEntity<2>(j).geometry().center()));
+      }
+      ++i;
+    }
+
+    // TODO Write tests for subentities
 
 
-  // Test Size functions
-  auto gV = grid->leafGridView();
+    // Test Size functions
+    auto gV = grid->leafGridView();
 
-  t.check(gV.size(0) == 3);
-  t.check(gV.size(Dune::GeometryTypes::none(2)) == 3);
-  t.check(gV.size(Dune::GeometryTypes::cube(2)) == 0);
+    t.check(gV.size(0) == 3);
+    t.check(gV.size(Dune::GeometryTypes::none(2)) == 3);
+    t.check(gV.size(Dune::GeometryTypes::cube(2)) == 0);
 
-  // Test Dune Stuff
-  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
-  geometryChecker.checkGeometry(grid->leafGridView());
-  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+//   Test Dune Stuff
+    Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+    geometryChecker.checkGeometry(grid->leafGridView());
+    Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
 
-  // If this yields the correct boundaries, then we are happy
-  Dune::printGrid(*grid, Dune::MPIHelper::instance());
+//   If this yields the correct boundaries, then we are happy
+    Dune::printGrid(*grid, Dune::MPIHelper::instance());
+
+  return t;
+}
+
+auto testDataCollectorAndVtkWriter() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra");
+  grid->globalRefine(3);
+
+const auto gv = grid->leafGridView();
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
+
+  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+  auto lambdaf= [](auto x){ return Dune::FieldVector<double,2>({std::sin(x[0]),std::cos(3*x[0])+std::sin(4*x[1])});};
+  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+
+  writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+  writer2.write("TestFile");
 
   return t;
 }
@@ -1628,7 +1652,7 @@ auto testTrimmedElementGrid() {
         bool hasOverlap = repr.value()->checkGridForOverlappingElements();
         t.check(!hasOverlap, "Grid Overlap at ref: " + std::to_string(i+1) + ", ele: " + std::to_string(j-1));
         if (hasOverlap) {
-          auto gV = repr.value()->getGridView();
+          auto gV = repr.value()->gridView();
           Plot::plotGridView(gV, "overlapCheck/grid_" + std::to_string(i+1) + "_" + std::to_string(j-1));
         }
       }
@@ -1705,6 +1729,8 @@ int main(int argc, char** argv) try {
 //
 //  //t.subTest(testIbraReader());
 //  t.subTest(testTrimImpactWithRefinement());
+  t.subTest(testEntityFunctionality());
+  t.subTest(testDataCollectorAndVtkWriter());
 
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());

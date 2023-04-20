@@ -264,6 +264,10 @@ namespace Dune::IGA {
     /** \brief Return from the 0 to 1 domain the position in the current knot span */
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto localToSpan(const LocalCoordinate& local) const {
+//      for (int i = 0; i < griddim; ++i) {
+//        assert(local[i]); // assert  that local is in range
+//      }
+
       ReturnType localInSpan;
       if constexpr (LocalCoordinate::dimension != 0) {
         for (int loci = 0, i = 0; i < griddim; ++i) {
@@ -275,6 +279,19 @@ namespace Dune::IGA {
         for (int i = 0; i < griddim; ++i)
           localInSpan[i] = offset_[i];
       return localInSpan;
+    }
+
+    /** \brief Return from the 0 to 1 domain the position in the current knot span */
+    template <typename ReturnType = LocalCoordinate>
+    auto spanToLocal(const LocalCoordinate& inSpan) const {
+      ReturnType local;
+        for (int i = 0; i < griddim; ++i) {
+        local[i] =  (inSpan[i] -offset_[i])/scaling_[i];
+        local[i] = local[i]<0.0? 0.0:local[i];
+        local[i] = local[i]>1.0? 1.0:local[i];
+        }
+
+      return local;
     }
 
     [[nodiscard]] const auto& nurbs() const { return nurbs_; }

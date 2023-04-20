@@ -71,7 +71,7 @@ namespace Dune::IGA {
       reconstructTrimmedElement();
     }
     // Accessors
-    GridView getGridView() const { return grid->leafGridView(); }
+    GridView gridView() const { return grid->leafGridView(); }
 
    private:
     void reconstructTrimmedElement() {
