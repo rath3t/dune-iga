@@ -130,6 +130,11 @@ namespace Dune::IGA {
       }
     }
 
+    auto trimmedElementRepresentation() const
+    {
+      return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+          }
+
     void getIntegrationPoints(std::vector<Dune::QuadraturePoint<double, dim>>& vector,
                               const std::optional<int>& p_order = std::nullopt) const {
       vector.clear();
@@ -181,6 +186,7 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
+    [[nodiscard]] bool isTrimmed() const { return trimFlag== ElementTrimFlag::trimmed; }
 
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
