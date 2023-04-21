@@ -39,47 +39,23 @@ namespace Dune {
         for (auto element : elements(gridView_)) {
           const size_t elementId = indexSet.index(element);
 
-          if (element.impl().isTrimmed()) {
-            assert(element.impl()
-                       .trimmedElementRepresentation()
-                       .has_value());  // at this point there should be a trimming information
-            auto elementRepr               = element.impl().trimmedElementRepresentation().value();
-            auto trimmedGridView           = elementRepr->gridView();
-            auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-            numCells_ += trimmedGridView.size(0);
-            const auto& trimmedIndexSet = trimmedGridView.indexSet();
-            for (auto gt : trimmedIndexSet.types(0))
-              pointSets_.try_emplace(gt, 1);
+          auto elementRepr               = element.impl().trimmedElementRepresentation();
+          auto trimmedGridView           = elementRepr->gridView();
+          auto verticesInTrimmedGridView = trimmedGridView.size(dim);
+          numCells_ += trimmedGridView.size(0);
+          const auto& trimmedIndexSet = trimmedGridView.indexSet();
+          for (auto gt : trimmedIndexSet.types(0))
+            pointSets_.try_emplace(gt, 1);
 
-            for (auto& [type, pointSet] : pointSets_)
-              if (pointSet.size() == 0) pointSet.build(type);
+          for (auto& [type, pointSet] : pointSets_)
+            if (pointSet.size() == 0) pointSet.build(type);
 
-            for (auto triangulationVertices : vertices(trimmedGridView)) {
-              std::size_t idx = trimmedIndexSet.index(triangulationVertices);
-              vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, idx}), vertexCounter++);
-            }
-            numPoints_ += verticesInTrimmedGridView;
-          } else {
-            assert(!element.impl()
-                        .trimmedElementRepresentation()
-                        .has_value());  // at this point there should be a trimming information
-            auto verticesInTrimmedGridView = 4;
-            ++numCells_;
-            pointSets_.try_emplace(Dune::GeometryTypes::quadrilateral, 1);
-
-            for (auto& [type, pointSet] : pointSets_)
-              if (pointSet.size() == 0) pointSet.build(type);
-
-            auto const& pointSet = pointSets_.at(Dune::GeometryTypes::quadrilateral);
-
-            for (std::size_t i = 0; i < pointSet.size(); ++i) {
-              auto const& p        = pointSet[i];
-              auto const& localKey = p.localKey();
-              vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, localKey.subEntity()}), vertexCounter++);
-            }
-
-            numPoints_ += verticesInTrimmedGridView;
+          for (auto triangulationVertices : vertices(trimmedGridView)) {
+            std::size_t idx = trimmedIndexSet.index(triangulationVertices);
+            vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, idx}), vertexCounter++);
           }
+          numPoints_ += verticesInTrimmedGridView;
+
         }
       }
 
@@ -98,11 +74,8 @@ namespace Dune {
         for (auto element : elements(gridView_, partition)) {
           auto geometry          = element.geometry();
           const size_t elementId = indexSet.index(element);
-          if (element.impl().isTrimmed()) {
-            assert(element.impl()
-                       .trimmedElementRepresentation()
-                       .has_value());  // at this point there should be a trimming information
-            auto elementRepr               = element.impl().trimmedElementRepresentation().value();
+
+            auto elementRepr               = element.impl().trimmedElementRepresentation();
             auto trimmedGridView           = elementRepr->gridView();
             auto verticesInTrimmedGridView = trimmedGridView.size(dim);
             const auto& trimmedIndexSet    = trimmedGridView.indexSet();
@@ -117,24 +90,7 @@ namespace Dune {
               for (std::size_t j = v.size(); j < 3u; ++j)
                 data[idx + j] = T(0);
             }
-          } else {
-            assert(!element.impl()
-                        .trimmedElementRepresentation()
-                        .has_value());  // at this point there should be a trimming information
 
-            auto const& pointSet = pointSets_.at(Dune::GeometryTypes::quadrilateral);
-
-            for (std::size_t i = 0; i < pointSet.size(); ++i) {
-              auto const& p        = pointSet[i];
-              auto const& localKey = p.localKey();
-              std::int64_t idx     = 3 * vertexIndex_.at({elementId, localKey.subEntity()});
-              auto v               = geometry.corner(localKey.subEntity());
-              for (std::size_t j = 0; j < v.size(); ++j)
-                data[idx + j] = T(v[j]);
-              for (std::size_t j = v.size(); j < 3u; ++j)
-                data[idx + j] = T(0);
-            }
-          }
         }
 
         return data;
@@ -159,11 +115,7 @@ namespace Dune {
         for (auto const& ele : elements(gridView_, partition)) {
           const std::size_t elementId = indexSet.index(ele);
 
-          if (ele.impl().isTrimmed()) {
-            assert(ele.impl()
-                       .trimmedElementRepresentation()
-                       .has_value());  // at this point there should be a trimming information
-            auto elementRepr               = ele.impl().trimmedElementRepresentation().value();
+            auto elementRepr               = ele.impl().trimmedElementRepresentation();
             auto trimmedGridView           = elementRepr->gridView();
             auto verticesInTrimmedGridView = trimmedGridView.size(dim);
             const auto& trimmedIndexSet    = trimmedGridView.indexSet();
@@ -183,21 +135,7 @@ namespace Dune {
               cells.types.push_back(cellType.type());
               cells.offsets.push_back(old_o += pointSet.size());
             }
-          } else {
-            Vtk::CellType cellType(Dune::GeometryTypes::quadrilateral, Vtk::CellType::LAGRANGE);
 
-            auto const& pointSet = pointSets_.at(ele.type());
-
-            for (std::size_t i = 0; i < pointSet.size(); ++i) {
-              auto const& p        = pointSet[i];
-              auto const& localKey = p.localKey();
-              std::int64_t idx     = vertexIndex_.at({elementId, localKey.subEntity()});
-
-              cells.connectivity.push_back(idx);
-            }
-            cells.types.push_back(cellType.type());
-            cells.offsets.push_back(old_o += pointSet.size());
-          }
         }
         return cells;
       }
@@ -214,36 +152,20 @@ namespace Dune {
           localFct.bind(element);
           auto geometry          = element.geometry();
           const size_t elementId = indexSet.index(element);
-          if (element.impl().isTrimmed()) {
-            assert(element.impl()
-                       .trimmedElementRepresentation()
-                       .has_value());  // at this point there should be a trimming information
-            auto elementRepr               = element.impl().trimmedElementRepresentation().value();
-            auto trimmedGridView           = elementRepr->gridView();
-            auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-            const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-            for (auto triangulationVertex : vertices(trimmedGridView)) {
-              auto trimmedGeometry = triangulationVertex.geometry().center();
 
-              std::int64_t idx = nComps * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
-              auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry); //transform vertex position from iga span to [0,1]^d
-              for (std::size_t comp = 0; comp < nComps; ++comp)
-                data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
-            }
-          } else {
-            assert(!element.impl()
-                        .trimmedElementRepresentation()
-                        .has_value());  // at this point there should be no trimming information
-            auto const& pointSet = pointSets_.at(Dune::GeometryTypes::quadrilateral);
+          auto elementRepr               = element.impl().trimmedElementRepresentation();
+          auto trimmedGridView           = elementRepr->gridView();
+          auto verticesInTrimmedGridView = trimmedGridView.size(dim);
+          const auto& trimmedIndexSet    = trimmedGridView.indexSet();
+          for (auto triangulationVertex : vertices(trimmedGridView)) {
+            auto trimmedGeometry = triangulationVertex.geometry().center();
 
-            for (std::size_t i = 0; i < pointSet.size(); ++i) {
-              auto const& p        = pointSet[i];
-              auto const& localKey = p.localKey();
-              std::int64_t idx     = nComps * vertexIndex_.at({elementId, localKey.subEntity()});
-              for (std::size_t comp = 0; comp < nComps; ++comp)
-                data[idx + comp] = T(localFct.evaluate(comp, p.point()));
-            }
+            std::int64_t idx = nComps * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
+            auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry); //transform vertex position from iga span to [0,1]^d
+            for (std::size_t comp = 0; comp < nComps; ++comp)
+              data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
           }
+
         }
 
         return data;

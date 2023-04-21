@@ -6,6 +6,7 @@
 #include "igaalgorithms.hh"
 
 #include <memory>
+#include <optional>
 #include <ranges>
 
 #include <dune/common/float_cmp.hh>
@@ -453,7 +454,8 @@ namespace Dune::IGA {
 
       switch (dim) {
         case 2:
-          dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0] : 0;
+          dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0]
+                                              : 0;
           break;
         case 3:
           assert(uniqueSpanSize_.size() == dim);
@@ -587,7 +589,7 @@ namespace Dune::IGA {
       return getTrimFlagForDirectIndex(nurbsIdx);
     }
     [[nodiscard]] auto getTrimmedElementRepresentation(RealIndex realIndex) const
-        -> std::optional<std::shared_ptr<TrimmedElementRepresentationType>> {
+        -> std::shared_ptr<TrimmedElementRepresentationType> {
       auto directIndex = getDirectIndex<0>(realIndex);
       return trimInfoMap.at(directIndex).repr;
     }
@@ -662,14 +664,16 @@ namespace Dune::IGA {
             trimInfoMap.emplace(
                 directIndex,
                 ElementTrimInfo{.realIndex = realIndex,
-                                .repr      = std::make_optional(
-                                    std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value()))});
+                                .repr      = std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value())});
 
           } else
             trimFlags[directIndex] = ElementTrimFlag::empty;
         } else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
-          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex, .repr = std::nullopt});
+          auto dune_corners = corners; std::swap(dune_corners[2], dune_corners[3]);
+          trimInfoMap.emplace(directIndex,
+                              ElementTrimInfo{.realIndex = realIndex,
+                                              .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
         }
 
       }  // Element Loop End
@@ -756,9 +760,7 @@ namespace Dune::IGA {
 
     struct ElementTrimInfo {
       RealIndex realIndex{};
-      std::optional<std::shared_ptr<TrimmedElementRepresentationType>> repr = std::nullopt;
-
-      //[[nodiscard]] bool isTrimmed() const {return repr.has_value();};
+      std::shared_ptr<TrimmedElementRepresentationType> repr;
     };
 
     std::map<DirectIndex, ElementTrimInfo> trimInfoMap;

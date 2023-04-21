@@ -1560,7 +1560,7 @@ auto testEntityFunctionality() {
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra");
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
   grid->globalRefine(3);
 
 const auto gv = grid->leafGridView();
@@ -1648,11 +1648,11 @@ auto testTrimmedElementGrid() {
     grid->globalRefine(1);
     for (int j = 0; const auto& ele : elements(grid->leafGridView())) {
       auto repr = grid->getPatch().getTrimmedElementRepresentation(j++);
-      if (repr.has_value()) {
-        bool hasOverlap = repr.value()->checkGridForOverlappingElements();
+      if (repr->isTrimmed()) {
+        bool hasOverlap = repr->checkGridForOverlappingElements();
         t.check(!hasOverlap, "Grid Overlap at ref: " + std::to_string(i+1) + ", ele: " + std::to_string(j-1));
         if (hasOverlap) {
-          auto gV = repr.value()->gridView();
+          auto gV = repr->gridView();
           Plot::plotGridView(gV, "overlapCheck/grid_" + std::to_string(i+1) + "_" + std::to_string(j-1));
         }
       }
@@ -1709,10 +1709,10 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  t.subTest(testNurbsBasis2());
+  //t.subTest(testNurbsBasis2());
   //t.subTest(checkDuneGeometryAndGrid());
 
-//  t.subTest(testTrimFunctionality());
+  t.subTest(testTrimFunctionality());
 //  t.subTest(testTrimmedElementGrid());
 
   //t.subTest(testIntegrationPoints());
@@ -1723,13 +1723,13 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometrySurface());
 //
 //  t.subTest(testMapsInTrimmedPatch());
- // t.subTest(testEntityFunctionality());
-  //t.subTest(testEntityFunctionality2());
+ t.subTest(testEntityFunctionality());
+  t.subTest(testEntityFunctionality2());
 //
 //
 //  //t.subTest(testIbraReader());
 //  t.subTest(testTrimImpactWithRefinement());
-  t.subTest(testEntityFunctionality());
+  // t.subTest(testEntityFunctionality());
   t.subTest(testDataCollectorAndVtkWriter());
 
   //t.subTest(testMultiParametrisation());

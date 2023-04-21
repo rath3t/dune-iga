@@ -6,11 +6,13 @@
 
 #include <bits/ranges_algo.h>
 #include <bits/ranges_algobase.h>
+#include <clipper2/clipper.core.h>
 #include <cstddef>
 #include <iterator>
 #include <mapbox/earcut.hpp>
 #include <vector>
 
+#include "dune/geometry/type.hh"
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
@@ -63,15 +65,24 @@ namespace Dune::IGA {
    private:
     std::vector<Boundary> boundaries;
     std::vector<Boundary> originalBoundaries;
+    bool trimmed;
 
    public:
     // Construct with boundaries
-    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries) {
+    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries), trimmed(true) {
       std::ranges::copy(boundaries, std::back_inserter(originalBoundaries));
       reconstructTrimmedElement();
     }
+    /// brief: Constructs an untrimmed elementRepresentation, expects indices in Dune ordering
+    explicit TrimmedElementRepresentation(std::vector<FieldVector<double, 2>>& corners) : trimmed(false) {
+        constructFromCorners(corners);
+    }
+
     // Accessors
     GridView gridView() const { return grid->leafGridView(); }
+    [[nodiscard]] bool isTrimmed() const {
+      return trimmed;
+    }
 
    private:
     void reconstructTrimmedElement() {
@@ -87,9 +98,19 @@ namespace Dune::IGA {
         gridFactory.insertVertex(vertex);
 
       // The element indices are stored as a flat vector, 3 indices always constitute 1 triangle
-      for (auto it = indices.begin(); it < indices.end(); it += 3)
+      for (auto it = indices.begin(); it < indices.end(); it += 3) {
         gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
 
+        #if 0
+        // Check for counter-clockwise orientation
+        auto eleIdx = std::vector<unsigned int>(it, std::next(it, 3));
+        Clipper2Lib::PathD path;
+        std::ranges::transform(eleIdx, std::back_inserter(path), [&](unsigned int idx) -> Clipper2Lib::PointD{
+          return {vertices[idx][0], vertices[idx][1]};
+        });
+        assert(Clipper2Lib::IsPositive(path));
+        #endif
+      }
       for (auto& boundary : boundaries)
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary));
@@ -142,6 +163,19 @@ namespace Dune::IGA {
       std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
 
       return {indices, vertices};
+    }
+
+    void constructFromCorners(std::vector<FieldVector<double, 2>>& corners) {
+      assert(corners.size() == 4);
+      assert(corners[2][0] < corners[3][0]);
+
+      Dune::GridFactory<Grid> gridFactory;
+
+      for (auto& vertex : corners)
+        gridFactory.insertVertex(vertex);
+
+      gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      grid = gridFactory.createGrid();
     }
 
    public:

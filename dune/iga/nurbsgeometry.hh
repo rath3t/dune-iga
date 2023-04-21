@@ -53,7 +53,7 @@ namespace Dune::IGA {
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
                   const std::array<int, griddim>& thisSpanIndices,
-                  const std::optional<std::shared_ptr<TrimmedElementRepresentationType>>& trimRepr = std::nullopt)
+                  const std::shared_ptr<TrimmedElementRepresentationType> trimRepr = nullptr)
         : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, trimRepr_(trimRepr) {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
@@ -90,13 +90,12 @@ namespace Dune::IGA {
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
-      if (trimRepr_.has_value())
-        return trimRepr_.value()->calculateArea();
+      if (trimRepr_ and trimRepr_->isTrimmed())
+        return trimRepr_->calculateArea();
 
 
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
           this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
-      // TODO Maybe use std::accumulate
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -255,7 +254,7 @@ namespace Dune::IGA {
 
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const {
-      if (trimRepr_.has_value())
+      if (trimRepr_ and trimRepr_->isTrimmed())
         return GeometryTypes::none(mydimension);
       else
         return GeometryTypes::cube(mydimension);
@@ -305,7 +304,7 @@ namespace Dune::IGA {
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
-    std::optional<std::shared_ptr<TrimmedElementRepresentationType>> trimRepr_;
+    std::shared_ptr<TrimmedElementRepresentationType> trimRepr_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
