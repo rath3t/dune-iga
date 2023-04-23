@@ -666,8 +666,10 @@ namespace Dune::IGA {
                 ElementTrimInfo{.realIndex = realIndex,
                                 .repr      = std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value())});
 
-          } else
+          } else {
             trimFlags[directIndex] = ElementTrimFlag::empty;
+            --n_trimmedElement;
+          }
         } else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
           auto dune_corners = corners; std::swap(dune_corners[2], dune_corners[3]);

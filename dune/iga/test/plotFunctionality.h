@@ -149,6 +149,17 @@ void plotGridViewAndPaths(auto& gridView, Clipper2Lib::PathsD& paths, std::strin
     //figure->save(file_name + ".png");
     figure->save(file_name + ".jpg");
 }
+void plotGridViews(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+    auto paraGrid = grid->getPatch().parameterSpaceGrid();
+
+    auto paraGridView = paraGrid->leafGridView();
+    Plot::plotGridView(paraGridView, "plot" + postfix + "/parametricGrid");
+
+    // Print Brep in physical Space
+    auto patchGridView = grid->leafGridView();
+    Plot::plotGridView(patchGridView, "plot"+ postfix +"/grid");
+}
+
 
 void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
     if (!(grid->trimData_.has_value()))

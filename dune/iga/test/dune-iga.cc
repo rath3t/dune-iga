@@ -1338,21 +1338,6 @@ auto furtherExamples() {
   return t;
 }
 
-auto testHoleGeometry() {
-  TestSuite t;
-
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
-  grid->globalRefine(3);
-
-  Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
-  Dune::printGrid(*grid, MPIHelper::instance(), "plot_hole/grid");
-  Plot::plotEveryReconstructedGrid(grid, "_hole");
-
-  VTKWriter vtkWriter(grid->leafGridView());
-  vtkWriter.write("plot_hole/grid");
-
-  return t;
-}
 
 auto testIntegrationPoints() {
   TestSuite t;
@@ -1433,6 +1418,25 @@ auto testMapsInTrimmedPatch() {
 #endif
 
 #ifdef TEST_ALL
+
+
+
+auto testHoleGeometry() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole_refi.ibra");
+  // grid->globalRefine(1);
+
+  Plot::plotGridView(grid->leafGridView(), "plot_hole/grid.png");
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
+  Dune::printGrid(*grid, MPIHelper::instance(), "plot_hole/grid");
+  Plot::plotEveryReconstructedGrid(grid, "_hole");
+
+  VTKWriter vtkWriter(grid->leafGridView());
+  vtkWriter.write("plot_hole/grid");
+
+  return t;
+}
 
 auto testEntityFunctionality2() {
   TestSuite t;
@@ -1703,16 +1707,24 @@ auto testNurbsBasis2() {
   return t;
 }
 
+void generateGraphics(std::string&& fileName) {
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read(fileName, false);
+
+  Plot::plotGridViews(grid2, "_graphics");
+}
+
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
+  generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
+
   //t.subTest(testNurbsBasis2());
   //t.subTest(checkDuneGeometryAndGrid());
 
-  t.subTest(testTrimFunctionality());
+//  t.subTest(testTrimFunctionality());
 //  t.subTest(testTrimmedElementGrid());
 
   //t.subTest(testIntegrationPoints());
@@ -1723,14 +1735,14 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometrySurface());
 //
 //  t.subTest(testMapsInTrimmedPatch());
- t.subTest(testEntityFunctionality());
-  t.subTest(testEntityFunctionality2());
+// t.subTest(testEntityFunctionality());
+//  t.subTest(testEntityFunctionality2());
 //
 //
 //  //t.subTest(testIbraReader());
 //  t.subTest(testTrimImpactWithRefinement());
   // t.subTest(testEntityFunctionality());
-  t.subTest(testDataCollectorAndVtkWriter());
+//  t.subTest(testDataCollectorAndVtkWriter());
 
   //t.subTest(testMultiParametrisation());
   //t.subTest(testNURBSSurfaceTrim());

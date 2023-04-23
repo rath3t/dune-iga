@@ -7,12 +7,16 @@
 #include <algorithm>
 #include <clipper2/clipper.h>
 #include <memory>
+#include <optional>
 
+#include "dune/common/float_cmp.hh"
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
 
 namespace Dune::IGA {
-  enum class ElementTrimFlag { full, empty, trimmed };
+  enum class ElementTrimFlag { full,
+                               empty,
+                               trimmed };
 }
 
 namespace Dune::IGA::Impl::Trim {
@@ -138,6 +142,10 @@ namespace Dune::IGA::Impl::Trim {
   bool pointInElement(const Point& point, const Clipper2Lib::PathD& elementEdges) {
     auto res = Clipper2Lib::PointInPolygon({point[0], point[1]}, elementEdges);
     return (res == Clipper2Lib::PointInPolygonResult::IsInside);
+  }
+  bool pointInElementOrOnEdge(const Point& point, const Clipper2Lib::PathD& elementEdges) {
+    auto res = Clipper2Lib::PointInPolygon({point[0], point[1]}, elementEdges);
+    return (res == Clipper2Lib::PointInPolygonResult::IsInside || res == Clipper2Lib::PointInPolygonResult::IsOn);
   }
 
   bool isFullElement(Clipper2Lib::PathD& clippedEdges, PointVector& corners) {
@@ -432,6 +440,19 @@ namespace Dune::IGA::Impl::Trim {
               traceCurveResult->intersectionPoint, -1},
              {traceCurveInput.boundaryIdx, curveToTrace.domain()[0].front(), traceCurveResult->intersectU,
               traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}});
+      else
+        return std::nullopt;
+    }
+    // ... or the point is on an edge, even nastier
+    if (Dune::FloatCmp::eq(startPoint, endPoint) && pointInElementOrOnEdge(startPoint, elementEdges)) {
+      if (Dune::FloatCmp::ne(curveToTrace(traceCurveInput.startU), startPoint)) {
+        auto traceCurveResult = traceCurveImpl(state->pointMapPtr.get(), curveToTrace, traceCurveInput.startEdge);
+        if (traceCurveResult.has_value())
+          return std::make_optional<std::vector<TraceCurveOutput>>(
+              {{traceCurveInput.boundaryIdx, traceCurveInput.startU, curveToTrace.domain()[0].back(), traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}}
+              );
+      }
+
     }
 
     // Check the boundary that was given in traceInput
