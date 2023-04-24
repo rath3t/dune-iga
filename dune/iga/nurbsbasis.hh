@@ -569,14 +569,14 @@ namespace Dune::Functions {
         }
       }
 
-//      // Print out
-//      for (auto& [eleIdx, indices] : originalIndices_) {
-//        std::cout << eleIdx << ": ";
-//        for (auto& i : indices)
-//          std::cout << i << " ";
-//        std::cout << "\n";
-//      }
-//      std::cout << std::endl;
+      // Print out
+      for (auto& [eleIdx, indices] : originalIndices_) {
+        std::cout << eleIdx << ": ";
+        for (auto& i : indices)
+          std::cout << i << " ";
+        std::cout << "\n";
+      }
+      std::cout << std::endl;
     }
 
 
@@ -741,7 +741,8 @@ namespace Dune::Functions {
     void bind(const Element& e) {
       element_          = e;
       // TODO RealIndex
-      auto elementIndex = preBasis_->gridView().indexSet().index(e);
+      // auto elementIndex = preBasis_->gridView().indexSet().index(e);
+      auto elementIndex = e.impl().getDirectIndexInPatch();
       finiteElement_.bind(preBasis_->getIJK(elementIndex, preBasis_->elements_));
       this->setSize(finiteElement_.size());
     }

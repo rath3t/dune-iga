@@ -1564,10 +1564,10 @@ auto testEntityFunctionality() {
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_hole_circle.ibra");
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
   grid->globalRefine(3);
 
-const auto gv = grid->leafGridView();
+  const auto gv = grid->leafGridView();
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
 
   Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
@@ -1666,7 +1666,8 @@ auto testTrimmedElementGrid() {
   return t;
 }
 
-
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 auto testNurbsBasis2() {
   TestSuite t;
 
@@ -1682,7 +1683,7 @@ auto testNurbsBasis2() {
 //
 //  // Degree 2
 
-  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra", true, {1, 1});
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", true, {1, 1});
   grid2->globalRefine(1);
   printGrid(*grid2, MPIHelper::instance());
 
@@ -1692,6 +1693,40 @@ auto testNurbsBasis2() {
 
   std::cout << "Grid 2\n";
   t.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
+
+  auto localView = basis2.localView();
+
+  for (int eleIdx = 0; auto& ele : elements(gridView2)) {
+    localView.bind(ele);
+
+    auto fe = localView.tree().finiteElement();
+    std::cout << "IDX " << eleIdx << " size " << fe.size() << "\n";
+
+    for (int i = 0; i < fe.size(); ++i) {
+      auto localI = localView.tree().localIndex(i);
+      std::cout << i << " Local: " << localI << " Global: " << localView.index(localI) << "\n";
+    }
+    std::cout << std::endl;
+    ++eleIdx;
+  }
+
+//  Dune::SubsamplingVTKWriter writer(gridView2,Dune::RefinementIntervals(4));
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gridView2);
+
+  Dune::VtkUnstructuredGridWriter writer(dataCollector1, Vtk::FormatTypes::ASCII);
+
+  std::vector<std::vector<double>> ansatzfunctions(basis2.dimension());
+  std::ranges::for_each(ansatzfunctions, [&](auto& vecOfAnsatz){
+    vecOfAnsatz.resize(basis2.dimension());
+    std::ranges::fill(vecOfAnsatz, 0.0);
+  });
+  for (int i=0; i < basis2.dimension(); ++i)
+  {
+    ansatzfunctions[i][i]=1;
+    auto Ni = Dune::Functions::makeDiscreteGlobalBasisFunction<double>(basis2, ansatzfunctions[i]);
+    writer.addPointData(Ni,Dune::VTK::FieldInfo("N"+ std::to_string(i), Dune::VTK::FieldInfo::Type::scalar, 1));
+  }
+  writer.write("BasisTest");
 
   // Hole geometry
 
@@ -1721,7 +1756,7 @@ int main(int argc, char** argv) try {
 
   generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
 
-  //t.subTest(testNurbsBasis2());
+  t.subTest(testNurbsBasis2());
   //t.subTest(checkDuneGeometryAndGrid());
 
 //  t.subTest(testTrimFunctionality());
