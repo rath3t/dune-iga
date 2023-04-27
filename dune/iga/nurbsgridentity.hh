@@ -117,6 +117,7 @@ namespace Dune::IGA {
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
     }
+    // TODO These two function have to be private
     int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
 
     int getRealIndexForOuterIndex(int outerIndex)
@@ -182,7 +183,10 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] bool hasBoundaryIntersections() const {
-      return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
+      return std::ranges::any_of(*intersections_, [](const Intersection& intersection){
+        return intersection.boundary();
+      });
+      // return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }

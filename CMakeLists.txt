@@ -23,6 +23,10 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(Clipper2Lib REQUIRED IMPORTED_TARGET Clipper2)
 find_package(nlohmann_json 3.11.2 REQUIRED)
 find_package(earcut_hpp REQUIRED)
+find_package(autodiff REQUIRED)
+find_package(Matplot++ REQUIRED)
+find_package(spdlog REQUIRED)
+
 
 # include the dune macros
 include(DuneMacros)

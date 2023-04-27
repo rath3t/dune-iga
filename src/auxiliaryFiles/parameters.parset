@@ -1,0 +1,12 @@
+[GridParameters]
+filename=surface-hole.ibra
+trim=1
+globalRefine=1
+u_degreeElevate=0
+v_degreeElevate=0
+
+
+[MaterialParameters]
+E      = 100
+nu     = 0.2
+

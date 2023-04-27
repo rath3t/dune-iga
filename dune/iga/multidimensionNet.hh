@@ -10,6 +10,7 @@
 #include <concepts>
 #include <iterator>
 #include <numeric>
+#include <functional>
 #include <ranges>
 
 #include <dune/iga/concepts.hh>

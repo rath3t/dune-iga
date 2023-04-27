@@ -1476,10 +1476,10 @@ auto testEntityFunctionality2() {
   }
 
   // Test Dune Stuff
-//  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
-//  geometryChecker.checkGeometry(grid->leafGridView());
-//  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
-//  gridcheck(*grid);
+  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+  geometryChecker.checkGeometry(grid->leafGridView());
+  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+  gridcheck(*grid);
 //
 //  Dune::printGrid(*grid, Dune::MPIHelper::instance());
 
@@ -1540,8 +1540,6 @@ auto testEntityFunctionality() {
       ++i;
     }
 
-    // TODO Write tests for subentities
-
 
     // Test Size functions
     auto gV = grid->leafGridView();
@@ -1554,9 +1552,10 @@ auto testEntityFunctionality() {
     Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
     geometryChecker.checkGeometry(grid->leafGridView());
     Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+    gridcheck(*grid);
 
 //   If this yields the correct boundaries, then we are happy
-    Dune::printGrid(*grid, Dune::MPIHelper::instance());
+    // Dune::printGrid(*grid, Dune::MPIHelper::instance());
 
   return t;
 }
@@ -1754,7 +1753,7 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
+  // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
 
   t.subTest(testNurbsBasis2());
   //t.subTest(checkDuneGeometryAndGrid());
@@ -1770,8 +1769,8 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometrySurface());
 //
 //  t.subTest(testMapsInTrimmedPatch());
-// t.subTest(testEntityFunctionality());
-//  t.subTest(testEntityFunctionality2());
+ t.subTest(testEntityFunctionality());
+  t.subTest(testEntityFunctionality2());
 //
 //
 //  //t.subTest(testIbraReader());

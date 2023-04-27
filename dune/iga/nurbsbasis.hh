@@ -569,14 +569,14 @@ namespace Dune::Functions {
         }
       }
 
-      // Print out
-      for (auto& [eleIdx, indices] : originalIndices_) {
-        std::cout << eleIdx << ": ";
-        for (auto& i : indices)
-          std::cout << i << " ";
-        std::cout << "\n";
-      }
-      std::cout << std::endl;
+//      // Print out
+//      for (auto& [eleIdx, indices] : originalIndices_) {
+//        std::cout << eleIdx << ": ";
+//        for (auto& i : indices)
+//          std::cout << i << " ";
+//        std::cout << "\n";
+//      }
+//      std::cout << std::endl;
     }
 
 
@@ -584,13 +584,10 @@ namespace Dune::Functions {
     template <typename It>
     It indices(const Node& node, It it) const {
       const auto eleIdx = node.element_.impl().getDirectIndexInPatch();
-      std::cout << "Element: " << node.element_.impl().getIndex() << ", ";
       for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
         auto globalIndex = indexMap.at(originalIndices_.at(eleIdx)[i]);
-        std::cout << globalIndex << " ";
         *it = {{globalIndex}};
       }
-      std::cout << std::endl;
       return it;
     }
     void prepareForTrim() {
@@ -612,11 +609,11 @@ namespace Dune::Functions {
       }
       cachedSize_ = realIndexCounter;
 
-      // Print out
-      std::cout << "Index Map:\n";
-      for (auto& [diri, rili] : indexMap)
-        std::cout << "D: " << diri << ", R: " << rili << "\n";
-      std::cout << std::endl;
+//      // Print out
+//      std::cout << "Index Map:\n";
+//      for (auto& [diri, rili] : indexMap)
+//        std::cout << "D: " << diri << ", R: " << rili << "\n";
+//      std::cout << std::endl;
     }
 
     [[nodiscard]] unsigned int computeOriginalSize() const {
@@ -740,8 +737,6 @@ namespace Dune::Functions {
     //! Bind to element.
     void bind(const Element& e) {
       element_          = e;
-      // TODO RealIndex
-      // auto elementIndex = preBasis_->gridView().indexSet().index(e);
       auto elementIndex = e.impl().getDirectIndexInPatch();
       finiteElement_.bind(preBasis_->getIJK(elementIndex, preBasis_->elements_));
       this->setSize(finiteElement_.size());

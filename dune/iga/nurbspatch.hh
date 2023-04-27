@@ -145,6 +145,43 @@ namespace Dune::IGA {
       return false;
     }
 
+    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const requires (dim == 2)  {
+      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for that as well
+      constexpr int noNeighbor = -1;
+
+      // This needs a getRealIndexOr method
+      auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
+        if (outerIndex == noNeighbor) return noNeighbor;
+        try {
+          return (int) getRealIndex<0>(outerIndex);
+        } catch (std::runtime_error& e) {
+          return noNeighbor;
+        }
+      };
+
+      std::vector<RealIndex> realIndexOfBoundaryIntersections;
+
+      for (int i : std::views::iota(0, size(0))) {
+        auto nurbsDirectIndex = getDirectIndex<0>(i);
+        for (int innerLocalIndex = 0; innerLocalIndex < 4; ++innerLocalIndex) {
+          auto multiIndex       = elementNet_->directToMultiIndex(nurbsDirectIndex);
+          multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
+              += ((innerLocalIndex % 2)
+                      ? 1
+                      : noNeighbor);  // increase the multiIndex depending on where the outer element should lie
+          auto directOuterIndex = (elementNet_->isValid(multiIndex)) ? elementNet_->index(multiIndex) : noNeighbor;
+          directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
+          if (directOuterIndex == noNeighbor)
+            realIndexOfBoundaryIntersections.push_back(getGlobalEdgeIndexFromElementIndex(i, innerLocalIndex));
+        }
+      }
+
+      auto it = std::ranges::find(realIndexOfBoundaryIntersections, intersectionRealIndex);
+      assert(it != realIndexOfBoundaryIntersections.end());
+
+      return static_cast<int>(std::ranges::distance(realIndexOfBoundaryIntersections.begin(), it));
+    }
+
     /** \brief Returns the boundary index of the passed codim 1 entity index
      * If the   passed codim 1 entity does not lie on the boundary this method returns random indices!
      * @param ocdim1Id
