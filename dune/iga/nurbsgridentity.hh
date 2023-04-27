@@ -10,6 +10,7 @@
 #include "nurbsintersection.hh"
 
 #include <array>
+#include <bits/ranges_algo.h>
 #include <numeric>
 
 #include <dune/common/fvector.hh>
@@ -143,15 +144,17 @@ namespace Dune::IGA {
           = p_order.value_or(mydimension * (*std::ranges::max_element(NURBSGridView_->getPatchData(patchID_).degree)));
 
       if (trimFlag == ElementTrimFlag::trimmed) {
-        auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_).value();
-        auto gridView    = elementRepr->getGridView();
-
-        for (auto triangulationElement : elements(gridView)) {
-          auto geo        = triangulationElement.geometry();
-          const auto rule = Dune::QuadratureRules<double, mydimension>::rule(triangulationElement.type(), order);
+        auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+        auto gridView    = elementRepr->gridView();
+        auto elementGeometry = geometry();
+        auto center = elementGeometry.center();
+        for (auto subElement : elements(gridView)) {
+          auto subElementGeo = subElement.geometry();
+          const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order);
 
           for (auto ip : rule)
-            vector.emplace_back(geo.global(ip.position()), geo.integrationElement(ip.position()) * ip.weight());
+            vector.emplace_back(subElementGeo.global(ip.position()),
+                                subElementGeo.integrationElement(ip.position()) * ip.weight());
         }
       } else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);

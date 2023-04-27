@@ -28,6 +28,8 @@
 #include <dune/iga/igaDataCollector.h>
 #include <dune/vtk/vtkwriter.hh>
 
+#include "linearElasticTrimmed.h"
+
 template <class GridView, int ncomp = 1>
 class BoundaryPatchEnclosingVerticesPropertyTrimmed
 {
@@ -141,7 +143,7 @@ int main(int argc, char** argv) {
   std::cout << dirichletValues.fixedDOFsize() << " Dofs fixed" << std::endl;
 
   /// Declare a vector "fes" of linear elastic 2D planar solid elements
-  using LinearElasticType = Ikarus::LinearElastic<decltype(basis)>;
+  using LinearElasticType = Ikarus::LinearElasticTrimmed<decltype(basis)>;
   std::vector<LinearElasticType> fes;
 
   /// function for volume load- here: returns zero
@@ -163,7 +165,7 @@ int main(int argc, char** argv) {
   /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto neumannPredicate = [](auto &vertex) -> bool {
-    return std::isgreaterequal(vertex[0], 10 - 1e-8);
+    return std::isgreaterequal(vertex[0], 20 - 1e-8);
   };
   for (auto &&vertex: vertices(gridView)) {
     auto coords = vertex.geometry().corner(0);
