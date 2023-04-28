@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
   /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto neumannPredicate = [](auto &vertex) -> bool {
-    return std::isgreaterequal(vertex[0], 20 - 1e-8);
+    return std::isgreaterequal(vertex[0], 10 - 1e-8);
   };
   for (auto &&vertex: vertices(gridView)) {
     auto coords = vertex.geometry().corner(0);
@@ -266,11 +266,22 @@ int main(int argc, char** argv) {
   auto dispGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), D_Glob);
 
+  auto forceGlobalFunc
+      = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
+
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
   vtkWriter.addPointData(dispGlobalFunc,
                           Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+  vtkWriter.addPointData(forceGlobalFunc,
+                         Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
+
+
+  double totalForce = 0.0;
+  for (auto& f : Fext)
+    totalForce += f;
+  std::cout << "Total Force: " << totalForce << std::endl;
 
 //  vtkWriter.addCellData(sig_x, "sig_x");
 //  vtkWriter.addCellData(sig_y, "sig_y");

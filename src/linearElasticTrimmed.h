@@ -64,7 +64,7 @@ namespace Ikarus {
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                       Dune::bindDerivatives(0, 1));
 
-      this->localView().element().impl().getIntegrationPoints(quadraturePoints, order);
+      this->localView().element().impl().getIntegrationPoints(quadraturePoints);
 
       assert(((not neumannBoundary_ and not neumannBoundaryLoad) or (neumannBoundary_ and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");

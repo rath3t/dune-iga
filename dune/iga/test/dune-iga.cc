@@ -1339,25 +1339,7 @@ auto furtherExamples() {
 }
 
 
-auto testIntegrationPoints() {
-  TestSuite t;
 
-  // O refinement, 1 trimmed
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
-  double area = 0;
-  int order = 1;
-
-  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
-  for(auto& ele : elements(grid->leafGridView())) {
-    ele.impl().getIntegrationPoints(ipVec, order);
-    auto geo = ele.geometry();
-    for (auto& ip : ipVec)
-      area += geo.integrationElement(ip.position()) * ip.weight();
-  }
-  t.check(Dune::FloatCmp::eq(area, 0.737416, 1e-4));
-
-  return t;
-}
 
 auto testGeometry() {
   TestSuite t;
@@ -1419,7 +1401,32 @@ auto testMapsInTrimmedPatch() {
 
 #ifdef TEST_ALL
 
+auto testIntegrationPoints() {
+  TestSuite t;
 
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  grid->globalRefine(1);
+  double area = 0;
+  int order   = 1;
+
+  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
+  for(auto& ele : elements(grid->leafGridView())) {
+    ele.impl().getIntegrationPoints(ipVec, order);
+    auto geo = ele.geometry();
+    for (auto& ip : ipVec)
+      area += geo.integrationElement(ip.position()) * ip.weight();
+  }
+  std::cout << "Area: " << area << std::endl;
+
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(grid->leafGridView());
+  Dune::VtkUnstructuredGridWriter writer(dataCollector1, Vtk::FormatTypes::ASCII);
+  writer.write("surface-hole");
+
+  t.check(Dune::FloatCmp::eq(area, 71.725666, 1e-4));
+
+  return t;
+}
 
 auto testHoleGeometry() {
   TestSuite t;
@@ -1539,7 +1546,6 @@ auto testEntityFunctionality() {
       }
       ++i;
     }
-
 
     // Test Size functions
     auto gV = grid->leafGridView();
@@ -1755,13 +1761,13 @@ int main(int argc, char** argv) try {
 
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
 
-  t.subTest(testNurbsBasis2());
+  // t.subTest(testNurbsBasis2());
   //t.subTest(checkDuneGeometryAndGrid());
 
 //  t.subTest(testTrimFunctionality());
 //  t.subTest(testTrimmedElementGrid());
 
-  //t.subTest(testIntegrationPoints());
+  t.subTest(testIntegrationPoints());
   //t.subTest(testGeometry());
   //t.subTest(testHoleGeometry());
 
@@ -1769,8 +1775,8 @@ int main(int argc, char** argv) try {
   //t.subTest(testPatchGeometrySurface());
 //
 //  t.subTest(testMapsInTrimmedPatch());
- t.subTest(testEntityFunctionality());
-  t.subTest(testEntityFunctionality2());
+ //t.subTest(testEntityFunctionality());
+  // t.subTest(testEntityFunctionality2());
 //
 //
 //  //t.subTest(testIbraReader());

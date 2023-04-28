@@ -43,9 +43,9 @@ namespace Dune::IGA {
     }
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
-    [[nodiscard]] double volume() const {
+    [[nodiscard]] double volume(int scaleOrder = 1) const {
       const auto rule = Dune::QuadratureRules<ctype, patchDim>::rule(
-          this->type(), patchDim * (*std::ranges::max_element(patchData_->degree)));
+          this->type(), scaleOrder * patchDim * (*std::ranges::max_element(patchData_->degree)));
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -144,6 +144,7 @@ namespace Dune::IGA {
       return MatrixHelper::template sqrtDetAAT<patchDim, coorddimension>(j);
     }
 
+    // TODO DELETE
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(patchDim); }
 

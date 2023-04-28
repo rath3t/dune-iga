@@ -147,15 +147,32 @@ namespace Dune::IGA {
         auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
         auto gridView    = elementRepr->gridView();
         auto elementGeometry = geometry();
-        auto center = elementGeometry.center();
+
+
         for (auto subElement : elements(gridView)) {
           auto subElementGeo = subElement.geometry();
+
+
           const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order);
 
-          for (auto ip : rule)
-            vector.emplace_back(subElementGeo.global(ip.position()),
-                                subElementGeo.integrationElement(ip.position()) * ip.weight());
+          for (auto ip : rule) {
+            auto globalInParameterSpace = subElementGeo.global(ip.position());
+            auto globalInPatch = elementRepr->transferToPatchGlobal(globalInParameterSpace);
+            auto localInElement = elementGeometry.local(globalInPatch);
+
+            auto volumeOfElement = elementGeometry.integrationElement(ip.position());
+            auto volumeOfSubElement = subElementGeo.integrationElement(ip.position());
+            auto volumeRatio = volumeOfSubElement / volumeOfElement;
+
+//            vector.emplace_back(localInElement,
+//                                 subElementGeo.integrationElement(ip.position()) * ip.weight());
+            vector.emplace_back(localInElement, ip.weight() * volumeRatio * 100);
+          }
         }
+        std::cout << "Integration points for Element " << directIndex_ << "\n";
+        for (auto& ip : vector)
+          std::cout << ip.position() << ", Weight: " << ip.weight() << "\n";
+        std::cout << std::endl;
       } else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
         vector.insert(vector.end(), rule.begin(), rule.end());

@@ -64,12 +64,13 @@ namespace Dune::IGA {
 
    private:
     std::vector<Boundary> boundaries;
+    NURBSPatchGeometry<dim, dim>* patchGeometry{};    // Non-owning pointer
     std::vector<Boundary> originalBoundaries;
     bool trimmed;
 
    public:
     // Construct with boundaries
-    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries), trimmed(true) {
+    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries, NURBSPatchGeometry<dim, dim>* _patchGeometry) : boundaries(_boundaries), trimmed(true), patchGeometry(_patchGeometry) {
       std::ranges::copy(boundaries, std::back_inserter(originalBoundaries));
       reconstructTrimmedElement();
     }
@@ -77,11 +78,17 @@ namespace Dune::IGA {
     explicit TrimmedElementRepresentation(std::vector<FieldVector<double, 2>>& corners) : trimmed(false) {
         constructFromCorners(corners);
     }
+    [[nodiscard]] Dune::FieldVector<double, dim> transferToPatchGlobal(Dune::FieldVector<double, dim>& local) const {
+        return patchGeometry->global(local);
+    }
 
     // Accessors
     GridView gridView() const { return grid->leafGridView(); }
     [[nodiscard]] bool isTrimmed() const {
       return trimmed;
+    }
+    void volumeOfPatch() const {
+      return patchGeometry->volume(2);
     }
 
    private:

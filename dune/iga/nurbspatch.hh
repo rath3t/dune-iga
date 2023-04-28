@@ -59,6 +59,7 @@ namespace Dune::IGA {
     explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData,
                         std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
         : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)},
+          patchGeometry_{std::make_unique<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
           trimData_(std::move(trimData)) {
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
@@ -643,6 +644,20 @@ namespace Dune::IGA {
       }
 
       n_fullElement = n_ele;
+
+      auto paraGrid               = parameterSpaceGrid();
+      auto parameterSpaceGridView = paraGrid->leafGridView();
+
+      const auto& indexSet = parameterSpaceGridView.indexSet();
+      for (const auto& element : elements(parameterSpaceGridView)) {
+        auto corners = Dune::IGA::Impl::Trim::getElementCorners(element);
+        auto dune_corners = corners; std::swap(dune_corners[2], dune_corners[3]);
+
+        DirectIndex directIndex = indexSet.index(element);
+        trimInfoMap.emplace(directIndex,
+                            ElementTrimInfo{.realIndex = directIndex,
+                                            .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+      }
     }
 
     template <unsigned int codim>
@@ -701,7 +716,7 @@ namespace Dune::IGA {
             trimInfoMap.emplace(
                 directIndex,
                 ElementTrimInfo{.realIndex = realIndex,
-                                .repr      = std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value())});
+                                .repr      = std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value(), patchGeometry_.get())});
 
           } else {
             trimFlags[directIndex] = ElementTrimFlag::empty;
@@ -760,6 +775,7 @@ namespace Dune::IGA {
     template <typename GridImpl>
     friend class NURBSintersection;
     std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
+    std::unique_ptr<NURBSPatchGeometry<dim, dimworld>> patchGeometry_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;
 

@@ -90,10 +90,6 @@ namespace Dune::IGA {
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
-      if (trimRepr_ and trimRepr_->isTrimmed())
-        return trimRepr_->calculateArea();
-
-
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
           this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
       ctype vol = 0.0;
