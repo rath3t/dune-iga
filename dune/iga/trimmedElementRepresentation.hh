@@ -87,7 +87,16 @@ namespace Dune::IGA {
     [[nodiscard]] bool isTrimmed() const {
       return trimmed;
     }
-    void volumeOfPatch() const {
+    bool alreadyRefined = false;
+    GridView refinedGridView(unsigned int refinement = 0) {
+      if (refinement > 0 and not alreadyRefined) {
+        grid->globalRefine(refinement);
+        alreadyRefined = true;
+      }
+      return grid->leafGridView();
+    }
+
+    [[nodiscard]] double volumeOfPatch() const {
       return patchGeometry->volume(2);
     }
 

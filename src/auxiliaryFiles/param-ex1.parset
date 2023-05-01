@@ -1,7 +1,9 @@
 [GridParameters]
 filename=surface-hole.ibra
 trim=1
-globalRefine=1
+globalRefine=3
+u_refine = 0
+v_refine = 0
 u_degreeElevate=0
 v_degreeElevate=0
 
@@ -10,3 +12,5 @@ v_degreeElevate=0
 E      = 100
 nu     = 0.2
 
+[PostProcessParameters]
+subsample = 0

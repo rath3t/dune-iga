@@ -1,0 +1,159 @@
+[
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<0>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,15.074813431681335],
+    "nb_poles": 2,
+    "poles": [[0.0,0.0],[15.074813431681335,0.0]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<1>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,4.0],
+    "nb_poles": 2,
+    "poles": [[15.074813431681335,0.0],[15.074813431681335,4.0]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<2>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,15.074813431681335],
+    "nb_poles": 2,
+    "poles": [[15.074813431681335,4.0],[0.0,4.0]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<3>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,4.0],
+    "nb_poles": 2,
+    "poles": [[0.0,4.0],[0.0,0.0]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<4>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 3,
+    "knots": [-5.1187693822585283,-5.1187693822585283,-5.1187693822585283,-4.8586907764307972,-4.8586907764307972,-4.8586907764307972,-4.48200232870071,-4.48200232870071,-4.48200232870071,-3.83291879822705,-3.83291879822705,-3.83291879822705,-3.4301319299113815,-3.4301319299113815,-3.4301319299113815,-3.1961517446726764,-3.1961517446726764,-3.1961517446726764,-2.8946946080564997,-2.8946946080564997,-2.8946946080564997,-2.559384691130199,-2.559384691130199,-2.559384691130199,-2.2927764728390514,-2.2927764728390514,-2.2927764728390514,-1.9226176375846573,-1.9226176375846573,-1.9226176375846573,-1.2735341071109993,-1.2735341071109993,-1.2735341071109993,-0.879708936856316,-0.879708936856316,-0.879708936856316,-0.63676705356425956,-0.63676705356425956,-0.63676705356425956,-0.33005947127486368,-0.33005947127486368,-0.33005947127486368,0.0,0.0,0.0],
+    "nb_poles": 43,
+    "poles": [[3.3042045538822862,2.6492543960121808],[3.4019422935422869,2.5966568887585453],[3.4714140046237776,2.5282631160635813],[3.5172174044759545,2.4721804800903175],[3.5835573924813708,2.3909524182043915],[3.6273665583708121,2.3028088742223494],[3.654625542921059,2.220276299533416],[3.7139949515162685,2.0405223494150668],[3.7117413918874216,1.8358983475679027],[3.6336459927672156,1.6562351203600185],[3.6024334689210367,1.5844288062021772],[3.5534513079143863,1.5041853217802856],[3.4784522504853044,1.4341070404863956],[3.434885057186857,1.3933983418465381],[3.3607192578735061,1.3357593444616545],[3.2535554393683914,1.300959434629632],[3.1887510418961087,1.2799151379611036],[3.0997080092641434,1.2634431497716889],[2.993194060678225,1.2758925723167234],[2.8747188981634628,1.2897400296574693],[2.7847185672466077,1.3336464659557279],[2.73700577397572,1.3605756028827902],[2.6410168235841507,1.4147518397235865],[2.5712709820381581,1.4827358377923323],[2.5239929235587306,1.5402674263240741],[2.4583520698295973,1.6201442806001438],[2.4142340998667251,1.7058867815683192],[2.3865847849369466,1.7871105762439519],[2.3270361210452912,1.96204324497112],[2.3296768782929691,2.15784659373955],[2.40756433509079,2.3326121355861114],[2.439411890986106,2.404072362834015],[2.4887392259748782,2.4824464537387354],[2.56275807753559,2.552124901211211],[2.6084186410431118,2.595107967130748],[2.6827695148074944,2.6528041910502251],[2.7876548884896155,2.6903352111732275],[2.8459913008452808,2.7112096666779557],[2.9364990305766696,2.7338790944972913],[3.0480162671895332,2.725175949572145],[3.1680241257489148,2.7158101706403679],[3.2577722290663145,2.674241924369261],[3.3042045538822862,2.6492543960121808]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsSurfaceGeometry3D<0>",
+    "type": "NurbsSurfaceGeometry3D",
+    "degree_u": 1,
+    "degree_v": 1,
+    "knots_u": [0.0,15.074813431681335],
+    "knots_v": [0.0,4.0],
+    "nb_poles_u": 2,
+    "nb_poles_v": 2,
+    "poles": [[0.0,0.0,0.0],[0.0,4.0,0.0],[15.0,1.5,0.0],[15.0,4.0,0.0]]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepFace<0>",
+    "type": "BrepFace",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loops": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<1>"],
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsSurfaceGeometry3D<0>"
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>",
+    "type": "BrepLoop",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "face": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepFace<0>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<1>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<2>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<1>",
+    "type": "BrepLoop",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "face": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepFace<0>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<4>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<0>",
+    "type": "BrepTrim",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loop": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>",
+    "Edge": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<0>",
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<0>",
+    "domain": [0.0,15.074813431681335]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<1>",
+    "type": "BrepTrim",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loop": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>",
+    "Edge": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<1>",
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<1>",
+    "domain": [0.0,4.0]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<2>",
+    "type": "BrepTrim",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loop": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>",
+    "Edge": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<2>",
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<2>",
+    "domain": [0.0,15.074813431681335]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<3>",
+    "type": "BrepTrim",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loop": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>",
+    "Edge": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<3>",
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<3>",
+    "domain": [0.0,4.0]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<4>",
+    "type": "BrepTrim",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "loop": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<1>",
+    "Edge": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<4>",
+    "geometry": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<4>",
+    "domain": [-5.1187693822585283,0.0]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<0>",
+    "type": "BrepEdge",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<0>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<1>",
+    "type": "BrepEdge",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<1>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<2>",
+    "type": "BrepEdge",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<2>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<3>",
+    "type": "BrepEdge",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<4>",
+    "type": "BrepEdge",
+    "brep": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<4>"]
+  },
+  {
+    "key": "rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>",
+    "type": "Brep",
+    "curve_geometries_2d": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<1>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<2>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<3>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsCurveGeometry2D<4>"],
+    "surface_geometries_3d": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.NurbsSurfaceGeometry3D<0>"],
+    "faces": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepFace<0>"],
+    "loops": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepLoop<1>"],
+    "trims": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<1>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<2>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<3>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepTrim<4>"],
+    "edges": ["rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<0>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<1>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<2>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<3>","rhino<bddb3b9a-7998-43a7-a3e9-f67cfbd62d52>.BrepEdge<4>"]
+  }
+]

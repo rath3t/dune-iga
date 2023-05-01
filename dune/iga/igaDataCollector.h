@@ -4,6 +4,8 @@
 #include <map>
 #include <vector>
 
+#include "dune/grid/common/rangegenerators.hh"
+#include "dune/vtk/function.hh"
 #include <dune/geometry/referenceelements.hh>
 #include <dune/grid/common/partitionset.hh>
 #include <dune/vtk/datacollectors/unstructureddatacollector.hh>
@@ -25,7 +27,7 @@ namespace Dune {
       using Super::partition;
 
      public:
-      DiscontinuousIgaDataCollector(GridView const& gridView, int subSample = 1)
+      explicit DiscontinuousIgaDataCollector(GridView const& gridView, int subSample = 0)
           : Super(gridView), subSample_(subSample) {}
 
       /// Construct the point sets
@@ -40,7 +42,7 @@ namespace Dune {
           const size_t elementId = indexSet.index(element);
 
           auto elementRepr               = element.impl().trimmedElementRepresentation();
-          auto trimmedGridView           = elementRepr->gridView();
+          auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
           auto verticesInTrimmedGridView = trimmedGridView.size(dim);
           numCells_ += trimmedGridView.size(0);
           const auto& trimmedIndexSet = trimmedGridView.indexSet();
@@ -55,7 +57,6 @@ namespace Dune {
             vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, idx}), vertexCounter++);
           }
           numPoints_ += verticesInTrimmedGridView;
-
         }
       }
 
@@ -75,22 +76,21 @@ namespace Dune {
           auto geometry          = element.geometry();
           const size_t elementId = indexSet.index(element);
 
-            auto elementRepr               = element.impl().trimmedElementRepresentation();
-            auto trimmedGridView           = elementRepr->gridView();
-            auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-            const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-            for (auto triangulationVertex : vertices(trimmedGridView)) {
-              auto trimmedGeometry = triangulationVertex.geometry().center();
+          auto elementRepr               = element.impl().trimmedElementRepresentation();
+          auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
+          auto verticesInTrimmedGridView = trimmedGridView.size(dim);
+          const auto& trimmedIndexSet    = trimmedGridView.indexSet();
+          for (auto triangulationVertex : vertices(trimmedGridView)) {
+            auto trimmedGeometry = triangulationVertex.geometry().center();
 
-              std::int64_t idx = 3 * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
-              auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry);
-              auto v           = geometry.global(vecInLocal);
-              for (std::size_t j = 0; j < v.size(); ++j)
-                data[idx + j] = T(v[j]);
-              for (std::size_t j = v.size(); j < 3u; ++j)
-                data[idx + j] = T(0);
-            }
-
+            std::int64_t idx = 3 * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
+            auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry);
+            auto v           = geometry.global(vecInLocal);
+            for (std::size_t j = 0; j < v.size(); ++j)
+              data[idx + j] = T(v[j]);
+            for (std::size_t j = v.size(); j < 3u; ++j)
+              data[idx + j] = T(0);
+          }
         }
 
         return data;
@@ -115,27 +115,26 @@ namespace Dune {
         for (auto const& ele : elements(gridView_, partition)) {
           const std::size_t elementId = indexSet.index(ele);
 
-            auto elementRepr               = ele.impl().trimmedElementRepresentation();
-            auto trimmedGridView           = elementRepr->gridView();
-            auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-            const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-            for (auto triangulationElement : elements(trimmedGridView)) {
-              Vtk::CellType cellType(triangulationElement.type(), Vtk::CellType::LAGRANGE);
+          auto elementRepr               = ele.impl().trimmedElementRepresentation();
+          auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
+          auto verticesInTrimmedGridView = trimmedGridView.size(dim);
+          const auto& trimmedIndexSet    = trimmedGridView.indexSet();
+          for (auto triangulationElement : elements(trimmedGridView)) {
+            Vtk::CellType cellType(triangulationElement.type(), Vtk::CellType::LAGRANGE);
 
-              auto const& pointSet = pointSets_.at(triangulationElement.type());
+            auto const& pointSet = pointSets_.at(triangulationElement.type());
 
-              for (std::size_t i = 0; i < pointSet.size(); ++i) {
-                auto const& p        = pointSet[i];
-                auto const& localKey = p.localKey();
-                std::int64_t idx     = vertexIndex_.at(
-                    {elementId, trimmedIndexSet.subIndex(triangulationElement, localKey.subEntity(), dim)});
+            for (std::size_t i = 0; i < pointSet.size(); ++i) {
+              auto const& p        = pointSet[i];
+              auto const& localKey = p.localKey();
+              std::int64_t idx     = vertexIndex_.at(
+                  {elementId, trimmedIndexSet.subIndex(triangulationElement, localKey.subEntity(), dim)});
 
-                cells.connectivity.push_back(idx);
-              }
-              cells.types.push_back(cellType.type());
-              cells.offsets.push_back(old_o += pointSet.size());
+              cells.connectivity.push_back(idx);
             }
-
+            cells.types.push_back(cellType.type());
+            cells.offsets.push_back(old_o += pointSet.size());
+          }
         }
         return cells;
       }
@@ -154,22 +153,51 @@ namespace Dune {
           const size_t elementId = indexSet.index(element);
 
           auto elementRepr               = element.impl().trimmedElementRepresentation();
-          auto trimmedGridView           = elementRepr->gridView();
+          auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
           auto verticesInTrimmedGridView = trimmedGridView.size(dim);
           const auto& trimmedIndexSet    = trimmedGridView.indexSet();
           for (auto triangulationVertex : vertices(trimmedGridView)) {
             auto trimmedGeometry = triangulationVertex.geometry().center();
 
             std::int64_t idx = nComps * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
-            auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry); //transform vertex position from iga span to [0,1]^d
+            auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry);  // transform vertex position from iga span to [0,1]^d
             for (std::size_t comp = 0; comp < nComps; ++comp)
               data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
           }
-
         }
 
         return data;
       }
+      // Evaluate `fct` in center of cell.
+      template <class T, class VtkFunction>
+      [[nodiscard]] std::vector<T> cellDataImpl(VtkFunction const& fct) const {
+        int nComps = fct.numComponents();
+        std::vector<T> data;
+        data.reserve(this->numCells_ * nComps);
+
+        auto localFct = localFunction(fct);
+        auto const& indexSet = gridView_.indexSet();
+
+        for (auto element : elements(gridView_, partition)) {
+          localFct.bind(element);
+          auto geometry          = element.geometry();
+          const size_t elementId = indexSet.index(element);
+
+          auto elementRepr               = element.impl().trimmedElementRepresentation();
+          auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
+          const auto& trimmedIndexSet    = trimmedGridView.indexSet();
+
+          for (auto triangulationElement : elements(trimmedGridView)) {
+            auto center = triangulationElement.geometry().center();
+            auto vecInLocal  = geometry.impl().spanToLocal(center);  // transform vertex position from iga span to [0,1]^d
+            for (std::size_t comp = 0; comp < nComps; ++comp)
+              data.push_back(localFct.evaluate(comp, vecInLocal));
+          }
+
+        }
+        return data;
+      }
+
 
      protected:
       using Super::gridView_;

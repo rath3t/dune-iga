@@ -122,10 +122,9 @@ namespace Dune::IGA {
 
       JacobianTransposed result;
       std::array<unsigned int, patchDim> subDirs;
-      for (int subI = 0, i = 0; i < patchDim; ++i) {
-        // if (fixedOrVaryingDirections_[i] == Impl::FixedOrFree::fixed) continue;
+      for (int subI = 0, i = 0; i < patchDim; ++i)
         subDirs[subI++] = i;
-      }
+
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 1);
       auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
@@ -144,7 +143,6 @@ namespace Dune::IGA {
       return MatrixHelper::template sqrtDetAAT<patchDim, coorddimension>(j);
     }
 
-    // TODO DELETE
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(patchDim); }
 

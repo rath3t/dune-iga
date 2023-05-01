@@ -5,6 +5,7 @@
 #pragma once
 
 #include <algorithm>
+#include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
 #include <memory>
 #include <optional>
@@ -31,7 +32,8 @@ namespace Dune::IGA::Impl::Trim {
    */
 
   constexpr int clipperPrecision        = 8;
-  constexpr int pathSamples             = 200;
+  constexpr int trimCollinearPrecision  = clipperPrecision - 4;
+  constexpr int pathSamples             = 1200;
   constexpr double tolerance            = 1e-8;
   constexpr double fullElementTolerance = 1e-5;
   // constexpr double epsilonPrecision = double(16) * std::numeric_limits<double>::epsilon();
@@ -60,9 +62,9 @@ namespace Dune::IGA::Impl::Trim {
     return Dune::FloatCmp::eq(a, Point{b.x, b.y}, tol);
   }
 
-  int getEdgeOrientation(const int edge) { return (edge == 0 || edge == 2) ? 0 : 1; }
+  inline int getEdgeOrientation(const int edge) { return (edge == 0 || edge == 2) ? 0 : 1; }
 
-  int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
+  inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
 
   std::array<Point, 2> curveStartEndPoint(const CurveGeometry& curve) {
     std::array<int, 2> indices{0, static_cast<int>(curve.patchData_->controlPoints.size()[0]) - 1};
@@ -98,7 +100,7 @@ namespace Dune::IGA::Impl::Trim {
           tempPath.push_back(point);
 
       // Sanitize Path, so we don't get duplicate intersection Points on corners
-      tempPath = Clipper2Lib::TrimCollinear(tempPath, clipperPrecision);
+      tempPath = Clipper2Lib::TrimCollinear(tempPath, trimCollinearPrecision);
       clipPaths.push_back(tempPath);
     }
 
@@ -177,6 +179,7 @@ namespace Dune::IGA::Impl::Trim {
     if (clip.size() == 1) {
       Clipper2Lib::RectD elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
       clippedEdges = Clipper2Lib::RectClip(elementRect, clip, clipperPrecision);
+      std::cout << "Rect Clip\n";
     } else
       clippedEdges = Clipper2Lib::Intersect(Clipper2Lib::PathsD{getElementEdges(element)}, clip,
                                             Clipper2Lib::FillRule::EvenOdd, clipperPrecision);
@@ -184,7 +187,8 @@ namespace Dune::IGA::Impl::Trim {
     // At the moment there is no hole, if there are more than 2 Paths, then there is a hole
     if (clippedEdges.size() > 1) {
       std::cerr << "Hole detected in element, hole gets ignored" << std::endl;
-      clippedEdges.erase(clippedEdges.begin() + 1, clippedEdges.end());
+      //clippedEdges.erase(clippedEdges.begin() + 1, clippedEdges.end());
+      return std::make_pair(ElementTrimFlag::full, std::nullopt);
     }
 
     // If the clippedEdges are empty, this means the element is outside the clip -> empty
@@ -202,7 +206,7 @@ namespace Dune::IGA::Impl::Trim {
 
     // If the code is here → Elements are trimmed
     // Sanitize again (overlapping vertexes)
-    clippedEdges.front() = Clipper2Lib::TrimCollinear(clippedEdges.front(), clipperPrecision);
+    //clippedEdges.front() = Clipper2Lib::TrimCollinear(clippedEdges.front(), clipperPrecision);
 
     // Fill pointMap to store the intersection points in regard to their corresponding edges
     auto pointMap = std::make_unique<IntersectionPointMap>();
@@ -211,7 +215,7 @@ namespace Dune::IGA::Impl::Trim {
     std::array<int, 4> edgeCounter{0, 0, 0, 0};
     std::array<int, 4> nodeCounter{0, 0, 0, 0};
 
-    for (auto& point : clippedEdges[0]) {
+    for (auto& point : clippedEdges.front()) {
       auto [isOnAnyEdge, edgeThePointIsOn] = pointOnAnyEdge(point, elementEdges);
       auto [isOnAnyNode, nodeThePointIsOn] = pointOnAnyVertex(point, corners);
 
@@ -452,7 +456,6 @@ namespace Dune::IGA::Impl::Trim {
               {{traceCurveInput.boundaryIdx, traceCurveInput.startU, curveToTrace.domain()[0].back(), traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}}
               );
       }
-
     }
 
     // Check the boundary that was given in traceInput

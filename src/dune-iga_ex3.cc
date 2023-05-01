@@ -1,3 +1,6 @@
+//
+// Created by Henri on 30.04.2023.
+//
 // SPDX-FileCopyrightText: 2022 Alexander Müller mueller@ibb.uni-stuttgart.de
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
@@ -7,6 +10,7 @@
 #include <dune/common/parametertreeparser.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
@@ -21,78 +25,14 @@
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 
-// #include <Eigen/Eigen>
-
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
 #include <dune/iga/igaDataCollector.h>
 #include <dune/vtk/vtkwriter.hh>
 
 #include "linearElasticTrimmed.h"
-
-template <class GridView, int ncomp = 1>
-class BoundaryPatchEnclosingVerticesPropertyTrimmed
-{
-  typedef typename GridView::IndexSet IndexSet;
-  static const int dim = GridView::dimension;
- public:
-  typedef typename GridView::Intersection Intersection;
-
-  /** \brief Create property from a marker vector
-   */
-  BoundaryPatchEnclosingVerticesPropertyTrimmed(const GridView& gridView, const Dune::BitSetVector<ncomp>& vertices) :
-                                                                                                                indexSet_(gridView.indexSet()),
-                                                                                                                vertices_(vertices)
-  {}
-
-  /** \brief Check if intersection is enclosed by vertices in the vector
-   */
-  bool operator() (const Intersection& i) const
-  {
-    const auto inside = i.inside();
-    int localFaceIndex = i.indexInInside();
-
-    if (inside.impl().isTrimmed())
-      return false;
-
-    auto refElement = Dune::ReferenceElements<double, dim>::general(inside.type());
-
-    // Get global node ids
-    int n = refElement.size(localFaceIndex, 1, dim);
-
-    // Using ReferenceElement::subEntity is OK here, because we loop
-    // over all subEntities (i.e. sub-vertices) and just return false
-    // if _any_ of them is not marked.
-    for (int i=0; i<n; i++) {
-      int localVertexIndex = refElement.subEntity(localFaceIndex, 1, i, dim);
-      if (not(vertices_[indexSet_.subIndex(inside, localVertexIndex, dim)].any()))
-        return false;
-    }
-    return true;
-  }
-
- private:
-  const IndexSet& indexSet_;
-  const Dune::BitSetVector<ncomp>& vertices_;
-};
-
-namespace Dune::Functions {
-  template <class Basis, class F>
-    requires(std::same_as<typename Basis::GridView, Dune::IGA::NURBSGrid<2, 2>::LeafGridView>)
-  void forEachUntrimmedBoundaryDOF(const Basis &basis, F &&f) {
-    auto localView       = basis.localView();
-    auto seDOFs          = subEntityDOFs(basis);
-    const auto &gridView = basis.gridView();
-    for (auto &&element : elements(gridView))
-      if (element.hasBoundaryIntersections() and !element.impl().isTrimmed()) {
-        localView.bind(element);
-        for (const auto &intersection : intersections(gridView, element))
-          if (intersection.boundary())
-            for (auto localIndex : seDOFs.bind(localView, intersection))
-              f(localIndex, localView, intersection);
-      }
-  }
-}
+#include "stressEvaluator.h"
+#include "helpers.h"
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
@@ -107,15 +47,20 @@ int main(int argc, char** argv) {
 
   const Dune::ParameterTree &gridParameters = parameterSet.sub("GridParameters");
   const Dune::ParameterTree &materialParameters = parameterSet.sub("MaterialParameters");
+  const Dune::ParameterTree &postProcessParameters = parameterSet.sub("PostProcessParameters");
 
   const auto gridFileName = gridParameters.get<std::string>("filename");
   const bool trimGrid = gridParameters.get<bool>("trim");
   const auto u_degreeElevate = gridParameters.get<int>("u_degreeElevate");
   const auto v_degreeElevate = gridParameters.get<int>("v_degreeElevate");
   const auto globalRefine = gridParameters.get<int>("globalRefine");
+  const auto refineInUDirection = gridParameters.get<int>("u_refine");
+  const auto refineInVDirection = gridParameters.get<int>("v_refine");
 
   const auto E = materialParameters.get<double>("E");
   const auto nu = materialParameters.get<double>("nu");
+
+  const int subsample = postProcessParameters.get<int>("subsample");
 
   /// Create Grid
 
@@ -124,7 +69,11 @@ int main(int argc, char** argv) {
 
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read("auxiliaryFiles/"+gridFileName,
                                                                               trimGrid, {u_degreeElevate, v_degreeElevate});
+  // Refine if neccesary
   grid->globalRefine(globalRefine);
+  grid->globalRefineInDirection(0, refineInUDirection);
+  grid->globalRefineInDirection(1, refineInVDirection);
+
   GridView gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
@@ -134,12 +83,25 @@ int main(int argc, char** argv) {
   Ikarus::DirichletValues dirichletValues(basis.flat());
 
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
-    Dune::Functions::forEachUntrimmedBoundaryDOF(basis_,
+    Dune::Functions::forEachUntrimmedBoundaryDOF(Dune::Functions::subspaceBasis(basis_, 0),
                                         [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-                                          if (std::abs(intersection.geometry().center()[0]) < 1e-8)
-                                            dirichletFlags[localView.index(localIndex)] = true;
+                                          dirichletFlags[localView.index(localIndex)] = Dune::FloatCmp::eq(intersection.geometry().center()[0], 0.0);
                                         });
   });
+
+  bool alreadyFixedOne = false;
+  dirichletValues.fixDOFs([&alreadyFixedOne](auto &basis_, auto &dirichletFlags) {
+    Dune::Functions::forEachUntrimmedBoundaryDOF(Dune::Functions::subspaceBasis(basis_, 1),
+                                        [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+                                          auto center = intersection.geometry().center();
+                                          auto length = intersection.geometry().volume();
+                                          if (Dune::FloatCmp::eq(center[0], 0.0) and Dune::FloatCmp::lt(center[1], length) and !alreadyFixedOne) {
+                                            dirichletFlags[localView.index(localIndex)] = true;
+                                            alreadyFixedOne = true;
+                                          }
+                                        });
+  });
+
   std::cout << dirichletValues.fixedDOFsize() << " Dofs fixed" << std::endl;
 
   /// Declare a vector "fes" of linear elastic 2D planar solid elements
@@ -165,7 +127,7 @@ int main(int argc, char** argv) {
   /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto neumannPredicate = [](auto &vertex) -> bool {
-    return std::isgreaterequal(vertex[0], 10 - 1e-8);
+    return Dune::FloatCmp::eq(vertex[0], 20.0);
   };
   for (auto &&vertex: vertices(gridView)) {
     auto coords = vertex.geometry().corner(0);
@@ -179,7 +141,7 @@ int main(int argc, char** argv) {
   neumannBoundary.insertFacesByProperty(prop);
 
 
-  /// Add the linear elastic 2D planar solid elements decorated with EAS to the vector "fes"
+  /// Add the linear elastic 2D planar solid elements to the vector "fes"
   for (auto &element: elements(gridView)) {
     auto localView = basis.flat().localView();
     fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
@@ -227,40 +189,6 @@ int main(int argc, char** argv) {
   spdlog::info("The solver took {} milliseconds ",
                durationSolver.count());
 
-//  /// Stresses
-//  Ikarus::ResultRequirements resultRequirements = Ikarus::ResultRequirements().
-//                                                  insertGlobalSolution(Ikarus::FESolutions::displacement, D_Glob).
-//                                                  insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad).
-//                                                  addResultRequest(Ikarus::ResultType::cauchyStress);
-//
-//
-//  auto von_mieses2d = [](const auto& sigma){
-//    const auto s_x = sigma(0, 0);
-//    const auto s_y = sigma(1, 0);
-//    const auto s_xy = sigma(2, 0);
-//
-//    return std::sqrt(std::pow(s_x, 2) + std::pow(s_y, 2) - s_x * s_y + 3 * std::pow(s_xy, 2));
-//  };
-//
-//  Ikarus::ResultTypeMap<double> res;
-//
-//  auto  elementMapper = Dune::MultipleCodimMultipleGeomTypeMapper(gridView, Dune::mcmgElementLayout());
-//  const int numEle = gridView.size(0);
-//  std::vector<double> sig_x(numEle);
-//  std::vector<double> sig_y(numEle);
-//  std::vector<double> sig_xy(numEle);
-//  std::vector<double> sig_vm(numEle);
-//
-//  for (const auto &ele: elements(gridView)) {
-//    auto eleID = ele.impl().getIndex();
-//    fes[eleID].calculateAt(resultRequirements, {0.5, 0.5}, res);
-//    auto sigma = res.getResult(Ikarus::ResultType::cauchyStress);
-//
-//    sig_x[eleID] = sigma(0, 0);
-//    sig_y[eleID] = sigma(1, 0);
-//    sig_xy[eleID] = sigma(2, 0);
-//    sig_vm[eleID] = von_mieses2d(sigma);
-//  }
 
   /// Postprocess
   auto dispGlobalFunc
@@ -269,24 +197,26 @@ int main(int argc, char** argv) {
   auto forceGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
 
-  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView);
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
   vtkWriter.addPointData(dispGlobalFunc,
-                          Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+                         Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
+  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, fes)));
+  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, fes)));
+  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, fes)));
 
   double totalForce = 0.0;
   for (auto& f : Fext)
     totalForce += f;
   std::cout << "Total Force: " << totalForce << std::endl;
 
-//  vtkWriter.addCellData(sig_x, "sig_x");
-//  vtkWriter.addCellData(sig_y, "sig_y");
-//  vtkWriter.addCellData(sig_xy, "sig_xy");
-//  vtkWriter.addCellData(sig_vm, "sig_vm");
 
   vtkWriter.write(gridFileName);
 

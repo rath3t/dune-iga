@@ -147,7 +147,7 @@ namespace Dune::IGA {
         auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
         auto gridView    = elementRepr->gridView();
         auto elementGeometry = geometry();
-
+        auto patchVolume = elementRepr->volumeOfPatch();
 
         for (auto subElement : elements(gridView)) {
           auto subElementGeo = subElement.geometry();
@@ -162,17 +162,15 @@ namespace Dune::IGA {
 
             auto volumeOfElement = elementGeometry.integrationElement(ip.position());
             auto volumeOfSubElement = subElementGeo.integrationElement(ip.position());
-            auto volumeRatio = volumeOfSubElement / volumeOfElement;
+            auto volumeRatio = (volumeOfSubElement / volumeOfElement) * patchVolume;
 
-//            vector.emplace_back(localInElement,
-//                                 subElementGeo.integrationElement(ip.position()) * ip.weight());
-            vector.emplace_back(localInElement, ip.weight() * volumeRatio * 100);
+            vector.emplace_back(localInElement, ip.weight() * volumeRatio);
           }
         }
-        std::cout << "Integration points for Element " << directIndex_ << "\n";
-        for (auto& ip : vector)
-          std::cout << ip.position() << ", Weight: " << ip.weight() << "\n";
-        std::cout << std::endl;
+//        std::cout << "Integration points for Element " << directIndex_ << "\n";
+//        for (auto& ip : vector)
+//          std::cout << ip.position() << ", Weight: " << ip.weight() << "\n";
+//        std::cout << std::endl;
       } else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
         vector.insert(vector.end(), rule.begin(), rule.end());
