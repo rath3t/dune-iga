@@ -26,8 +26,10 @@
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimutils.hh>
+#include <dune/iga/igaDataCollector.h>
+#include <dune/vtk/vtkwriter.hh>
 
-// #define TEST_ALL
+#define TEST_ALL
 
 // Uncomment for grid and geometry checks -- makes copilation time way longer
 #ifdef TEST_ALL
@@ -61,7 +63,7 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
-#if 0
+#if 1
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -1341,19 +1343,6 @@ auto furtherExamples() {
 }
 
 
-
-
-auto testGeometry() {
-  TestSuite t;
-
-  // O refinement, 1 trimmed
-  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
-  for (auto& ele : elements(grid->leafGridView()))
-    t.check(Dune::FloatCmp::eq(ele.geometry().volume(), 0.737416, 1e-4));
-
-  return t;
-}
-
 auto testMapsInTrimmedPatch() {
   TestSuite t;
 
@@ -1624,7 +1613,7 @@ auto checkDuneGeometryAndGrid() {
   return t;
 }
 
-
+/*
 auto testTrimFunctionality() {
   TestSuite t;
 
@@ -1654,15 +1643,10 @@ auto testTrimFunctionality() {
   Clipper2Lib::PathsD clip;
   clip.push_back(Clipper2Lib::MakePathD("0,0, 0,0.5, 0.4,0.6, 0.5,0.65, 0.7, 0.4, 0.9, 0.45, 1,0.5, 1,0"));
 
-  using namespace Dune::IGA::Impl::Trim;
-  ClippingResult res;
-  for (auto& ele : elements(grid.leafGridView())) {
-    res = clipElement(ele, clip).second.value();
-  }
 
   return t;
 }
-
+*/
 
 auto testTrimmedElementGrid() {
   TestSuite t;
@@ -1802,14 +1786,17 @@ auto test3HoleGeometry() {
   TestSuite t;
 
   std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/kragarm_trim_circle3.ibra");
-  grid->globalRefine(2);
+  grid->globalRefine(4);
+  grid->globalRefineInDirection(0, 2);
 
-  Plot::plotGridView(grid->leafGridView(), "plot_hole/grid.png");
+  // Plot::plotGridView(grid->leafGridView(), "plot_hole/grid.png");
   Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
 
   Plot::plotEveryReconstructedGrid(grid, "_hole");
 
-  VTKWriter vtkWriter(grid->leafGridView());
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(grid->leafGridView());
+  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Vtk::FormatTypes::ASCII);
+
   vtkWriter.write("plot_hole/grid");
 
   return t;
@@ -1826,37 +1813,36 @@ int main(int argc, char** argv) try {
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
   // plotBasis("auxiliaryFiles/rund_for_foundation.ibra");
 
-  // t.subTest(testNurbsBasis2());
+   t.subTest(testNurbsBasis2());
 
-  //t.subTest(checkDuneGeometryAndGrid());
+  t.subTest(checkDuneGeometryAndGrid());
 
-//  t.subTest(testTrimFunctionality());
-//  t.subTest(testTrimmedElementGrid());
+  // t.subTest(testTrimFunctionality());
+  t.subTest(testTrimmedElementGrid());
 
-  // t.subTest(testIntegrationPoints());
-  //t.subTest(testGeometry());
-  //t.subTest(testHoleGeometry());
+   t.subTest(testIntegrationPoints());
+  t.subTest(testHoleGeometry());
 
-  //t.subTest(testPatchGeometryCurve());
-  //t.subTest(testPatchGeometrySurface());
-//
-//  t.subTest(testMapsInTrimmedPatch());
- //t.subTest(testEntityFunctionality());
-  // t.subTest(testEntityFunctionality2());
-//
-//
-//  //t.subTest(testIbraReader());
-//  t.subTest(testTrimImpactWithRefinement());
-  // t.subTest(testEntityFunctionality());
-//  t.subTest(testDataCollectorAndVtkWriter());
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
 
-  //t.subTest(testMultiParametrisation());
-  //t.subTest(testNURBSSurfaceTrim());
+  t.subTest(testMapsInTrimmedPatch());
+ t.subTest(testEntityFunctionality());
+   t.subTest(testEntityFunctionality2());
 
-  //t.subTest(testPipeGeometry());
-  //t.subTest(furtherExamples());
 
-  //t.subTest(testNurbsBasis());
+  //t.subTest(testIbraReader());
+  t.subTest(testTrimImpactWithRefinement());
+   t.subTest(testEntityFunctionality());
+  t.subTest(testDataCollectorAndVtkWriter());
+
+  t.subTest(testMultiParametrisation());
+  t.subTest(testNURBSSurfaceTrim());
+
+  t.subTest(testPipeGeometry());
+  t.subTest(furtherExamples());
+
+  t.subTest(testNurbsBasis());
 
 
 #if 0

@@ -5,10 +5,14 @@
 
 #include "igaalgorithms.hh"
 
+#include <bits/ranges_algo.h>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 
+#include "dune/iga/nurbstrimfunctionality.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/concepts.hh>
@@ -146,15 +150,18 @@ namespace Dune::IGA {
       return false;
     }
 
-    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const requires (dim == 2)  {
-      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for that as well
+    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const
+      requires(dim == 2)
+    {
+      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for
+      // that as well
       constexpr int noNeighbor = -1;
 
       // This needs a getRealIndexOr method
       auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
         if (outerIndex == noNeighbor) return noNeighbor;
         try {
-          return (int) getRealIndex<0>(outerIndex);
+          return (int)getRealIndex<0>(outerIndex);
         } catch (std::runtime_error& e) {
           return noNeighbor;
         }
@@ -165,7 +172,7 @@ namespace Dune::IGA {
       for (int i : std::views::iota(0, size(0))) {
         auto nurbsDirectIndex = getDirectIndex<0>(i);
         for (int innerLocalIndex = 0; innerLocalIndex < 4; ++innerLocalIndex) {
-          auto multiIndex       = elementNet_->directToMultiIndex(nurbsDirectIndex);
+          auto multiIndex = elementNet_->directToMultiIndex(nurbsDirectIndex);
           multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
               += ((innerLocalIndex % 2)
                       ? 1
@@ -492,8 +499,7 @@ namespace Dune::IGA {
 
       switch (dim) {
         case 2:
-          dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0]
-                                              : 0;
+          dIndex += (eI == 1) ? 1 : (eI == 3) ? uniqueSpanSize_[0] : 0;
           break;
         case 3:
           assert(uniqueSpanSize_.size() == dim);
@@ -574,15 +580,23 @@ namespace Dune::IGA {
     }
 
    public:
-    auto parameterSpaceGrid() const {
-      using TensorSpaceCoordinates = TensorProductCoordinates<double, dim>;
+    template <typename ctype = double>
+    auto parameterSpaceGrid(int scale = 0) const {
+      using TensorSpaceCoordinates = TensorProductCoordinates<ctype, dim>;
       using ParameterSpaceGrid     = YaspGrid<dim, TensorSpaceCoordinates>;
 
-      std::array<std::vector<double>, dim> tensorProductCoordinates;
+      std::array<std::vector<double>, dim> uniqueKnots;
       for (int i = 0; i < dim; ++i)
-        std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(tensorProductCoordinates[i]));
+        std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnots[i]));
 
-      return std::make_unique<ParameterSpaceGrid>(tensorProductCoordinates);
+      if constexpr (std::is_same<double, ctype>::value) return std::make_unique<ParameterSpaceGrid>(uniqueKnots);
+
+      std::array<std::vector<ctype>, dim> uniqueKnotsTransformed;
+      for (int i = 0; i < dim; ++i)
+        std::ranges::transform(uniqueKnots[i], std::back_inserter(uniqueKnotsTransformed[i]),
+                               [scale](const auto& knot) { return knot * static_cast<ctype>(std::pow(10, scale)); });
+
+      return std::make_unique<ParameterSpaceGrid>(uniqueKnotsTransformed);
     }
 
     // In the following a DirectIndex is the flat index of the knot span in the tensor-product net of the untrimmed
@@ -645,18 +659,21 @@ namespace Dune::IGA {
 
       n_fullElement = n_ele;
 
-      auto paraGrid               = parameterSpaceGrid();
-      auto parameterSpaceGridView = paraGrid->leafGridView();
+      if constexpr (dim == 2) {
+        auto paraGrid               = parameterSpaceGrid();
+        auto parameterSpaceGridView = paraGrid->leafGridView();
 
-      const auto& indexSet = parameterSpaceGridView.indexSet();
-      for (const auto& element : elements(parameterSpaceGridView)) {
-        auto corners = Dune::IGA::Impl::Trim::getElementCorners(element);
-        auto dune_corners = corners; std::swap(dune_corners[2], dune_corners[3]);
+        const auto& indexSet = parameterSpaceGridView.indexSet();
+        for (const auto& element : elements(parameterSpaceGridView)) {
+          auto corners      = Dune::IGA::Impl::Trim::getElementCorners<double, dim>(element);
+          auto dune_corners = corners;
+          std::swap(dune_corners[2], dune_corners[3]);
 
-        DirectIndex directIndex = indexSet.index(element);
-        trimInfoMap.emplace(directIndex,
-                            ElementTrimInfo{.realIndex = directIndex,
-                                            .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+          DirectIndex directIndex = indexSet.index(element);
+          trimInfoMap.emplace(
+              directIndex, ElementTrimInfo{.realIndex = directIndex,
+                                           .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+        }
       }
     }
 
@@ -686,14 +703,14 @@ namespace Dune::IGA {
       n_trimmedElement = 0;
       trimFlags.resize(originalSize(0));
 
-      auto paraGrid               = parameterSpaceGrid();
-      auto parameterSpaceGridView = paraGrid->leafGridView();
-
       // Use Trim namespace for more concise function names
       using namespace Impl::Trim;
 
+      auto paraGrid               = parameterSpaceGrid<Impl::Trim::ctype>(Impl::Trim::scale);
+      auto parameterSpaceGridView = paraGrid->leafGridView();
+
       // Get Clip as ClipperPath
-      Clipper2Lib::PathsD clip = getClip(trimData_.value().get());
+      auto clip = getClip(trimData_.value().get());
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
       for (auto& element : elements(parameterSpaceGridView)) {
@@ -701,8 +718,6 @@ namespace Dune::IGA {
         RealIndex realIndex     = n_fullElement + n_trimmedElement;
 
         auto corners = getElementCorners(element);
-
-        using namespace Dune::IGA::Impl::Trim;
 
         auto [trimFlag, clippingResult] = clipElement(element, clip);
 
@@ -713,10 +728,9 @@ namespace Dune::IGA {
           auto elementBoundaries = constructElementBoundaries(*clippingResult, corners, trimData_.value());
 
           if (elementBoundaries.has_value()) {
-            trimInfoMap.emplace(
-                directIndex,
-                ElementTrimInfo{.realIndex = realIndex,
-                                .repr      = std::make_unique<TrimmedElementRepresentationType>(elementBoundaries.value(), patchGeometry_.get())});
+            trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                                             .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                                 elementBoundaries.value(), patchGeometry_.get())});
 
           } else {
             trimFlags[directIndex] = ElementTrimFlag::empty;
@@ -724,10 +738,15 @@ namespace Dune::IGA {
           }
         } else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
-          auto dune_corners = corners; std::swap(dune_corners[2], dune_corners[3]);
-          trimInfoMap.emplace(directIndex,
-                              ElementTrimInfo{.realIndex = realIndex,
-                                              .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+
+          std::vector<FieldVector<double, 2>> dune_corners;
+          std::ranges::transform(corners, std::back_inserter(dune_corners),
+                                 [](const auto& c) { return toFloatDomain(c); });
+          std::swap(dune_corners[2], dune_corners[3]);
+
+          trimInfoMap.emplace(
+              directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                           .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
         }
 
       }  // Element Loop End

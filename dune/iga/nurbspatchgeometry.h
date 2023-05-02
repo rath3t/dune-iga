@@ -4,23 +4,24 @@
 
 #pragma once
 
+#include <dune/geometry/multilineargeometry.hh>
 #include <dune/iga/igaalgorithms.hh>
 
 namespace Dune::IGA {
 
-  template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl =  DuneLinearAlgebraTraits<double>>
+  template <std::integral auto dim, std::integral auto dimworld,
+            LinearAlgebra NurbsGridLinearAlgebraTraitsImpl = DuneLinearAlgebraTraits<double>>
   class NURBSPatchGeometry {
    public:
-    static constexpr std::integral auto patchDim = dim;
+    static constexpr std::integral auto patchDim       = dim;
     static constexpr std::integral auto coorddimension = dimworld;
 
-    using LinearAlgebraTraits = NurbsGridLinearAlgebraTraitsImpl;
-    using ctype               = typename LinearAlgebraTraits::value_type;
-    using LocalCoordinate     = typename LinearAlgebraTraits::template FixedVectorType<patchDim>;
-    using GlobalCoordinate    = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
-    using JacobianTransposed  = typename LinearAlgebraTraits::template FixedMatrixType<patchDim, coorddimension>;
-    using JacobianInverseTransposed =
-        typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, patchDim>;
+    using LinearAlgebraTraits       = NurbsGridLinearAlgebraTraitsImpl;
+    using ctype                     = typename LinearAlgebraTraits::value_type;
+    using LocalCoordinate           = typename LinearAlgebraTraits::template FixedVectorType<patchDim>;
+    using GlobalCoordinate          = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
+    using JacobianTransposed        = typename LinearAlgebraTraits::template FixedMatrixType<patchDim, coorddimension>;
+    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, patchDim>;
 
     using ControlPointType = typename NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>::ControlPointType;
 
@@ -29,10 +30,10 @@ namespace Dune::IGA {
     using MatrixHelper = typename MultiLinearGeometryTraits<ctype>::MatrixHelper;
 
    public:
-
     NURBSPatchGeometry() = default;
 
-    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData) : patchData_(patchData) {
+    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData)
+        : patchData_(patchData) {
       nurbs_ = Nurbs<patchDim, LinearAlgebraTraits>(*patchData);
     }
 
@@ -72,16 +73,15 @@ namespace Dune::IGA {
       std::array<double, dim> u{};
       std::ranges::copy(local, std::begin(u));
 
-      auto spanIndex = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
-      auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
-      auto basis     = nurbs_.basisFunctionNet(u);
+      auto spanIndex       = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
+      auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
+                                       extractControlCoordinates(patchData_->controlPoints));
+      auto basis           = nurbs_.basisFunctionNet(u);
 
       return Dune::IGA::dot(basis, cpCoordinateNet);
     }
 
-    FieldVector<ctype, dimworld> operator()(const LocalCoordinate& local) const {
-      return global(local);
-    }
+    FieldVector<ctype, dimworld> operator()(const LocalCoordinate& local) const { return global(local); }
 
     /** \brief Inverse of global this function gets a point defined in the world space and return
      * the closest point in local coordinates, i.e. in [0,1] domain for each grid dimension
@@ -125,15 +125,14 @@ namespace Dune::IGA {
       for (int subI = 0, i = 0; i < patchDim; ++i)
         subDirs[subI++] = i;
 
-
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 1);
-      auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
+      auto cpCoordinateNet                = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
+                                                      extractControlCoordinates(patchData_->controlPoints));
 
       for (int dir = 0; dir < patchDim; ++dir) {
         std::array<unsigned int, patchDim> ithVec{};
         ithVec[subDirs[dir]] = 1;
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
-
       }
       return result;
     }
@@ -151,15 +150,13 @@ namespace Dune::IGA {
       std::array<std::array<double, 2>, patchDim> result{};
       for (int i = 0; i < patchDim; ++i) {
         auto [min, max] = std::ranges::minmax_element(patchData_->knotSpans[i]);
-        result[i] = {*min, *max};
+        result[i]       = {*min, *max};
       }
 
       return result;
     }
 
-    [[nodiscard]] std::array<int, patchDim> degree() const {
-      return patchData_->degree;
-    }
+    [[nodiscard]] std::array<int, patchDim> degree() const { return patchData_->degree; }
 
     [[nodiscard]] std::array<ctype, patchDim> domainMidPoint() const {
       auto dom = domain();
@@ -169,14 +166,12 @@ namespace Dune::IGA {
 
       return result;
     }
+
    public:
     std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData_;
 
    private:
     Dune::IGA::Nurbs<patchDim, LinearAlgebraTraits> nurbs_;
-
   };
 
-}
-
-
+}  // namespace Dune::IGA

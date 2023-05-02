@@ -5,7 +5,10 @@
 
 #include "nurbstrimutils.hh"
 
+#include <algorithm>
+#include <bits/ranges_algo.h>
 #include <clipper2/clipper.core.h>
+#include <ranges>
 
 #include <dune/iga/ibraGeometry.hh>
 #include <dune/iga/nurbspatchgeometry.h>
@@ -22,7 +25,7 @@ namespace Dune::IGA {
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<dim, ControlPoint>;
     using PatchData           = Dune::IGA::NURBSPatchData<dim, worldDim>;
 
-    using Point  = Dune::FieldVector<double, worldDim>;
+    using Point = Dune::FieldVector<double, worldDim>;
 
     Geometry nurbsGeometry;
     std::array<double, 2> domain{};
@@ -43,7 +46,11 @@ namespace Dune::IGA {
           endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
 
     explicit Boundary(const Point& a, const Point& b)
-        : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {}
+        : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
+      auto gt = [](auto x) { return x < 100; };
+      assert(std::ranges::all_of(a, gt));
+      assert(std::ranges::all_of(b, gt));
+    }
 
     // Helper classes for construction of nurbsGeometry
    private:
@@ -52,9 +59,9 @@ namespace Dune::IGA {
       std::array<int, dim> dimSize{static_cast<int>(_cp.size())};
 
       // Construct patch Data
-      std::array<std::vector<double>, dim> knotSpans {_curve.compileKnotVectors()};
-      auto controlNet {ControlPointNetType(dimSize, _cp)};
-      std::array<int, 1> degree {_curve.degree};
+      std::array<std::vector<double>, dim> knotSpans{_curve.compileKnotVectors()};
+      auto controlNet{ControlPointNetType(dimSize, _cp)};
+      std::array<int, 1> degree{_curve.degree};
 
       return Geometry(std::make_shared<PatchData>(knotSpans, controlNet, degree));
     }
@@ -67,9 +74,9 @@ namespace Dune::IGA {
       std::array<int, 1> dimSize{2};
 
       // Construct patch Data
-      std::array<std::vector<double>, dim> knotSpans {std::vector<double>{0.0, 0.0, 1.0, 1.0}};
-      auto controlNet {ControlPointNetType(dimSize, _cp)};
-      std::array<int, 1> degree {1};
+      std::array<std::vector<double>, dim> knotSpans{std::vector<double>{0.0, 0.0, 1.0, 1.0}};
+      auto controlNet{ControlPointNetType(dimSize, _cp)};
+      std::array<int, 1> degree{1};
 
       return Geometry(std::make_shared<PatchData>(knotSpans, controlNet, degree));
     }
@@ -87,12 +94,16 @@ namespace Dune::IGA {
         return EdgeOrientation::Unknown;
     }
 
-    [[nodiscard]] Clipper2Lib::Path<double> path(unsigned int samples = 200, bool getOnlyTwoPointsIfStraight = true) const {
-      Clipper2Lib::Path<double> path;
+    template <typename ctype = double>
+    [[nodiscard]] Clipper2Lib::Path<ctype> path(unsigned int samples = 200, const int intScale = 0,
+                                                bool getOnlyTwoPointsIfStraight = true) const {
+      Clipper2Lib::Path<ctype> path;
+
+      auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(std::pow(10, intScale)); };
 
       if (getOnlyTwoPointsIfStraight && degree() == 1 && endPoints.size() == 2) {
-        path.emplace_back(endPoints.front()[0], endPoints.front()[1]);
-        path.emplace_back(endPoints.back()[0], endPoints.back()[1]);
+        path.emplace_back(scaler(endPoints.front()[0]), scaler(endPoints.front()[1]));
+        path.emplace_back(scaler(endPoints.back()[0]), scaler(endPoints.back()[1]));
         return path;
       }
 
@@ -100,14 +111,13 @@ namespace Dune::IGA {
       auto linS = Utilities::linspace<double>(domain[0], domain[1], samples);
       for (auto u : linS) {
         auto vertex = nurbsGeometry(u);
-        path.emplace_back(vertex[0], vertex[1]);
+        path.emplace_back(scaler(vertex[0]), scaler(vertex[1]));
       }
       return path;
     }
-
   };
   struct BoundaryLoop {
-    enum class Orientation {ClockWise, CounterClockWise};
+    enum class Orientation { ClockWise, CounterClockWise };
     std::vector<Boundary> boundaries;
     Orientation orientation;
   };
@@ -123,14 +133,11 @@ namespace Dune::IGA {
       boundaryLoops.push_back({_boundaries, orientation});
     }
 
-    [[nodiscard]] auto getOrientationForBoundary(const Boundary& _boundary) const ->BoundaryLoop::Orientation {
+    [[nodiscard]] auto getOrientationForBoundary(const Boundary& _boundary) const -> BoundaryLoop::Orientation {
       for (const auto& loop : boundaryLoops) {
         // Find boundary in loop
-        auto sameBoundary = [&_boundary](auto checkBoundary){
-          return _boundary.endPoints == checkBoundary.endPoints;
-        };
-        if (std::ranges::find_if(loop.boundaries, sameBoundary) != loop.boundaries.end())
-          return loop.orientation;
+        auto sameBoundary = [&_boundary](auto checkBoundary) { return _boundary.endPoints == checkBoundary.endPoints; };
+        if (std::ranges::find_if(loop.boundaries, sameBoundary) != loop.boundaries.end()) return loop.orientation;
       }
     }
 
@@ -153,8 +160,7 @@ namespace Dune::IGA {
       // C.f. https://stackoverflow.com/a/1180256 and http://www.faqs.org/faqs/graphics/algorithms-faq/ Subject 2.07
       // Find lowest and rightmost vertex
       auto it = std::ranges::min_element(vertices, [](auto v1, auto v2) {
-        if (Dune::FloatCmp::eq(v1[1], v2[1]))
-          return v1[0] > v2[0];
+        if (Dune::FloatCmp::eq(v1[1], v2[1])) return v1[0] > v2[0];
         return v1[1] < v2[1];
       });
 
@@ -166,14 +172,15 @@ namespace Dune::IGA {
       auto b = vertices[idxB];
       auto c = vertices[idxC];
 
-      auto ab = b-a;
-      auto ac = c-a;
+      auto ab = b - a;
+      auto ac = c - a;
 
       auto isCrossPositive = [](Dune::FieldVector<double, 2>& a, Dune::FieldVector<double, 2>& b) {
-        double cross =  a[0] * b[1] - b[0] * a[1];
+        double cross = a[0] * b[1] - b[0] * a[1];
         if (cross > 0)
           return true;
-        else return false;
+        else
+          return false;
       };
       if (isCrossPositive(ab, ac))
         return BoundaryLoop::Orientation::CounterClockWise;
