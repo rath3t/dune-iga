@@ -41,7 +41,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
     if constexpr (comps == StressEvaluatorComponents::vonMieses)
       return "von Mieses stress";
   }
-  StressEvaluator2D(auto &global_displacement_solution, double lambdaLoad, std::vector<ElementType> &fes)
+  StressEvaluator2D(auto &global_displacement_solution, double lambdaLoad, std::vector<ElementType>* fes)
       : resultRequirements_(Ikarus::ResultRequirements()
                                 .insertGlobalSolution(Ikarus::FESolutions::displacement, global_displacement_solution)
                                 .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
@@ -50,7 +50,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
 
  private:
   double evaluateStressComponent(int eleID, auto &xi, int comp) const {
-    fes_[eleID].calculateAt(resultRequirements_, {xi[0], xi[1]}, res_);
+    fes_->at(eleID).calculateAt(resultRequirements_, {xi[0], xi[1]}, res_);
     auto sigma = res_.getResult(Ikarus::ResultType::cauchyStress);
 
     if constexpr (comps == StressEvaluatorComponents::normalStress)
@@ -73,7 +73,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
 
 
   Ikarus::ResultRequirements<Eigen::VectorXd, double> resultRequirements_;
-  std::vector<ElementType> fes_;
+  std::vector<ElementType>* fes_;
   mutable Ikarus::ResultTypeMap<double> res_;
 };
 

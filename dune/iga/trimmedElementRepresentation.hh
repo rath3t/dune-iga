@@ -12,7 +12,6 @@
 #include <mapbox/earcut.hpp>
 #include <vector>
 
-#include "dune/geometry/type.hh"
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
@@ -60,26 +59,23 @@ namespace Dune::IGA {
     using Point    = Dune::FieldVector<double, dim>;
 
     // Grid
-    std::unique_ptr<Grid> grid;
+    std::unique_ptr<Grid> grid{};
 
    private:
     std::vector<Boundary> boundaries;
-    NURBSPatchGeometry<dim, dim>* patchGeometry{};    // Non-owning pointer
     std::vector<Boundary> originalBoundaries;
     bool trimmed;
+    bool verbose = false;
 
    public:
     // Construct with boundaries
-    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries, NURBSPatchGeometry<dim, dim>* _patchGeometry) : boundaries(_boundaries), trimmed(true), patchGeometry(_patchGeometry) {
+    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries), trimmed(true) {
       std::ranges::copy(boundaries, std::back_inserter(originalBoundaries));
       reconstructTrimmedElement();
     }
     /// brief: Constructs an untrimmed elementRepresentation, expects indices in Dune ordering
     explicit TrimmedElementRepresentation(std::vector<FieldVector<double, 2>>& corners) : trimmed(false) {
         constructFromCorners(corners);
-    }
-    [[nodiscard]] Dune::FieldVector<double, dim> transferToPatchGlobal(Dune::FieldVector<double, dim>& local) const {
-        return patchGeometry->global(local);
     }
 
     // Accessors
@@ -94,10 +90,6 @@ namespace Dune::IGA {
         alreadyRefined = true;
       }
       return grid->leafGridView();
-    }
-
-    [[nodiscard]] double volumeOfPatch() const {
-      return patchGeometry->volume(2);
     }
 
    private:
@@ -139,7 +131,8 @@ namespace Dune::IGA {
 
       GridView gridViewRefined = grid->leafGridView();
 
-      std::cout << "Reconstructed Grid with " << gridViewRefined.size(0)
+      if (verbose)
+        std::cout << "Reconstructed Grid with " << gridViewRefined.size(0)
                 << " elements. Area of elements: " << calculateArea()
                 << ". Approx area of trimmed element: " << calculateTargetArea() << std::endl;
     }

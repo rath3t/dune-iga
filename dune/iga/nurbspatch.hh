@@ -620,21 +620,28 @@ namespace Dune::IGA {
     template <unsigned int codim>
       requires(dim == 2)
     [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
-      return getEntityMap<codim>().at(idx);
+      return getEntityMap<codim>()[idx];
     }
+
     template <unsigned int codim>
       requires(dim == 2)
     [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
-      auto& map = this->getEntityMap<codim>();
-      auto it   = std::ranges::find_if(map, [idx](auto value) { return value.second == idx; });
-      if (it != map.end())
-        return it->first;
+      constexpr auto orVal =  std::numeric_limits<DirectIndex>::max();
+      auto res = getRealIndexOr<codim>(idx, orVal);
+      if (res != orVal)
+        return res;
       else
         throw std::runtime_error("No corresponding realIndex");
     }
+    template <unsigned int codim> requires(dim == 2)
+    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept {
+      auto& map = this->getEntityMap<codim>();
+      auto it   = std::ranges::find(map, idx);
+      return it != map.end() ? std::ranges::distance(map.begin(), it) : orValue;
+    }
 
     [[nodiscard]] auto getTrimFlagForDirectIndex(DirectIndex directIndex) const -> ElementTrimFlag {
-      return trimFlags.at(directIndex);
+      return trimFlags[directIndex];
     }
     [[nodiscard]] auto getTrimFlag(RealIndex realIndex) const -> ElementTrimFlag {
       int nurbsIdx = getDirectIndex<0>(realIndex);
@@ -682,9 +689,10 @@ namespace Dune::IGA {
     void fill1to1Maps() {
       int n_entity = originalSize(codim);
       auto& map    = getEntityMap<codim>();
-      for (RealIndex i = 0; i < n_entity; ++i) {
-        map.emplace(i, i);
-      }
+
+      auto iView = std::views::iota(0, n_entity);
+      map.reserve(n_entity);
+      map.insert(map.end(), iView.begin(), iView.end());
     }
 
     // This is for grid dims where no trimming functionality is enabled
@@ -730,7 +738,7 @@ namespace Dune::IGA {
           if (elementBoundaries.has_value()) {
             trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                              .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                                 elementBoundaries.value(), patchGeometry_.get())});
+                                                                 elementBoundaries.value())});
 
           } else {
             trimFlags[directIndex] = ElementTrimFlag::empty;
@@ -752,9 +760,9 @@ namespace Dune::IGA {
       }  // Element Loop End
 
       // Construct elementIndexMap
-      for (auto& [nurbsIndex, info] : trimInfoMap) {
-        elementIndexMap.insert({info.realIndex, nurbsIndex});
-      }
+      elementIndexMap.reserve(n_trimmedElement + n_fullElement);
+      for (auto& [directIndex, _] : trimInfoMap)
+        elementIndexMap.push_back(directIndex);
 
       constructSubEntityMaps<2>();
       constructSubEntityMaps<1>();
@@ -779,10 +787,11 @@ namespace Dune::IGA {
 
       unsigned int realIndexCounter = 0;
       auto& map                     = getEntityMap<codim>();
-      for (DirectIndex i = 0; i < n_entities_original; ++i) {
+
+      for (auto i : std::views::iota(0, n_entities_original)) {
         auto it = std::ranges::find(uniqueEntityIndices, i);
         if (it != uniqueEntityIndices.end()) {
-          map.emplace(realIndexCounter, i);
+          map.push_back(i);
           ++realIndexCounter;
         }
       }
@@ -825,9 +834,9 @@ namespace Dune::IGA {
         return vertexIndexMap;
     }
 
-    std::map<RealIndex, DirectIndex> elementIndexMap;
-    std::map<RealIndex, DirectIndex> vertexIndexMap;
-    std::map<RealIndex, DirectIndex> edgeIndexMap;
+    std::vector<DirectIndex> elementIndexMap;
+    std::vector<DirectIndex> vertexIndexMap;
+    std::vector<DirectIndex> edgeIndexMap;
 
     unsigned int n_fullElement    = std::numeric_limits<unsigned int>::signaling_NaN();
     unsigned int n_trimmedElement = 0;

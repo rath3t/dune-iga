@@ -86,16 +86,18 @@ namespace Dune::IGA {
       return global(localcenter);
     }
 
-    // TODO Is this the volume in the parameter Space or in the physical space
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
-          this->type(), mydimension * (*std::ranges::max_element(patchData_->degree)));
+          GeometryTypes::cube(mydimension), mydimension * (*std::ranges::max_element(patchData_->degree)));
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
+    }
+    [[nodiscard]] double spanVolume() const  requires(mydimension == 2)  {
+      return std::accumulate(scaling_.begin(), scaling_.end(), 1.0, std::multiplies<>());
     }
 
     /** \brief Return the number of corners of the element */

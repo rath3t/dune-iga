@@ -69,9 +69,7 @@ int main(int argc, char **argv) {
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
 
-  grid->globalRefine(globalRefine);
-  grid->globalRefineInDirection(0, refineInUDirection);
-  grid->globalRefineInDirection(1, refineInVDirection);
+  grid->globalMultiRefine(globalRefine, refineInUDirection, refineInUDirection);
 
   GridView gridView = grid->leafGridView();
   Plot::plotParametricGridAndPhysicalGrid(grid);
@@ -185,21 +183,17 @@ int main(int argc, char **argv) {
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
-  vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-  vtkWriter.addPointData(forceGlobalFunc,
-                         Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
-
   vtkWriter.addPointData(dispGlobalFunc,
                          Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, &fes)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, &fes)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, &fes)));
 
   double totalForce = 0.0;
   for (auto &f : Fext)

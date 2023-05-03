@@ -4,6 +4,7 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
+#include <optional>
 #include <utility>
 
 #include <dune/iga/concepts.hh>
@@ -111,21 +112,29 @@ namespace Dune::IGA {
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
 
-    void globalRefine(int refinementLevel) {
+    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
+
+    void globalRefine(int refinementLevel, bool omitTrim) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
         auto additionalKnots
             = generateRefinedKnots(currentPatchRepresentation_.knotSpans, refDirection, refinementLevel);
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
-      updateStateAfterRefinement();
+      updateStateAfterRefinement(omitTrim);
     }
 
-    void globalRefineInDirection(const int dir, const int refinementLevel) {
+    void globalRefineInDirection(const int dir, const int refinementLevel, bool omitTrim = false) {
       if (refinementLevel == 0) return;
       auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans, dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
-      updateStateAfterRefinement();
+      updateStateAfterRefinement(omitTrim);
+    }
+
+    void globalMultiRefine(const int global, const int uDir, const int vDir) {
+      this->globalRefine(global, uDir > 0 or vDir > 0);
+      this->globalRefineInDirection(0, uDir, vDir > 0);
+      this->globalRefineInDirection(1, vDir);
     }
 
     [[nodiscard]] int size(int codim) const { return finestPatches_.get()->front().size(codim); }
@@ -173,11 +182,11 @@ namespace Dune::IGA {
 
     // TODO Fix publicness and privateness
    private:
-    void updateStateAfterRefinement() {
-      // TODO memory leek? Maybe use a std::vector of shared ptr?
+    void updateStateAfterRefinement(bool omitTrim = false) {
+
       finestPatches_->clear();
-      finestPatches_->emplace_back(currentPatchRepresentation_, trimData_);
-      //finestPatches_.get()->front() = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_, trimData_);
+      finestPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
+
       leafGridView_                 = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
       indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
       idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
