@@ -57,6 +57,8 @@ int main(int argc, char** argv) {
   const int subsample = postProcessParameters.get<int>("subsample");
 
   /// Create Grid
+  auto startLoadingGrid = std::chrono::high_resolution_clock::now();
+
 
   using Grid = Dune::IGA::NURBSGrid<gridDim, worldDim>;
   using GridView = Dune::IGA::NURBSGrid<gridDim, worldDim>::LeafGridView;
@@ -65,6 +67,11 @@ int main(int argc, char** argv) {
                                                                               trimGrid, {u_degreeElevate, v_degreeElevate});
   grid->globalRefine(globalRefine);
   GridView gridView = grid->leafGridView();
+
+  auto stopLoadingGrid = std::chrono::high_resolution_clock::now();
+  auto durationLoadingGrid = duration_cast<std::chrono::milliseconds>(stopLoadingGrid - startLoadingGrid);
+  spdlog::info("Loading and trimming the grid took {} milliseconds ",
+               durationLoadingGrid.count());
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));

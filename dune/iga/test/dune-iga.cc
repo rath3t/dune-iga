@@ -1455,8 +1455,7 @@ auto testEntityFunctionality2() {
   return t;
 }
 
-<<<<<<< HEAD
-=======
+
 auto testEntityFunctionality() {
   TestSuite t;
 
@@ -1517,7 +1516,6 @@ auto testEntityFunctionality() {
 
   return t;
 }
->>>>>>> trimmedNurbs
 
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
@@ -1618,8 +1616,6 @@ auto testTrimmedElementGrid() {
   return t;
 }
 
-#  include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
-#  include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 auto testNurbsBasis2() {
   TestSuite t;
 
@@ -1699,7 +1695,6 @@ void generateGraphics(std::string&& fileName) {
   Plot::plotGridViews(grid2, "_graphics");
 }
 
-<<<<<<< HEAD
 auto testEntityFunctionality() {
   TestSuite t;
 
@@ -1764,8 +1759,6 @@ auto testEntityFunctionality() {
 #endif
 
 
-=======
->>>>>>> trimmedNurbs
 void plotBasis(std::string&& fileName, bool trim = false, int globalRefine = 0) {
   std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read(fileName, trim, {1, 1});
   grid->globalRefine(globalRefine);
@@ -1792,7 +1785,6 @@ void plotBasis(std::string&& fileName, bool trim = false, int globalRefine = 0) 
   }
   writer1.write("basis_original_grid");
   writer2.write("basis");
-<<<<<<< HEAD
 }
 
 double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt) {
@@ -1862,69 +1854,6 @@ auto testIntegrationPoints() {
 
   return t;
 }
-=======
-}
-
-#endif
->>>>>>> trimmedNurbs
-
-double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt) {
-  double area = 0;
-
-  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
-  for (auto& ele : elements(gridView)) {
-    ele.impl().getIntegrationPoints(ipVec, order);
-    auto geo = ele.geometry();
-    for (auto& ip : ipVec)
-      area += geo.integrationElement(ip.position()) * ip.weight();
-  }
-
-  return area;
-}
-
-double calculateAreaParameterSpace(const auto& gridView) {
-  double area = 0.0;
-
-  for (auto& ele : elements(gridView)) {
-    auto trim = ele.impl().trimmedElementRepresentation();
-    for (auto& subEle : elements(trim->gridView()))
-      area += subEle.geometry().volume();
-  }
-
-  return area;
-}
-
-auto testIntegrationPoints() {
-  TestSuite t;
-
-  // O refinement, 1 trimmed
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
-  grid->globalRefine(1);
-
-  double area = calculateArea(grid->leafGridView());
-  std::cout << "Area (0): " << area << std::endl;
-
-  t.check(Dune::FloatCmp::eq(area, 71.725666, 1e-1));
-
-  // Gegenrechnung
-  double areaParameterSpace = calculateAreaParameterSpace(grid->leafGridView());
-  std::cout << "Area (0, G): " << areaParameterSpace << std::endl;
-
-  grid->globalRefine(1);
-  area = calculateArea(grid->leafGridView());
-  std::cout << "Area (1): " << area << std::endl;
-  t.check(Dune::FloatCmp::eq(area, 71.725666, 1e-2));
-
-  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
-  grid2->globalRefine(1);
-  area = calculateArea(grid2->leafGridView());
-  std::cout << "Grid 2 \n";
-  std::cout << "Area: " << area << std::endl;
-
-  //  Plot::plotParametricGridAndPhysicalGrid(grid2, "_pipe");
-
-  return t;
-}
 
 auto test3HoleGeometry() {
   TestSuite t;
@@ -1951,21 +1880,16 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-<<<<<<< HEAD
   // t.subTest(testIntegrationPoints());
-=======
   t.subTest(testIntegrationPoints());
->>>>>>> trimmedNurbs
   // t.subTest(test3HoleGeometry());
 
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
   // plotBasis("auxiliaryFiles/rund_for_foundation.ibra");
-<<<<<<< HEAD
   //plotBasis("auxiliaryFiles/surface-hole.ibra", false, 2);
 
-=======
   // plotBasis("auxiliaryFiles/surface-hole.ibra", true, 2);
->>>>>>> trimmedNurbs
+
 
 #ifdef TEST_ALL
 
