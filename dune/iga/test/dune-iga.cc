@@ -1455,6 +1455,69 @@ auto testEntityFunctionality2() {
   return t;
 }
 
+<<<<<<< HEAD
+=======
+auto testEntityFunctionality() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra");
+  grid->globalRefine(1);
+
+  int counter = 0;
+  for (auto& ele : elements(grid->leafGridView())) {
+    counter++;
+    t.check(ele.impl().getTrimFlag() != ElementTrimFlag::empty);
+  }
+  t.check(counter == 3);
+  t.check(grid->size(0) == 3);
+
+  // Reference geometry
+  Plot::plotGridView(grid->leafGridView(), "plot/test1");
+
+  // Test element geometry (unfortunately the whole thing is shifted to the right and the top
+  Dune::FieldVector<double, 2> shift{1.6142394486009448, 2.632929598653166};
+
+  std::vector<Dune::FieldVector<double, 2>> expectedElementCenters{{0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  std::vector<Dune::FieldVector<double, 2>> expectedEdgeCenters{{0.5, 0.25}, {1, 0.25}, {0.75, 0}, {0.75, 0.5}};
+  std::vector<Dune::FieldVector<double, 2>> expectedElementCorners{{0.5, 0}, {1, 0}, {0.5, 0.5}, {1, 0.5}};
+
+  std::ranges::for_each(expectedElementCenters, [&shift](auto& c) { c += shift; });
+  std::ranges::for_each(expectedEdgeCenters, [&shift](auto& c) { c += shift; });
+  std::ranges::for_each(expectedElementCorners, [&shift](auto& c) { c += shift; });
+
+  for (int i = 0; auto& ele : elements(grid->leafGridView())) {
+    t.check(Dune::FloatCmp::eq(expectedElementCenters.at(i), ele.geometry().center()));
+
+    if (i == 0) {
+      for (int j = 0; auto& intersection : intersections(grid->leafGridView(), ele)) {
+        t.check(Dune::FloatCmp::eq(expectedEdgeCenters.at(j), intersection.geometry().center()));
+        ++j;
+      }
+      for (int j = 0; j < 4; ++j)
+        t.check(Dune::FloatCmp::eq(expectedElementCorners.at(j), ele.subEntity<2>(j).geometry().center()));
+    }
+    ++i;
+  }
+
+  // Test Size functions
+  auto gV = grid->leafGridView();
+
+  t.check(gV.size(0) == 3);
+  t.check(gV.size(Dune::GeometryTypes::none(2)) == 3);
+  t.check(gV.size(Dune::GeometryTypes::cube(2)) == 0);
+
+  //   Test Dune Stuff
+  Dune::GeometryChecker<typename decltype(grid)::element_type> geometryChecker;
+  geometryChecker.checkGeometry(grid->leafGridView());
+  Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
+  gridcheck(*grid);
+
+  //   If this yields the correct boundaries, then we are happy
+  // Dune::printGrid(*grid, Dune::MPIHelper::instance());
+
+  return t;
+}
+>>>>>>> trimmedNurbs
 
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
@@ -1636,6 +1699,7 @@ void generateGraphics(std::string&& fileName) {
   Plot::plotGridViews(grid2, "_graphics");
 }
 
+<<<<<<< HEAD
 auto testEntityFunctionality() {
   TestSuite t;
 
@@ -1700,6 +1764,8 @@ auto testEntityFunctionality() {
 #endif
 
 
+=======
+>>>>>>> trimmedNurbs
 void plotBasis(std::string&& fileName, bool trim = false, int globalRefine = 0) {
   std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read(fileName, trim, {1, 1});
   grid->globalRefine(globalRefine);
@@ -1726,6 +1792,7 @@ void plotBasis(std::string&& fileName, bool trim = false, int globalRefine = 0) 
   }
   writer1.write("basis_original_grid");
   writer2.write("basis");
+<<<<<<< HEAD
 }
 
 double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt) {
@@ -1795,6 +1862,69 @@ auto testIntegrationPoints() {
 
   return t;
 }
+=======
+}
+
+#endif
+>>>>>>> trimmedNurbs
+
+double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt) {
+  double area = 0;
+
+  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
+  for (auto& ele : elements(gridView)) {
+    ele.impl().getIntegrationPoints(ipVec, order);
+    auto geo = ele.geometry();
+    for (auto& ip : ipVec)
+      area += geo.integrationElement(ip.position()) * ip.weight();
+  }
+
+  return area;
+}
+
+double calculateAreaParameterSpace(const auto& gridView) {
+  double area = 0.0;
+
+  for (auto& ele : elements(gridView)) {
+    auto trim = ele.impl().trimmedElementRepresentation();
+    for (auto& subEle : elements(trim->gridView()))
+      area += subEle.geometry().volume();
+  }
+
+  return area;
+}
+
+auto testIntegrationPoints() {
+  TestSuite t;
+
+  // O refinement, 1 trimmed
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  grid->globalRefine(1);
+
+  double area = calculateArea(grid->leafGridView());
+  std::cout << "Area (0): " << area << std::endl;
+
+  t.check(Dune::FloatCmp::eq(area, 71.725666, 1e-1));
+
+  // Gegenrechnung
+  double areaParameterSpace = calculateAreaParameterSpace(grid->leafGridView());
+  std::cout << "Area (0, G): " << areaParameterSpace << std::endl;
+
+  grid->globalRefine(1);
+  area = calculateArea(grid->leafGridView());
+  std::cout << "Area (1): " << area << std::endl;
+  t.check(Dune::FloatCmp::eq(area, 71.725666, 1e-2));
+
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
+  grid2->globalRefine(1);
+  area = calculateArea(grid2->leafGridView());
+  std::cout << "Grid 2 \n";
+  std::cout << "Area: " << area << std::endl;
+
+  //  Plot::plotParametricGridAndPhysicalGrid(grid2, "_pipe");
+
+  return t;
+}
 
 auto test3HoleGeometry() {
   TestSuite t;
@@ -1821,13 +1951,21 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
+<<<<<<< HEAD
   // t.subTest(testIntegrationPoints());
+=======
+  t.subTest(testIntegrationPoints());
+>>>>>>> trimmedNurbs
   // t.subTest(test3HoleGeometry());
 
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
   // plotBasis("auxiliaryFiles/rund_for_foundation.ibra");
+<<<<<<< HEAD
   //plotBasis("auxiliaryFiles/surface-hole.ibra", false, 2);
 
+=======
+  // plotBasis("auxiliaryFiles/surface-hole.ibra", true, 2);
+>>>>>>> trimmedNurbs
 
 #ifdef TEST_ALL
 
