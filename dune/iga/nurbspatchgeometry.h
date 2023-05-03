@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/iga/igaalgorithms.hh>
 

@@ -182,13 +182,12 @@ int main(int argc, char** argv) {
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
-
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, &fes)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, &fes)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, &fes)));
 
   double totalForce = 0.0;
   for (auto& f : Fext)

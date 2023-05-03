@@ -622,15 +622,22 @@ namespace Dune::IGA {
     [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
       return getEntityMap<codim>().at(idx);
     }
+
     template <unsigned int codim>
       requires(dim == 2)
     [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
-      auto& map = this->getEntityMap<codim>();
-      auto it   = std::ranges::find_if(map, [idx](auto value) { return value.second == idx; });
-      if (it != map.end())
-        return it->first;
+      constexpr auto orVal =  std::numeric_limits<DirectIndex>::max();
+      auto res = getRealIndexOr<codim>(idx, orVal);
+      if (res != orVal)
+        return res;
       else
         throw std::runtime_error("No corresponding realIndex");
+    }
+    template <unsigned int codim> requires(dim == 2)
+    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const {
+      auto& map = this->getEntityMap<codim>();
+      auto it   = std::ranges::find_if(map, [idx](auto value) { return value.second == idx; });
+      return it != map.end() ? it->first : orValue;
     }
 
     [[nodiscard]] auto getTrimFlagForDirectIndex(DirectIndex directIndex) const -> ElementTrimFlag {
@@ -730,7 +737,7 @@ namespace Dune::IGA {
           if (elementBoundaries.has_value()) {
             trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                              .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                                 elementBoundaries.value(), patchGeometry_.get())});
+                                                                 elementBoundaries.value())});
 
           } else {
             trimFlags[directIndex] = ElementTrimFlag::empty;

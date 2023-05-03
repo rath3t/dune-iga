@@ -119,18 +119,7 @@ namespace Dune::IGA {
       }
     }
     // TODO These two function have to be private
-    int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
 
-    int getRealIndexForOuterIndex(int outerIndex)
-      requires(dim == 2)
-    {
-      if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
-      try {
-        return NURBSGridView_->getPatch(patchID_).template getRealIndex<0>(outerIndex);
-      } catch (std::runtime_error& e) {
-        return Impl::noNeighbor;
-      }
-    }
 
     auto trimmedElementRepresentation() const
     {
@@ -146,31 +135,23 @@ namespace Dune::IGA {
       if (trimFlag == ElementTrimFlag::trimmed) {
         auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
         auto gridView    = elementRepr->gridView();
-        auto elementGeometry = geometry();
-        auto patchVolume = elementRepr->volumeOfPatch();
+
+        auto elementGeo = geometry();
+        auto spanVolume = elementGeo.impl().spanVolume();
 
         for (auto subElement : elements(gridView)) {
           auto subElementGeo = subElement.geometry();
-
+          auto volumeRatio = 2 * subElementGeo.volume() / spanVolume;
 
           const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order);
-
           for (auto ip : rule) {
             auto globalInParameterSpace = subElementGeo.global(ip.position());
-            auto globalInPatch = elementRepr->transferToPatchGlobal(globalInParameterSpace);
-            auto localInElement = elementGeometry.local(globalInPatch);
-
-            auto volumeOfElement = elementGeometry.integrationElement(ip.position());
-            auto volumeOfSubElement = subElementGeo.integrationElement(ip.position());
-            auto volumeRatio = (volumeOfSubElement / volumeOfElement) * patchVolume;
+            auto localInElement = elementGeo.impl().spanToLocal(globalInParameterSpace);
 
             vector.emplace_back(localInElement, ip.weight() * volumeRatio);
           }
         }
-//        std::cout << "Integration points for Element " << directIndex_ << "\n";
-//        for (auto& ip : vector)
-//          std::cout << ip.position() << ", Weight: " << ip.weight() << "\n";
-//        std::cout << std::endl;
+
       } else {
         const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
         vector.insert(vector.end(), rule.begin(), rule.end());
@@ -278,6 +259,16 @@ namespace Dune::IGA {
     unsigned int patchID_{};
 
     ElementTrimFlag trimFlag;
+
+    // Helpers
+    int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
+
+    int getRealIndexForOuterIndex(int outerIndex)
+      requires(dim == 2)
+    {
+      if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
+      return NURBSGridView_->getPatch(patchID_).template getRealIndexOr<0>(outerIndex, Impl::noNeighbor);
+    }
 
   };  // end of Template Spezialisation for codim = 0
 
