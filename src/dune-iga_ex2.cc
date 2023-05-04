@@ -12,27 +12,18 @@
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
-
-#include "dune/functions/gridfunctions/analyticgridviewfunction.hh"
-#include "dune/geometry/refinement/base.cc"
-#include "dune/iga/test/plotFunctionality.h"
-#include <dune/common/parametertreeparser.hh>
-#include <dune/functions/functionspacebases/boundarydofs.hh>
-#include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/iga/ibraReader.hh>
-#include <dune/iga/nurbsgrid.hh>
-
-#include "linearElasticTrimmed.h"
-#include "stressEvaluator.h"
-#include "helpers.h"
-
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-#include <dune/grid/io/file/vtk/function.hh>
+#include <dune/common/parametertreeparser.hh>
+#include <dune/iga/ibraReader.hh>
 #include <dune/iga/igaDataCollector.h>
+#include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-#include <dune/iga/test/plotFunctionality.h>
+#include "igaHelpers.h"
+#include "linearElasticTrimmed.h"
+#include "stressEvaluator.h"
+#include "timer.h"
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
@@ -62,17 +53,25 @@ int main(int argc, char **argv) {
 
   const int subsample = postProcessParameters.get<int>("subsample");
 
+  /// Instantiate a timer
+  Timer timer;
+  timer.startTimer("all");
+
   /// Create Grid
+  timer.startTimer("grid");
+
   using Grid     = Dune::IGA::NURBSGrid<gridDim, worldDim>;
   using GridView = Dune::IGA::NURBSGrid<gridDim, worldDim>::LeafGridView;
 
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
 
-  grid->globalMultiRefine(globalRefine, refineInUDirection, refineInUDirection);
+  grid->globalMultiRefine(globalRefine, refineInUDirection, refineInVDirection);
 
   GridView gridView = grid->leafGridView();
-  Plot::plotParametricGridAndPhysicalGrid(grid);
+
+  spdlog::info("Loading and trimming the grid took {} milliseconds ", timer.stopTimer("grid").count());
+  timer.startTimer("basis");
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
@@ -85,7 +84,8 @@ int main(int argc, char **argv) {
       if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
     });
   });
-  std::cout << dirichletValues.fixedDOFsize() << " Dofs fixed" << std::endl;
+  spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs ",
+               timer.stopTimer("basis").count(), dirichletValues.fixedDOFsize());
 
   /// Declare a vector "fes" of linear elastic 2D planar solid elements
   using LinearElasticType = Ikarus::LinearElasticTrimmed<decltype(basis)>;
@@ -147,31 +147,26 @@ int main(int argc, char **argv) {
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.flat().size());
 
   /// Create a non-linear operator
-  auto startAssembly    = std::chrono::high_resolution_clock::now();
-  auto nonLinOp         = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(residualFunction, KFunction),
-                                                    Ikarus::parameter(D_Glob, lambdaLoad));
-  auto stopAssembly     = std::chrono::high_resolution_clock::now();
-  auto durationAssembly = duration_cast<std::chrono::milliseconds>(stopAssembly - startAssembly);
-  spdlog::info("The assembly took {:>6d} milliseconds with {:>7d} dofs", durationAssembly.count(), basis.flat().size());
+  timer.startTimer("assemble");
+
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(residualFunction, KFunction),
+                                            Ikarus::parameter(D_Glob, lambdaLoad));
+
+  spdlog::info("The assembly took {} milliseconds with {} dofs", timer.stopTimer("assemble").count(),
+               basis.flat().size());
 
   const auto &K    = nonLinOp.derivative();
   const auto &Fext = nonLinOp.value();
 
   /// solve the linear system
-  auto linSolver   = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
-  auto startSolver = std::chrono::high_resolution_clock::now();
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  timer.startTimer("solve");
 
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
-  auto stopSolver     = std::chrono::high_resolution_clock::now();
-  auto durationSolver = duration_cast<std::chrono::milliseconds>(stopSolver - startSolver);
-  spdlog::info("The solver took {} milliseconds ", durationSolver.count());
 
-  /// Stresses
-  Ikarus::ResultRequirements resultRequirements = Ikarus::ResultRequirements()
-                                                      .insertGlobalSolution(Ikarus::FESolutions::displacement, D_Glob)
-                                                      .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
-                                                      .addResultRequest(Ikarus::ResultType::cauchyStress);
+  spdlog::info("The solver took {} milliseconds ", timer.stopTimer("solve").count());
+  spdlog::info("Total time spent until solution: {} milliseconds  ", timer.stopTimer("all").count());
 
   /// Postprocess
   auto dispGlobalFunc
@@ -183,17 +178,22 @@ int main(int argc, char **argv) {
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
-  vtkWriter.addPointData(dispGlobalFunc,
-                         Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+  vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(D_Glob, lambdaLoad, &fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(D_Glob, lambdaLoad, &fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMieses>>(D_Glob, lambdaLoad, &fes)));
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
+  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
 
   double totalForce = 0.0;
   for (auto &f : Fext)

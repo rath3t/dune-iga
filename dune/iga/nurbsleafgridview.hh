@@ -131,7 +131,6 @@ namespace Dune::IGA {
     const auto &grid() const { return *grid_; }
 
     /** \brief obtain how many entities of a give geometry type do live in this grid view */
-    // TODO Test
     [[nodiscard]] int size(const GeometryType &type) const {
       if constexpr (dimension != 2) {
         if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)

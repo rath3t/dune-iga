@@ -1813,6 +1813,24 @@ double calculateAreaParameterSpace(const auto& gridView) {
   return area;
 }
 
+/// \brief Test if sum of the weights is the ratio of trimmed to untrimmed surface in parameterspace * A ref (= 1)
+void checkSumWeights(const auto& gridView, auto& t) {
+  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
+  for (auto& ele : elements(gridView)) {
+
+    auto untrimmedArea = ele.geometry().impl().spanVolume();
+    auto trimmedArea =  ele.impl().trimmedElementRepresentation()->calculateArea();
+    auto ratio = trimmedArea / untrimmedArea;
+
+    ele.impl().getIntegrationPoints(ipVec);
+    double weightSum = 0.0;
+    for (auto& ip : ipVec)
+      weightSum += ip.weight();
+
+    t.check(Dune::FloatCmp::eq(weightSum, ratio));
+  }
+}
+
 auto testIntegrationPoints() {
   TestSuite t;
 
@@ -1827,11 +1845,13 @@ auto testIntegrationPoints() {
 
   t.check(Dune::FloatCmp::eq(area, targetArea, 1e-1));
 
+  checkSumWeights(grid->leafGridView(), t);
+
   grid->globalRefine(1);
   area = calculateArea(grid->leafGridView());
   std::cout << "Area (1): " << area << std::endl;
   t.check(Dune::FloatCmp::eq(area, targetArea, 1e-2));
-
+  checkSumWeights(grid->leafGridView(), t);
 
   /// 1. Test case A = 20 * 2, r = 0.3
   targetArea = 20 * 2 - (std::numbers::pi * std::pow(0.3, 2));
@@ -1844,13 +1864,14 @@ auto testIntegrationPoints() {
   std::cout << "Area: (0) " << area << std::endl;
 
   t.check(Dune::FloatCmp::eq(area, targetArea, 1e-1));
+  checkSumWeights(grid->leafGridView(), t);
 
   grid2->globalMultiRefine(1, 0, 0);
   area = calculateArea(grid2->leafGridView());
   std::cout << "Area: (1) " << area << std::endl;
 
   t.check(Dune::FloatCmp::eq(area, targetArea, 1e-2));
-
+  checkSumWeights(grid->leafGridView(), t);
 
   return t;
 }
@@ -1862,7 +1883,6 @@ auto test3HoleGeometry() {
   grid->globalRefine(4);
   grid->globalRefineInDirection(0, 2);
 
-  // Plot::plotGridView(grid->leafGridView(), "plot_hole/grid.png");
   Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
 
   Plot::plotEveryReconstructedGrid(grid, "_hole");

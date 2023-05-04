@@ -64,7 +64,8 @@ namespace Ikarus {
       localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                       Dune::bindDerivatives(0, 1));
 
-      this->localView().element().impl().getIntegrationPoints(quadraturePoints, this->localView().tree().child(0).finiteElement().localBasis().order());
+      this->localView().element().impl().getIntegrationPoints(
+          quadraturePoints_, this->localView().tree().child(0).finiteElement().localBasis().order());
 
       assert(((not neumannBoundary_ and not neumannBoundaryLoad) or (neumannBoundary_ and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");
@@ -119,7 +120,7 @@ namespace Ikarus {
 
       // External forces volume forces over the domain
       if (volumeLoad) {
-        for (const auto& gp : quadraturePoints) {
+        for (const auto& gp : quadraturePoints_) {
           const auto uVal                              = u.evaluate(gp.position());
           Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigen(gp.position()), lambda);
           energy -= uVal.dot(fext) * geo.integrationElement(gp.position()) * gp.weight();
@@ -162,7 +163,7 @@ namespace Ikarus {
       const auto C   = getMaterialTangent();
       const auto geo = this->localView().element().geometry();
 
-      for (const auto& gp : quadraturePoints) {
+      for (const auto& gp : quadraturePoints_) {
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gp.position(), wrt(coeff(i)), on(gridElement));
@@ -205,7 +206,7 @@ namespace Ikarus {
       const auto geo = this->localView().element().geometry();
 
       // Internal forces
-      for (const auto& gp : quadraturePoints) {
+      for (const auto& gp : quadraturePoints_) {
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         auto stresses           = (C * eps.evaluate(gp.position(), on(gridElement))).eval();
         for (size_t i = 0; i < numberOfNodes; ++i) {
@@ -217,7 +218,7 @@ namespace Ikarus {
       // External forces volume forces over the domain
       if (volumeLoad) {
         const auto u = getDisplacementFunction(par);
-        for (const auto& gp : quadraturePoints) {
+        for (const auto& gp : quadraturePoints_) {
           Eigen::Vector<double, Traits::worlddim> fext = (*volumeLoad)(toEigen(gp.position()), lambda);
           for (size_t i = 0; i < numberOfNodes; ++i) {
             const auto udCi = u.evaluateDerivative(gp.position(), wrt(coeff(i)));
@@ -270,7 +271,7 @@ namespace Ikarus {
     double emod_;
     double nu_;
     size_t numberOfNodes{0};
-    std::vector<Dune::QuadraturePoint<double, mydim>> quadraturePoints;
+    std::vector<Dune::QuadraturePoint<double, mydim>> quadraturePoints_;
   };
 
 }  // namespace Ikarus
