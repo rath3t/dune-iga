@@ -21,7 +21,6 @@
 #include <dune/iga/nurbsgeometry.hh>
 #include <dune/iga/nurbstrimboundary.hh>
 #include <dune/iga/trimmedElementRepresentation.hh>
-
 namespace Dune::IGA {
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
@@ -672,14 +671,13 @@ namespace Dune::IGA {
 
         const auto& indexSet = parameterSpaceGridView.indexSet();
         for (const auto& element : elements(parameterSpaceGridView)) {
-          auto corners      = Dune::IGA::Impl::Trim::getElementCorners<double, dim>(element);
-          auto dune_corners = corners;
-          std::swap(dune_corners[2], dune_corners[3]);
+          auto geo = element.geometry();
 
+          std::vector<FieldVector<double, 2>> corners = {geo.corner(0), geo.corner(1), geo.corner(2), geo.corner(3)};
           DirectIndex directIndex = indexSet.index(element);
           trimInfoMap.emplace(
               directIndex, ElementTrimInfo{.realIndex = directIndex,
-                                           .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+                                           .repr = std::make_unique<TrimmedElementRepresentationType>(corners)});
         }
       }
     }
@@ -712,52 +710,34 @@ namespace Dune::IGA {
       trimFlags.resize(originalSize(0));
 
       // Use Trim namespace for more concise function names
-      using namespace Impl::Trim;
+      using Trimmer = Trim::NURBSPatchTrimmer<>;
 
-      auto paraGrid               = parameterSpaceGrid<Impl::Trim::ctype>(Impl::Trim::scale);
+      auto paraGrid               = parameterSpaceGrid<Trimmer::ctype>(Trimmer::scale);
       auto parameterSpaceGridView = paraGrid->leafGridView();
 
-      // Get Clip as ClipperPath
-      auto clip = getClip(trimData_.value().get());
+      Trimmer trimmer(parameterSpaceGridView, trimData_.value().get());
 
       const auto& indexSet = parameterSpaceGridView.indexSet();
       for (auto& element : elements(parameterSpaceGridView)) {
         DirectIndex directIndex = indexSet.index(element);
         RealIndex realIndex     = n_fullElement + n_trimmedElement;
 
-        auto corners = getElementCorners(element);
-
-        auto [trimFlag, clippingResult] = clipElement(element, clip);
-
+        auto [trimFlag, boundariesOrCorners] = trimmer.trimElement(directIndex);
         trimFlags[directIndex] = trimFlag;
 
         if (trimFlag == ElementTrimFlag::trimmed) {
           ++n_trimmedElement;
-          auto elementBoundaries = constructElementBoundaries(*clippingResult, corners, trimData_.value());
-
-          if (elementBoundaries.has_value()) {
-            trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
-                                                             .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                                 elementBoundaries.value())});
-
-          } else {
-            trimFlags[directIndex] = ElementTrimFlag::empty;
-            --n_trimmedElement;
-          }
-        } else if (trimFlag == ElementTrimFlag::full) {
-          ++n_fullElement;
-
-          std::vector<FieldVector<double, 2>> dune_corners;
-          std::ranges::transform(corners, std::back_inserter(dune_corners),
-                                 [](const auto& c) { return toFloatDomain(c); });
-          std::swap(dune_corners[2], dune_corners[3]);
-
-          trimInfoMap.emplace(
-              directIndex, ElementTrimInfo{.realIndex = realIndex,
-                                           .repr = std::make_unique<TrimmedElementRepresentationType>(dune_corners)});
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               std::get<0>(boundariesOrCorners))});
         }
-
-      }  // Element Loop End
+        else if (trimFlag == ElementTrimFlag::full) {
+          ++n_fullElement;
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               std::get<1>(boundariesOrCorners))});
+        }
+      }
 
       // Construct elementIndexMap
       elementIndexMap.reserve(n_trimmedElement + n_fullElement);
