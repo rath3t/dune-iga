@@ -1881,7 +1881,7 @@ auto test3HoleGeometry() {
 
   std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/kragarm_trim_circle3.ibra");
   grid->globalRefine(4);
-  grid->globalRefineInDirection(0, 2);
+  // grid->globalRefineInDirection(0, 2);
 
   Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
 
@@ -1895,13 +1895,32 @@ auto test3HoleGeometry() {
   return t;
 }
 
+auto test1Hole1Element() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_hole1");
+  Plot::plotEveryReconstructedGrid(grid, "_hole1");
+
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(grid->leafGridView());
+  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Vtk::FormatTypes::ASCII);
+
+  vtkWriter.write("plot_hole1/grid");
+
+  return t;
+}
+
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  // t.subTest(testIntegrationPoints());
   t.subTest(testIntegrationPoints());
+  //t.subTest(test1Hole1Element());
+  //t.subTest(testIntegrationPoints());
   // t.subTest(test3HoleGeometry());
 
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");
