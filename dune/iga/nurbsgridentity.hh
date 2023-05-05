@@ -125,8 +125,8 @@ namespace Dune::IGA {
     {
       return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
           }
-
-    void getIntegrationPoints(std::vector<Dune::QuadraturePoint<double, dim>>& vector,
+    // TODO Rule as argument
+    void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector,
                               const std::optional<int>& p_order = std::nullopt) const {
       vector.clear();
       int order

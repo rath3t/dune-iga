@@ -28,6 +28,7 @@
 #include "linearElasticTrimmed.h"
 #include "stressEvaluator.h"
 #include "timer.h"
+#include "kirchhoffPlate.hh"
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
@@ -90,14 +91,21 @@ int main(int argc, char **argv) {
 
     Dune::Functions::forEachUntrimmedBoundaryDOF(
         Dune::Functions::subspaceBasis(basis_, 1), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-          // auto& localFE = localView.tree().child(1).finiteElement();
+          const auto& localFE = localView.tree().finiteElement();
           const auto& ele = localView.element();
 
+          auto coeff = localFE.localCoefficients();
+          auto localKey = coeff.localKey(localIndex - localFE.size());
 
-          auto vertex = ele.template subEntity<2>(localIndex-4);
-          auto vgeo = vertex.geometry().center();
-          // spdlog::info("Vertex: {}, Subentity index {} LocalIndex {}, GlobalIndex: {} LocalIndexFromKey {}", vgeo, localKey.subEntity(), localIndex, localView.index(localIndex),localKey.index());
-          if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+          if (localKey.codim() == 2) {
+            auto vertex = ele.template subEntity<2>(localKey.subEntity());
+            auto vgeo = vertex.geometry().center();
+
+            if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+
+          }
+
+          // if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
 
         });
   });

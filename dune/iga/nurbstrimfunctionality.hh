@@ -36,7 +36,9 @@ namespace Dune::IGA::Trim {
     static constexpr auto dim  = 2;
     static constexpr int scale = sc_;
 
-    inline static double scaleFactor() {return std::pow(10, scale);};
+    inline static double scaleFactor() {
+      return std::pow(10, scale);
+    };
 
     static constexpr int pathSamples  = 800;
     static constexpr double tolerance = 1e-8;
@@ -659,9 +661,6 @@ namespace Dune::IGA::Trim {
       // Check if the angle is small enough to consider the curves on the same line (or parallel)
       return (Dune::FloatCmp::eq(angle, 0.0, tolerance) || Dune::FloatCmp::eq(angle, std::numbers::pi, tolerance));
     }
-    static bool pointInElementOrOnEdge(const Point& point, std::vector<IntPoint>& corners) {
-      auto lowerLeft  = toFloatDomain(corners[0]);
-      auto upperRight = toFloatDomain(corners[2]);
 
     // Sorts the Intersection Points counter-clockwise around the element (crucial step!)
     void sortIntersectionPoints(IntersectionPointMap& pointMap) {
