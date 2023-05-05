@@ -659,6 +659,9 @@ namespace Dune::IGA::Trim {
       // Check if the angle is small enough to consider the curves on the same line (or parallel)
       return (Dune::FloatCmp::eq(angle, 0.0, tolerance) || Dune::FloatCmp::eq(angle, std::numbers::pi, tolerance));
     }
+    static bool pointInElementOrOnEdge(const Point& point, std::vector<IntPoint>& corners) {
+      auto lowerLeft  = toFloatDomain(corners[0]);
+      auto upperRight = toFloatDomain(corners[2]);
 
     // Sorts the Intersection Points counter-clockwise around the element (crucial step!)
     void sortIntersectionPoints(IntersectionPointMap& pointMap) {
