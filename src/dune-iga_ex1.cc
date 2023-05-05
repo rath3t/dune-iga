@@ -182,6 +182,8 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
+
+
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
           gridView, &fes, D_Glob, lambdaLoad)));

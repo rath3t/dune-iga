@@ -85,20 +85,20 @@ int main(int argc, char **argv) {
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
     Dune::Functions::forEachUntrimmedBoundaryDOF(
         Dune::Functions::subspaceBasis(basis_, 0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-          dirichletFlags[localView.index(localIndex)] = Dune::FloatCmp::eq(intersection.geometry().center()[0], 0.0);
+          if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
         });
-  });
 
-  bool alreadyFixedOne = false;
-  dirichletValues.fixDOFs([&alreadyFixedOne](auto &basis_, auto &dirichletFlags) {
     Dune::Functions::forEachUntrimmedBoundaryDOF(
         Dune::Functions::subspaceBasis(basis_, 1), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-          auto center = intersection.geometry().center();
-          auto length = intersection.geometry().volume();
-          if (Dune::FloatCmp::eq(center[0], 0.0) and Dune::FloatCmp::lt(center[1], length) and !alreadyFixedOne) {
-            dirichletFlags[localView.index(localIndex)] = true;
-            alreadyFixedOne                             = true;
-          }
+          // auto& localFE = localView.tree().child(1).finiteElement();
+          const auto& ele = localView.element();
+
+
+          auto vertex = ele.template subEntity<2>(localIndex-4);
+          auto vgeo = vertex.geometry().center();
+          // spdlog::info("Vertex: {}, Subentity index {} LocalIndex {}, GlobalIndex: {} LocalIndexFromKey {}", vgeo, localKey.subEntity(), localIndex, localView.index(localIndex),localKey.index());
+          if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+
         });
   });
 
@@ -199,6 +199,22 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
 
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(

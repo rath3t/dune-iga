@@ -33,9 +33,10 @@ namespace Dune::IGA::Trim {
   template <typename intType = int64_t, int sc_ = 12>
   class NURBSPatchTrimmer {
    public:
-    static constexpr auto dim      = 2;
+    static constexpr auto dim  = 2;
     static constexpr int scale = sc_;
-    static constexpr double scaleFactor = std::pow(10, scale);
+
+    inline static double scaleFactor() {return std::pow(10, scale);};
 
     static constexpr int pathSamples  = 800;
     static constexpr double tolerance = 1e-8;
@@ -520,11 +521,11 @@ namespace Dune::IGA::Trim {
       return clipPaths;
     }
 
-    static ctype toIntDomain(double x) { return x * scaleFactor; }
-    static FieldVector<ctype, 2> toIntDomain(FieldVector<double, 2> x) { return x * scaleFactor; }
+    static ctype toIntDomain(double x) { return x * scaleFactor(); }
+    static FieldVector<ctype, 2> toIntDomain(FieldVector<double, 2> x) { return x * scaleFactor(); }
 
-    static double toFloatDomain(ctype x) { return x / scaleFactor; }
-    static FieldVector<double, 2> toFloatDomain(FieldVector<ctype, 2> x) { return x / scaleFactor; }
+    static double toFloatDomain(ctype x) { return x / scaleFactor(); }
+    static FieldVector<double, 2> toFloatDomain(FieldVector<ctype, 2> x) { return x / scaleFactor(); }
 
     static std::vector<Boundary> extractBoundaries(TrimData* trimData) {
       std::vector<Boundary> boundaries;
