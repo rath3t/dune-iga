@@ -42,8 +42,11 @@ namespace Ikarus {
       const int order = 2 * (this->localView().tree().finiteElement().localBasis().order());
       geometry_.emplace(this->localView().element().geometry());
       localBasis_ = Dune::CachedLocalBasis(this->localView().tree().finiteElement().localBasis());
-      localBasis_.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
-                       Dune::bindDerivatives(0, 1));
+
+      element.impl().fillQuadratureRule(rule, order);
+
+      // This might do nothing
+      localBasis_.bind(rule,Dune::bindDerivatives(0, 1));
     }
 
     static Eigen::Matrix<double, 3, 3> constitutiveMatrix(double Emod, double p_nu, double p_thickness) {
@@ -75,7 +78,6 @@ namespace Ikarus {
 
       const auto& localBasis = fe.localBasis();
 
-      const auto& rule = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
       /// Calculate Kirchhoff plate energy
       for (auto& gp : rule) {
         std::vector<Dune::FieldVector<double, 1>> dN_xixi;
@@ -146,7 +148,6 @@ namespace Ikarus {
 
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
-      const auto& rule       = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
 
       g.template setZero(this->localView().size());
       for (const auto& gp : rule) {
@@ -221,8 +222,7 @@ namespace Ikarus {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto D       = constitutiveMatrix(Emodul, nu, thickness);
       auto& fe           = this->localView().tree().finiteElement();
-      const auto& rule
-          = Dune::QuadratureRules<double, 2>::rule(this->localView().element().type(), 2 * fe.localBasis().order());
+
       h.template setZero(this->localView().size(), this->localView().size());
 
       for (const auto& gp : rule) {
@@ -242,51 +242,51 @@ namespace Ikarus {
         h += bop.transpose() * D * bop * intElement;
       }
     }
-//
-//    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
-//                     ResultTypeMap<double>& result) const {
-//      using namespace Dune::Indices;
-//      const auto& disp       = req.getGlobalSolution(Ikarus::FESolutions::displacement);
-//      const auto D           = constitutiveMatrix(Emodul, nu, thickness);
-//      auto& fe               = this->localView().tree().finiteElement();
-//      const auto& localBasis = fe.localBasis();
-//      const auto geo         = this->localView().element().geometry();
-//      auto gp                = toDune(local);
-//      Eigen::VectorXd local_disp;
-//      local_disp.setZero(this->localView().size());
-//
-//      int disp_counter = 0;
-//      for (size_t i = 0; i < fe.size(); ++i) {
-//        auto globalIndex         = this->localView().index(this->localView().tree().localIndex(i));
-//        local_disp[disp_counter] = disp[globalIndex];
-//        disp_counter++;
-//      }
-//
-//      std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
-//      Eigen::Matrix2Xd dNdX;
-//      Eigen::Matrix3Xd ddNddX;
-//      getShapeFunctionsAndDerivatives(gp, shapeFunctionValues, dNdX, ddNddX);
-//      Eigen::MatrixXd bop;
-//      bop.setZero(3, fe.size());
-//      for (auto i = 0U; i < fe.size(); ++i) {
-//        bop(0, i) = ddNddX(0, i);
-//        bop(1, i) = ddNddX(1, i);
-//        bop(2, i) = ddNddX(2, i);
-//      }
-//
-//      Eigen::Vector<double, 3> req_res;
-//      req_res.setZero();
-//      req_res = D * bop * local_disp;
-//
-//      typename ResultTypeMap<double>::ResultArray resv;
-//      if (req.isResultRequested(ResultType::stressResultant)) {
-//        resv.setZero(3, 1);
-//        resv(0, 0) = req_res(0);
-//        resv(1, 0) = req_res(1);
-//        resv(2, 0) = req_res(2);
-//        result.insertOrAssignResult(ResultType::stressResultant, resv);
-//      }
-//    }
+
+    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+                     ResultTypeMap<double>& result) const {
+      using namespace Dune::Indices;
+      const auto& disp       = req.getGlobalSolution(Ikarus::FESolutions::displacement);
+      const auto D           = constitutiveMatrix(Emodul, nu, thickness);
+      auto& fe               = this->localView().tree().finiteElement();
+      const auto& localBasis = fe.localBasis();
+      const auto geo         = this->localView().element().geometry();
+      auto gp                = toDune(local);
+      Eigen::VectorXd local_disp;
+      local_disp.setZero(this->localView().size());
+
+      int disp_counter = 0;
+      for (size_t i = 0; i < fe.size(); ++i) {
+        auto globalIndex         = this->localView().index(this->localView().tree().localIndex(i));
+        local_disp[disp_counter] = disp[globalIndex];
+        disp_counter++;
+      }
+
+      std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
+      Eigen::Matrix2Xd dNdX;
+      Eigen::Matrix3Xd ddNddX;
+      getShapeFunctionsAndDerivatives(gp, shapeFunctionValues, dNdX, ddNddX);
+      Eigen::MatrixXd bop;
+      bop.setZero(3, fe.size());
+      for (auto i = 0U; i < fe.size(); ++i) {
+        bop(0, i) = ddNddX(0, i);
+        bop(1, i) = ddNddX(1, i);
+        bop(2, i) = ddNddX(2, i);
+      }
+
+      Eigen::Vector<double, 3> req_res;
+      req_res.setZero();
+      req_res = D * bop * local_disp;
+
+      typename ResultTypeMap<double>::ResultArray resv;
+      if (req.isResultRequested(ResultType::cauchyStress)) {
+        resv.setZero(3, 1);
+        resv(0, 0) = req_res(0);
+        resv(1, 0) = req_res(1);
+        resv(2, 0) = req_res(2);
+        result.insertOrAssignResult(ResultType::cauchyStress, resv);
+      }
+    }
 
     Dune::CachedLocalBasis<std::remove_cvref_t<decltype(std::declval<LocalView>().tree().finiteElement().localBasis())>>
         localBasis_;
@@ -294,7 +294,7 @@ namespace Ikarus {
     /// Dune::Geometry<...> is not copy assignable, see https://gitlab.dune-project.org/core/dune-grid/-/issues/140,
     /// Thus, we wrap it inside a std::optional
     std::optional<typename LocalView::Element::Geometry> geometry_;
-
+    Dune::QuadratureRule<double, 2> rule;
     double Emodul;
     double nu;
     double thickness;

@@ -359,7 +359,7 @@ namespace Dune::IGA::Trim {
     /* Newton Raphson Control Variables */
     static constexpr double objectiveFctTolerance       = 1e-4;
     static constexpr int probesForStartingPoint         = 5;
-    static constexpr int fallbackProbesForStartingPoint = 200;
+    static constexpr int fallbackProbesForStartingPoint = 350;
     static constexpr int maxIterations                  = 50;
 
     /// Returns the element corners of the tensorGrid in the IntegerDomain

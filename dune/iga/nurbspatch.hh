@@ -18,9 +18,9 @@
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
+#include <dune/iga/igaElementSubGrids.hh>
 #include <dune/iga/nurbsgeometry.hh>
 #include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/trimmedElementRepresentation.hh>
 namespace Dune::IGA {
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>

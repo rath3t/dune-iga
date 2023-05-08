@@ -118,13 +118,12 @@ namespace Dune::IGA {
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
     }
-    // TODO These two function have to be private
 
 
-    auto trimmedElementRepresentation() const
-    {
+    auto trimmedElementRepresentation() const {
       return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
-          }
+    }
+
     // TODO Rule as argument
     void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector,
                               const std::optional<int>& p_order = std::nullopt) const {
@@ -157,6 +156,12 @@ namespace Dune::IGA {
         vector.insert(vector.end(), rule.begin(), rule.end());
       }
     }
+    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt) const {
+      Dune::QuadratureRule<double, dim> rule;
+      fillQuadratureRule(p_order);
+      return rule;
+    }
+
 
     //! Geometry of this entity
     typename GridImpl::Traits::template Codim<0>::Geometry geometry() const {

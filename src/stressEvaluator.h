@@ -12,7 +12,10 @@ enum class StressEvaluatorComponents {
   normalStress,
   shearStress,
   vonMises,
-  principalStress
+  principalStress,
+  kirchhoff_moments,
+  RM_moments,
+  RM_forces
 };
 
 
@@ -29,11 +32,16 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
   }
 
   [[nodiscard]] constexpr int ncomps() const override {
-    if constexpr (comps == StressEvaluatorComponents::normalStress or comps == StressEvaluatorComponents::principalStress)
-      return 3;
-    if constexpr (comps == StressEvaluatorComponents::shearStress or comps == StressEvaluatorComponents::vonMises)
+    if constexpr (comps == StressEvaluatorComponents::normalStress or
+                  comps == StressEvaluatorComponents::principalStress or
+                  comps == StressEvaluatorComponents::RM_forces)
+      return 2;
+    if constexpr (comps == StressEvaluatorComponents::shearStress or
+                  comps == StressEvaluatorComponents::vonMises)
       return 1;
-
+    if constexpr (comps == StressEvaluatorComponents::kirchhoff_moments or
+                  comps == StressEvaluatorComponents::RM_moments)
+      return 3;
   }
   [[nodiscard]] constexpr std::string name() const override {
     if constexpr (comps == StressEvaluatorComponents::normalStress)
@@ -44,6 +52,11 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
       return "von Mises stress";
     if constexpr (comps == StressEvaluatorComponents::principalStress)
       return "principal stress";
+    if constexpr (comps == StressEvaluatorComponents::kirchhoff_moments or
+                  comps == StressEvaluatorComponents::RM_moments)
+      return "moments (x, y, xy)";
+    if constexpr (comps == StressEvaluatorComponents::RM_forces)
+      return "forces (vx, vy)";
   }
   StressEvaluator2D(GridView& gV, std::vector<ElementType>* fes, auto &global_displacement_solution, double lambdaLoad = 1)
       : indexSet(gV.indexSet()),
@@ -62,7 +75,9 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
     fes_->at(eleID).calculateAt(resultRequirements_, {xi[0], xi[1]}, res_);
     auto sigma = res_.getResult(Ikarus::ResultType::cauchyStress);
 
-    if constexpr (comps == StressEvaluatorComponents::normalStress)
+    if constexpr (comps == StressEvaluatorComponents::normalStress or
+                  comps == StressEvaluatorComponents::kirchhoff_moments or
+                  comps == StressEvaluatorComponents::RM_moments)
       return sigma(comp, 0);
 
     if constexpr (comps == StressEvaluatorComponents::shearStress)
@@ -73,6 +88,16 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
 
     if constexpr (comps == StressEvaluatorComponents::principalStress)
       return principalStress(sigma)[comp];
+
+    if constexpr (comps == StressEvaluatorComponents::RM_moments) {
+      if (comp < 2)
+        return sigma(comp, comp);
+      else
+        return sigma(0, 1);
+    }
+    if constexpr (comps == StressEvaluatorComponents::RM_forces)
+      return sigma(comp, 2);
+
   }
 
   double von_mieses(const auto& sigma) const requires (comps == StressEvaluatorComponents::vonMises)  {
@@ -99,7 +124,6 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
       return {s_2, s_1};
     return {s_1, s_2};
   }
-
 
   const GridView::IndexSet& indexSet;
   Ikarus::ResultRequirements<Eigen::VectorXd, double> resultRequirements_;

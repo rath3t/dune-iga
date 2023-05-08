@@ -9,8 +9,8 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/geometry.hh>
+#include <dune/iga/igaElementSubGrids.hh>
 #include <dune/iga/igaalgorithms.hh>
-#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
   namespace Impl {

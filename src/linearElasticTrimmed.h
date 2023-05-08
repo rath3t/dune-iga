@@ -62,15 +62,12 @@ namespace Ikarus {
       const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
       localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
 
-      if (this->localView().element().impl().isTrimmed()) {
-        Dune::QuadratureRule<double, mydim> rule;
-        this->localView().element().impl().fillQuadratureRule(
-            rule, this->localView().tree().child(0).finiteElement().localBasis().order());
-        localBasis.bind(rule, Dune::bindDerivatives(0, 1));
-      } else {
+      if (this->localView().element().impl().isTrimmed())
+        localBasis.bind(element.getQuadratureRule(order), Dune::bindDerivatives(0, 1));
+      else
         localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                         Dune::bindDerivatives(0, 1));
-      }
+
 
       assert(((not neumannBoundary_ and not neumannBoundaryLoad) or (neumannBoundary_ and neumannBoundaryLoad))
              && "If you pass a Neumann boundary you should also pass the function for the Neumann load!");

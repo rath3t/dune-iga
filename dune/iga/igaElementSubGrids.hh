@@ -63,14 +63,12 @@ namespace Dune::IGA {
 
    private:
     std::vector<Boundary> boundaries;
-    std::vector<Boundary> originalBoundaries;
     bool trimmed;
     bool verbose = false;
 
    public:
     // Construct with boundaries
     explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries), trimmed(true) {
-      std::ranges::copy(boundaries, std::back_inserter(originalBoundaries));
       reconstructTrimmedElement();
     }
     /// brief: Constructs an untrimmed elementRepresentation, expects indices in Dune ordering
@@ -106,19 +104,9 @@ namespace Dune::IGA {
         gridFactory.insertVertex(vertex);
 
       // The element indices are stored as a flat vector, 3 indices always constitute 1 triangle
-      for (auto it = indices.begin(); it < indices.end(); it += 3) {
+      for (auto it = indices.begin(); it < indices.end(); it += 3)
         gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
 
-        #if 0
-        // Check for counter-clockwise orientation
-        auto eleIdx = std::vector<unsigned int>(it, std::next(it, 3));
-        Clipper2Lib::PathD path;
-        std::ranges::transform(eleIdx, std::back_inserter(path), [&](unsigned int idx) -> Clipper2Lib::PointD{
-          return {vertices[idx][0], vertices[idx][1]};
-        });
-        assert(Clipper2Lib::IsPositive(path));
-        #endif
-      }
       for (auto& boundary : boundaries)
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary));
@@ -183,33 +171,14 @@ namespace Dune::IGA {
       for (auto& vertex : corners)
         gridFactory.insertVertex(vertex);
 
-      gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      // gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
       grid = gridFactory.createGrid();
     }
 
    public:
-    // Obtain boundaries and vertexes
-    [[nodiscard]] std::vector<Boundary> getBoundaries() const {
-      return originalBoundaries;
-    }
-    [[nodiscard]] std::size_t numBoundaries() const {
-      return originalBoundaries.size();
-    }
-    [[nodiscard]] Boundary getBoundaryAt(std::size_t index) const {
-      return originalBoundaries.at(index);
-    }
-    [[nodiscard]] std::vector<Point> getVertexes() const {
-      std::vector<Point> vertexes;
-      std::ranges::transform(originalBoundaries, std::back_inserter(vertexes), [](const auto& boundary){
-        return boundary.endPoints.front();
-      });
-    }
-    [[nodiscard]] std::size_t numVertexes() const {
-      return originalBoundaries.size();
-    }
-    [[nodiscard]] Point getVertexAt(std::size_t index) const {
-      return originalBoundaries.at(index).endPoints.front();
-    }
 
     /// \brief Calculates the area from the actual trim paths (might be expensive)
     double calculateTargetArea(unsigned int div = 200) {

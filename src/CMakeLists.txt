@@ -14,6 +14,14 @@ add_executable("Example-3" dune-iga_ex3.cc)
 target_link_dune_default_libraries("Example-3")
 target_link_libraries(Example-3 PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
 
+add_executable("Example-4" dune-iga_ex4.cc)
+target_link_dune_default_libraries("Example-4")
+target_link_libraries(Example-4 PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
+
+add_executable("Example-5" dune-iga_ex5.cc)
+target_link_dune_default_libraries("Example-5")
+target_link_libraries(Example-5 PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
+
 
 # Copy the example grid used for testing into the build dir
 file(COPY auxiliaryFiles/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/auxiliaryFiles)

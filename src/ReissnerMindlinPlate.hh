@@ -44,12 +44,14 @@ namespace Ikarus {
           Emodul{p_Emodul},
           nu{p_nu},
           thickness{p_thickness},
-          volumeLoad_(Std::returnReferenceOrNulloptIfObjectIsNullPtr(p_volumeLoad)) {
+          volumeLoad_(p_volumeLoad) {
       this->localView().bind(element);
       const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
       localBasis_     = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
-      localBasis_.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
-                       Dune::bindDerivatives(0, 1));
+
+      element.impl().fillQuadratureRule(rule, order);
+
+      localBasis_.bind(rule,Dune::bindDerivatives(0, 1));
     }
 
     static Eigen::Matrix<double, 5, 5> constitutiveMatrix(double Emod, double p_nu, double p_thickness) {
@@ -82,7 +84,7 @@ namespace Ikarus {
 
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
-      const auto& rule       = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
+
       g.template setZero(this->localView().size());
       if (volumeLoad_) {
         for (const auto& gp : rule) {
@@ -112,7 +114,6 @@ namespace Ikarus {
 
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
-      const auto& rule       = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * localBasis.order());
       h.template setZero(this->localView().size(), this->localView().size());
 
       for (const auto& gp : rule) {
@@ -216,23 +217,24 @@ namespace Ikarus {
       req_res = D * bop * local_disp;
 
       Eigen::Matrix<double, 3, 3> sent_res;
-      sent_res(0, 0) = req_res[0];
-      sent_res(1, 1) = req_res[1];
-      sent_res(0, 1) = sent_res(1, 0) = req_res[2];
-      sent_res(0, 2) = sent_res(2, 0) = req_res[3];
-      sent_res(1, 2) = sent_res(2, 1) = req_res[4];
+      sent_res(0, 0) = req_res[0];                              // moment m_xx
+      sent_res(1, 1) = req_res[1];                              // moment m_yy
+      sent_res(0, 1) = sent_res(1, 0) = req_res[2];   // moment m_xy
+      sent_res(0, 2) = sent_res(2, 0) = req_res[3];   // shear force vx
+      sent_res(1, 2) = sent_res(2, 1) = req_res[4];   // shear force vy
 
       typename ResultTypeMap<double>::ResultArray resv;
-      if (req.isResultRequested(ResultType::stressResultant)) {
+      if (req.isResultRequested(ResultType::cauchyStress)) {
         resv.resize(3, 3);
         resv = sent_res;
-        result.insertOrAssignResult(ResultType::stressResultant, resv);
+        result.insertOrAssignResult(ResultType::cauchyStress, resv);
       }
     }
 
     Dune::CachedLocalBasis<
         std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
         localBasis_;
+    Dune::QuadratureRule<double, 2> rule;
     double Emodul;
     double nu;
     double thickness;

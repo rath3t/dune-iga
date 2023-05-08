@@ -3,6 +3,8 @@
 //
 #pragma once
 
+#include <dune/common/bitsetvector.hh>
+
 template <class GridView, int ncomp = 1>
 class BoundaryPatchEnclosingVerticesPropertyTrimmed {
   typedef typename GridView::IndexSet IndexSet;
