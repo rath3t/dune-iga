@@ -63,7 +63,7 @@ namespace Ikarus {
       localBasis      = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
 
       if (this->localView().element().impl().isTrimmed())
-        localBasis.bind(element.getQuadratureRule(order), Dune::bindDerivatives(0, 1));
+        localBasis.bind(element.impl().getQuadratureRule(order), Dune::bindDerivatives(0, 1));
       else
         localBasis.bind(Dune::QuadratureRules<double, Traits::mydim>::rule(this->localView().element().type(), order),
                         Dune::bindDerivatives(0, 1));

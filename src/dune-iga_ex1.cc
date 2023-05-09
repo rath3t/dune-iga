@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
     totalForce += f;
   std::cout << "Total Force: " << totalForce << std::endl;
 
-  vtkWriter.write(gridFileName);
+  vtkWriter.write(gridFileName + "-ex1");
 
   return 0;
 }

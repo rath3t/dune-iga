@@ -35,7 +35,7 @@ namespace Dune::IGA {
 
   template <int dim>
   struct GridBoundarySegment : Dune::BoundarySegment<2, dim, double> {
-    explicit GridBoundarySegment(Boundary& _boundary) : boundary(_boundary) {}
+    explicit GridBoundarySegment(Boundary& _boundary, auto _trFct) : boundary(_boundary), transformFct(_trFct) {}
 
     Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
       // u has to be mapped on the domain of 0 to 1
@@ -45,9 +45,9 @@ namespace Dune::IGA {
       if (!Dune::FloatCmp::le(u_local, 1.0)) u_local = 1.0;
 
       double u = Utilities::mapToRange(u_local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
-      return boundary.nurbsGeometry(u);
+      return transformFct(boundary.nurbsGeometry(u));
     }
-
+    std::function<Dune::FieldVector<double, dim>(Dune::FieldVector<double, dim>)> transformFct;
     Boundary boundary;
   };
 
@@ -58,61 +58,85 @@ namespace Dune::IGA {
     using GridView = Grid::LeafGridView;
     using Point    = Dune::FieldVector<double, dim>;
 
-    // Grid
-    std::unique_ptr<Grid> grid{};
-
    private:
+    std::unique_ptr<Grid> grid{};
     std::vector<Boundary> boundaries;
-    bool trimmed;
-    bool verbose = false;
+    bool trimmed{};
+    bool gridConstructed{false};
+    bool verbose{};
+    std::array<double, dim> scaling{};
+    std::array<double, dim> offset{};
 
    public:
     // Construct with boundaries
-    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries) : boundaries(_boundaries), trimmed(true) {
+    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries, std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
+        : boundaries(_boundaries), trimmed(true), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
       reconstructTrimmedElement();
     }
-    /// brief: Constructs an untrimmed elementRepresentation, expects indices in Dune ordering
-    explicit TrimmedElementRepresentation(std::vector<FieldVector<double, 2>>& corners) : trimmed(false) {
-        constructFromCorners(corners);
+    /// brief: Constructs an untrimmed elementRepresentation gets laziely constructed when called upon the GridView
+    explicit TrimmedElementRepresentation(std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
+        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
     }
 
     // Accessors
-    GridView gridView() const { return grid->leafGridView(); }
+    GridView gridView() const {
+      if (not gridConstructed)
+        throw std::runtime_error("Grid for full elment not yet constructed, use refinedGridView to lazily construct");
+
+      return grid->leafGridView();
+    }
     [[nodiscard]] bool isTrimmed() const {
       return trimmed;
     }
     bool alreadyRefined = false;
     GridView refinedGridView(unsigned int refinement = 0) {
+      if (not gridConstructed)
+        constructFromCorners();
+
       if (refinement > 0 and not alreadyRefined) {
         grid->globalRefine(refinement);
         alreadyRefined = true;
       }
+      assert(grid->size(0) > 0);
       return grid->leafGridView();
     }
 
    private:
+    template <typename VecType>
+    auto toLocal(const VecType& cp) -> VecType {
+      VecType local;
+      for (int i = 0; i < dim; ++i) {
+        local[i] =  (cp[i] -offset[i])/scaling[i];
+        local[i] = local[i]<0.0? 0.0:local[i];
+        local[i] = local[i]>1.0? 1.0:local[i];
+      }
+      return local;
+    }
+
+
     void reconstructTrimmedElement() {
       // Getting global Parameters
       auto parameters = Utilities::getParameters();
 
       if (parameters.preSample > 0) splitBoundaries();
 
-      Dune::GridFactory<Grid> gridFactory;
+      Dune::GridFactory<Grid> gridFactory(false);
       auto [indices, vertices] = triangulate();
 
       for (auto& vertex : vertices)
         gridFactory.insertVertex(vertex);
 
-      // The element indices are stored as a flat vector, 3 indices always constitute 1 triangle
+      // The element indices are stored as a flat vector, 3 indices always make 1 triangle
       for (auto it = indices.begin(); it < indices.end(); it += 3)
         gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
 
       for (auto& boundary : boundaries)
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
-                                          std::make_shared<GridBoundarySegment<dim>>(boundary));
+                                          std::make_shared<GridBoundarySegment<dim>>(boundary, std::bind(&TrimmedElementRepresentation<dim, Grid>::toLocal<Dune::FieldVector<double, 2>>, this, std::placeholders::_1)));
 
       // Create Grid
       grid = gridFactory.createGrid();
+      gridConstructed = true;
       if (parameters.preGlobalRefine > 0) grid->globalRefine(parameters.preGlobalRefine);
 
       refineGridOnEdges(parameters.edgeRefinements);
@@ -151,31 +175,33 @@ namespace Dune::IGA {
 
       // Create array of points
       std::vector<Point> vertices;
+      vertices.reserve(boundaries.size());
       for (auto& boundary : boundaries)
-        vertices.push_back({boundary.endPoints.front()});
+        vertices.push_back(toLocal(boundary.endPoints.front()));
 
       std::vector<std::vector<Point>> polygonInput;
       polygonInput.push_back(vertices);
 
       std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
 
-      return {indices, vertices};
+      return std::make_pair(indices, vertices);
     }
 
-    void constructFromCorners(std::vector<FieldVector<double, 2>>& corners) {
-      assert(corners.size() == 4);
-      assert(corners[2][0] < corners[3][0]);
+    void constructFromCorners() {
+      Dune::GridFactory<Grid> gridFactory(false);
 
-      Dune::GridFactory<Grid> gridFactory;
+      gridFactory.insertVertex({0, 0});
+      gridFactory.insertVertex({1, 0});
+      gridFactory.insertVertex({0, 1});
+      gridFactory.insertVertex({1, 1});
 
-      for (auto& vertex : corners)
-        gridFactory.insertVertex(vertex);
-
-      // gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      //gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
 
       gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
       gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
       grid = gridFactory.createGrid();
+
+      gridConstructed = true;
     }
 
    public:
@@ -185,11 +211,7 @@ namespace Dune::IGA {
       Clipper2Lib::PathD polygon;
       polygon.reserve(div*boundaries.size());
 
-
       for (auto& boundary : boundaries) {
-
-
-
         auto path = boundary.path(div);
         for (Clipper2Lib::PointD point : path) {
           polygon.emplace_back(point);
@@ -290,10 +312,10 @@ namespace Dune::IGA {
 
     std::vector<unsigned int> getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) {
       auto it1 = std::ranges::find_if(vertices,
-                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.front()); });
+                              [&](const Point& v) { return approxSamePoint(v, toLocal(boundary.endPoints.front())); });
 
       auto it2 = std::ranges::find_if(vertices,
-                              [&](const Point& v) { return approxSamePoint(v, boundary.endPoints.back()); });
+                              [&](const Point& v) { return approxSamePoint(v, toLocal(boundary.endPoints.back())); });
 
       assert(it1 != vertices.end());
       assert(it2 != vertices.end());

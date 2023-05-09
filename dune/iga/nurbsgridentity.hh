@@ -126,7 +126,8 @@ namespace Dune::IGA {
 
     // TODO Rule as argument
     void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector,
-                              const std::optional<int>& p_order = std::nullopt) const {
+                            const std::optional<int>& p_order = std::nullopt,
+                            const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
       vector.clear();
       int order
           = p_order.value_or(mydimension * (*std::ranges::max_element(NURBSGridView_->getPatchData(patchID_).degree)));
@@ -135,30 +136,50 @@ namespace Dune::IGA {
         auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
         auto gridView    = elementRepr->gridView();
 
-        auto elementGeo = geometry();
-        auto spanVolume = elementGeo.impl().spanVolume();
-
         for (auto subElement : elements(gridView)) {
           auto subElementGeo = subElement.geometry();
-          auto volumeRatio = 2 * subElementGeo.volume() / spanVolume;
 
-          const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order);
+          const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order, qt);
           for (auto ip : rule) {
-            auto globalInParameterSpace = subElementGeo.global(ip.position());
-            auto localInElement = elementGeo.impl().spanToLocal(globalInParameterSpace);
-
-            vector.emplace_back(localInElement, ip.weight() * volumeRatio);
+             auto globalInSpan = subElementGeo.global(ip.position());
+            vector.emplace_back(globalInSpan, ip.weight() * subElementGeo.integrationElement(ip.position()));
           }
         }
 
       } else {
-        const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order);
+        const auto rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order, qt);
         vector.insert(vector.end(), rule.begin(), rule.end());
       }
+
+
+      if (qt != QuadratureType::Enum::GaussLobatto)
+        return;
+      struct Comparator {
+        bool operator()(const Dune::FieldVector<double, 2>& p1, const Dune::FieldVector<double, 2>& p2) const {
+          if (p1[0] < p2[0]) return true;
+          if (p1[0] > p2[0]) return false;
+          return p1[1] < p2[1];
+        };
+      };
+      std::map<Dune::FieldVector<double, 2>, double, Comparator> uniquePoints;
+
+      for (const auto& gp: vector) {
+        auto [it, success]  = uniquePoints.try_emplace(gp.position(), gp.weight());
+        if (not success)
+          it->second += gp.weight();
+      }
+
+      std::cout << "GP Before Deduplicating: " << vector.size() << "\n";
+      vector.clear();
+      for (const auto& [pos, weight] : uniquePoints) {
+        vector.emplace_back(pos, weight);
+      }
+      std::cout << "GP After Deduplicating: " << vector.size() << std::endl;
+
     }
     [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt) const {
       Dune::QuadratureRule<double, dim> rule;
-      fillQuadratureRule(p_order);
+      fillQuadratureRule(rule, p_order);
       return rule;
     }
 
@@ -190,7 +211,6 @@ namespace Dune::IGA {
       return std::ranges::any_of(*intersections_, [](const Intersection& intersection){
         return intersection.boundary();
       });
-      // return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }

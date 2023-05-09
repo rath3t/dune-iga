@@ -1787,14 +1787,15 @@ void plotBasis(std::string&& fileName, bool trim = false, int globalRefine = 0) 
   writer2.write("basis");
 }
 
-double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt) {
+double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt, QuadratureType::Enum qt = QuadratureType::GaussLegendre) {
   double area = 0;
 
-  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
+  Dune::QuadratureRule<double, 2> rule;
+
   for (auto& ele : elements(gridView)) {
-    ele.impl().getIntegrationPoints(ipVec, order);
+    ele.impl().fillQuadratureRule(rule, order, qt);
     auto geo = ele.geometry();
-    for (auto& ip : ipVec)
+    for (auto& ip : rule)
       area += geo.integrationElement(ip.position()) * ip.weight();
   }
 
@@ -1815,16 +1816,19 @@ double calculateAreaParameterSpace(const auto& gridView) {
 
 /// \brief Test if sum of the weights is the ratio of trimmed to untrimmed surface in parameterspace * A ref (= 1)
 void checkSumWeights(const auto& gridView, auto& t) {
-  std::vector<Dune::QuadraturePoint<double, 2>> ipVec;
-  for (auto& ele : elements(gridView)) {
+  Dune::QuadratureRule<double, 2> rule;
 
-    auto untrimmedArea = ele.geometry().impl().spanVolume();
+  for (auto& ele : elements(gridView)) {
+    if (not ele.impl().isTrimmed())
+      continue;
+
+    auto untrimmedArea = 1;
     auto trimmedArea =  ele.impl().trimmedElementRepresentation()->calculateArea();
     auto ratio = trimmedArea / untrimmedArea;
 
-    ele.impl().getIntegrationPoints(ipVec);
+    ele.impl().fillQuadratureRule(rule);
     double weightSum = 0.0;
-    for (auto& ip : ipVec)
+    for (auto& ip : rule)
       weightSum += ip.weight();
 
     t.check(Dune::FloatCmp::eq(weightSum, ratio));
@@ -1840,8 +1844,15 @@ auto testIntegrationPoints() {
   std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
   grid->globalRefine(1);
 
-  double area = calculateArea(grid->leafGridView());
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
+  Plot::plotEveryReconstructedGrid(grid, "_hole");
+
+  double area = calculateArea(grid->leafGridView(), std::nullopt);
   std::cout << "Area (0): " << area << std::endl;
+
+  area = calculateArea(grid->leafGridView(), std::nullopt, QuadratureType::GaussLobatto);
+  std::cout << "Area GaussLobatto (0): " << area << std::endl;
+
 
   t.check(Dune::FloatCmp::eq(area, targetArea, 1e-1));
 
@@ -1884,7 +1895,6 @@ auto test3HoleGeometry() {
   // grid->globalRefineInDirection(0, 2);
 
   Plot::plotParametricGridAndPhysicalGrid(grid, "_hole");
-
   Plot::plotEveryReconstructedGrid(grid, "_hole");
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(grid->leafGridView());

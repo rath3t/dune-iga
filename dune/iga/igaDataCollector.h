@@ -41,21 +41,23 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
-        auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-        numCells_ += trimmedGridView.size(0);
-        const auto& trimmedIndexSet = trimmedGridView.indexSet();
-        for (auto gt : trimmedIndexSet.types(0))
+        auto subGridView               = elementRepr->refinedGridView(subSample_);
+        auto verticesInSubGrid         = subGridView.size(dim);
+
+        numCells_ += subGridView.size(0);
+        const auto& subGridIndexSet = subGridView.indexSet();
+
+        for (auto gt : subGridIndexSet.types(0))
           pointSets_.try_emplace(gt, 1);
 
         for (auto& [type, pointSet] : pointSets_)
           if (pointSet.size() == 0) pointSet.build(type);
 
-        for (auto triangulationVertices : vertices(trimmedGridView)) {
-          std::size_t idx = trimmedIndexSet.index(triangulationVertices);
+        for (auto subGridVertex : vertices(subGridView)) {
+          std::size_t idx = subGridIndexSet.index(subGridVertex);
           vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, idx}), vertexCounter++);
         }
-        numPoints_ += verticesInTrimmedGridView;
+        numPoints_ += verticesInSubGrid;
       }
     }
 
@@ -76,15 +78,15 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
-        auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-        const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-        for (auto triangulationVertex : vertices(trimmedGridView)) {
-          auto trimmedGeometry = triangulationVertex.geometry().center();
+        auto subGridView               = elementRepr->refinedGridView(subSample_);
 
-          std::int64_t idx = 3 * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
-          auto vecInLocal  = geometry.impl().spanToLocal(trimmedGeometry);
-          auto v           = geometry.global(vecInLocal);
+        const auto& trimmedIndexSet    = subGridView.indexSet();
+        for (auto subGridVertex : vertices(subGridView)) {
+          auto vecInLocal = subGridVertex.geometry().center();
+          auto v = geometry.global(vecInLocal);
+
+          std::int64_t idx = 3 * vertexIndex_.at({elementId, trimmedIndexSet.index(subGridVertex)});
+
           for (std::size_t j = 0; j < v.size(); ++j)
             data[idx + j] = T(v[j]);
           for (std::size_t j = v.size(); j < 3u; ++j)
@@ -115,19 +117,19 @@ namespace Dune::Vtk {
         const std::size_t elementId = indexSet.index(ele);
 
         auto elementRepr               = ele.impl().trimmedElementRepresentation();
-        auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
-        auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-        const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-        for (auto triangulationElement : elements(trimmedGridView)) {
-          Vtk::CellType cellType(triangulationElement.type(), Vtk::CellType::LAGRANGE);
+        auto subGridView               = elementRepr->refinedGridView(subSample_);
 
-          auto const& pointSet = pointSets_.at(triangulationElement.type());
+        const auto& subGridIndexSet    = subGridView.indexSet();
+        for (auto subGridElement : elements(subGridView)) {
+          Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
+
+          auto const& pointSet = pointSets_.at(subGridElement.type());
 
           for (std::size_t i = 0; i < pointSet.size(); ++i) {
             auto const& p        = pointSet[i];
             auto const& localKey = p.localKey();
             std::int64_t idx     = vertexIndex_.at(
-                {elementId, trimmedIndexSet.subIndex(triangulationElement, localKey.subEntity(), dim)});
+                {elementId, subGridIndexSet.subIndex(subGridElement, localKey.subEntity(), dim)});
 
             cells.connectivity.push_back(idx);
           }
@@ -152,15 +154,13 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto trimmedGridView           = elementRepr->refinedGridView(subSample_);
-        auto verticesInTrimmedGridView = trimmedGridView.size(dim);
-        const auto& trimmedIndexSet    = trimmedGridView.indexSet();
-        for (auto triangulationVertex : vertices(trimmedGridView)) {
-          auto trimmedGeometry = triangulationVertex.geometry().center();
+        auto subGridView               = elementRepr->refinedGridView(subSample_);
 
-          std::int64_t idx = nComps * vertexIndex_.at({elementId, trimmedIndexSet.index(triangulationVertex)});
-          auto vecInLocal
-              = geometry.impl().spanToLocal(trimmedGeometry);  // transform vertex position from iga span to [0,1]^d
+        const auto& subGridIndexSet    = subGridView.indexSet();
+        for (auto subGridVertex : vertices(subGridView)) {
+          auto vecInLocal = subGridVertex.geometry().center();
+          std::int64_t idx = nComps * vertexIndex_.at({elementId, subGridIndexSet.index(subGridVertex)});
+
           for (std::size_t comp = 0; comp < nComps; ++comp)
             data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
         }
@@ -184,12 +184,12 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr            = element.impl().trimmedElementRepresentation();
-        auto trimmedGridView        = elementRepr->refinedGridView(subSample_);
-        const auto& trimmedIndexSet = trimmedGridView.indexSet();
+        auto subGridView        = elementRepr->refinedGridView(subSample_);
+        const auto& trimmedIndexSet = subGridView.indexSet();
 
-        for (auto triangulationElement : elements(trimmedGridView)) {
-          auto center     = triangulationElement.geometry().center();
-          auto vecInLocal = geometry.impl().spanToLocal(center);  // transform vertex position from iga span to [0,1]^d
+        for (auto subGridElement : elements(subGridView)) {
+          auto vecInLocal     = subGridElement.geometry().center();
+
           for (std::size_t comp = 0; comp < nComps; ++comp)
             data.push_back(localFct.evaluate(comp, vecInLocal));
         }

@@ -68,6 +68,7 @@ namespace Dune::IGA::Trim {
     /// Public Interface
     /////////////////
 
+    // TODO Instead of variant use optional
     std::pair<ElementTrimFlag, std::variant<std::vector<Boundary>, std::vector<Point>>> trimElement(unsigned int directIndex) {
       if (trimFlags_[directIndex] == ElementTrimFlag::empty)
         return std::make_pair(ElementTrimFlag::empty,  std::variant<std::vector<Boundary>, std::vector<Point>>());

@@ -138,17 +138,11 @@ namespace Dune::IGA {
     const auto& getPatchData() { return patchData_; }
 
     /** \brief Checks if the element given by it's id is on the patch boundary */
-    // TODO
     [[nodiscard]] bool isPatchBoundary(const int& id) const {
-      auto const& knotElementNet = this->elementNet_;
-      auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
-
-      for (int i = 0; i < dim; ++i)
-        if ((multiIndex[i] == knotElementNet->size()[i] - 1) or (multiIndex[i] == 0)) return true;
-
-      return false;
+      throw std::logic_error("Not Implemented: ask the element if it has a neighbor");
     }
 
+    // TODO Maybe cache this
     [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const
       requires(dim == 2)
     {
@@ -156,14 +150,9 @@ namespace Dune::IGA {
       // that as well
       constexpr int noNeighbor = -1;
 
-      // This needs a getRealIndexOr method
       auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
         if (outerIndex == noNeighbor) return noNeighbor;
-        try {
-          return (int)getRealIndex<0>(outerIndex);
-        } catch (std::runtime_error& e) {
-          return noNeighbor;
-        }
+        return getRealIndexOr<0>(outerIndex, noNeighbor);
       };
 
       std::vector<RealIndex> realIndexOfBoundaryIntersections;
@@ -412,6 +401,21 @@ namespace Dune::IGA {
       return typename GridImpl::template Codim<codim>::Geometry(geo);
     }
 
+    std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset(const DirectIndex directIndex) {
+      // This is a mirroring of nurbsGeometryCode
+      std::array<double, dim> scaling;
+      std::array<double, dim> offset;
+
+      auto [thisSpanIndices, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<0>(directIndex);
+      for (int i = 0; i < dim; ++i) {
+        if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
+          scaling[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
+        offset[i] = patchData_->knotSpans[i][thisSpanIndices[i]];
+      }
+      return std::make_pair(scaling, offset);
+    }
+
+
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
     std::array<int, dim> validKnotSize() const { return uniqueSpanSize_; }
 
@@ -633,7 +637,7 @@ namespace Dune::IGA {
         throw std::runtime_error("No corresponding realIndex");
     }
     template <unsigned int codim> requires(dim == 2)
-    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept {
+    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept requires (std::same_as<decltype(idx), decltype(orValue)>)   {
       auto& map = this->getEntityMap<codim>();
       auto it   = std::ranges::find(map, idx);
       return it != map.end() ? std::ranges::distance(map.begin(), it) : orValue;
@@ -673,11 +677,10 @@ namespace Dune::IGA {
         for (const auto& element : elements(parameterSpaceGridView)) {
           auto geo = element.geometry();
 
-          std::vector<FieldVector<double, 2>> corners = {geo.corner(0), geo.corner(1), geo.corner(2), geo.corner(3)};
           DirectIndex directIndex = indexSet.index(element);
           trimInfoMap.emplace(
               directIndex, ElementTrimInfo{.realIndex = directIndex,
-                                           .repr = std::make_unique<TrimmedElementRepresentationType>(corners)});
+                                           .repr = std::make_unique<TrimmedElementRepresentationType>(scalingAndOffset(directIndex))});
         }
       }
     }
@@ -709,7 +712,6 @@ namespace Dune::IGA {
       n_trimmedElement = 0;
       trimFlags.resize(originalSize(0));
 
-      // Use Trim namespace for more concise function names
       using Trimmer = Trim::NURBSPatchTrimmer<>;
 
       auto paraGrid               = parameterSpaceGrid<Trimmer::ctype>(Trimmer::scale);
@@ -729,13 +731,13 @@ namespace Dune::IGA {
           ++n_trimmedElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                               std::get<0>(boundariesOrCorners))});
+                                                               std::get<0>(boundariesOrCorners), scalingAndOffset(directIndex))});
         }
         else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                               std::get<1>(boundariesOrCorners))});
+                                                               scalingAndOffset(directIndex))});
         }
       }
 
@@ -818,15 +820,16 @@ namespace Dune::IGA {
     std::vector<DirectIndex> vertexIndexMap;
     std::vector<DirectIndex> edgeIndexMap;
 
-    unsigned int n_fullElement    = std::numeric_limits<unsigned int>::signaling_NaN();
-    unsigned int n_trimmedElement = 0;
+    unsigned int n_fullElement{std::numeric_limits<unsigned int>::signaling_NaN()};
+    unsigned int n_trimmedElement{0};
 
     struct ElementTrimInfo {
       RealIndex realIndex{};
       std::shared_ptr<TrimmedElementRepresentationType> repr;
     };
 
-    std::map<DirectIndex, ElementTrimInfo> trimInfoMap;
+    // TODO Maybe use a std::vector with realIndex indexing
+    std::unordered_map<DirectIndex, ElementTrimInfo> trimInfoMap;
   };
 
 }  // namespace Dune::IGA

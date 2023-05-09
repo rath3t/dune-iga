@@ -113,7 +113,7 @@ namespace Ikarus {
       }
 
       /// Clamp boundary using penalty method
-      const double penaltyFactor = 1e8;
+      const double penaltyFactor = Emodul * 1e5;
       if (ele.hasBoundaryIntersections())
         for (auto& intersection : intersections(this->localView().globalBasis().gridView(), ele))
           if (intersection.boundary()) {
