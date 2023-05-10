@@ -15,7 +15,7 @@
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/nurbstrimfunctionality.hh>
+#include <dune/iga/nurbstrimmer.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -34,7 +34,7 @@ namespace mapbox::util {
 namespace Dune::IGA {
 
   template <int dim>
-  struct GridBoundarySegment : Dune::BoundarySegment<2, dim, double> {
+  struct GridBoundarySegment : Dune::BoundarySegment<dim, dim, double> {
     explicit GridBoundarySegment(Boundary& _boundary, auto _trFct) : boundary(_boundary), transformFct(_trFct) {}
 
     Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
@@ -52,7 +52,7 @@ namespace Dune::IGA {
   };
 
   /** \brief representation of the trimmed element in the parameter space */
-  template <int dim, typename Grid = Dune::UGGrid<dim>>
+  template <int dim, typename Grid> requires (dim == Grid::dimension)
   class TrimmedElementRepresentation {
    public:
     using GridView = Grid::LeafGridView;
@@ -60,17 +60,18 @@ namespace Dune::IGA {
 
    private:
     std::unique_ptr<Grid> grid{};
-    std::vector<Boundary> boundaries;
+    std::vector<Boundary> outerBoundaries;
+    std::optional<std::vector<std::vector<Boundary>>> innerBoundaries;
     bool trimmed{};
-    bool gridConstructed{false};
+    bool gridConstructed{};
     bool verbose{};
     std::array<double, dim> scaling{};
     std::array<double, dim> offset{};
 
    public:
-    // Construct with boundaries
-    explicit TrimmedElementRepresentation(std::vector<Boundary>& _boundaries, std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
-        : boundaries(_boundaries), trimmed(true), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
+    // Construct with outerBoundaries
+    explicit TrimmedElementRepresentation(Trim::ElementBoundaries& _boundaries, std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
+        : outerBoundaries(_boundaries.outerBoundaries), innerBoundaries(_boundaries.innerBoundaries), trimmed(true), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
       reconstructTrimmedElement();
     }
     /// brief: Constructs an untrimmed elementRepresentation gets laziely constructed when called upon the GridView
@@ -80,30 +81,24 @@ namespace Dune::IGA {
 
     // Accessors
     GridView gridView() const {
-      if (not gridConstructed)
-        throw std::runtime_error("Grid for full elment not yet constructed, use refinedGridView to lazily construct");
+      assert(grid && "Grid for full element not yet constructed, use refineAndConstructGrid to lazily construct");
 
       return grid->leafGridView();
     }
     [[nodiscard]] bool isTrimmed() const {
       return trimmed;
     }
-    bool alreadyRefined = false;
-    GridView refinedGridView(unsigned int refinement = 0) {
+    void refineAndConstructGrid(unsigned int refinement = 0) {
       if (not gridConstructed)
         constructFromCorners();
 
-      if (refinement > 0 and not alreadyRefined) {
+      if (refinement > 0)
         grid->globalRefine(refinement);
-        alreadyRefined = true;
-      }
-      assert(grid->size(0) > 0);
-      return grid->leafGridView();
     }
 
    private:
     template <typename VecType>
-    auto toLocal(const VecType& cp) -> VecType {
+    auto toLocal(const VecType& cp) const -> VecType {
       VecType local;
       for (int i = 0; i < dim; ++i) {
         local[i] =  (cp[i] -offset[i])/scaling[i];
@@ -117,10 +112,12 @@ namespace Dune::IGA {
     void reconstructTrimmedElement() {
       // Getting global Parameters
       auto parameters = Utilities::getParameters();
+      if (innerBoundaries.has_value())
+        prepareInnerBoundaries();
 
       if (parameters.preSample > 0) splitBoundaries();
 
-      Dune::GridFactory<Grid> gridFactory(false);
+      Dune::GridFactory<Grid> gridFactory;
       auto [indices, vertices] = triangulate();
 
       for (auto& vertex : vertices)
@@ -130,9 +127,16 @@ namespace Dune::IGA {
       for (auto it = indices.begin(); it < indices.end(); it += 3)
         gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
 
-      for (auto& boundary : boundaries)
+      auto toLocalLambda = [&](const auto& cp){ return toLocal(cp); };
+      for (auto& boundary : outerBoundaries)
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
-                                          std::make_shared<GridBoundarySegment<dim>>(boundary, std::bind(&TrimmedElementRepresentation<dim, Grid>::toLocal<Dune::FieldVector<double, 2>>, this, std::placeholders::_1)));
+                                          std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
+
+      if (innerBoundaries.has_value())
+        for (auto& innerLoop : innerBoundaries.value())
+          for (auto& boundary : innerLoop)
+            gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
+                                              std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
       // Create Grid
       grid = gridFactory.createGrid();
@@ -151,7 +155,7 @@ namespace Dune::IGA {
 
     void refineGridOnEdges(int refCount) {
       GridView gridView       = grid->leafGridView();
-      auto boundariesToRefine = determineBoundariesToRefine();
+      auto boundariesToRefine = determineBoundariesToRefine(outerBoundaries);
 
       for (int i = 0; i < refCount; ++i) {
         for (const auto& ele : elements(grid->leafGridView())) {
@@ -169,49 +173,85 @@ namespace Dune::IGA {
       }
     }
 
-    std::pair<std::vector<unsigned int>, std::vector<Point>> triangulate() {
+    [[nodiscard]] auto triangulate() const -> std::pair<std::vector<unsigned int>, std::vector<Point>>  {
       // Construct mesh with Earcut
       // C.f. https://github.com/mapbox/earcut.hpp
 
       // Create array of points
       std::vector<Point> vertices;
-      vertices.reserve(boundaries.size());
-      for (auto& boundary : boundaries)
+      vertices.reserve(outerBoundaries.size());
+      for (auto& boundary : outerBoundaries)
         vertices.push_back(toLocal(boundary.endPoints.front()));
 
       std::vector<std::vector<Point>> polygonInput;
       polygonInput.push_back(vertices);
 
-      std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
+      if (innerBoundaries.has_value())
+        for (auto& innerLoop : innerBoundaries.value()) {
+          assert(innerLoop.size() > 1);
+          std::vector<Point> holeInput;
+          for (auto& boundary : innerLoop) {
+            auto v = toLocal(boundary.endPoints.front());
+            vertices.push_back(v);
+            holeInput.push_back(v);
+          }
+          polygonInput.push_back(holeInput);
+        }
 
+      std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
       return std::make_pair(indices, vertices);
     }
 
+    void prepareInnerBoundaries() {
+      assert(innerBoundaries.has_value());
+      for (auto& innerLoop : innerBoundaries.value()) {
+        if (innerLoop.size() == 1) {
+          // Divide into 3 parts
+          auto boundary  = innerLoop.front();
+          auto geometry = boundary.nurbsGeometry;
+          assert(Dune::FloatCmp::eq(boundary.endPoints.front(), boundary.endPoints.back()));
+
+          innerLoop.clear();
+          auto u = Utilities::linspace(boundary.domain, 4);
+
+          innerLoop.emplace_back(geometry, std::array<double, 2>{u[0], u[1]});
+          innerLoop.emplace_back(geometry, std::array<double, 2>{u[1], u[2]});
+          innerLoop.emplace_back(geometry, std::array<double, 2>{u[2], u[3]});
+
+        }
+      }
+    }
+
     void constructFromCorners() {
-      Dune::GridFactory<Grid> gridFactory(false);
+      Dune::GridFactory<Grid> gridFactory;
 
       gridFactory.insertVertex({0, 0});
       gridFactory.insertVertex({1, 0});
       gridFactory.insertVertex({0, 1});
       gridFactory.insertVertex({1, 1});
 
-      //gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
+        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      else {
+        gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
+        gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
+      }
 
-      gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
-      gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
       grid = gridFactory.createGrid();
-
       gridConstructed = true;
     }
 
    public:
 
-    /// \brief Calculates the area from the actual trim paths (might be expensive)
-    double calculateTargetArea(unsigned int div = 200) {
-      Clipper2Lib::PathD polygon;
-      polygon.reserve(div*boundaries.size());
+    /// \brief Calculates the area from the actual trim paths (might be expensive) (in parameterSpace Coordinates)
+    [[nodiscard]] double calculateTargetArea(unsigned int div = 200) const {
+      if (not isTrimmed())
+        throw std::runtime_error("calculateTargetArea only defined for trimmed elements");
 
-      for (auto& boundary : boundaries) {
+      Clipper2Lib::PathD polygon;
+      polygon.reserve(div* outerBoundaries.size());
+
+      for (auto& boundary : outerBoundaries) {
         auto path = boundary.path(div);
         for (Clipper2Lib::PointD point : path) {
           polygon.emplace_back(point);
@@ -221,14 +261,20 @@ namespace Dune::IGA {
     }
 
     /// \brief Calculates the area from the simplex elements in the current grid
-    double calculateArea() {
+    [[nodiscard]] double calculateArea() const {
+      if (not gridConstructed)
+        throw std::runtime_error("Grid for full element not yet constructed, use refinedGridView to lazily construct");
+
       GridView gv = grid->leafGridView();
       return std::accumulate(elements(gv).begin(), elements(gv).end(), 0.0,
                              [](double rhs, const auto& element) { return rhs + element.geometry().volume(); });
     }
 
     /// \brief Checks the grid for overlaps, returns true if any element overlaps another
-    bool checkGridForOverlappingElements() {
+    [[nodiscard]] bool checkGridForOverlappingElements() const {
+      if (not isTrimmed())
+        throw std::runtime_error("checkGridForOverlappingElements only defined for trimmed elements");
+
       GridView gV = grid->leafGridView();
 
       std::vector<Clipper2Lib::PointD> centers;
@@ -265,31 +311,41 @@ namespace Dune::IGA {
     }
 
    private:
-    bool approxSamePoint(const Point& a, const Point& b) { return Dune::FloatCmp::eq(a, b, 1e-8); };
+    static constexpr double tolerance = double(16) * std::numeric_limits<double>::epsilon();
+    static bool approxSamePoint(const Point& a, const Point& b) { return Dune::FloatCmp::eq(a, b, tolerance); };
 
     void splitBoundaries() {
+      splitBoundariesImpl(outerBoundaries);
+
+      if (innerBoundaries.has_value())
+        std::ranges::for_each(innerBoundaries.value(), [&](auto& boundaries){ splitBoundariesImpl(boundaries);});
+    }
+
+    static void splitBoundariesImpl(std::vector<Boundary>& boundaries) {
       auto parameters = Utilities::getParameters();
 
-      auto refineMap = determineBoundariesToRefine();
+      auto refineMap = determineBoundariesToRefine(boundaries);
 
       using Domain            = std::array<double, 2>;
       using DomainInformation = std::pair<Domain, int>;
 
       // Get all domains
       std::vector<DomainInformation> domains;
-      domains.reserve(boundaries.size());
-      for (int i = 0; i < boundaries.size(); ++i) {
+      domains.reserve((1 << parameters.preSample) * boundaries.size());
+
+      for (auto i : std::views::iota(0u, boundaries.size())) {
         domains.emplace_back(boundaries[i].domain, i);
       }
 
       std::vector<DomainInformation> tempDomains;
+      tempDomains.reserve((1 << parameters.preSample) * boundaries.size());
 
-      for (int i = 0; i < parameters.preSample; ++i) {
+      for (auto _ : std::views::iota(0, parameters.preSample)) {
         tempDomains.clear();
         tempDomains.insert(tempDomains.end(), domains.begin(), domains.end());
         domains.clear();
         for (auto& domain : tempDomains) {
-          bool refine = !parameters.preSampleOnlyCurvedEdges;
+          bool refine = not parameters.preSampleOnlyCurvedEdges;
           if (parameters.preSampleOnlyCurvedEdges && refineMap[domain.second]) refine = true;
 
           if (refine) {
@@ -300,9 +356,8 @@ namespace Dune::IGA {
             domains.push_back(domain);
         }
       }
-      tempDomains.clear();
 
-      // Create split boundaries from DomainInformation
+      // Create split outerBoundaries from DomainInformation
       std::vector<Boundary> newBoundaries;
       std::ranges::transform(domains, std::back_inserter(newBoundaries), [&](const auto& domain_info) -> Boundary{
         return {boundaries[domain_info.second].nurbsGeometry, domain_info.first};
@@ -310,7 +365,7 @@ namespace Dune::IGA {
       boundaries = std::move(newBoundaries);
     }
 
-    std::vector<unsigned int> getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) {
+    [[nodiscard]] auto getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) const -> std::vector<unsigned int>{
       auto it1 = std::ranges::find_if(vertices,
                               [&](const Point& v) { return approxSamePoint(v, toLocal(boundary.endPoints.front())); });
 
@@ -327,8 +382,9 @@ namespace Dune::IGA {
       return {idx1, idx2};
     }
 
-    std::vector<bool> determineBoundariesToRefine() {
+    [[nodiscard]] static auto determineBoundariesToRefine(const std::vector<Boundary>& boundaries) -> std::vector<bool> {
       std::vector<bool> result;
+      result.reserve(boundaries.size());
 
       for (const auto& boundary : boundaries) {
         if (boundary.degree() > 1)

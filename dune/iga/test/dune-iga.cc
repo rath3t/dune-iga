@@ -41,7 +41,7 @@
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatch.hh>
 #include <dune/iga/nurbspatchgeometry.h>
-#include <dune/iga/nurbstrimfunctionality.hh>
+#include <dune/iga/nurbstrimmer.hh>
 #include <dune/iga/nurbstrimutils.hh>
 #include <dune/vtk/vtkwriter.hh>
 
@@ -694,7 +694,7 @@ auto testBsplineBasisFunctions() {
 
   xieta   = {0, 0.1};
   N_Nurbs = Dune::IGA::Nurbs<2>::basisFunctions(xieta, knots2, degree2, weightNet).directGetAll();
-  test.check(eq(N_Nurbs[0], 0.8204545454545455), "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+  test.check(eq(N_Nurbs[0], 0.8204545454545455), "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(N_Nurbs[1], 0.0), "Nurbs P=2,N1");
   test.check(eq(N_Nurbs[2], 0.0), "Nurbs P=2,N2");
   test.check(eq(N_Nurbs[3], 0.1727272727272728), "Nurbs P=2,N3");
@@ -709,7 +709,7 @@ auto testBsplineBasisFunctions() {
   auto dN_Nurbs = Dune::IGA::Nurbs<2>::basisFunctionDerivatives(xieta, knots2, degree2, weightNet, 5);
 
   test.check(eq(dN_Nurbs.get({0, 0}).get({0, 0}), 0.8204545454545455),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 0}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 0}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 0}).get({0, 1}), 0.1727272727272728), "Nurbs P=2,N3");
@@ -721,7 +721,7 @@ auto testBsplineBasisFunctions() {
 
   // first derivative in u dir
   test.check(eq(dN_Nurbs.get({1, 0}).get({0, 0}), -24.166115702479335),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({1, 0}).get({1, 0}), 26.25454545454545), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({1, 0}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({1, 0}).get({0, 1}), -5.0876033057851231), "Nurbs P=2,N3");
@@ -733,7 +733,7 @@ auto testBsplineBasisFunctions() {
 
   // second derivative in u dir
   test.check(eq(dN_Nurbs.get({2, 0}).get({0, 0}), 1236.8386175807659),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({2, 0}).get({1, 0}), -1441.6132231404956), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({2, 0}).get({2, 0}), 98.454545454545439), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({2, 0}).get({0, 1}), 260.38707738542439), "Nurbs P=2,N3");
@@ -745,7 +745,7 @@ auto testBsplineBasisFunctions() {
 
   // third derivative in u dir
   test.check(eq(dN_Nurbs.get({3, 0}).get({0, 0}), -94449.494433440283),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({3, 0}).get({1, 0}), 110086.82794891056), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({3, 0}).get({2, 0}), -7518.3471074380141), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({3, 0}).get({0, 1}), -19884.104091250589), "Nurbs P=2,N3");
@@ -757,7 +757,7 @@ auto testBsplineBasisFunctions() {
 
   // fourth derivative in u dir
   test.check(eq(dN_Nurbs.get({4, 0}).get({0, 0}), 9616675.7968593743),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({4, 0}).get({1, 0}), -11208840.663889075), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({4, 0}).get({2, 0}), 765504.432757325), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({4, 0}).get({0, 1}), 2024563.3256546052), "Nurbs P=2,N3");
@@ -769,7 +769,7 @@ auto testBsplineBasisFunctions() {
 
   // fifth derivative in u dir
   test.check(eq(dN_Nurbs.get({5, 0}).get({0, 0}), -1223940555.9639204),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({5, 0}).get({1, 0}), 1426579720.8586094), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({5, 0}).get({2, 0}), -97427836.896386802), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({5, 0}).get({0, 1}), -257671695.99240425), "Nurbs P=2,N3");
@@ -781,7 +781,7 @@ auto testBsplineBasisFunctions() {
 
   // first derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 1}).get({0, 0}), -1.609504132231405),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 1}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 1}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 1}).get({0, 1}), 1.479338842975206), "Nurbs P=2,N3");
@@ -793,7 +793,7 @@ auto testBsplineBasisFunctions() {
 
   // second derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 2}).get({0, 0}), 3.380916604057099),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 2}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 2}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 2}).get({0, 1}), -4.507888805409466), "Nurbs P=2,N3");
@@ -805,7 +805,7 @@ auto testBsplineBasisFunctions() {
 
   // third derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 3}).get({0, 0}), -9.220681647428448),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 3}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 3}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 3}).get({0, 1}), 12.29424219657127), "Nurbs P=2,N3");
@@ -817,7 +817,7 @@ auto testBsplineBasisFunctions() {
 
   // fourth derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 4}).get({0, 0}), 33.52975144519434),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 4}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 4}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 4}).get({0, 1}), -44.70633526025914), "Nurbs P=2,N3");
@@ -829,7 +829,7 @@ auto testBsplineBasisFunctions() {
 
   // fifth derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 5}).get({0, 0}), -152.4079611145197),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({0, 5}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 5}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 5}).get({0, 1}), 203.2106148193597), "Nurbs P=2,N3");
@@ -841,7 +841,7 @@ auto testBsplineBasisFunctions() {
 
   // 1,1 mixed derivative
   test.check(eq(dN_Nurbs.get({1, 1}).get({0, 0}), 66.39293764087149),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({1, 1}).get({1, 0}), -51.50413223140495), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({1, 1}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({1, 1}).get({0, 1}), -39.5762584522915), "Nurbs P=2,N3");
@@ -853,7 +853,7 @@ auto testBsplineBasisFunctions() {
 
   // 2,1 mixed derivative
   test.check(eq(dN_Nurbs.get({2, 1}).get({0, 0}), -4511.311932245063),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({2, 1}).get({1, 0}), 4043.131480090156), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({2, 1}).get({2, 0}), -193.1404958677686), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({2, 1}).get({0, 1}), 1791.166723584455), "Nurbs P=2,N3");
@@ -876,7 +876,7 @@ auto testBsplineBasisFunctions() {
 
   // 3,1 mixed derivative
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 0}), 430363.3606745686),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0");  // check ansatzfunctions on outerBoundaries
   test.check(eq(dN_Nurbs.get({3, 1}).get({1, 0}), -408827.1566149851), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({3, 1}).get({2, 0}), 21583.77160030052), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 1}), -118703.546081676), "Nurbs P=2,N3");
@@ -1511,7 +1511,7 @@ auto testEntityFunctionality() {
   Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
   gridcheck(*grid);
 
-  //   If this yields the correct boundaries, then we are happy
+  //   If this yields the correct outerBoundaries, then we are happy
   // Dune::printGrid(*grid, Dune::MPIHelper::instance());
 
   return t;
@@ -1750,7 +1750,7 @@ auto testEntityFunctionality() {
   Dune::checkIndexSet(*grid, grid->leafGridView(), std::cout);
   gridcheck(*grid);
 
-  //   If this yields the correct boundaries, then we are happy
+  //   If this yields the correct outerBoundaries, then we are happy
   // Dune::printGrid(*grid, Dune::MPIHelper::instance());
 
   return t;
@@ -1908,7 +1908,8 @@ auto test3HoleGeometry() {
 auto test1Hole1Element() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  // std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
 
 
   Plot::plotParametricGridAndPhysicalGrid(grid, "_hole1");
@@ -1922,14 +1923,30 @@ auto test1Hole1Element() {
   return t;
 }
 
+auto testShell() {
+  TestSuite t;
+  std::shared_ptr<NURBSGrid<2, 3>> grid = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
+  grid->globalRefine(2);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_shell");
+  Plot::plotEveryReconstructedGrid(grid, "_shell");
+
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(grid->leafGridView());
+  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Vtk::FormatTypes::ASCII);
+
+  vtkWriter.write("plot_shell/grid");
+
+  return t;
+}
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
 
-  t.subTest(testIntegrationPoints());
+  //t.subTest(testIntegrationPoints());
   //t.subTest(test1Hole1Element());
+  t.subTest(testShell());
   //t.subTest(testIntegrationPoints());
   // t.subTest(test3HoleGeometry());
 

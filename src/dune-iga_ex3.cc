@@ -23,6 +23,7 @@
 #include <dune/iga/igaDataCollector.h>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
 #include "igaHelpers.h"
 #include "linearElasticTrimmed.h"
@@ -102,11 +103,7 @@ int main(int argc, char **argv) {
             auto vgeo = vertex.geometry().center();
 
             if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
-
           }
-
-          // if (vgeo.two_norm() < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
-
         });
   });
 
@@ -236,6 +233,53 @@ int main(int argc, char **argv) {
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
           gridView, &fes, D_Glob, lambdaLoad)));
+
+
+  // Analytical solution
+  auto mapToRange = []<std::floating_point T>(T value, T inputMin, T inputMax, T outputMin, T outputMax) -> T {
+    return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
+  };
+
+  auto toPolar = [&](const auto& pos) -> std::pair<double, double> {
+    auto x = pos[0] - 10;
+    auto y = pos[1] - 1;
+
+    auto r = std::hypot(x, y);
+    auto theta = std::atan2(y, x);
+
+    auto pi = std::numbers::pi;
+    if (theta <= pi and theta > pi/2)
+      theta = mapToRange(theta, pi, pi/2, 0.0, pi/2);
+    else if (theta < 0 and theta > -pi/2)
+      theta *= -1;
+    else if (theta <= -pi/2 and theta >= -pi)
+      theta = mapToRange(theta, -pi, -pi/2, 0.0, pi/2);
+
+    return {r, theta};
+  };
+
+  double Tx = 1;
+  double R = 0.3;
+
+  auto analyticalSolution = [&](const auto& pos) -> Dune::FieldVector<double, 3>{
+      auto [r, theta] = toPolar(pos);
+
+      auto th  = Tx / 2;
+      auto rr2 = std::pow(R, 2) / std::pow(r, 2);
+      auto rr4 = std::pow(R, 4) / std::pow(r, 4);
+      auto cost = std::cos(theta);
+      auto sint = std::sin(theta);
+
+      Dune::FieldVector<double, 3> res;
+      res[0] = th * (1 - rr2) + th * (1 + 3 * rr4 - 4 * rr2) * cost;
+      res[1] = th * (1 + rr2) - th * (1 + 3 * rr4) * cost;
+      res[2] = - th * (1 - 3 * rr4 + 2 * rr2) * sint;
+
+      return res;
+  };
+
+  auto analyticalSolutionFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution, gridView);
+  vtkWriter.addPointData(analyticalSolutionFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
 
 
   double totalForce = 0.0;

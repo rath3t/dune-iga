@@ -6,20 +6,23 @@
 
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
-
 #include <variant>
 
 #include "dune/iga/nurbstrimutils.hh"
+#include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
-#include <dune/grid/yaspgrid.hh>
-
 
 namespace Dune::IGA {
   enum class ElementTrimFlag { full, empty, trimmed };
 }
 
 namespace Dune::IGA::Trim {
+
+  struct ElementBoundaries {
+    std::vector<Boundary> outerBoundaries;
+    std::optional<std::vector<std::vector<Boundary>>> innerBoundaries;
+  };
 
   // The following numbering is used for edges and nodes:
   /*
@@ -30,66 +33,62 @@ namespace Dune::IGA::Trim {
    * 0 -- 0 -- 1
    */
 
-  template <typename intType = int64_t, int sc_ = 12>
+  template <typename intType_ = int64_t, int sc_ = 12>
   class NURBSPatchTrimmer {
    public:
     static constexpr auto dim  = 2;
     static constexpr int scale = sc_;
 
-    inline static double scaleFactor() {
-      return std::pow(10, scale);
-    };
+    inline static double scaleFactor() { return std::pow(10, scale); };
 
     static constexpr int pathSamples  = 800;
     static constexpr double tolerance = 1e-8;
 
-    using ctype = intType;
-    using ClipperPoint = Clipper2Lib::Point<ctype>;
-    using ClipperPath  = Clipper2Lib::Path<ctype>;
-    using ClipperPaths = Clipper2Lib::Paths<ctype>;
+    using intType      = intType_;
+    using ClipperPoint = Clipper2Lib::Point<intType>;
+    using ClipperPath  = Clipper2Lib::Path<intType>;
+    using ClipperPaths = Clipper2Lib::Paths<intType>;
 
-    using Point    = FieldVector<double, 2>;
-    using IntPoint = FieldVector<ctype, 2>;
+    using Point    = FieldVector<double, dim>;
+    using IntPoint = FieldVector<intType, dim>;
 
-    using CurveGeometry = NURBSPatchGeometry<1, 2>;
-    using TensorGrid = Dune::YaspGrid<dim, Dune::TensorProductCoordinates<ctype, dim>>;
+    using CurveGeometry             = NURBSPatchGeometry<1, dim>;
+    using TensorGrid                = Dune::YaspGrid<dim, Dune::TensorProductCoordinates<intType, dim>>;
     using TensorGridView            = TensorGrid::LeafGridView;
-    using TensorGridElementGeometry = Dune::Entity<0, 2, TensorGrid, Dune::YaspEntity>::Geometry;
+    using TensorGridElementGeometry = Dune::Entity<0, dim, TensorGrid, Dune::YaspEntity>::Geometry;
 
     NURBSPatchTrimmer(const TensorGridView& gridView, TrimData* trimData)
-        :tensorGridView_(gridView), indexSet_(gridView.indexSet()), trimData_(trimData), globalBoundaries_(extractBoundaries(trimData)), clip_(getClip(trimData)) {
+        : tensorGridView_(gridView),
+          indexSet_(gridView.indexSet()),
+          trimData_(trimData),
+          globalBoundaries_(extractBoundaries(trimData)),
+          clip_(getClip(trimData)) {
       setUp();
     }
 
-    NURBSPatchTrimmer() = delete;
-    NURBSPatchTrimmer(const NURBSPatchTrimmer& ) = delete;
+    NURBSPatchTrimmer()                         = delete;
+    NURBSPatchTrimmer(const NURBSPatchTrimmer&) = delete;
 
     /////////////////
     /// Public Interface
     /////////////////
 
-    // TODO Instead of variant use optional
-    std::pair<ElementTrimFlag, std::variant<std::vector<Boundary>, std::vector<Point>>> trimElement(unsigned int directIndex) {
-      if (trimFlags_[directIndex] == ElementTrimFlag::empty)
-        return std::make_pair(ElementTrimFlag::empty,  std::variant<std::vector<Boundary>, std::vector<Point>>());
-
-      else if (trimFlags_[directIndex] == ElementTrimFlag::full) {
-        return std::make_pair(ElementTrimFlag::full, std::variant<std::vector<Boundary>, std::vector<Point>>(getDuneElementCorners(directIndex)));
-      }
-
+    std::pair<ElementTrimFlag, std::optional<ElementBoundaries>> trimElement(unsigned int directIndex) {
+      if (trimFlags_[directIndex] != ElementTrimFlag::trimmed)
+        return std::make_pair(trimFlags_[directIndex], std::nullopt);
       else {
         auto elementBoundaries = constructElementBoundaries(directIndex);
         if (elementBoundaries.has_value())
-          return std::make_pair(ElementTrimFlag::trimmed, std::variant<std::vector<Boundary>, std::vector<Point>>(elementBoundaries.value()));
+          return std::make_pair(ElementTrimFlag::trimmed, elementBoundaries.value());
         else
-          return std::make_pair(ElementTrimFlag::empty,  std::variant<std::vector<Boundary>, std::vector<Point>>());
+          return std::make_pair(ElementTrimFlag::empty, std::nullopt);
       }
     }
 
-
    private:
-    // Forware declare some structs
+    // Forward declare some structs and data types
     struct ClippingResult;
+    struct InnerLoops;
     struct FindNextBoundaryLoopState;
     struct IntersectionPoint;
     struct FindNextBoundaryResult;
@@ -99,7 +98,6 @@ namespace Dune::IGA::Trim {
     struct TraceCurveInput;
 
     using IntersectionPointMap = std::array<std::vector<IntersectionPoint>, 4>;
-
 
     // Private data members
     const TensorGridView& tensorGridView_;
@@ -111,7 +109,6 @@ namespace Dune::IGA::Trim {
     std::vector<std::optional<ClippingResult>> clipResults_;
     std::vector<TensorGridElementGeometry> elementGeometries_;
 
-
     /////////////////
     /// Private trim methods
     /////////////////
@@ -121,59 +118,78 @@ namespace Dune::IGA::Trim {
       // Reserve space for vectors
       auto n = tensorGridView_.size(0);
       trimFlags_.reserve(n);
-      clipResults_.reserve(n);
       elementGeometries_.reserve(n);
 
+      clipResults_.resize(n);
       for (auto&& element : elements(tensorGridView_)) {
         elementGeometries_.push_back(element.geometry());
-        auto [trimFlag, clipResult] = clipElement(element);
-
-        trimFlags_.push_back(trimFlag);
-        clipResults_.push_back(clipResult);
+        clipElement(element);
       }
     }
 
+    void findInnerLoops(std::optional<InnerLoops>& innerLoops, const ClipperPaths& clippedEdges) const {
+      assert(clip_.size() > 1);
+      assert(clippedEdges.size() > 1);
+      std::vector<int> foundLoops;
 
+      auto checkEquality = [](const ClipperPath& p1, const ClipperPath& p2) -> bool {
+        auto accumulator = [](intType rhs, const ClipperPoint& point) -> intType { return rhs + point.x + point.y; };
+        auto sumP1       = std::accumulate(p1.begin(), p1.end(), intType(0), accumulator);
+        auto sumP2       = std::accumulate(p2.begin(), p2.end(), intType(0), accumulator);
 
-    std::pair<ElementTrimFlag, std::optional<ClippingResult>> clipElement(const auto& element) {
-      // Prepare Result
-      ElementTrimFlag trimFlag;
+        return intCmpEq(sumP1, sumP2, 100l);
+      };
 
-      auto corners      = getElementCorners(indexSet_.index(element));
+      for (auto it1 = clippedEdges.cbegin() + 1; it1 < clippedEdges.cend(); ++it1)
+        for (auto it2 = clip_.cbegin() + 1; it2 < clip_.cend(); ++it2)
+          if (checkEquality(*it1, *it2))
+            foundLoops.push_back(std::distance(clip_.begin(), it2));
+
+      if (not foundLoops.empty())
+        innerLoops.emplace(foundLoops);
+    }
+
+    void clipElement(const auto& element) {
+      auto index        = indexSet_.index(element);
+      auto corners      = getElementCorners(index);
       auto elementEdges = getElementEdgesFromElementCorners(corners);
 
       ClipperPaths clippedEdges;
       if (clip_.size() == 1) {
-        Clipper2Lib::Rect<ctype> elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
+        Clipper2Lib::Rect<intType> elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
         clippedEdges = Clipper2Lib::RectClip(elementRect, clip_);
       } else
-        clippedEdges
-            = Clipper2Lib::Intersect(ClipperPaths{elementEdges}, clip_, Clipper2Lib::FillRule::EvenOdd);
+        clippedEdges = Clipper2Lib::Intersect(ClipperPaths{elementEdges}, clip_, Clipper2Lib::FillRule::EvenOdd);
 
       // At the moment there is no hole, if there are more than 2 Paths, then there is a hole
+      std::optional<InnerLoops> innerLoops = std::nullopt;
       if (clippedEdges.size() > 1) {
-        std::cerr << "Hole detected in element, hole gets ignored" << std::endl;
-        // clippedEdges.erase(clippedEdges.begin() + 1, clippedEdges.end());
-        return std::make_pair(ElementTrimFlag::full, std::nullopt);
+        findInnerLoops(innerLoops, clippedEdges);
       }
 
       // If the clippedEdges are empty, this means the element is outside the clip -> empty
       // And if the clip has only 4 corners and these corners are the same as the element -> full
       if (clippedEdges.empty())
-        trimFlag = ElementTrimFlag::empty;
+        trimFlags_.push_back(ElementTrimFlag::empty);
       else {
-        if (isFullElement(clippedEdges.front(), corners)) {
-          trimFlag = ElementTrimFlag::full;
-        } else
-          trimFlag = ElementTrimFlag::trimmed;
+        if (isFullElement(clippedEdges.front(), corners) and not innerLoops.has_value())
+          trimFlags_.push_back(ElementTrimFlag::full);
+        else
+          trimFlags_.push_back(ElementTrimFlag::trimmed);
       }
 
-      if (trimFlag != ElementTrimFlag::trimmed) return std::make_pair(trimFlag, std::nullopt);
-
-      // If the code is here → Elements are trimmed
+      if (trimFlags_.back() != ElementTrimFlag::trimmed) {
+        clipResults_.push_back(std::nullopt);
+        return;
+      }
 
       // Fill pointMap to store the intersection points in regard to their corresponding edges
       auto pointMap = std::make_unique<IntersectionPointMap>();
+
+      // Look if there are two distinct regions // Not yet implemented
+      int regions = clippedEdges.size() - (innerLoops.has_value() ? innerLoops.value().loopIndices.size() : 0);
+      if (regions > 1)
+        std::cerr << "More than one region, undefined behaviour, inspect output " << std::endl;
 
       // This keeps track of how many intersection Points there are at a given edge
       std::array<int, 4> edgeCounter{0, 0, 0, 0};
@@ -192,24 +208,23 @@ namespace Dune::IGA::Trim {
         }
       }
 
-      assert(not std::ranges::all_of(nodeCounter, [](auto x) { return x == 1; }));
+      //assert(not std::ranges::all_of(nodeCounter, [](auto x) { return x == 1; }));
 
       // Sort IntersectionPoints counter-clockwise
       sortIntersectionPoints(*pointMap);
 
-      return std::make_pair(trimFlag,
-                            std::make_optional<ClippingResult>({std::move(pointMap), edgeCounter, nodeCounter}));
+      clipResults_[index].emplace(std::move(pointMap), edgeCounter, nodeCounter, std::move(innerLoops));
     }
 
-
-    std::optional<std::vector<Boundary>> constructElementBoundaries(int directIndex) {
+    std::optional<ElementBoundaries> constructElementBoundaries(int directIndex) {
+      std::optional<ElementBoundaries> result{};
       try {
         std::vector<Boundary> elementBoundaries;
-        auto& result = clipResults_[directIndex].value();
+        auto& clipResult = clipResults_[directIndex].value();
         auto corners = getElementCorners(directIndex);
 
         // Determine the node where we begin to trace
-        const auto nodeCounter = result.nodeCounter;
+        const auto nodeCounter = clipResult.nodeCounter;
         auto it_nodes          = std::ranges::find_if(nodeCounter, [](auto x) { return x > 0; });
 
         if (it_nodes == nodeCounter.end())
@@ -217,7 +232,7 @@ namespace Dune::IGA::Trim {
               "No Curve tracing scheme implemented for elements that are only trimmed on single element edges.");
 
         auto nodeToBegin = std::distance(nodeCounter.begin(), it_nodes);
-        auto state = FindNextBoundaryLoopState(nodeToBegin, corners, result);
+        auto state       = FindNextBoundaryLoopState(nodeToBegin, corners, clipResult);
 
         // Iteratively find all the elementBoundaries
         bool found;
@@ -225,11 +240,29 @@ namespace Dune::IGA::Trim {
           found = findNextBoundary(&state, elementBoundaries);
         } while (!found);
 
-        return std::make_optional<std::vector<Boundary>>(elementBoundaries);
+        // Success
+        result.emplace(elementBoundaries, extractInnerBoundaries(clipResult));
       } catch (const std::runtime_error& e) {
         std::cout << "Trimming encountered problem: " << e.what() << "\n Element is ignored" << std::endl;
-        return std::nullopt;
       }
+      return result;
+    }
+    // TODO Make const
+    std::optional<std::vector<std::vector<Boundary>>> extractInnerBoundaries(const ClippingResult& clipResult) {
+      if (not clipResult.innerLoops.has_value())
+        return std::nullopt;
+
+      std::vector<std::vector<Boundary>> innerBoundaries;
+      innerBoundaries.resize(clipResult.innerLoops.value().loopIndices.size());
+
+      for (auto c = 0u; auto& loopIndex : clipResult.innerLoops.value().loopIndices) {
+        assert(loopIndex < trimData_->boundaryLoops.size());
+        innerBoundaries[c].reserve(trimData_->boundaryLoops[loopIndex].boundaries.size());
+        std::ranges::copy(trimData_->boundaryLoops[loopIndex].boundaries, std::back_inserter(innerBoundaries[c]));
+        ++c;
+      }
+
+      return std::make_optional(innerBoundaries);
     }
 
     bool findNextBoundary(FindNextBoundaryLoopState* state, std::vector<Boundary>& elementBoundaries) {
@@ -258,7 +291,8 @@ namespace Dune::IGA::Trim {
         }
         if (!(state->hasIntersectionPointOnEdgeNr(edge)))
           throw std::runtime_error(
-              "No next edge with an intersection Point found. Maybe the IP is on an edge, which is not yet implemented");
+              "No next edge with an intersection Point found. Maybe the IP is on an edge, which is not yet "
+              "implemented");
 
         // Set node for the next step
         state->currentNode      = node;
@@ -269,7 +303,8 @@ namespace Dune::IGA::Trim {
         auto findNextBoundaryResult
             = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
 
-        if (not findNextBoundaryResult.has_value()) throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
+        if (not findNextBoundaryResult.has_value())
+          throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
 
         auto [boundaryIndexThatHasIntersectionPoint, edgeIntersectResult] = findNextBoundaryResult.value();
         elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
@@ -307,7 +342,8 @@ namespace Dune::IGA::Trim {
         auto findNextBoundaryResult
             = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
 
-        if (not findNextBoundaryResult.has_value()) throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
+        if (not findNextBoundaryResult.has_value())
+          throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
 
         auto [boundaryIndexThatHasIntersectionPoint, edgeIntersectResult] = findNextBoundaryResult.value();
         elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
@@ -364,13 +400,13 @@ namespace Dune::IGA::Trim {
     static constexpr int maxIterations                  = 50;
 
     /// Returns the element corners of the tensorGrid in the IntegerDomain
-    std::vector<FieldVector<ctype, dim>> getElementCorners(int index) {
+    std::vector<FieldVector<intType, dim>> getElementCorners(int index) {
       auto geo = elementGeometries_[index];
 
       // The corners are sorted counter-clockwise to get a closed loop, also see top of this file for numbering
       return {geo.corner(0), geo.corner(1), geo.corner(3), geo.corner(2)};
     }
-    Clipper2Lib::Path<ctype> getElementEdges(int index) {
+    Clipper2Lib::Path<intType> getElementEdges(int index) {
       auto corners = getElementCorners(index);
       return getElementEdgesFromElementCorners(corners);
     }
@@ -383,9 +419,9 @@ namespace Dune::IGA::Trim {
       return dune_corners;
     }
 
-    std::optional<FindNextBoundaryResult> findBoundaryThatHasIntersectionPoint(
-        IntersectionPointMap* pointMapPtr, int edge, std::vector<IntPoint>& corners) {
-
+    std::optional<FindNextBoundaryResult> findBoundaryThatHasIntersectionPoint(IntersectionPointMap* pointMapPtr,
+                                                                               int edge,
+                                                                               std::vector<IntPoint>& corners) {
       auto edgeCurve               = boundaryForEdge(corners, edge);
       Point intersectionPointGuess = getNextIntersectionPointOnEdge(pointMapPtr, edge).first;
 
@@ -409,7 +445,6 @@ namespace Dune::IGA::Trim {
 
       return std::nullopt;
     }
-
 
     std::optional<std::vector<TraceCurveOutput>> traceCurve(FindNextBoundaryLoopState* state,
                                                             TraceCurveInput traceCurveInput) {
@@ -460,7 +495,8 @@ namespace Dune::IGA::Trim {
       // If neither start nor endpoint is in the element then traceCurve most likely made a mistake
       if (status == -1) return std::nullopt;
 
-      // TODO take into account orientation of curve -> Simplification possible test with kragarm_trim_circle3 with 0 refinement
+      // TODO take into account orientation of curve -> Simplification possible test with kragarm_trim_circle3 with 0
+      // refinement
 
       // Now we check if there is another boundary that begins at this point and trace this potential curve
       Point checkPoint      = (status == 1) ? endPoint : startPoint;
@@ -500,20 +536,17 @@ namespace Dune::IGA::Trim {
       return std::nullopt;
     }
 
-
-
-
     //////////////////
     /// Static Helpers
     /////////////////
 
-    static Clipper2Lib::Paths<ctype> getClip(TrimData* trimData) {
-      Clipper2Lib::Paths<ctype> clipPaths;
-      Clipper2Lib::Path<ctype> tempPath;
+    static Clipper2Lib::Paths<intType> getClip(TrimData* trimData) {
+      Clipper2Lib::Paths<intType> clipPaths;
+      Clipper2Lib::Path<intType> tempPath;
       for (auto& loop : trimData->boundaryLoops) {
         tempPath.clear();
         for (auto& boundary : loop.boundaries)
-          for (auto& point : boundary.path<ctype>(pathSamples, scale))
+          for (auto& point : boundary.path<intType>(pathSamples, scale))
             tempPath.push_back(point);
 
         // Sanitize Path, so we don't get duplicate intersection Points on corners
@@ -524,30 +557,38 @@ namespace Dune::IGA::Trim {
       return clipPaths;
     }
 
-    static ctype toIntDomain(double x) { return x * scaleFactor(); }
-    static FieldVector<ctype, 2> toIntDomain(FieldVector<double, 2> x) { return x * scaleFactor(); }
+    static intType toIntDomain(double x) { return x * scaleFactor(); }
+    static FieldVector<intType, 2> toIntDomain(FieldVector<double, 2> x) { return x * scaleFactor(); }
 
-    static double toFloatDomain(ctype x) { return x / scaleFactor(); }
-    static FieldVector<double, 2> toFloatDomain(FieldVector<ctype, 2> x) { return x / scaleFactor(); }
+    static double toFloatDomain(intType x) { return x / scaleFactor(); }
+    static FieldVector<double, 2> toFloatDomain(FieldVector<intType, 2> x) { return x / scaleFactor(); }
 
     static std::vector<Boundary> extractBoundaries(TrimData* trimData) {
       std::vector<Boundary> boundaries;
+      boundaries.reserve(trimData->numBoundaries());
+
       for (auto& loop : trimData->boundaryLoops) {
         std::ranges::copy(loop.boundaries, std::back_inserter(boundaries));
       }
       return boundaries;
     }
 
+    static inline double distance(const ClipperPoint p1, const ClipperPoint p2) {
+      return std::hypot(p1.x - p2.x, p1.y - p2.y);
+    }
 
-    static double distance(const ClipperPoint p1, const ClipperPoint p2) { return std::hypot(p1.x - p2.x, p1.y - p2.y); }
+    static inline double distance(const Point p1, const Point p2) { return std::hypot(p1[0] - p2[0], p1[1] - p2[1]); }
 
-    static double distance(const Point p1, const Point p2) { return std::hypot(p1[0] - p2[0], p1[1] - p2[1]); }
-
-    static bool samePoint(const IntPoint& a, const ClipperPoint& b) { return a == IntPoint{b.x, b.y}; }
+    static inline bool samePoint(const IntPoint& a, const ClipperPoint& b) { return a == IntPoint{b.x, b.y}; }
 
     static inline int getEdgeOrientation(const int edge) { return (edge == 0 || edge == 2) ? 0 : 1; }
 
     static inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
+
+    template <std::integral T>
+    static inline bool intCmpEq(T i1, T i2, T tol = 0) {
+      return std::abs(i1 - i2) <= tol;
+    }
 
     static std::array<Point, 2> curveStartEndPoint(const CurveGeometry& curve) {
       std::array<int, 2> indices{0, static_cast<int>(curve.patchData_->controlPoints.size()[0]) - 1};
@@ -624,9 +665,8 @@ namespace Dune::IGA::Trim {
       return {localResult, globalResult, true};
     }
 
-
-    static std::optional<TraceCurveResult> traceCurveImpl(IntersectionPointMap* pointMapPtr, CurveGeometry& curveToTrace,
-                                                   const int startEdge) {
+    static std::optional<TraceCurveResult> traceCurveImpl(IntersectionPointMap* pointMapPtr,
+                                                          CurveGeometry& curveToTrace, const int startEdge) {
       // Look through edges and determine the next Intersection Point (the IPs are sorted counter-clockwise)
 
       for (auto probes : {probesForStartingPoint, fallbackProbesForStartingPoint}) {
@@ -677,14 +717,14 @@ namespace Dune::IGA::Trim {
         });
     }
 
-    static bool pointInElement(const Point& point, std::vector<IntPoint>& corners) {
+    static bool pointInElement(const Point& point, const std::vector<IntPoint>& corners) {
       auto lowerLeft  = toFloatDomain(corners[0]);
       auto upperRight = toFloatDomain(corners[2]);
 
       return FloatCmp::gt(point[0], lowerLeft[0]) and FloatCmp::lt(point[0], upperRight[0])
              and FloatCmp::gt(point[1], lowerLeft[1]) and FloatCmp::lt(point[1], upperRight[1]);
     }
-    static bool pointInElementOrOnEdge(const Point& point, std::vector<IntPoint>& corners) {
+    static bool pointInElementOrOnEdge(const Point& point, const std::vector<IntPoint>& corners) {
       auto lowerLeft  = toFloatDomain(corners[0]);
       auto upperRight = toFloatDomain(corners[2]);
 
@@ -702,7 +742,8 @@ namespace Dune::IGA::Trim {
     }
 
     /// \brief Checks if a point p is on the line spanned by the points a and b within a given tolerance
-    static bool pointOnLine(const ClipperPoint& p, const ClipperPoint& a, const ClipperPoint& b, const double tol = tolerance) {
+    static bool pointOnLine(const ClipperPoint& p, const ClipperPoint& a, const ClipperPoint& b,
+                            const double tol = tolerance) {
       // https://stackoverflow.com/a/17693146
       return distance(a, p) + distance(b, p) == distance(a, b);
     }
@@ -721,13 +762,12 @@ namespace Dune::IGA::Trim {
       return std::make_pair(false, -1);
     }
 
-    static Clipper2Lib::Path<ctype> getElementEdgesFromElementCorners(const std::vector<IntPoint>& corners) {
-      Clipper2Lib::Path<ctype> edges;
+    static Clipper2Lib::Path<intType> getElementEdgesFromElementCorners(const std::vector<IntPoint>& corners) {
+      Clipper2Lib::Path<intType> edges;
       for (int i = 0; i < 4; ++i)
         edges.emplace_back(corners[i][0], corners[i][1]);
       return edges;
     }
-
 
     /////////////////
     /// Definition of Result Types
@@ -769,10 +809,15 @@ namespace Dune::IGA::Trim {
       IntersectionResult result;
     };
 
+    struct InnerLoops {
+      std::vector<int> loopIndices;
+    };
+
     struct ClippingResult {
       std::shared_ptr<IntersectionPointMap> pointMapPtr;
-      std::array<int, 4> edgeCounter;
-      std::array<int, 4> nodeCounter;
+      std::array<int, 4> edgeCounter{};
+      std::array<int, 4> nodeCounter{};
+      std::optional<InnerLoops> innerLoops{};
     };
 
     struct FindNextBoundaryLoopState {
@@ -804,12 +849,10 @@ namespace Dune::IGA::Trim {
             nodeCounter(_result.nodeCounter) {
         currentNode      = nodeToBegin;
         currentNodePoint = corners[currentNode];
-
       };
 
-      FindNextBoundaryLoopState() = delete;
-      FindNextBoundaryLoopState(const FindNextBoundaryLoopState& ) = delete;
-
+      FindNextBoundaryLoopState()                                 = delete;
+      FindNextBoundaryLoopState(const FindNextBoundaryLoopState&) = delete;
     };
   };
-}
+}  // namespace Dune::IGA::Trim

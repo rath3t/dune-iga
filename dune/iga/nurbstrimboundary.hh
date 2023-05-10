@@ -47,9 +47,8 @@ namespace Dune::IGA {
 
     explicit Boundary(const Point& a, const Point& b)
         : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
-      auto gt = [](auto x) { return x < 100; };
-      assert(std::ranges::all_of(a, gt));
-      assert(std::ranges::all_of(b, gt));
+      assert(std::ranges::all_of(a, [](auto x) { return x < 100; }));
+      assert(std::ranges::all_of(b, [](auto x) { return x < 100; }));
     }
 
     // Helper classes for construction of nurbsGeometry
@@ -120,6 +119,8 @@ namespace Dune::IGA {
     enum class Orientation { ClockWise, CounterClockWise };
     std::vector<Boundary> boundaries;
     Orientation orientation;
+
+    size_t size() const {return boundaries.size();};
   };
 
   class TrimData {
@@ -139,6 +140,11 @@ namespace Dune::IGA {
         auto sameBoundary = [&_boundary](auto checkBoundary) { return _boundary.endPoints == checkBoundary.endPoints; };
         if (std::ranges::find_if(loop.boundaries, sameBoundary) != loop.boundaries.end()) return loop.orientation;
       }
+    }
+    [[nodiscard]] size_t numBoundaries() const {
+      return std::accumulate(boundaryLoops.begin(), boundaryLoops.end(), 0, [](size_t rhs, const auto& loop) {
+        return rhs + loop.size();
+      });
     }
 
    private:

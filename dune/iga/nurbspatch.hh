@@ -12,7 +12,7 @@
 #include <ranges>
 #include <type_traits>
 
-#include "dune/iga/nurbstrimfunctionality.hh"
+#include "dune/iga/nurbstrimmer.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/concepts.hh>
@@ -701,7 +701,7 @@ namespace Dune::IGA {
 
     // Trim Info gets computed for dim == 2 && dimworld == 2
     void computeElementTrimInfo()
-      requires(dim == 2 && dimworld == 2)
+      requires(dim == 2)
     {
       if (!trimData_.has_value()) {
         prepareForNoTrim();
@@ -714,7 +714,7 @@ namespace Dune::IGA {
 
       using Trimmer = Trim::NURBSPatchTrimmer<>;
 
-      auto paraGrid               = parameterSpaceGrid<Trimmer::ctype>(Trimmer::scale);
+      auto paraGrid               = parameterSpaceGrid<Trimmer::intType>(Trimmer::scale);
       auto parameterSpaceGridView = paraGrid->leafGridView();
 
       Trimmer trimmer(parameterSpaceGridView, trimData_.value().get());
@@ -724,14 +724,14 @@ namespace Dune::IGA {
         DirectIndex directIndex = indexSet.index(element);
         RealIndex realIndex     = n_fullElement + n_trimmedElement;
 
-        auto [trimFlag, boundariesOrCorners] = trimmer.trimElement(directIndex);
+        auto [trimFlag, boundaries] = trimmer.trimElement(directIndex);
         trimFlags[directIndex] = trimFlag;
 
         if (trimFlag == ElementTrimFlag::trimmed) {
           ++n_trimmedElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                               std::get<0>(boundariesOrCorners), scalingAndOffset(directIndex))});
+                                                               boundaries.value(), scalingAndOffset(directIndex))});
         }
         else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;

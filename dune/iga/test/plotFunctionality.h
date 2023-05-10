@@ -7,11 +7,11 @@
 #include <clipper2/clipper.h>
 #include <matplot/matplot.h>
 #include <string>
+
+#include <dune/grid/io/file/vtk.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/nurbstrimfunctionality.hh>
-#include <dune/grid/io/file/vtk.hh>
+#include <dune/iga/nurbstrimmer.hh>
 
 namespace Plot {
 
@@ -161,12 +161,12 @@ void plotGridViews(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std:
     Plot::plotGridView(patchGridView, "plot"+ postfix +"/grid");
 }
 
-
-void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+template <int dimworld>
+void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, dimworld>>& grid, std::string&& postfix = "") {
     if (!(grid->trimData_.has_value()))
       return;
 
-    auto geometry = Dune::IGA::NURBSPatchGeometry<2, 2>(std::make_shared<Dune::IGA::NURBSPatchData<2, 2>>(grid->currentPatchRepresentation_));
+    auto geometry = Dune::IGA::NURBSPatchGeometry<2, dimworld>(std::make_shared<Dune::IGA::NURBSPatchData<2, dimworld>>(grid->currentPatchRepresentation_));
     auto boundarieLoops = grid->trimData_.value();
 
     Clipper2Lib::PathsD transformedPaths;
@@ -196,8 +196,8 @@ void plotParametricGridAndPhysicalGrid(const std::shared_ptr<Dune::IGA::NURBSGri
 
 }
 
-
-void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, 2>>& grid, std::string&& postfix = "") {
+template <int dimworld>
+void plotEveryReconstructedGrid(const std::shared_ptr<Dune::IGA::NURBSGrid<2, dimworld>>& grid, std::string&& postfix = "") {
   for (int i = 0; auto& ele : elements(grid->leafGridView())) {
       if (ele.impl().getTrimFlag() == Dune::IGA::ElementTrimFlag::trimmed) {
         auto gV = grid->getPatch().getTrimmedElementRepresentation(i)->gridView();

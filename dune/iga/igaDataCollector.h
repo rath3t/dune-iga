@@ -27,7 +27,11 @@ namespace Dune::Vtk {
 
    public:
     explicit DiscontinuousIgaDataCollector(GridView const& gridView, int subSample = 0)
-        : Super(gridView), subSample_(subSample) {}
+        : Super(gridView) {
+      for (auto element : elements(gridView_)) {
+        element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSample);
+      }
+    }
 
     /// Construct the point sets
     void updateImpl() {
@@ -41,7 +45,7 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto subGridView               = elementRepr->refinedGridView(subSample_);
+        auto subGridView               = elementRepr->gridView();
         auto verticesInSubGrid         = subGridView.size(dim);
 
         numCells_ += subGridView.size(0);
@@ -78,7 +82,7 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto subGridView               = elementRepr->refinedGridView(subSample_);
+        auto subGridView               = elementRepr->gridView();
 
         const auto& trimmedIndexSet    = subGridView.indexSet();
         for (auto subGridVertex : vertices(subGridView)) {
@@ -117,7 +121,7 @@ namespace Dune::Vtk {
         const std::size_t elementId = indexSet.index(ele);
 
         auto elementRepr               = ele.impl().trimmedElementRepresentation();
-        auto subGridView               = elementRepr->refinedGridView(subSample_);
+        auto subGridView               = elementRepr->gridView();
 
         const auto& subGridIndexSet    = subGridView.indexSet();
         for (auto subGridElement : elements(subGridView)) {
@@ -154,7 +158,7 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr               = element.impl().trimmedElementRepresentation();
-        auto subGridView               = elementRepr->refinedGridView(subSample_);
+        auto subGridView               = elementRepr->gridView();
 
         const auto& subGridIndexSet    = subGridView.indexSet();
         for (auto subGridVertex : vertices(subGridView)) {
@@ -184,7 +188,7 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr            = element.impl().trimmedElementRepresentation();
-        auto subGridView        = elementRepr->refinedGridView(subSample_);
+        auto subGridView        = elementRepr->gridView();
         const auto& trimmedIndexSet = subGridView.indexSet();
 
         for (auto subGridElement : elements(subGridView)) {
@@ -200,7 +204,6 @@ namespace Dune::Vtk {
    protected:
     using Super::gridView_;
 
-    unsigned int subSample_;
     std::uint64_t numPoints_ = 0;
     std::uint64_t numCells_  = 0;
 

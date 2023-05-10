@@ -26,8 +26,13 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
   constexpr static int dim = GridView::dimension;
   typedef typename GridView::template Codim<0>::Entity Entity;
 
-  double evaluate(int comp, const Entity &e, const Dune::FieldVector<ctype, dim> &xi) const override {
+  double evaluate(int comp, const Entity& e, const Dune::FieldVector<ctype, dim>& xi) const override {
     auto index = indexSet.index(e);
+    return evaluateStressComponent(index, xi, comp);
+  }
+  double evaluate(int comp, int index, const Dune::FieldVector<ctype, dim>& xi) {
+    assert(index < fes_.size());
+    assert(comp < ncomps());
     return evaluateStressComponent(index, xi, comp);
   }
 
@@ -76,8 +81,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
     auto sigma = res_.getResult(Ikarus::ResultType::cauchyStress);
 
     if constexpr (comps == StressEvaluatorComponents::normalStress or
-                  comps == StressEvaluatorComponents::kirchhoff_moments or
-                  comps == StressEvaluatorComponents::RM_moments)
+                  comps == StressEvaluatorComponents::kirchhoff_moments)
       return sigma(comp, 0);
 
     if constexpr (comps == StressEvaluatorComponents::shearStress)

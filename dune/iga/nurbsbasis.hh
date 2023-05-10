@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "dune/grid/common/rangegenerators.hh"
-#include "dune/iga/nurbstrimfunctionality.hh"
+#include "dune/iga/nurbstrimmer.hh"
 #include <dune/common/diagonalmatrix.hh>
 #include <dune/common/dynmatrix.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
