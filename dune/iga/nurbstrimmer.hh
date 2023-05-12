@@ -298,21 +298,34 @@ namespace Dune::IGA::Trim {
         state->currentNode      = node;
         state->currentNodePoint = toFloatDomain(state->corners[node]);
 
-        /// Find the intersection Point on the current Edge
+        int boundaryIndexThatHasIntersectionPoint;
+        IntersectionResult edgeIntersectResult;
 
-        auto findNextBoundaryResult
-            = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
+        if (node == edge) {
+          /// Find the intersection Point on the current Edge
+          auto findNextBoundaryResult
+              = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
 
-        if (not findNextBoundaryResult.has_value())
-          throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
+          if (not findNextBoundaryResult.has_value())
+            throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
 
-        auto [boundaryIndexThatHasIntersectionPoint, edgeIntersectResult] = findNextBoundaryResult.value();
-        elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
+          boundaryIndexThatHasIntersectionPoint = findNextBoundaryResult.value().edge;
+          edgeIntersectResult = findNextBoundaryResult.value().result;
+
+          elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
+        } else  {
+          // Startpoint is node -> find boundary
+          auto findNextBoundaryResult = findNextBoundaryThatHasIntersectionPointOnNode(state, node);
+
+          if (not findNextBoundaryResult.has_value())
+            throw std::runtime_error("findNextBoundaryThatHasIntersectionPointOnNode not successful");
+
+          boundaryIndexThatHasIntersectionPoint = findNextBoundaryResult.value().edge;
+          edgeIntersectResult = findNextBoundaryResult.value().result;
+        }
 
         /// Curve Tracing
-
-        auto traceResult
-            = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, edge});
+        auto traceResult = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, edge});
 
         if (not traceResult.has_value()) throw std::runtime_error("tracCurve not successful");
 
@@ -322,15 +335,19 @@ namespace Dune::IGA::Trim {
           elementBoundaries.push_back(newBoundary);
         }
 
-        // Now we assume we are on an edge (has to be atm)
-        state->isCurrentlyOnNode = false;
-        state->currentNodePoint  = traceResult.value().back().intersectionPoint;
-        state->edgeTheLoopIsOn   = traceResult.value().back().foundOnEdge;
+        auto lastResult = traceResult.value().back();
+        state->isCurrentlyOnNode = lastResult.onNode;
+        state->currentNodePoint  = lastResult.intersectionPoint;
+
+        if (lastResult.onNode)
+          state->currentNode = lastResult.edge;
+        else
+          state->edgeTheLoopIsOn   = lastResult.edge;
 
         state->moreIntersectionPointsOnEdge
             = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
 
-        return false;
+        return lastResult.onNode ? state->currentNode == state->nodeToBegin : false;
       }
       // There are two possibilities when the loop is not on a node, but on an edge
       // 1. we have more than one intersectionPoint on this edge (here) or not (later)
@@ -361,15 +378,19 @@ namespace Dune::IGA::Trim {
           elementBoundaries.push_back(newBoundary);
         }
 
-        // Now we assume we are on an edge (has to be atm)
-        state->isCurrentlyOnNode = false;
-        state->currentNodePoint  = traceResult.value().back().intersectionPoint;
-        state->edgeTheLoopIsOn   = traceResult.value().back().foundOnEdge;
+        auto lastResult = traceResult.value().back();
+        state->isCurrentlyOnNode = lastResult.onNode;
+        state->currentNodePoint  = lastResult.intersectionPoint;
+
+        if (lastResult.onNode)
+          state->currentNode = lastResult.edge;
+        else
+          state->edgeTheLoopIsOn   = lastResult.edge;
 
         state->moreIntersectionPointsOnEdge
             = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
 
-        return false;
+        return lastResult.onNode ? state->currentNode == state->nodeToBegin : false;
       }
 
       if (!(state->isCurrentlyOnNode) && !(state->moreIntersectionPointsOnEdge)) {
@@ -384,7 +405,7 @@ namespace Dune::IGA::Trim {
         state->currentNodePoint = toFloatDomain(state->corners[node]);
         state->edgeTheLoopIsOn  = -1;
 
-        return (node == state->nodeToBegin);
+        return node == state->nodeToBegin;
       }
       __builtin_unreachable();
     }
@@ -445,6 +466,22 @@ namespace Dune::IGA::Trim {
 
       return std::nullopt;
     }
+    std::optional<FindNextBoundaryResult> findNextBoundaryThatHasIntersectionPointOnNode(FindNextBoundaryLoopState* state,
+                                                                                        int node) {
+      auto nodeCounter = state->nodeCounter;
+      if (nodeCounter[node]  != 1)
+        return std::nullopt;
+
+      Point intersectionPointGuess = toFloatDomain(state->corners[node]);
+      for (int i = 0; auto& boundary : globalBoundaries_) {
+        auto result = newtonRaphson(boundary.nurbsGeometry, intersectionPointGuess, 50);
+
+        if (result.found)
+          return FindNextBoundaryResult(i, result);
+        ++i;
+      }
+      return std::nullopt;
+    }
 
     std::optional<std::vector<TraceCurveOutput>> traceCurve(FindNextBoundaryLoopState* state,
                                                             TraceCurveInput traceCurveInput) {
@@ -455,34 +492,34 @@ namespace Dune::IGA::Trim {
       // point and that point is in the element
       // TODO: Get rid of initializer lists
       if (Dune::FloatCmp::eq(startPoint, endPoint) && pointInElement(startPoint, state->corners)) {
-        auto traceCurveResult = traceCurveImpl(state->pointMapPtr.get(), curveToTrace, traceCurveInput.startEdge);
+        auto traceCurveResult = traceCurveImpl(state, curveToTrace, traceCurveInput.startEdge);
         if (traceCurveResult.has_value())
           return std::make_optional<std::vector<TraceCurveOutput>>(
               {{traceCurveInput.boundaryIdx, traceCurveInput.startU, curveToTrace.domain()[0].back(),
-                traceCurveResult->intersectionPoint, -1},
+                traceCurveResult->intersectionPoint, -1, false},
                {traceCurveInput.boundaryIdx, curveToTrace.domain()[0].front(), traceCurveResult->intersectU,
-                traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}});
+                traceCurveResult->intersectionPoint, traceCurveResult->edge, false}});
         else
           return std::nullopt;
       }
       // ... or the point is on an edge, even nastier
       if (Dune::FloatCmp::eq(startPoint, endPoint) && pointInElementOrOnEdge(startPoint, state->corners)) {
         if (Dune::FloatCmp::ne(curveToTrace(traceCurveInput.startU), startPoint)) {
-          auto traceCurveResult = traceCurveImpl(state->pointMapPtr.get(), curveToTrace, traceCurveInput.startEdge);
+          auto traceCurveResult = traceCurveImpl(state, curveToTrace, traceCurveInput.startEdge);
           if (traceCurveResult.has_value())
             return std::make_optional<std::vector<TraceCurveOutput>>(
                 {{traceCurveInput.boundaryIdx, traceCurveInput.startU, curveToTrace.domain()[0].back(),
-                  traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}});
+                  traceCurveResult->intersectionPoint, traceCurveResult->edge, false}});
         }
       }
 
       // Check the boundary that was given in traceInput
-      auto traceCurveResult = traceCurveImpl(state->pointMapPtr.get(), curveToTrace, traceCurveInput.startEdge);
+      auto traceCurveResult = traceCurveImpl(state, curveToTrace, traceCurveInput.startEdge);
 
       if (traceCurveResult.has_value())
         return std::make_optional<std::vector<TraceCurveOutput>>(
             {{traceCurveInput.boundaryIdx, traceCurveInput.startU, traceCurveResult->intersectU,
-              traceCurveResult->intersectionPoint, traceCurveResult->foundOnEdge}});
+              traceCurveResult->intersectionPoint, traceCurveResult->edge, traceCurveResult.value().onNode}});
 
       // Now check if the startPoint or endPoint of the curve is in the element
       int status = -1;  // -1 means not found, 0 means startPoint, 1 means endPoint
@@ -522,15 +559,15 @@ namespace Dune::IGA::Trim {
       if (it != globalBoundaries_.end()) {
         int newBoundaryIdx     = static_cast<int>(std::ranges::distance(globalBoundaries_.begin(), it));
         auto curveToTrace2     = globalBoundaries_[newBoundaryIdx].nurbsGeometry;
-        auto traceCurveResult2 = traceCurveImpl(state->pointMapPtr.get(), curveToTrace2, traceCurveInput.startEdge);
+        auto traceCurveResult2 = traceCurveImpl(state, curveToTrace2, traceCurveInput.startEdge);
 
         assert(Dune::FloatCmp::eq(curveToTrace(endUOfCurve1), curveToTrace2(startUOfCurve2), 1e-8));
 
         if (traceCurveResult2.has_value())
           return std::make_optional<std::vector<TraceCurveOutput>>(
-              {{traceCurveInput.boundaryIdx, traceCurveInput.startU, endUOfCurve1, checkPoint, -1},
+              {{traceCurveInput.boundaryIdx, traceCurveInput.startU, endUOfCurve1, checkPoint, -1, false},
                {newBoundaryIdx, startUOfCurve2, traceCurveResult2->intersectU, traceCurveResult2->intersectionPoint,
-                traceCurveResult2->foundOnEdge}});
+                traceCurveResult2->edge, false}});
       }
 
       return std::nullopt;
@@ -558,10 +595,10 @@ namespace Dune::IGA::Trim {
     }
 
     static intType toIntDomain(double x) { return x * scaleFactor(); }
-    static FieldVector<intType, 2> toIntDomain(FieldVector<double, 2> x) { return x * scaleFactor(); }
+    static FieldVector<intType, 2> toIntDomain(const FieldVector<double, 2>& x) { return x * scaleFactor(); }
 
     static double toFloatDomain(intType x) { return x / scaleFactor(); }
-    static FieldVector<double, 2> toFloatDomain(FieldVector<intType, 2> x) { return x / scaleFactor(); }
+    static FieldVector<double, 2> toFloatDomain(const FieldVector<intType, 2>&  x) { return x / scaleFactor(); }
 
     static std::vector<Boundary> extractBoundaries(TrimData* trimData) {
       std::vector<Boundary> boundaries;
@@ -665,21 +702,28 @@ namespace Dune::IGA::Trim {
       return {localResult, globalResult, true};
     }
 
-    static std::optional<TraceCurveResult> traceCurveImpl(IntersectionPointMap* pointMapPtr,
+    static std::optional<TraceCurveResult> traceCurveImpl(FindNextBoundaryLoopState* state,
                                                           CurveGeometry& curveToTrace, const int startEdge) {
       // Look through edges and determine the next Intersection Point (the IPs are sorted counter-clockwise)
-
+      auto pointMapPtr = state->pointMapPtr.get();
       for (auto probes : {probesForStartingPoint, fallbackProbesForStartingPoint}) {
         for (int i = 1; i < 5; ++i) {
-          auto currentEdge                               = nextEntityIdx(startEdge, i);
-          auto [intersectionPoint, hasIntersectionPoint] = getNextIntersectionPointOnEdge(pointMapPtr, currentEdge);
+          auto entityIdx                                 = nextEntityIdx(startEdge, i);
+          auto [intersectionPoint, hasIntersectionPoint] = getNextIntersectionPointOnEdge(pointMapPtr, entityIdx);
           if (hasIntersectionPoint) {
             // Check if the curveToTrace goes through the intersection point
             auto [localResult, globalResult, found] = newtonRaphson(curveToTrace, intersectionPoint, probes);
             if (found) {
-              markIntersectionPointAsVisited(pointMapPtr, currentEdge, intersectionPoint);
-              return std::make_optional<TraceCurveResult>({localResult, globalResult, currentEdge});
+              markIntersectionPointAsVisited(pointMapPtr, entityIdx, intersectionPoint);
+              return std::make_optional<TraceCurveResult>({localResult, globalResult, entityIdx, false});
             }
+          }
+          // It may also be on the corresponding Node
+          if (state->nodeCounter[entityIdx] > 0 and entityIdx != state->currentNode) {
+            auto nodePoint = toFloatDomain(state->corners[entityIdx]);
+            auto [localResult, globalResult, found] = newtonRaphson(curveToTrace, nodePoint, probes);
+            if (found)
+              return std::make_optional<TraceCurveResult>({localResult, globalResult, entityIdx, true});
           }
         }
       }
@@ -783,12 +827,14 @@ namespace Dune::IGA::Trim {
       double beginU{};
       double intersectU{};
       Point intersectionPoint;
-      int foundOnEdge{};
+      int edge{};
+      bool onNode{};
     };
     struct TraceCurveResult {
       double intersectU{};
       Point intersectionPoint;
-      int foundOnEdge{};
+      int edge{};
+      bool onNode = false;
     };
     struct IntersectionPoint {
       Point point;

@@ -24,10 +24,11 @@
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
 
 #include "igaHelpers.h"
 #include "linearElasticTrimmed.h"
-#include "stressEvaluator.h"
+#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
 #include "timer.h"
 #include "kirchhoffPlate.hh"
 
@@ -198,43 +199,6 @@ int main(int argc, char **argv) {
   auto forceGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
 
-  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
-  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
-
-  vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-  vtkWriter.addPointData(forceGlobalFunc,
-                         Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
-
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-
-
   // Analytical solution
   auto mapToRange = []<std::floating_point T>(T value, T inputMin, T inputMax, T outputMin, T outputMax) -> T {
     return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
@@ -261,24 +225,129 @@ int main(int argc, char **argv) {
   double Tx = 1;
   double R = 0.3;
 
+
   auto analyticalSolution = [&](const auto& pos) -> Dune::FieldVector<double, 3>{
-      auto [r, theta] = toPolar(pos);
+    auto [r, theta] = toPolar(pos);
 
-      auto th  = Tx / 2;
-      auto rr2 = std::pow(R, 2) / std::pow(r, 2);
-      auto rr4 = std::pow(R, 4) / std::pow(r, 4);
-      auto cost = std::cos(theta);
-      auto sint = std::sin(theta);
+    auto th  = Tx / 2;
+    auto rr2 = std::pow(R, 2) / std::pow(r, 2);
+    auto rr4 = std::pow(R, 4) / std::pow(r, 4);
+    auto cos2t = std::cos(2 * theta);
+    auto sin2t = std::sin(2 * theta);
 
-      Dune::FieldVector<double, 3> res;
-      res[0] = th * (1 - rr2) + th * (1 + 3 * rr4 - 4 * rr2) * cost;
-      res[1] = th * (1 + rr2) - th * (1 + 3 * rr4) * cost;
-      res[2] = - th * (1 - 3 * rr4 + 2 * rr2) * sint;
+    Dune::FieldVector<double, 3> sigma_thetar;
+    sigma_thetar[0] = th * (1 - rr2) + th * (1 + 3 * rr4 - 4 * rr2) * cos2t;
+    sigma_thetar[1] = th * (1 + rr2) - th * (1 + 3 * rr4) * cos2t;
+    sigma_thetar[2] = - th * (1 - 3 * rr4 + 2 * rr2) * sin2t;
 
-      return res;
+    return sigma_thetar;
   };
 
-  auto analyticalSolutionFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution, gridView);
+  auto coordinateTransform = [&](const Dune::FieldVector<double, 3>& stress, double theta) -> Dune::FieldVector<double, 3> {
+    auto cos2t = std::cos(2 * theta);
+    auto sin2t = std::sin(2 * theta);
+
+    const auto s_x = stress[0];
+    const auto s_y = stress[1];
+    const auto s_xy = stress[2];
+
+    auto hpl = 0.5 * (s_x + s_y);
+    auto hmi = 0.5 * (s_x - s_y);
+
+    Dune::FieldVector<double, 3> sigma_transformed;
+    sigma_transformed[0] = hpl + hmi * cos2t + s_xy * sin2t;
+    sigma_transformed[1] = hpl - hmi * cos2t - s_xy * sin2t;
+    sigma_transformed[2] = - hmi  * sin2t + s_xy * cos2t;
+
+    return sigma_transformed;
+  };
+
+  auto analyticalSolutionBackTransformed = [&](const auto& pos) -> Dune::FieldVector<double, 3> {
+    auto sigma_thetar = analyticalSolution(pos);
+
+    auto [r, theta] = toPolar(pos);
+    theta *= -1;
+    return coordinateTransform(sigma_thetar, theta);
+  };
+
+  using namespace Dune::Functions;
+
+
+  auto allSigmas = [](const auto& sigma) {
+    Dune::FieldVector<double, 3> res;
+    res[0] = sigma(0, 0);
+    res[1] = sigma(1, 0);
+    res[2] = sigma(2, 0);
+    return res;
+  };
+
+  auto localStress = localFunction(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::user_function>>(
+          gridView, &fes, D_Glob, allSigmas, "all_sigmas", lambdaLoad)));
+
+  auto analyticalSolutionFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolutionBackTransformed, gridView);
+  auto localStressAnalytic = localFunction(analyticalSolutionFunction);
+
+  double l2_error = 0.0;
+  for (auto& ele : elements(gridView)) {
+    localStress.bind(ele);
+    localStressAnalytic.bind(ele);
+
+    auto center = ele.geometry().center();
+    if (center[0] < 10 and center[1] < 1)
+      continue;
+
+    const auto rule = ele.impl().getQuadratureRule();
+
+    for (auto& gp : rule) {
+      const auto stress_ana = localStressAnalytic(gp.position());
+      const auto stress_fe = localStress(gp.position());
+
+      l2_error += Dune::power(stress_ana[0] - stress_fe[0], 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+    }
+  }
+  spdlog::info("l2 error: {}", l2_error);
+
+
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
+  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
+
+  vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+  vtkWriter.addPointData(forceGlobalFunc,
+                         Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
+          gridView, &fes, D_Glob, lambdaLoad)));
+
+//  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+//
+//  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+//
+//  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+
+//  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+//  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+//  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+//  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+//      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
+//          gridView, &fes, D_Glob, lambdaLoad)));
+
+
+
+
   vtkWriter.addPointData(analyticalSolutionFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
 
 

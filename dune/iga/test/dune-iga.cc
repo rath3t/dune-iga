@@ -1923,6 +1923,24 @@ auto test1Hole1Element() {
   return t;
 }
 
+auto testQuarterPlate() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra");
+  grid->globalRefine(3);
+
+  Plot::plotParametricGridAndPhysicalGrid(grid, "_quarter");
+  Plot::plotEveryReconstructedGrid(grid, "_quarter");
+
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(grid->leafGridView());
+  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Vtk::FormatTypes::ASCII);
+
+  vtkWriter.write("plot_quarter/grid");
+
+
+  return t;
+}
+
 auto testShell() {
   TestSuite t;
   std::shared_ptr<NURBSGrid<2, 3>> grid = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
@@ -1946,7 +1964,8 @@ int main(int argc, char** argv) try {
 
   //t.subTest(testIntegrationPoints());
   //t.subTest(test1Hole1Element());
-  t.subTest(testShell());
+//  t.subTest(testShell());
+  t.subTest(testQuarterPlate());
   //t.subTest(testIntegrationPoints());
   // t.subTest(test3HoleGeometry());
 

@@ -26,7 +26,7 @@
 
 #include "linearElasticTrimmed.h"
 #include "igaHelpers.h"
-#include "stressEvaluator.h"
+#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
 #include "timer.h"
 
 int main(int argc, char **argv) {

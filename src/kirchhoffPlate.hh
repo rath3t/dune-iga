@@ -65,6 +65,7 @@ namespace Ikarus {
 
   public:
     double calculateScalar(const FERequirementType& par) const {
+      std::cout << "Calculate Scalar\n";
       const auto& wGlobal = par.getGlobalSolution(Ikarus::FESolutions::displacement);
       const auto& lambda  = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto D        = constitutiveMatrix(Emodul, nu, thickness);

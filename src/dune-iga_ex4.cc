@@ -24,7 +24,7 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include "igaHelpers.h"
-#include "stressEvaluator.h"
+#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
 #include "timer.h"
 #include "kirchhoffPlate.hh"
 
@@ -33,7 +33,6 @@ int main(int argc, char **argv) {
 
   constexpr int gridDim  = 2;
   constexpr int worldDim = 2;
-  double lambdaLoad      = 1;
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
@@ -52,6 +51,8 @@ int main(int argc, char **argv) {
   const auto E  = materialParameters.get<double>("E");
   const auto nu = materialParameters.get<double>("nu");
   const auto thk = materialParameters.get<double>("thk");
+
+  double lambdaLoad      = 1 * std::pow(thk, 3);
 
   const int subsample = postProcessParameters.get<int>("subsample");
 

@@ -1,11 +1,11 @@
 [GridParameters]
-filename=kragarm_trim_circle.ibra
+filename=plate_quarter.ibra
 trim=1
-globalRefine=2
-u_refine = 1
+globalRefine=3
+u_refine = 0
 v_refine = 0
-u_degreeElevate=0
-v_degreeElevate=0
+u_degreeElevate=1
+v_degreeElevate=1
 
 
 [MaterialParameters]

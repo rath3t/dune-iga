@@ -6,13 +6,16 @@
 
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
-#include <ikarus/finiteElements/mechanics/linearElastic.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
 #include <ikarus/linearAlgebra/nonLinearOperator.hh>
 #include <ikarus/solver/linearSolver/linearSolver.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/functions/gridfunctions/gridviewfunction.hh>
+
 
 #include <dune/common/parametertreeparser.hh>
 #include <dune/iga/ibraReader.hh>
@@ -30,7 +33,7 @@ int main(int argc, char **argv) {
 
   constexpr int gridDim  = 2;
   constexpr int worldDim = 2;
-  double lambdaLoad      = 1;
+  double lambdaLoad      = 10;
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
@@ -76,13 +79,19 @@ int main(int argc, char **argv) {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
 
-  // Clamp the left boundary
   Ikarus::DirichletValues dirichletValues(basis.flat());
 
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
-    Dune::Functions::forEachUntrimmedBoundaryDOF(basis_, [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-      if (std::abs(intersection.geometry().center()[0]) < 1e-8) dirichletFlags[localView.index(localIndex)] = true;
+    Dune::Functions::forEachUntrimmedBoundaryDOF(
+        Dune::Functions::subspaceBasis(basis_, 1), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+          if (std::fabs(intersection.geometry().center()[1]) < 1e-8)
+            dirichletFlags[localView.index(localIndex)] = true;
     });
+    Dune::Functions::forEachUntrimmedBoundaryDOF(
+        Dune::Functions::subspaceBasis(basis_, 0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+          if (std::fabs(intersection.geometry().center()[0]) > 4 - 1e-8)
+            dirichletFlags[localView.index(localIndex)] = true;
+        });
   });
   spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs ",
                timer.stopTimer("basis").count(), dirichletValues.fixedDOFsize());
@@ -101,7 +110,7 @@ int main(int argc, char **argv) {
   /// neumann boundary load in horizontal direction
   auto neumannBoundaryLoad = [&](auto &globalCoord, auto &lamb) {
     Eigen::Vector2d F = Eigen::Vector2d::Zero();
-    F[1]              = -lamb;
+    F[0]              = -lamb;
     return F;
   };
 
@@ -109,7 +118,9 @@ int main(int argc, char **argv) {
 
   /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
-  auto neumannPredicate = [](auto &vertex) -> bool { return Dune::FloatCmp::eq<double>(vertex[0], 15); };
+  auto neumannPredicate = [](auto &vertex) -> bool {
+    return std::fabs(vertex[0]) < 1e-8;
+  };
   for (auto &&vertex : vertices(gridView)) {
     auto coords                             = vertex.geometry().corner(0);
     neumannVertices[indexSet.index(vertex)] = neumannPredicate(coords);
@@ -175,6 +186,112 @@ int main(int argc, char **argv) {
   auto forceGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
 
+
+  // Analytical solution
+  auto mapToRange = []<std::floating_point T>(T value, T inputMin, T inputMax, T outputMin, T outputMax) -> T {
+    return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
+  };
+
+  auto toPolar = [&](const auto& pos) -> std::pair<double, double> {
+    auto x = pos[0] - 4;
+    auto y = pos[1];
+
+    auto r = std::hypot(x, y);
+    auto theta = std::atan2(y, x);
+
+    auto pi = std::numbers::pi;
+    if (theta <= pi and theta > pi/2)
+      theta = mapToRange(theta, pi, pi/2, 0.0, pi/2);
+    else if (theta < 0 and theta > -pi/2)
+      theta *= -1;
+    else if (theta <= -pi/2 and theta >= -pi)
+      theta = mapToRange(theta, -pi, -pi/2, 0.0, pi/2);
+
+    return {r, theta};
+  };
+
+
+  double Tx = lambdaLoad;
+  double R = 1;
+
+  auto analyticalSolution = [&](const auto& pos) -> Dune::FieldVector<double, 3>{
+    auto [r, theta] = toPolar(pos);
+
+    auto th  = Tx / 2;
+    auto rr2 = std::pow(R, 2) / std::pow(r, 2);
+    auto rr4 = std::pow(R, 4) / std::pow(r, 4);
+    auto cos2t = std::cos(2 * theta);
+    auto sin2t = std::sin(2 * theta);
+
+    Dune::FieldVector<double, 3> sigma_thetar;
+    sigma_thetar[0] = th * (1 - rr2) + th * (1 + 3 * rr4 - 4 * rr2) * cos2t;
+    sigma_thetar[1] = th * (1 + rr2) - th * (1 + 3 * rr4) * cos2t;
+    sigma_thetar[2] = - th * (1 - 3 * rr4 + 2 * rr2) * sin2t;
+
+    return sigma_thetar;
+  };
+
+  auto coordinateTransform = [&](const Dune::FieldVector<double, 3>& stress, double theta) -> Dune::FieldVector<double, 3> {
+    auto cos2t = std::cos(2 * theta);
+    auto sin2t = std::sin(2 * theta);
+
+    const auto s_x = stress[0];
+    const auto s_y = stress[1];
+    const auto s_xy = stress[2];
+
+    auto hpl = 0.5 * (s_x + s_y);
+    auto hmi = 0.5 * (s_x - s_y);
+
+    Dune::FieldVector<double, 3> sigma_transformed;
+    sigma_transformed[0] = hpl + hmi * cos2t + s_xy * sin2t;
+    sigma_transformed[1] = hpl - hmi * cos2t - s_xy * sin2t;
+    sigma_transformed[2] = - hmi  * sin2t + s_xy * cos2t;
+
+    return sigma_transformed;
+  };
+
+  auto analyticalSolutionBackTransformed = [&](const auto& pos) -> Dune::FieldVector<double, 3> {
+    auto sigma_thetar = analyticalSolution(pos);
+
+    auto [r, theta] = toPolar(pos);
+    theta *= -1;
+    return coordinateTransform(sigma_thetar, theta);
+  };
+
+  using namespace Dune::Functions;
+
+
+  auto allSigmas = [](const auto& sigma) {
+    Dune::FieldVector<double, 3> res;
+    res[0] = sigma(0, 0);
+    res[1] = sigma(1, 0);
+    res[2] = sigma(2, 0);
+    return res;
+  };
+
+  auto localStress = localFunction(Dune::Vtk::Function<GridView>(
+      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::user_function>>(
+          gridView, &fes, D_Glob, allSigmas, "all_sigmas", lambdaLoad)));
+
+  auto analyticalSolutionFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolutionBackTransformed, gridView);
+  auto localStressAnalytic = localFunction(analyticalSolutionFunction);
+
+  double l2_error = 0.0;
+  for (auto& ele : elements(gridView)) {
+    localStress.bind(ele);
+    localStressAnalytic.bind(ele);
+
+    const auto rule = ele.impl().getQuadratureRule();
+
+    for (auto& gp : rule) {
+      const auto stress_ana = localStressAnalytic(gp.position());
+      const auto stress_fe = localStress(gp.position());
+
+      l2_error += Dune::power(stress_ana[0] - stress_fe[0], 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+    }
+  }
+  spdlog::info("l2 error: {}", l2_error);
+
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
@@ -182,18 +299,15 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
 
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
           gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
+
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
           gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::vonMises>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
-  vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::principalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
+
+  vtkWriter.addPointData(analyticalSolutionFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
 
   double totalForce = 0.0;
   for (auto &f : Fext)

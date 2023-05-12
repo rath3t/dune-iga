@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cassert>
-#include <map>
-#include <vector>
 
 #include "dune/grid/common/rangegenerators.hh"
 #include "dune/vtk/function.hh"
