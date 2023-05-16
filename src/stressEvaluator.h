@@ -7,6 +7,7 @@
 
 #include <dune/vtk/vtkwriter.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
+#include <dune/localfefunctions/eigenDuneTransformations.hh>
 
 enum class StressEvaluatorComponents {
   normalStress,
@@ -92,7 +93,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
   double evaluateStressComponent(int eleID, auto& xi, int comp) const {
 
     if (not (eleID == cachedIndex and Dune::FloatCmp::eq(xi, cachedXi))) {
-      fes_->at(eleID).calculateAt(resultRequirements_, {xi[0], xi[1]}, res_);
+      fes_->at(eleID).calculateAt(resultRequirements_, Dune::toEigen(xi), res_);
       sigma = res_.getResult(ResType);
 
       cachedIndex = eleID;

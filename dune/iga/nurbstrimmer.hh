@@ -341,13 +341,12 @@ namespace Dune::IGA::Trim {
 
         if (lastResult.onNode)
           state->currentNode = lastResult.edge;
-        else
+        else {
           state->edgeTheLoopIsOn   = lastResult.edge;
-
-        state->moreIntersectionPointsOnEdge
-            = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
-
-        return lastResult.onNode ? state->currentNode == state->nodeToBegin : false;
+          state->moreIntersectionPointsOnEdge
+              = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
+        }
+        return lastResult.onNode && state->currentNode == state->nodeToBegin;
       }
       // There are two possibilities when the loop is not on a node, but on an edge
       // 1. we have more than one intersectionPoint on this edge (here) or not (later)
@@ -384,13 +383,13 @@ namespace Dune::IGA::Trim {
 
         if (lastResult.onNode)
           state->currentNode = lastResult.edge;
-        else
+        else {
           state->edgeTheLoopIsOn   = lastResult.edge;
+          state->moreIntersectionPointsOnEdge
+              = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
+        }
 
-        state->moreIntersectionPointsOnEdge
-            = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
-
-        return lastResult.onNode ? state->currentNode == state->nodeToBegin : false;
+        return lastResult.onNode && state->currentNode == state->nodeToBegin;
       }
 
       if (!(state->isCurrentlyOnNode) && !(state->moreIntersectionPointsOnEdge)) {

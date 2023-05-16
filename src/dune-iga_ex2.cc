@@ -186,6 +186,12 @@ int main(int argc, char **argv) {
   auto forceGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
 
+  // Dirichlet Flag func
+  std::vector<int> flags(dirichletValues.size());
+  for (size_t i : std::views::iota(0u, dirichletValues.size()))
+    flags[i] = dirichletValues.isConstrained(i);
+  auto dirichletFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), flags);
+
 
   // Analytical solution
   auto mapToRange = []<std::floating_point T>(T value, T inputMin, T inputMax, T outputMin, T outputMax) -> T {
@@ -298,6 +304,8 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
+  vtkWriter.addPointData(dirichletFunc,
+                         Dune::VTK::FieldInfo("dirichlet BC", Dune::VTK::FieldInfo::Type::vector, 2));
 
   vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(

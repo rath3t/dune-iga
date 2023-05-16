@@ -1966,7 +1966,7 @@ int main(int argc, char** argv) try {
   //t.subTest(test1Hole1Element());
 //  t.subTest(testShell());
   t.subTest(testQuarterPlate());
-  //t.subTest(testIntegrationPoints());
+  t.subTest(testIntegrationPoints());
   // t.subTest(test3HoleGeometry());
 
   // generateGraphics("auxiliaryFiles/rund_for_foundation.ibra");

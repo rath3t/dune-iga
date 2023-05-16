@@ -6,17 +6,11 @@
 #ifndef DUNE_IGA_NURBSGRIDENTITY_HH
 #define DUNE_IGA_NURBSGRIDENTITY_HH
 
-#include "nurbsgridleafiterator.hh"
-#include "nurbsintersection.hh"
-
-#include <array>
-#include <bits/ranges_algo.h>
-#include <numeric>
-
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/gridenums.hh>
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <dune/iga/nurbsintersection.hh>
 
 /** \file
  * \brief The NURBSGridEntity class
@@ -124,7 +118,6 @@ namespace Dune::IGA {
       return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
     }
 
-    // TODO Rule as argument
     void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector,
                             const std::optional<int>& p_order = std::nullopt,
                             const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
@@ -169,17 +162,15 @@ namespace Dune::IGA {
           it->second += gp.weight();
       }
 
-      std::cout << "GP Before Deduplicating: " << vector.size() << "\n";
       vector.clear();
       for (const auto& [pos, weight] : uniquePoints) {
         vector.emplace_back(pos, weight);
       }
-      std::cout << "GP After Deduplicating: " << vector.size() << std::endl;
 
     }
-    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt) const {
+    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt, const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
       Dune::QuadratureRule<double, dim> rule;
-      fillQuadratureRule(rule, p_order);
+      fillQuadratureRule(rule, p_order, qt);
       return rule;
     }
 

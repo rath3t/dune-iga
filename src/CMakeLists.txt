@@ -6,6 +6,10 @@ add_executable("Example-1" dune-iga_ex1.cc)
 target_link_dune_default_libraries("Example-1")
 target_link_libraries(Example-1 PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
 
+add_executable("Example-1a" dune-iga_ex1a.cc)
+target_link_dune_default_libraries("Example-1a")
+target_link_libraries(Example-1a PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
+
 add_executable("Example-2" dune-iga_ex2.cc)
 target_link_dune_default_libraries("Example-2")
 target_link_libraries(Example-2 PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
