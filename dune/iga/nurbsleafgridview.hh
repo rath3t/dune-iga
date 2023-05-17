@@ -7,6 +7,8 @@
 
 #include <ranges>
 
+#include <dune/grid/common/datahandleif.hh>
+#include <dune/grid/common/gridenums.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
@@ -171,6 +173,10 @@ namespace Dune::IGA {
     }
 
     LeafIntersectionIterator iend(const typename Codim<0>::Entity &entity) const { return entity.impl().iend(level_); }
+
+    template <class DataHandleImp, class DataType>
+    void communicate([[maybe_unused]] CommDataHandleIF<DataHandleImp, DataType> &data,
+                     [[maybe_unused]] InterfaceType iftype, [[maybe_unused]] CommunicationDirection dir) const {}
 
     template <int cd, PartitionIteratorType piType>
     typename Codim<cd>::template Partition<piType>::LeafIterator begin() const {
