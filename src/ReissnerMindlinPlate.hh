@@ -32,8 +32,8 @@ namespace Ikarus {
     using FlatBasis              = typename Basis::FlatBasis;
     using BaseDisp               = PowerBasisFE<FlatBasis>;  // Handles globalIndices function
     using GlobalIndex            = typename PowerBasisFE<FlatBasis>::GlobalIndex;
-    using FERequirementType      = FErequirements<Eigen::VectorXd>;
-    using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
+    using FERequirementType      = FErequirements<>;
+    using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using LocalView              = typename FlatBasis::LocalView;
     using GridView               = typename FlatBasis::GridView;
 
@@ -156,7 +156,7 @@ namespace Ikarus {
       }
     }
 
-    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
       const auto& disp       = req.getGlobalSolution(Ikarus::FESolutions::displacement);
@@ -164,7 +164,6 @@ namespace Ikarus {
       auto& fe               = this->localView().tree().child(0).finiteElement();
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
-      auto gp                = toDune(local);
       Eigen::VectorXd local_disp;
       local_disp.setZero(this->localView().size());
 
@@ -176,16 +175,16 @@ namespace Ikarus {
           disp_counter++;
         }
 
-      const auto Jinv = geo.jacobianInverseTransposed(gp);
+      const auto Jinv = geo.jacobianInverseTransposed(local);
       std::vector<Dune::FieldMatrix<double, 1, 2>> referenceGradients;
-      localBasis.evaluateJacobian(gp, referenceGradients);
+      localBasis.evaluateJacobian(local, referenceGradients);
       std::vector<Dune::FieldVector<double, 2>> gradients(referenceGradients.size());
 
       for (size_t i = 0; i < gradients.size(); i++)
         Jinv.mv(referenceGradients[i][0], gradients[i]);
 
       std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
-      localBasis.evaluateFunction(gp, shapeFunctionValues);
+      localBasis.evaluateFunction(local, shapeFunctionValues);
 
       Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(shapeFunctionValues.size());
       Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(shapeFunctionValues.size());

@@ -7,7 +7,7 @@ foreach(_test ${TESTS})
   dune_add_test(SOURCES ${_test}.cc TIMEOUT 10000)
   target_compile_options(${_test} PRIVATE -g)
 
-  find_package(Matplot++ REQUIRED)
+#  find_package(Matplot++ REQUIRED)
 
   target_link_libraries(${_test} PRIVATE  PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp Matplot++::matplot)
 

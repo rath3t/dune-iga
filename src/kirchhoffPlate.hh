@@ -30,8 +30,8 @@ namespace Ikarus {
   public:
     using FlatBasis              = typename Basis::FlatBasis;
     using BaseDisp               = Ikarus::ScalarFieldFE<FlatBasis>;  // Handles globalIndices function
-    using FERequirementType      = FErequirements<Eigen::VectorXd>;
-    using ResultRequirementsType = ResultRequirements<Eigen::VectorXd>;
+    using FERequirementType      = FErequirements<>;
+    using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using LocalView              = typename FlatBasis::LocalView;
     using GridView               = typename FlatBasis::GridView;
 
@@ -245,7 +245,7 @@ namespace Ikarus {
       }
     }
 
-    void calculateAt(const ResultRequirementsType& req, const Eigen::Vector<double, Traits::mydim>& local,
+    void calculateAt(const ResultRequirementsType& req, const Dune::FieldVector<double, Traits::mydim>& local,
                      ResultTypeMap<double>& result) const {
       using namespace Dune::Indices;
       const auto& disp       = req.getGlobalSolution(Ikarus::FESolutions::displacement);
@@ -253,7 +253,6 @@ namespace Ikarus {
       auto& fe               = this->localView().tree().finiteElement();
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
-      auto gp                = toDune(local);
       Eigen::VectorXd local_disp;
       local_disp.setZero(this->localView().size());
 
@@ -267,7 +266,7 @@ namespace Ikarus {
       std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
       Eigen::Matrix2Xd dNdX;
       Eigen::Matrix3Xd ddNddX;
-      getShapeFunctionsAndDerivatives(gp, shapeFunctionValues, dNdX, ddNddX);
+      getShapeFunctionsAndDerivatives(local, shapeFunctionValues, dNdX, ddNddX);
       Eigen::MatrixXd bop;
       bop.setZero(3, fe.size());
       for (auto i = 0U; i < fe.size(); ++i) {

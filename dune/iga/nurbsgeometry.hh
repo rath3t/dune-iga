@@ -11,6 +11,7 @@
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/trimmedElementRepresentation.hh>
+#include <dune/iga/minima.hh>
 
 namespace Dune::IGA {
   namespace Impl {
@@ -133,24 +134,35 @@ namespace Dune::IGA {
      */
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
-      LocalCoordinate x     = LocalCoordinate(0.5);
-      LocalCoordinate dx{};
-      do {  // from multilinearGeometry
-        const GlobalCoordinate dglobal = (*this).global(x) - global;
-        MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
-        const bool invertible
-            = MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
+      if constexpr (mydimension==1)
+      {
+        auto dist=[&](auto&& u)
+        {
+          return 0.5*((*this).global(u) - global).two_norm2();
+        };
+        auto [x,fx]= brentFindMinimum(dist,patchData_->knotSpans[0].front(),patchData_->knotSpans[0].back(),tolerance);
+        return x;
+      }
+        else {
 
-        if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
-        x -= dx;
-        // if local is outside the maximum knot vector span bound, thus we clamp it to it and hope for convergence
-        for (int i = 0; i < mydim; ++i) {
-          if (Dune::FloatCmp::gt(x[i], patchData_->knotSpans[i].back())) x[i] = patchData_->knotSpans[i].back();
-          if (Dune::FloatCmp::lt(x[i], patchData_->knotSpans[i].front())) x[i] = patchData_->knotSpans[i].front();
+          LocalCoordinate x     = LocalCoordinate(0.5);
+          LocalCoordinate dx{};
+
+          do {  // from multilinearGeometry
+            const GlobalCoordinate dglobal = (*this).global(x) - global;
+            MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
+            const bool invertible
+                = MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
+
+            if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
+            x -= dx;
+            // if local is outside the maximum knot vector span bound, thus we clamp it to it and hope for convergence
+            for (int i = 0; i < mydim; ++i)
+              x[i] = std::clamp(x[i], patchData_->knotSpans[i].front(), patchData_->knotSpans[i].back());
+
+          } while (dx.two_norm2() > tolerance);
+          return x;
         }
-
-      } while (dx.two_norm2() > tolerance);
-      return x;
     }
 
     /** \brief compute the Jacobian transposed matrix

@@ -524,7 +524,7 @@ int main(int argc, char** argv) try {
 
   t.report();
 
-  return 0;
+  return t.exit();
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
 }

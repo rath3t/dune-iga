@@ -26,7 +26,7 @@
 
 #include "linearElasticTrimmed.h"
 #include "igaHelpers.h"
-#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
+#include "stressEvaluator.h"
 #include "timer.h"
 
 int main(int argc, char **argv) {
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
   /// Add the linear elastic 2D planar solid elements to the vector "fes"
   for (auto &element : elements(gridView)) {
     auto localView = basis.flat().localView();
-    fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   }
   /// Create a sparse assembler
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);

@@ -93,7 +93,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
   double evaluateStressComponent(int eleID, auto& xi, int comp) const {
 
     if (not (eleID == cachedIndex and Dune::FloatCmp::eq(xi, cachedXi))) {
-      fes_->at(eleID).calculateAt(resultRequirements_, Dune::toEigen(xi), res_);
+      fes_->at(eleID).calculateAt(resultRequirements_, xi, res_);
       sigma = res_.getResult(ResType);
 
       cachedIndex = eleID;
@@ -152,7 +152,7 @@ class StressEvaluator2D : public Dune::VTKFunction<GridView> {
   }
 
   const GridView::IndexSet& indexSet;
-  Ikarus::ResultRequirements<Eigen::VectorXd, double> resultRequirements_;
+  Ikarus::ResultRequirements<Ikarus::FErequirements<>> resultRequirements_;
   std::vector<ElementType>* fes_;
   mutable Ikarus::ResultTypeMap<double> res_;
   std::string user_name{};

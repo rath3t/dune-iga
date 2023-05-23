@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
   /// Add the linear elastic 2D planar solid elements to the vector "fes"
   for (auto &element : elements(gridView)) {
     auto localView = basis.flat().localView();
-    fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
   }
   /// Create a sparse assembler
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
@@ -283,7 +283,10 @@ int main(int argc, char **argv) {
 //  auto kappa = (3 - nu) / (1 + nu);
 //  auto G = E / (1 - 2 * nu);
 
+  auto kappa = (3 - nu) / (1 + nu);
+  auto G = E / (2 * (1 + nu));
 
+  auto factor = Tx * R / (8 * G);
 
   auto analyticalSolutionDisplacements = [&](const auto& pos) -> Dune::FieldVector<double, 2> {
     auto [r, theta] = toPolar(pos);

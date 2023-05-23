@@ -24,7 +24,7 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include "igaHelpers.h"
-#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
+#include "stressEvaluator.h"
 #include "timer.h"
 #include "kirchhoffPlate.hh"
 
