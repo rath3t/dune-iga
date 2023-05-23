@@ -568,15 +568,6 @@ namespace Dune::Functions {
           originalIndices_[directIndex].push_back(globalIdx);
         }
       }
-
-      //      // Print out
-      //      for (auto& [eleIdx, indices] : originalIndices_) {
-      //        std::cout << eleIdx << ": ";
-      //        for (auto& i : indices)
-      //          std::cout << i << " ";
-      //        std::cout << "\n";
-      //      }
-      //      std::cout << std::endl;
     }
 
     /// \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
@@ -584,7 +575,7 @@ namespace Dune::Functions {
     It indices(const Node& node, It it) const {
       const auto eleIdx = node.element_.impl().getDirectIndexInPatch();
       for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
-        auto globalIndex = indexMap.at(originalIndices_.at(eleIdx)[i]);
+        auto globalIndex = indexMap_.at(originalIndices_.at(eleIdx)[i]);
         *it              = {{globalIndex}};
       }
       return it;
@@ -592,26 +583,18 @@ namespace Dune::Functions {
     void prepareForTrim() {
       unsigned int n_ind_original = cachedSize_;
 
-      std::vector<size_type> indicesInTrim;
+      std::set<size_type> indicesInTrim;
       for (auto directIndex : std::views::iota(0, gridView_.impl().getPatch().originalSize(0))) {
         IGA::ElementTrimFlag trimFlag = gridView_.impl().getPatch().getTrimFlagForDirectIndex(directIndex);
         if (trimFlag != IGA::ElementTrimFlag::empty)
-          std::ranges::copy(originalIndices_.at(directIndex), std::back_inserter(indicesInTrim));
+          std::ranges::copy(originalIndices_.at(directIndex), std::inserter(indicesInTrim, indicesInTrim.begin()));
       }
-      std::vector<size_type> uniqueIndices;
-      std::ranges::unique_copy(indicesInTrim, std::back_inserter(uniqueIndices));
 
       unsigned int realIndexCounter = 0;
       for (unsigned int i = 0; i < n_ind_original; ++i) {
-        if (std::ranges::find(uniqueIndices, i) != uniqueIndices.end()) indexMap.emplace(i, realIndexCounter++);
+        if (std::ranges::find(indicesInTrim, i) != indicesInTrim.end()) indexMap_.emplace(i, realIndexCounter++);
       }
       cachedSize_ = realIndexCounter;
-
-      //      // Print out
-      //      std::cout << "Index Map:\n";
-      //      for (auto& [diri, rili] : indexMap)
-      //        std::cout << "D: " << diri << ", R: " << rili << "\n";
-      //      std::cout << std::endl;
     }
 
     [[nodiscard]] unsigned int computeOriginalSize() const {
@@ -708,7 +691,7 @@ namespace Dune::Functions {
     GridView gridView_;
     unsigned int cachedSize_ = std::numeric_limits<unsigned int>::signaling_NaN();
     std::map<DirectIndex, std::vector<size_type>> originalIndices_;
-    std::map<DirectIndex, RealIndex> indexMap;
+    std::map<DirectIndex, RealIndex> indexMap_;
   };
 
   template <typename GV>

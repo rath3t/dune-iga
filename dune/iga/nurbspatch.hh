@@ -413,7 +413,7 @@ namespace Dune::IGA {
       }
     }
 
-    /// \brief returns a bool if an error happened during processing the patch trim
+    /// \brief returns false if an error happened during processing the trim
     [[nodiscard]] bool reportTrimError() const { return not trimErrorFlag_; }
 
    private:
@@ -731,30 +731,27 @@ namespace Dune::IGA {
       constructSubEntityMaps<2>();
       constructSubEntityMaps<1>();
     }
-    // TODO Use std::set to get rid of unique copys, as well as in basis
     template <unsigned int codim>
       requires(codim == 2 || codim == 1) && (dim == 2)
     void constructSubEntityMaps() {
       int n_entities_original = originalSize(codim);
-      std::vector<DirectIndex> indicesOfEntityInTrim;
+      std::set<DirectIndex> indicesOfEntityInTrim;
 
       for (auto& [eleDirectIdx, trimInfo] : trimInfoMap) {
         for (int i = 0; i < 4; ++i) {
           if constexpr (codim == 2)
-            indicesOfEntityInTrim.push_back(getGlobalVertexIndexFromElementIndex(trimInfo.realIndex, i, true));
+            indicesOfEntityInTrim.insert(getGlobalVertexIndexFromElementIndex(trimInfo.realIndex, i, true));
           else
-            indicesOfEntityInTrim.push_back(getGlobalEdgeIndexFromElementIndex(trimInfo.realIndex, i, true));
+            indicesOfEntityInTrim.insert(getGlobalEdgeIndexFromElementIndex(trimInfo.realIndex, i, true));
         }
       }
-      std::vector<DirectIndex> uniqueEntityIndices;
-      std::ranges::unique_copy(indicesOfEntityInTrim, std::back_inserter(uniqueEntityIndices));
 
       unsigned int realIndexCounter = 0;
       auto& map                     = getEntityMap<codim>();
 
       for (auto i : std::views::iota(0, n_entities_original)) {
-        auto it = std::ranges::find(uniqueEntityIndices, i);
-        if (it != uniqueEntityIndices.end()) {
+        auto it = std::ranges::find(indicesOfEntityInTrim, i);
+        if (it != indicesOfEntityInTrim.end()) {
           map.push_back(i);
           ++realIndexCounter;
         }
@@ -765,8 +762,7 @@ namespace Dune::IGA {
     [[nodiscard]] std::set<RealIndex> boundarySegmentList() const
       requires(dim == 2)
     {
-      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for
-      // that as well
+      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it when the elements are created as well
       constexpr int noNeighbor = -1;
 
       auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
