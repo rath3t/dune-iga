@@ -478,7 +478,7 @@ namespace Dune::IGA::Trim {
       }
       return std::nullopt;
     }
-
+    // TODO: Get rid of initializer lists
     std::optional<std::vector<TraceCurveOutput>> traceCurve(FindNextBoundaryLoopState* state,
                                                             TraceCurveInput traceCurveInput) {
       CurveGeometry curveToTrace  = globalBoundaries_[traceCurveInput.boundaryIdx].nurbsGeometry;
@@ -486,7 +486,6 @@ namespace Dune::IGA::Trim {
 
       // There is an edge case where we have a closed curve (e.g. a circle) that has endPoint and startPoint at the same
       // point and that point is in the element
-      // TODO: Get rid of initializer lists
       if (Dune::FloatCmp::eq(startPoint, endPoint) && pointInElement(startPoint, state->corners)) {
         auto traceCurveResult = traceCurveImpl(state, curveToTrace, traceCurveInput.startEdge);
         if (traceCurveResult.has_value())
@@ -517,19 +516,17 @@ namespace Dune::IGA::Trim {
             {{traceCurveInput.boundaryIdx, traceCurveInput.startU, traceCurveResult->intersectU,
               traceCurveResult->intersectionPoint, traceCurveResult->edge, traceCurveResult.value().onNode}});
 
-      // Now check if the startPoint or endPoint of the curve is in the element
-      int status = -1;  // -1 means not found, 0 means startPoint, 1 means endPoint
+      // If this is unsuccessful the curve is split into two parametrisation
 
+      int status = -1;
+      // Now check if the startPoint or endPoint of the curve is in the element
       if (pointInElement(endPoint, state->corners))
         status = 1;
       else if (pointInElement(startPoint, state->corners))
         status = 0;
 
-      // If neither start nor endpoint is in the element then traceCurve most likely made a mistake
+      // If neither start nor endpoint is in the element then traceCurveImpl most likely made a mistake
       if (status == -1) return std::nullopt;
-
-      // TODO take into account orientation of curve -> Simplification possible test with kragarm_trim_circle3 with 0
-      // refinement
 
       // Now we check if there is another boundary that begins at this point and trace this potential curve
       Point checkPoint      = (status == 1) ? endPoint : startPoint;
@@ -668,7 +665,7 @@ namespace Dune::IGA::Trim {
       if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {lowU, start, true};
       if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {upperU, end, true};
 
-      // We assume that the intersectionPoint is in some definition exact and the corresponding u has to be found
+      // We assume that the intersectionPoint is "exactly" on the geometry, and the corresponding u has to be found
       Dune::FieldVector<double, 1> u{findGoodStartingPoint(curve, intersectionPoint, probes)};
       Dune::FieldVector<double, 1> du;
 
