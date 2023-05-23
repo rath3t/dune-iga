@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The dune-iga developers
 # mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-2.1-or-later
 
-set(TESTS dune-iga)
+set(TESTS gridTests trimmedGridTests)
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 foreach(_test ${TESTS})
   dune_add_test(SOURCES ${_test}.cc TIMEOUT 10000)

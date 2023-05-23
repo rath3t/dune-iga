@@ -8,9 +8,9 @@
 
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/gridenums.hh>
+#include <dune/iga/nurbsintersection.hh>
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <dune/iga/nurbsintersection.hh>
 
 /** \file
  * \brief The NURBSGridEntity class
@@ -113,13 +113,11 @@ namespace Dune::IGA {
       }
     }
 
-
     auto trimmedElementRepresentation() const {
       return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
     }
 
-    void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector,
-                            const std::optional<int>& p_order = std::nullopt,
+    void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector, const std::optional<int>& p_order = std::nullopt,
                             const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
       vector.clear();
       int order
@@ -134,7 +132,7 @@ namespace Dune::IGA {
 
           const auto rule = Dune::QuadratureRules<double, mydimension>::rule(subElement.type(), order, qt);
           for (auto ip : rule) {
-             auto globalInSpan = subElementGeo.global(ip.position());
+            auto globalInSpan = subElementGeo.global(ip.position());
             vector.emplace_back(globalInSpan, ip.weight() * subElementGeo.integrationElement(ip.position()));
           }
         }
@@ -144,9 +142,7 @@ namespace Dune::IGA {
         vector.insert(vector.end(), rule.begin(), rule.end());
       }
 
-
-      if (qt != QuadratureType::Enum::GaussLobatto)
-        return;
+      if (qt != QuadratureType::Enum::GaussLobatto) return;
       struct Comparator {
         bool operator()(const Dune::FieldVector<double, 2>& p1, const Dune::FieldVector<double, 2>& p2) const {
           if (p1[0] < p2[0]) return true;
@@ -156,24 +152,23 @@ namespace Dune::IGA {
       };
       std::map<Dune::FieldVector<double, 2>, double, Comparator> uniquePoints;
 
-      for (const auto& gp: vector) {
-        auto [it, success]  = uniquePoints.try_emplace(gp.position(), gp.weight());
-        if (not success)
-          it->second += gp.weight();
+      for (const auto& gp : vector) {
+        auto [it, success] = uniquePoints.try_emplace(gp.position(), gp.weight());
+        if (not success) it->second += gp.weight();
       }
 
       vector.clear();
       for (const auto& [pos, weight] : uniquePoints) {
         vector.emplace_back(pos, weight);
       }
-
     }
-    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt, const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
+    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
+                                                                      const QuadratureType::Enum qt
+                                                                      = QuadratureType::GaussLegendre) const {
       Dune::QuadratureRule<double, dim> rule;
       fillQuadratureRule(rule, p_order, qt);
       return rule;
     }
-
 
     //! Geometry of this entity
     typename GridImpl::Traits::template Codim<0>::Geometry geometry() const {
@@ -199,13 +194,12 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] bool hasBoundaryIntersections() const {
-      return std::ranges::any_of(*intersections_, [](const Intersection& intersection){
-        return intersection.boundary();
-      });
+      return std::ranges::any_of(*intersections_,
+                                 [](const Intersection& intersection) { return intersection.boundary(); });
     }
 
     [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
-    [[nodiscard]] bool isTrimmed() const { return trimFlag== ElementTrimFlag::trimmed; }
+    [[nodiscard]] bool isTrimmed() const { return trimFlag == ElementTrimFlag::trimmed; }
 
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {

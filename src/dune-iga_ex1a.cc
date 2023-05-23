@@ -283,10 +283,7 @@ int main(int argc, char **argv) {
 //  auto kappa = (3 - nu) / (1 + nu);
 //  auto G = E / (1 - 2 * nu);
 
-  auto kappa = (3 - nu) / (1 + nu);
-  auto G = E / (2 * (1 + nu));
 
-  auto factor = Tx * R / (8 * G);
 
   auto analyticalSolutionDisplacements = [&](const auto& pos) -> Dune::FieldVector<double, 2> {
     auto [r, theta] = toPolar(pos);

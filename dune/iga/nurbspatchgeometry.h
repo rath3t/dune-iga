@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <dune/geometry/quadraturerules.hh>
 #include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/igaalgorithms.hh>
 
 namespace Dune::IGA {

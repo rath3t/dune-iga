@@ -9,8 +9,8 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/geometry.hh>
-#include <dune/iga/igaElementSubGrids.hh>
 #include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/trimmedElementRepresentation.hh>
 
 namespace Dune::IGA {
   namespace Impl {
@@ -86,7 +86,6 @@ namespace Dune::IGA {
       return global(localcenter);
     }
 
-
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
@@ -96,7 +95,9 @@ namespace Dune::IGA {
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
-    [[nodiscard]] double spanVolume() const  requires(mydimension == 2)  {
+    [[nodiscard]] double spanVolume() const
+      requires(mydimension == 2)
+    {
       return std::accumulate(scaling_.begin(), scaling_.end(), 1.0, std::multiplies<>());
     }
 
@@ -188,19 +189,23 @@ namespace Dune::IGA {
       return jacobianInverseTransposed1;
     }
 
-    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto N = normal(local);
       return N / N.two_norm();
     }
 
-    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto J = jacobianTransposed(local);
       return cross(J[0], J[1]);
     }
 
-    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
+    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const
+      requires(mydimension == 2)
+    {
       auto metricDet = metric(local).determinant();
       auto secondF   = secondFundamentalForm(local).determinant();
       return secondF / metricDet;
@@ -213,7 +218,9 @@ namespace Dune::IGA {
       return metric;
     }
 
-    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
+    auto secondFundamentalForm(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       const auto secDerivatives = secondDerivativeOfPosition(local);
       const auto unitnormal     = unitNormal(local);
       FieldMatrix<ctype, mydimension, mydimension> b;
@@ -234,7 +241,7 @@ namespace Dune::IGA {
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(localInSpan, 2);
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
-        ithVec[subDirs[dir]] = 2;  // second derivative in dir direction
+        ithVec[subDirs[dir]] = 2;                               // second derivative in dir direction
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
         result[dir] *= Dune::power(scaling_[subDirs[dir]], 2);  // transform back to 0..1
       }
@@ -263,9 +270,9 @@ namespace Dune::IGA {
     /** \brief Return from the 0 to 1 domain the position in the current knot span */
     template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
     auto localToSpan(const LocalCoordinate& local) const {
-//      for (int i = 0; i < griddim; ++i) {
-//        assert(local[i]); // assert  that local is in range
-//      }
+      //      for (int i = 0; i < griddim; ++i) {
+      //        assert(local[i]); // assert  that local is in range
+      //      }
 
       ReturnType localInSpan;
       if constexpr (LocalCoordinate::dimension != 0) {
@@ -284,11 +291,11 @@ namespace Dune::IGA {
     template <typename ReturnType = LocalCoordinate>
     auto spanToLocal(const LocalCoordinate& inSpan) const {
       ReturnType local;
-        for (int i = 0; i < griddim; ++i) {
-        local[i] =  (inSpan[i] -offset_[i])/scaling_[i];
-        local[i] = local[i]<0.0? 0.0:local[i];
-        local[i] = local[i]>1.0? 1.0:local[i];
-        }
+      for (int i = 0; i < griddim; ++i) {
+        local[i] = (inSpan[i] - offset_[i]) / scaling_[i];
+        local[i] = local[i] < 0.0 ? 0.0 : local[i];
+        local[i] = local[i] > 1.0 ? 1.0 : local[i];
+      }
 
       return local;
     }

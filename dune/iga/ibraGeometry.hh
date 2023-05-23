@@ -11,14 +11,7 @@
 
 namespace Dune::IGA::Ibra {
 
-  enum Type {
-    NurbsCurveGeometry2D,
-    NurbsSurfaceGeometry3D,
-    BrepLoopType,
-    BrepTrimType,
-    BrepType,
-    NoType
-  };
+  enum Type { NurbsCurveGeometry2D, NurbsSurfaceGeometry3D, BrepLoopType, BrepTrimType, BrepType, NoType };
 
   Type typeForTypeString(const std::string& typeString) {
     if (typeString == "NurbsCurveGeometry2D")
@@ -46,7 +39,8 @@ namespace Dune::IGA::Ibra {
     }
   };
 
-  template <int dim, int worldDim> requires (dim < 3) && (worldDim >= dim)
+  template <int dim, int worldDim>
+    requires(dim < 3) && (worldDim >= dim)
   struct IbraNURBSData : public IbraBase {
     std::array<int, dim> degree{};
     std::array<int, dim> n_controlPoints{};
@@ -56,7 +50,7 @@ namespace Dune::IGA::Ibra {
 
     using ControlPointType = typename NURBSPatchData<dim, worldDim>::ControlPointType;
 
-    [[nodiscard]] std::vector<std::vector<ControlPointType>> transformControlPoints() const  {
+    [[nodiscard]] std::vector<std::vector<ControlPointType>> transformControlPoints() const {
       if constexpr (dim == 1) {
         std::vector<ControlPointType> cps;
         for (int i = 0; i < n_controlPoints[0]; ++i) {
@@ -78,7 +72,6 @@ namespace Dune::IGA::Ibra {
       __builtin_unreachable();
     }
 
-
     [[nodiscard]] std::array<std::vector<double>, dim> compileKnotVectors() const {
       std::array<std::vector<double>, dim> knotVec;
 
@@ -96,7 +89,7 @@ namespace Dune::IGA::Ibra {
     }
 
    private:
-    [[nodiscard]] ControlPointType controlPointAt(std::array<int, dim> idx) const  {
+    [[nodiscard]] ControlPointType controlPointAt(std::array<int, dim> idx) const {
       int row = (dim == 1) ? idx[0] : idx[0] * n_controlPoints[1] + idx[1];
 
       Dune::FieldVector<double, worldDim> p;
@@ -107,10 +100,9 @@ namespace Dune::IGA::Ibra {
 
       return {p, w};
     }
-
   };
   template <int worldDim>
-  using Curve = IbraNURBSData<1, worldDim>;
+  using Curve   = IbraNURBSData<1, worldDim>;
   using Curve2D = IbraNURBSData<1, 2>;
 
   template <int worldDim>
@@ -141,7 +133,7 @@ namespace Dune::IGA::Ibra {
       if (it != allCurves.end())
         geometry = *it;
       else
-        DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: "<< key);
+        DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: " << key);
     }
   };
 
@@ -163,7 +155,7 @@ namespace Dune::IGA::Ibra {
         if (it != allTrims.end())
           trims.push_back(*it);
         else
-          DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: "<< key);
+          DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: " << key);
       }
     }
   };
@@ -184,7 +176,8 @@ namespace Dune::IGA::Ibra {
     std::vector<BrepLoop> loops;
     std::vector<BrepTrim> trims;
 
-    Brep(const BrepRepresentation& representation, std::vector<Curve2D>& allCurves, std::vector<Surface<worldDim>>& allSurfaces,
+    Brep(const BrepRepresentation& representation, std::vector<Curve2D>& allCurves,
+         std::vector<Surface<worldDim>>& allSurfaces,
          std::vector<Ibra::BrepLoopRepresentation>& allBrepLoopRepresentations,
          std::vector<Ibra::BrepTrimRepresentation>& allBrepTrimRepresentations) {
       getGenerics(representation, *this);
@@ -242,7 +235,7 @@ namespace Dune::IGA::Ibra {
     j.at("degree").get_to(curve.degree[0]);
 
     // Knots (u)
-    std::ranges::copy( j.at("knots"), std::back_inserter(curve.knots[0]));
+    std::ranges::copy(j.at("knots"), std::back_inserter(curve.knots[0]));
 
     // Poles aka Control Points
     j.at("nb_poles").get_to(curve.n_controlPoints[0]);
@@ -259,7 +252,6 @@ namespace Dune::IGA::Ibra {
       curve.weights.resize(curve.n_controlPoints[0]);
       std::ranges::fill(curve.weights, 1.0);
     }
-
   }
 
   template <int worldDim>
@@ -271,8 +263,8 @@ namespace Dune::IGA::Ibra {
     j.at("degree_v").get_to(surface.degree[1]);
 
     // Knots (u,v)
-    std::ranges::copy( j.at("knots_u"), std::back_inserter(surface.knots[0]));
-    std::ranges::copy( j.at("knots_v"), std::back_inserter(surface.knots[1]));
+    std::ranges::copy(j.at("knots_u"), std::back_inserter(surface.knots[0]));
+    std::ranges::copy(j.at("knots_v"), std::back_inserter(surface.knots[1]));
 
     // Poles aka Control Points
     j.at("nb_poles_u").get_to(surface.n_controlPoints[0]);
@@ -291,7 +283,6 @@ namespace Dune::IGA::Ibra {
       surface.weights.resize(total_controlPoints);
       std::ranges::fill(surface.weights, 1.0);
     }
-
   }
 
   void from_json(const json& j, BrepRepresentation& brep) {

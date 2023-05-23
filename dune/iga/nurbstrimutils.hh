@@ -5,30 +5,6 @@
 
 namespace Dune::IGA::Utilities {
 
-  struct Parameters {
-    int preSample{};
-    bool preSampleOnlyCurvedEdges{};
-    int preGlobalRefine{};
-    int edgeRefinements{};
-  };
-
-  Parameters& getParameters() {
-    static Parameters instance;
-    return instance;
-  }
-
-  void setStandardParameters() {
-    Parameters parameters{};
-
-    parameters.preSample                = 3;
-    parameters.preSampleOnlyCurvedEdges = true;
-    parameters.preGlobalRefine          = 0;
-    parameters.edgeRefinements          = 0;
-
-    getParameters() = parameters;
-  }
-
-
   template <std::floating_point T>
   std::vector<T> linspace(T a, T b, unsigned int N) {
     T inc    = (b - a) / static_cast<T>(N - 1);
@@ -62,4 +38,3 @@ namespace Dune::IGA::Utilities {
     return {std::array<T, 2>{domain[0], midPoint}, std::array<T, 2>{midPoint, domain[1]}};
   }
 }  // namespace Dune::IGA::Utilities
-

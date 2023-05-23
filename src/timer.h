@@ -22,7 +22,19 @@ class Timer {
     return duration_cast<Period>(stopTime - startTime);
   }
 
+  static std::string makeUniqueName(const std::string&& executableName, const std::string&& type = "") {
+    using namespace std::chrono;
+    std::string currentTime = fmt::format("_{}", std::chrono::system_clock::now());
+
+    std::ranges::transform(currentTime, currentTime.begin(), [](char ch) {
+      return (ch == ' ' or ch == ':') ? '_' : ch;
+    });  // replace space and colon with underscore
+    auto logFilename = executableName + currentTime + type;
+
+    return logFilename;
+  }
 
  private:
   std::unordered_map<Name, Time> startTimes;
 };
+

@@ -1,0 +1,530 @@
+// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
+// vi: set et ts=4 sw=2 sts=2:
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/geometry/quadraturerules.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkgeometry.hh>
+#include <dune/grid/test/checkindexset.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/gridcheck.hh>
+#include <dune/iga/gridcapabilities.hh>
+#include <dune/iga/ibraReader.hh>
+#include <dune/iga/igaDataCollector.h>
+#include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/nurbspatchgeometry.h>
+#include <dune/iga/nurbstrimmer.hh>
+#include <dune/vtk/vtkwriter.hh>
+
+// #define TEST_ALL
+
+using namespace Dune;
+using namespace Dune::IGA;
+
+
+auto testPatchGeometryCurve() {
+  TestSuite t;
+
+  const auto dim      = 1;
+  const auto dimworld = 2;
+
+  const std::array<int, dim> order                     = {3};
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<ControlPoint> controlPoints
+      = {{.p = {-4, -4}, .w = 1},
+         {.p = {-3, 2.8}, .w = 2.5},
+         {.p = {2, -4}, .w = 1},
+         {.p = {4, 4}, .w = 1} };
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+
+  // Make Geometry
+  NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
+
+  auto p0 = geometry.global({0.0});
+  t.check(Dune::FloatCmp::eq(p0, {-4, -4}));
+
+  auto p1 = geometry.global({0.5});
+  t.check(Dune::FloatCmp::eq(p1, {-1.32, 0.72}));
+
+  auto p2 = geometry.global({1});
+  t.check(Dune::FloatCmp::eq(p2, {4, 4}));
+
+  auto p3 = geometry.global({0.25});
+  t.check(Dune::FloatCmp::eq(p3, {-2.7607655502392343, 0.4688995215311005}));
+
+  // Test Operator ()
+  auto p4 = geometry({0.4});
+  t.check(Dune::FloatCmp::eq(p4, {-1.9854368932038828, 0.7669902912621357}));
+
+  // Check derivative
+  auto jc0 = geometry.jacobianTransposed({0});
+  t.check(Dune::FloatCmp::eq(jc0[0], {7.5, 51}));
+
+  auto jc1 = geometry.jacobianTransposed({0.5});
+  t.check(Dune::FloatCmp::eq(jc1[0], {7.4496, -0.9216}));
+
+  // Check local function
+  auto u0 = geometry.local({-4, -4});
+  t.check(Dune::FloatCmp::eq(u0, {0}));
+
+  auto u1 = geometry.local({-1.32, 0.72});
+  t.check(Dune::FloatCmp::eq(u1, {0.5}));
+
+  // geomdl reports 13.230641820866644 for the length of the curve. The volume function approaches this value,
+  // if you use a lot of gauß-points
+  auto len = geometry.volume();
+
+  // Check corners
+  t.check(geometry.corners() == 2);
+  std::array<FieldVector<double, 2>, 2> expectedCorners{{
+      FieldVector<double, 2>{-4, -4},
+      FieldVector<double, 2>{4, 4}
+  }};
+  for (int i = 0; i < 2; ++i)
+    t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]));
+
+
+  return t;
+}
+
+auto testPatchGeometrySurface() {
+  TestSuite t;
+
+  const auto dim                   = 2;
+  const auto dimworld              = 3;
+  const std::array<int, dim> order = {2, 2};
+
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, 1}, .w = 1}, {.p = {1, 0, 1}, .w = 1}, {.p = {2, 0, 2}, .w = 1}},
+         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}, {.p = {2, 1, 0}, .w = 1}},
+         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 1}, {.p = {2, 2, 2}, .w = 1}}};
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+
+  // Make Geometry
+  NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
+
+  auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
+  t.check(Dune::FloatCmp::eq(p1, {1.0, 1.0, 0.75}));
+
+  auto p2 = geometry.global(FieldVector<double, 2>{0, 0});
+  t.check(Dune::FloatCmp::eq(p2, {0, 0, 1}));
+
+  auto p3 = geometry.global(FieldVector<double, 2>{0, 1});
+  t.check(Dune::FloatCmp::eq(p3, {2, 0, 2}));
+
+  // Check derivative
+  auto jc1 = geometry.jacobianTransposed({0.5, 0.5});
+  t.check(Dune::FloatCmp::eq(jc1[0], {0.0, 2.0, 0.5}));
+  t.check(Dune::FloatCmp::eq(jc1[1], {2.0, 0.0, 0.5}));
+
+  // Check local function
+  auto u1 = geometry.local({1.0, 1.0, 0.75});
+  t.check(Dune::FloatCmp::eq(u1, {0.5, 0.5}));
+
+  auto u2 = geometry.local({2, 0, 2});
+  t.check(Dune::FloatCmp::eq(u2, {0, 1}));
+
+  // Check corners
+  t.check(geometry.corners() == 4);
+
+  std::array<FieldVector<double, 3>, 4> expectedCorners{{
+      FieldVector<double, 3>{0, 0, 1},
+      FieldVector<double, 3>{0, 2, 1},
+      FieldVector<double, 3>{2, 0, 2},
+      FieldVector<double, 3>{2, 2, 2}
+  }};
+  for (int i = 0; i < 4; ++i)
+    t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]));
+
+  // Check domain
+  t.check(Dune::FloatCmp::eq(geometry.domain()[0][0], 0.0));
+  t.check(Dune::FloatCmp::eq(geometry.domain()[0][1], 1.0));
+
+  // Check domain midpoint
+  t.check(Dune::FloatCmp::eq(geometry.domainMidPoint()[0], 0.5));
+
+  return t;
+}
+
+
+auto testIbraReader()
+{
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
+
+  // Check n_ele = 1, n_vert = 4
+  t.check(grid->size(0) == 1);
+  t.check(grid->size(2) == 4);
+
+  grid->globalRefine(1);
+
+  // Check n_ele = 4, n_vert = 9 after refinement
+  t.check(grid->size(0) == 4);
+  t.check(grid->size(2) == 9);
+
+  // Test degree (maybe test degree elevate)
+  t.check(grid->leafGridView().impl().getPatchData().degree[0] == 1);
+  t.check(grid->leafGridView().impl().getPatchData().degree[1] == 1);
+
+  // Enumerate elements and check position of centers
+  auto gV = grid->leafGridView();
+  std::vector<FieldVector<double, 2>> expectedElementCenters{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  const auto& indexSet = grid->leafGridView().indexSet();
+  for (auto& ele : elements(gV))
+    t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
+
+  // Test Instantiation
+  std::shared_ptr<NURBSGrid<2,3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra");
+  grid3D->globalRefine(2);
+
+  return t;
+}
+
+
+
+auto testDataCollectorAndVtkWriter() {
+  TestSuite t;
+
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  grid->globalRefine(3);
+
+  const auto gv = grid->leafGridView();
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
+
+  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+  auto lambdaf = [](auto x) {
+    return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
+  };
+  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+
+  writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+  writer2.write("TestFile");
+
+  return t;
+}
+
+
+auto testExampleSuite() {
+  TestSuite t;
+
+  Dune::GeometryChecker<NURBSGrid<2, 2>> geometryChecker2;
+  Dune::GeometryChecker<NURBSGrid<2, 3>> geometryChecker3;
+
+  auto testLoop = [&]<int worldDim = 2>(const auto& _grid, int testRuns, std::string&& name) {
+    for (auto i : std::views::iota(0, testRuns)) {
+      if (i != 0)
+        _grid->globalRefine(1);
+
+      t.check(_grid->reportTrimError(), "Trim Error: " + name);
+
+      if constexpr (worldDim == 2)
+        geometryChecker2.checkGeometry(_grid->leafGridView());
+      else
+        geometryChecker3.checkGeometry(_grid->leafGridView());
+
+      Dune::checkIndexSet(*_grid, _grid->leafGridView(), std::cout);
+      gridcheck(*_grid);
+    }
+  };
+
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  testLoop(grid, 4, "surface-hole");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra");
+  testLoop(grid, 4, "plate_quarter");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
+  testLoop(grid, 4, "pipe_trim");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/Element_trim_Xb.ibra");
+  testLoop(grid, 4, "Element_trim_Xb");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
+  testLoop(grid, 4, "nurbs_1");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
+  testLoop(grid, 2, "surface-multihole");
+
+  auto grid3 = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
+  testLoop.template operator()<3>(grid3, 1, "shell-hole");
+
+  return t;
+}
+
+
+auto testMapsInTrimmedPatch() {
+  TestSuite t;
+
+  auto getTrimFlagCounts = [](const auto& patch) -> std::tuple<int, int, int> {
+    int full = 0;
+    int empty = patch.emptyElements();
+    int trimmed = 0;
+    for (auto i : std::views::iota(0, patch.size(0))) {
+      ElementTrimFlag flag = patch.getTrimFlag(i);
+      if (flag == ElementTrimFlag::full)
+        ++full;
+      else
+        ++trimmed;
+    }
+    return {full, trimmed, empty};
+  };
+
+
+  // O refinement, 1 trimmed
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  auto& patch = grid->getPatch();
+
+  t.check(patch.getDirectIndex<0>(0) == 0);
+  t.check(patch.getRealIndex<0>(0) == 0);
+
+  // 1 refinement: 3 trimmed, 0 empty, 1 full
+  grid->globalRefine(1);
+
+  auto& patch_1_1             = grid->getPatch();
+  auto [full, trimmed, empty] = getTrimFlagCounts(patch_1_1);
+  t.check(full == 1);
+  t.check(empty == 0);
+  t.check(trimmed == 3);
+
+  // As n_f + n_t = n, there has to be a 1 to 1 mapping of the indices
+  for (int i = 0; i < 4; ++i) {
+    t.check(patch_1_1.getDirectIndex<0>(i) == i);
+    t.check(patch_1_1.getRealIndex<0>(i) == i);
+  }
+
+  // Load next example Grid
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  grid2->globalRefine(1);
+  auto& patch_2_1 = grid2->getPatch();
+
+  // After one refinement we should have 3 trimmed one empty element
+  auto [full2, trimmed2, empty2] = getTrimFlagCounts(patch_2_1);
+
+  t.check(full2 == 0);
+  t.check(empty2 == 1);
+  t.check(trimmed2 == 3);
+
+  // The second element is the first element with a direct Index and so forth
+  for (int i = 1; i < 4; ++i) {
+    t.check(patch_2_1.getRealIndex<0>(i) == i - 1);
+    t.check(patch_2_1.getDirectIndex<0>(i - 1) == i);
+  }
+
+  return t;
+}
+
+
+double calculateArea(const auto& gridView, std::optional<int> order = std::nullopt, QuadratureType::Enum qt = QuadratureType::GaussLegendre) {
+  double area = 0;
+
+  Dune::QuadratureRule<double, 2> rule;
+
+  for (auto& ele : elements(gridView)) {
+    ele.impl().fillQuadratureRule(rule, order, qt);
+    auto geo = ele.geometry();
+    for (auto& ip : rule)
+      area += geo.integrationElement(ip.position()) * ip.weight();
+  }
+
+  return area;
+}
+
+/// \brief Test if sum of the weights is the ratio of trimmed to untrimmed surface in parameterspace * A ref (= 1)
+void checkSumWeights(const auto& gridView, auto& t) {
+  Dune::QuadratureRule<double, 2> rule;
+
+  for (auto& ele : elements(gridView)) {
+    if (not ele.impl().isTrimmed())
+      continue;
+
+    auto untrimmedArea = 1;
+    auto trimmedArea =  ele.impl().trimmedElementRepresentation()->calculateArea();
+    auto ratio = trimmedArea / untrimmedArea;
+
+    ele.impl().fillQuadratureRule(rule);
+    double weightSum = 0.0;
+    for (auto& ip : rule)
+      weightSum += ip.weight();
+
+    t.check(Dune::FloatCmp::eq(weightSum, ratio));
+  }
+}
+
+auto testIntegrationPoints() {
+  TestSuite t;
+
+  /// 1. test case A = 10 * 10, r = 3
+  auto targetArea = 10 * 10 - (std::numbers::pi * std::pow(3, 2));
+
+  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  grid->globalRefine(1);
+
+  double area = calculateArea(grid->leafGridView(), std::nullopt);
+  std::cout << "Area (0): " << area << std::endl;
+
+  area = calculateArea(grid->leafGridView(), std::nullopt, QuadratureType::GaussLobatto);
+  std::cout << "Area GaussLobatto (0): " << area << std::endl;
+
+
+  t.check(Dune::FloatCmp::eq(area, targetArea, 1e-1));
+
+  checkSumWeights(grid->leafGridView(), t);
+
+  grid->globalRefine(1);
+  area = calculateArea(grid->leafGridView());
+  std::cout << "Area (1): " << area << std::endl;
+  t.check(Dune::FloatCmp::eq(area, targetArea, 1e-2));
+  checkSumWeights(grid->leafGridView(), t);
+
+  /// 1. Test case A = 20 * 2, r = 0.3
+  targetArea = 20 * 2 - (std::numbers::pi * std::pow(0.3, 2));
+
+  std::cout << "Grid 2 \n";
+  std::shared_ptr<NURBSGrid<2,2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/infty_pwh.ibra");
+  grid2->globalRefine(1);
+
+  area = calculateArea(grid2->leafGridView());
+  std::cout << "Area: (0) " << area << std::endl;
+
+  t.check(Dune::FloatCmp::eq(area, targetArea, 1e-1));
+  checkSumWeights(grid->leafGridView(), t);
+
+  grid2->globalMultiRefine(1, 0, 0);
+  area = calculateArea(grid2->leafGridView());
+  std::cout << "Area: (1) " << area << std::endl;
+
+  t.check(Dune::FloatCmp::eq(area, targetArea, 1e-2));
+  checkSumWeights(grid->leafGridView(), t);
+
+  return t;
+}
+
+auto testNurbsBasis() {
+  TestSuite t;
+
+  auto runBasisChecks = [&](const auto& _grid, int testRuns) {
+    for (auto i : std::views::iota(0, testRuns)) {
+      if (i != 0) _grid->globalRefine(1);
+
+      auto gridView = _grid->leafGridView();
+      Dune::Functions::NurbsBasis<decltype(gridView)> basis(gridView);
+      t.subTest(checkBasis(basis, EnableContinuityCheck(), EnableContinuityCheck()));
+    }
+  };
+
+  std::shared_ptr<NURBSGrid<2,2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra");
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra", true, {1, 1});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra", true, {2, 2});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_Xb.ibra", true, {3, 3});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", true, {1, 1});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", true, {2, 2});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true);
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {1, 1});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {2, 2});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {3, 3});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true);
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {1, 1});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {2, 2});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {3, 3});
+  runBasisChecks(grid, 4);
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {4, 4});
+  runBasisChecks(grid, 4);
+
+  return t;
+}
+
+
+int main(int argc, char** argv) try {
+  // Initialize MPI, if necessary
+  MPIHelper::instance(argc, argv);
+  TestSuite t;
+
+  /// Test General stuff
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
+  t.subTest(testIbraReader());
+  t.subTest(testDataCollectorAndVtkWriter());
+
+  /// 1. Test Trimming Functionality
+  t.subTest(testExampleSuite());
+  t.subTest(testMapsInTrimmedPatch());
+
+  /// 2. Test Integration Points
+  t.subTest(testIntegrationPoints());
+
+  /// 3. Test Basis
+  t.subTest(testNurbsBasis());
+
+  t.report();
+
+  return 0;
+} catch (Dune::Exception& e) {
+  std::cerr << "Dune reported error: " << e << std::endl;
+}

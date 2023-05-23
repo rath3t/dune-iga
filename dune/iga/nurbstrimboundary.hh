@@ -4,11 +4,7 @@
 #pragma once
 
 #include "nurbstrimutils.hh"
-
-#include <algorithm>
-#include <bits/ranges_algo.h>
 #include <clipper2/clipper.core.h>
-#include <ranges>
 
 #include <dune/iga/ibraGeometry.hh>
 #include <dune/iga/nurbspatchgeometry.h>
@@ -120,7 +116,7 @@ namespace Dune::IGA {
     std::vector<Boundary> boundaries;
     Orientation orientation;
 
-    size_t size() const {return boundaries.size();};
+    size_t size() const { return boundaries.size(); };
   };
 
   class TrimData {
@@ -142,9 +138,8 @@ namespace Dune::IGA {
       }
     }
     [[nodiscard]] size_t numBoundaries() const {
-      return std::accumulate(boundaryLoops.begin(), boundaryLoops.end(), 0, [](size_t rhs, const auto& loop) {
-        return rhs + loop.size();
-      });
+      return std::accumulate(boundaryLoops.begin(), boundaryLoops.end(), 0,
+                             [](size_t rhs, const auto& loop) { return rhs + loop.size(); });
     }
 
    private:

@@ -5,22 +5,15 @@
 
 #include "igaalgorithms.hh"
 
-#include <bits/ranges_algo.h>
-#include <iterator>
-#include <memory>
-#include <optional>
-#include <ranges>
-#include <type_traits>
-
 #include "dune/iga/nurbstrimmer.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/igaElementSubGrids.hh>
 #include <dune/iga/nurbsgeometry.hh>
 #include <dune/iga/nurbstrimboundary.hh>
+#include <dune/iga/trimmedElementRepresentation.hh>
 namespace Dune::IGA {
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
@@ -142,35 +135,23 @@ namespace Dune::IGA {
       throw std::logic_error("Not Implemented: ask the element if it has a neighbor");
     }
 
-    // TODO Maybe cache this
+    [[nodiscard]] int numBoundarySegments() const {
+      if constexpr (dim == 1)
+        return 2;
+      else if constexpr (dim == 2) {
+        if (trimData_.has_value()) return boundarySegmentList().size();
+        return (validKnotSize()[0] + validKnotSize()[1]) * 2;
+      } else if constexpr (dim == 3)
+        return 2
+               * (validKnotSize()[0] * validKnotSize()[1] + validKnotSize()[1] * validKnotSize()[2]
+                  + validKnotSize()[0] * validKnotSize()[2]);
+      __builtin_unreachable();
+    }
+
     [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const
       requires(dim == 2)
     {
-      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for
-      // that as well
-      constexpr int noNeighbor = -1;
-
-      auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
-        if (outerIndex == noNeighbor) return noNeighbor;
-        return getRealIndexOr<0>(outerIndex, noNeighbor);
-      };
-
-      std::vector<RealIndex> realIndexOfBoundaryIntersections;
-
-      for (int i : std::views::iota(0, size(0))) {
-        auto nurbsDirectIndex = getDirectIndex<0>(i);
-        for (int innerLocalIndex = 0; innerLocalIndex < 4; ++innerLocalIndex) {
-          auto multiIndex = elementNet_->directToMultiIndex(nurbsDirectIndex);
-          multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
-              += ((innerLocalIndex % 2)
-                      ? 1
-                      : noNeighbor);  // increase the multiIndex depending on where the outer element should lie
-          auto directOuterIndex = (elementNet_->isValid(multiIndex)) ? elementNet_->index(multiIndex) : noNeighbor;
-          directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
-          if (directOuterIndex == noNeighbor)
-            realIndexOfBoundaryIntersections.push_back(getGlobalEdgeIndexFromElementIndex(i, innerLocalIndex));
-        }
-      }
+      auto realIndexOfBoundaryIntersections = boundarySegmentList();
 
       auto it = std::ranges::find(realIndexOfBoundaryIntersections, intersectionRealIndex);
       assert(it != realIndexOfBoundaryIntersections.end());
@@ -183,7 +164,7 @@ namespace Dune::IGA {
      * @param ocdim1Id
      * @return Increasing boundary index
      */
-    // TODO
+
     [[nodiscard]] int patchBoundaryIndex(const int ocdim1Id) const {
       int index = ocdim1Id;
 
@@ -415,7 +396,6 @@ namespace Dune::IGA {
       return std::make_pair(scaling, offset);
     }
 
-
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
     std::array<int, dim> validKnotSize() const { return uniqueSpanSize_; }
 
@@ -432,6 +412,9 @@ namespace Dune::IGA {
           return {GeometryTypes::cube(codim)};
       }
     }
+
+    /// \brief returns a bool if an error happened during processing the patch trim
+    [[nodiscard]] bool reportTrimError() const { return not trimErrorFlag_; }
 
    private:
     [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const RealIndex realIndex, const int localVertexIndex,
@@ -606,11 +589,7 @@ namespace Dune::IGA {
     // patch The RealIndex refers to a flat index that runs from 0 ... j with j = n_T + n_F
 
     [[nodiscard]] bool hasEmptyElements() const { return (n_fullElement + n_trimmedElement < originalSize(0)); }
-
-    // TODO Delete (this is for intermediate testing)
-    std::tuple<int, int, int> getAmountOfElementTrimTypes() {
-      return {n_fullElement, n_trimmedElement, originalSize(0) - n_fullElement - n_trimmedElement};
-    }
+    [[nodiscard]] int emptyElements() const { return originalSize(0) - (n_fullElement + n_trimmedElement); }
 
     template <unsigned int codim>
     [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
@@ -629,22 +608,25 @@ namespace Dune::IGA {
     template <unsigned int codim>
       requires(dim == 2)
     [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
-      constexpr auto orVal =  std::numeric_limits<DirectIndex>::max();
-      auto res = getRealIndexOr<codim>(idx, orVal);
+      constexpr auto orVal = std::numeric_limits<DirectIndex>::max();
+      auto res             = getRealIndexOr<codim>(idx, orVal);
       if (res != orVal)
         return res;
       else
         throw std::runtime_error("No corresponding realIndex");
     }
-    template <unsigned int codim> requires(dim == 2)
-    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept requires (std::same_as<decltype(idx), decltype(orValue)>)   {
+    template <unsigned int codim>
+      requires(dim == 2)
+    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept
+      requires(std::same_as<decltype(idx), decltype(orValue)>)
+    {
       auto& map = this->getEntityMap<codim>();
       auto it   = std::ranges::find(map, idx);
       return it != map.end() ? std::ranges::distance(map.begin(), it) : orValue;
     }
 
     [[nodiscard]] auto getTrimFlagForDirectIndex(DirectIndex directIndex) const -> ElementTrimFlag {
-      return trimFlags[directIndex];
+      return trimFlags_[directIndex];
     }
     [[nodiscard]] auto getTrimFlag(RealIndex realIndex) const -> ElementTrimFlag {
       int nurbsIdx = getDirectIndex<0>(realIndex);
@@ -658,8 +640,8 @@ namespace Dune::IGA {
 
     void prepareForNoTrim() {
       auto n_ele = originalSize(0);
-      trimFlags  = std::vector<ElementTrimFlag>(n_ele);
-      std::ranges::fill(trimFlags, ElementTrimFlag::full);
+      trimFlags_ = std::vector<ElementTrimFlag>(n_ele);
+      std::ranges::fill(trimFlags_, ElementTrimFlag::full);
 
       if constexpr (dim == 2) {
         fill1to1Maps<0>();
@@ -678,9 +660,9 @@ namespace Dune::IGA {
           auto geo = element.geometry();
 
           DirectIndex directIndex = indexSet.index(element);
-          trimInfoMap.emplace(
-              directIndex, ElementTrimInfo{.realIndex = directIndex,
-                                           .repr = std::make_unique<TrimmedElementRepresentationType>(scalingAndOffset(directIndex))});
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = directIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               scalingAndOffset(directIndex))});
         }
       }
     }
@@ -710,7 +692,7 @@ namespace Dune::IGA {
       // Prepare Results
       n_fullElement    = 0;
       n_trimmedElement = 0;
-      trimFlags.resize(originalSize(0));
+      trimFlags_.resize(originalSize(0));
 
       using Trimmer = Trim::NURBSPatchTrimmer<>;
 
@@ -724,16 +706,16 @@ namespace Dune::IGA {
         DirectIndex directIndex = indexSet.index(element);
         RealIndex realIndex     = n_fullElement + n_trimmedElement;
 
-        auto [trimFlag, boundaries] = trimmer.trimElement(directIndex);
-        trimFlags[directIndex] = trimFlag;
+        auto [trimFlag, boundaries, errorFlag] = trimmer.trimElement(directIndex);
+        trimFlags_[directIndex]                = trimFlag;
+        if (errorFlag) trimErrorFlag_ = true;
 
         if (trimFlag == ElementTrimFlag::trimmed) {
           ++n_trimmedElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
                                                                boundaries.value(), scalingAndOffset(directIndex))});
-        }
-        else if (trimFlag == ElementTrimFlag::full) {
+        } else if (trimFlag == ElementTrimFlag::full) {
           ++n_fullElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
@@ -749,7 +731,7 @@ namespace Dune::IGA {
       constructSubEntityMaps<2>();
       constructSubEntityMaps<1>();
     }
-
+    // TODO Use std::set to get rid of unique copys, as well as in basis
     template <unsigned int codim>
       requires(codim == 2 || codim == 1) && (dim == 2)
     void constructSubEntityMaps() {
@@ -779,6 +761,38 @@ namespace Dune::IGA {
       }
     }
 
+    // TODO Cache this
+    [[nodiscard]] std::set<RealIndex> boundarySegmentList() const
+      requires(dim == 2)
+    {
+      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it for
+      // that as well
+      constexpr int noNeighbor = -1;
+
+      auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
+        if (outerIndex == noNeighbor) return noNeighbor;
+        return getRealIndexOr<0>(outerIndex, noNeighbor);
+      };
+
+      std::set<RealIndex> realIndexOfBoundaryIntersections;
+
+      for (int i : std::views::iota(0, size(0))) {
+        auto nurbsDirectIndex = getDirectIndex<0>(i);
+        for (int innerLocalIndex = 0; innerLocalIndex < 4; ++innerLocalIndex) {
+          auto multiIndex = elementNet_->directToMultiIndex(nurbsDirectIndex);
+          multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
+              += ((innerLocalIndex % 2)
+                      ? 1
+                      : noNeighbor);  // increase the multiIndex depending on where the outer element should lie
+          auto directOuterIndex = (elementNet_->isValid(multiIndex)) ? elementNet_->index(multiIndex) : noNeighbor;
+          directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
+          if (directOuterIndex == noNeighbor)
+            realIndexOfBoundaryIntersections.insert(getGlobalEdgeIndexFromElementIndex(i, innerLocalIndex));
+        }
+      }
+      return realIndexOfBoundaryIntersections;
+    }
+
    private:
     template <typename GridImpl>
     friend class NURBSGridLeafIndexSet;
@@ -793,7 +807,22 @@ namespace Dune::IGA {
     std::shared_ptr<MultiDimensionNet<dim, double>> vertexNet_;
 
     std::optional<std::shared_ptr<TrimData>> trimData_;
-    std::vector<ElementTrimFlag> trimFlags;
+    std::vector<ElementTrimFlag> trimFlags_;
+    bool trimErrorFlag_{false};
+
+    std::vector<DirectIndex> elementIndexMap;
+    std::vector<DirectIndex> vertexIndexMap;
+    std::vector<DirectIndex> edgeIndexMap;
+
+    unsigned int n_fullElement{std::numeric_limits<unsigned int>::signaling_NaN()};
+    unsigned int n_trimmedElement{0};
+
+    struct ElementTrimInfo {
+      RealIndex realIndex{};
+      std::shared_ptr<TrimmedElementRepresentationType> repr;
+    };
+
+    std::map<DirectIndex, ElementTrimInfo> trimInfoMap;
 
     template <unsigned int codim>
       requires(dim == 2)
@@ -815,21 +844,6 @@ namespace Dune::IGA {
       else
         return vertexIndexMap;
     }
-
-    std::vector<DirectIndex> elementIndexMap;
-    std::vector<DirectIndex> vertexIndexMap;
-    std::vector<DirectIndex> edgeIndexMap;
-
-    unsigned int n_fullElement{std::numeric_limits<unsigned int>::signaling_NaN()};
-    unsigned int n_trimmedElement{0};
-
-    struct ElementTrimInfo {
-      RealIndex realIndex{};
-      std::shared_ptr<TrimmedElementRepresentationType> repr;
-    };
-
-    // TODO Maybe use a std::vector with realIndex indexing
-    std::unordered_map<DirectIndex, ElementTrimInfo> trimInfoMap;
   };
 
 }  // namespace Dune::IGA

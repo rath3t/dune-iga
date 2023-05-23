@@ -1,16 +1,16 @@
 [GridParameters]
-filename=plate_quarter.ibra
+filename=quarter_plate.ibra
 trim=1
-globalRefine=3
+globalRefine=2
 u_refine = 0
 v_refine = 0
-u_degreeElevate=1
-v_degreeElevate=1
+u_degreeElevate=2
+v_degreeElevate=2
 
 
 [MaterialParameters]
-E      = 100
-nu     = 0.2
+E      = 10000
+nu     = 0.3
 
 [PostProcessParameters]
-subsample = 0
+subsample = 3

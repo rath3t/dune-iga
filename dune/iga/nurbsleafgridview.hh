@@ -5,8 +5,6 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include <ranges>
-
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/nurbsgridentity.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
@@ -212,10 +210,10 @@ namespace Dune::IGA {
         // TODO maybe use iotaView
         Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
           std::get<i>(*entityVector_.get()).reserve(patch.size(i));
-            for (unsigned int j = 0; j < patch.size(i); ++j) {
-              std::get<i>(*entityVector_.get())
-                  .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
-            }
+          for (unsigned int j = 0; j < patch.size(i); ++j) {
+            std::get<i>(*entityVector_.get())
+                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
+          }
         });
         ++currentPatchId;
       }
@@ -229,9 +227,9 @@ namespace Dune::IGA {
     }
     template <int codim>
     typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
-      if constexpr (codim == 0)  // elements
+      if constexpr (codim == 0)                   // elements
         return (std::get<0>(*entityVector_.get()).at(directIndex));
-      else if constexpr (codim == dimension)  // vertices
+      else if constexpr (codim == dimension)      // vertices
         return (std::get<dimension>(*entityVector_.get()).at(directIndex));
       else if constexpr (dimension - codim == 1)  // edges
         return (std::get<dimension - 1>(*entityVector_.get()).at(directIndex));

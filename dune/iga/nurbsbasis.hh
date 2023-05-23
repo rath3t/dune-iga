@@ -543,14 +543,14 @@ namespace Dune::Functions {
       const auto order = patchData_.degree;
 
       for (auto directIndex : std::views::iota(0, gridView_.impl().getPatch().originalSize(0))) {
-        auto spanSize = gridView_.impl().getPatch().template originalGridSize<0, unsigned int>();
+        auto spanSize   = gridView_.impl().getPatch().template originalGridSize<0, unsigned int>();
         auto elementIdx = getIJK(directIndex, spanSize);
 
         std::array<int, dim> currentKnotSpan;
         for (size_t i = 0; i < elementIdx.size(); i++)
-          currentKnotSpan[i] = Dune::IGA::findSpanCorrected(patchData_.degree[i],
-                                                            *(uniqueKnotVector_[i].begin() + elementIdx[i]),
-                                                            patchData_.knotSpans[i], elementIdx[i]);
+          currentKnotSpan[i]
+              = Dune::IGA::findSpanCorrected(patchData_.degree[i], *(uniqueKnotVector_[i].begin() + elementIdx[i]),
+                                             patchData_.knotSpans[i], elementIdx[i]);
 
         // Here magic is happening
         for (size_type i = 0; i < sizeOfShapeFunctions; ++i) {
@@ -569,16 +569,15 @@ namespace Dune::Functions {
         }
       }
 
-//      // Print out
-//      for (auto& [eleIdx, indices] : originalIndices_) {
-//        std::cout << eleIdx << ": ";
-//        for (auto& i : indices)
-//          std::cout << i << " ";
-//        std::cout << "\n";
-//      }
-//      std::cout << std::endl;
+      //      // Print out
+      //      for (auto& [eleIdx, indices] : originalIndices_) {
+      //        std::cout << eleIdx << ": ";
+      //        for (auto& i : indices)
+      //          std::cout << i << " ";
+      //        std::cout << "\n";
+      //      }
+      //      std::cout << std::endl;
     }
-
 
     /// \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
     template <typename It>
@@ -586,7 +585,7 @@ namespace Dune::Functions {
       const auto eleIdx = node.element_.impl().getDirectIndexInPatch();
       for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
         auto globalIndex = indexMap.at(originalIndices_.at(eleIdx)[i]);
-        *it = {{globalIndex}};
+        *it              = {{globalIndex}};
       }
       return it;
     }
@@ -603,17 +602,16 @@ namespace Dune::Functions {
       std::ranges::unique_copy(indicesInTrim, std::back_inserter(uniqueIndices));
 
       unsigned int realIndexCounter = 0;
-      for(unsigned int i = 0; i < n_ind_original; ++i) {
-        if (std::ranges::find(uniqueIndices, i) != uniqueIndices.end())
-          indexMap.emplace(i, realIndexCounter++);
+      for (unsigned int i = 0; i < n_ind_original; ++i) {
+        if (std::ranges::find(uniqueIndices, i) != uniqueIndices.end()) indexMap.emplace(i, realIndexCounter++);
       }
       cachedSize_ = realIndexCounter;
 
-//      // Print out
-//      std::cout << "Index Map:\n";
-//      for (auto& [diri, rili] : indexMap)
-//        std::cout << "D: " << diri << ", R: " << rili << "\n";
-//      std::cout << std::endl;
+      //      // Print out
+      //      std::cout << "Index Map:\n";
+      //      for (auto& [diri, rili] : indexMap)
+      //        std::cout << "D: " << diri << ", R: " << rili << "\n";
+      //      std::cout << std::endl;
     }
 
     [[nodiscard]] unsigned int computeOriginalSize() const {
@@ -622,7 +620,6 @@ namespace Dune::Functions {
         result *= sizePerDirection(i);
       return result;
     }
-
 
     //! \brief Total number of B-spline basis functions
     [[nodiscard]] unsigned int size() const {
@@ -741,7 +738,7 @@ namespace Dune::Functions {
       finiteElement_.bind(preBasis_->getIJK(elementIndex, preBasis_->elements_));
       this->setSize(finiteElement_.size());
     }
-// TODO Set back to protected
+    // TODO Set back to protected
    public:
     const NurbsPreBasis<GV>* preBasis_;
 

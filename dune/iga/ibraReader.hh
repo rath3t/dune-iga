@@ -23,10 +23,8 @@ namespace Dune::IGA {
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
-    static std::shared_ptr<Grid> read(const std::string& fileName, const bool trim = true, std::array<int, 2> elevateDegree = {0, 0}) {
-      // Get Standard Parameter for trimming
-      Dune::IGA::Utilities::setStandardParameters();
-
+    static std::shared_ptr<Grid> read(const std::string& fileName, const bool trim = true,
+                                      std::array<int, 2> elevateDegree = {0, 0}) {
       using json = nlohmann::json;
 
       // Result
@@ -69,7 +67,8 @@ namespace Dune::IGA {
           }
         }
       } catch (json::parse_error& ex) {
-        DUNE_THROW(Dune::IOError, "Error in file: " << fileName << ", parse error at byte " << ex.byte<<" What: "<<ex.what());
+        DUNE_THROW(Dune::IOError,
+                   "Error in file: " << fileName << ", parse error at byte " << ex.byte << " What: " << ex.what());
       }
 
       // Make Connections
@@ -95,9 +94,7 @@ namespace Dune::IGA {
 
       // Optional Degree Elevate
       for (int i = 0; i < 2; ++i)
-        if (elevateDegree[i] > 0)
-          _patchData = degreeElevate(_patchData, i, elevateDegree[i]);
-
+        if (elevateDegree[i] > 0) _patchData = degreeElevate(_patchData, i, elevateDegree[i]);
 
       // Make the trimData, and pass them into the grid
       // So the grid can figure out what to do with it
@@ -129,4 +126,3 @@ namespace Dune::IGA {
   };
 
 }  // namespace Dune::IGA
-

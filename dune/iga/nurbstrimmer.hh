@@ -6,7 +6,6 @@
 
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
-#include <variant>
 
 #include "dune/iga/nurbstrimutils.hh"
 #include <dune/grid/yaspgrid.hh>
@@ -38,11 +37,17 @@ namespace Dune::IGA::Trim {
    public:
     static constexpr auto dim  = 2;
     static constexpr int scale = sc_;
-
     inline static double scaleFactor() { return std::pow(10, scale); };
 
+    /// Parameters
     static constexpr int pathSamples  = 800;
     static constexpr double tolerance = 1e-8;
+
+    /// Newton Raphson Control Parameters
+    static constexpr double objectiveFctTolerance       = 1e-4;
+    static constexpr int probesForStartingPoint         = 5;
+    static constexpr int fallbackProbesForStartingPoint = 350;
+    static constexpr int maxIterations                  = 50;
 
     using intType      = intType_;
     using ClipperPoint = Clipper2Lib::Point<intType>;
@@ -73,15 +78,15 @@ namespace Dune::IGA::Trim {
     /// Public Interface
     /////////////////
 
-    std::pair<ElementTrimFlag, std::optional<ElementBoundaries>> trimElement(unsigned int directIndex) {
+    std::tuple<ElementTrimFlag, std::optional<ElementBoundaries>, bool> trimElement(unsigned int directIndex) {
       if (trimFlags_[directIndex] != ElementTrimFlag::trimmed)
-        return std::make_pair(trimFlags_[directIndex], std::nullopt);
+        return std::make_tuple(trimFlags_[directIndex], std::nullopt, false);
       else {
         auto elementBoundaries = constructElementBoundaries(directIndex);
         if (elementBoundaries.has_value())
-          return std::make_pair(ElementTrimFlag::trimmed, elementBoundaries.value());
+          return std::make_tuple(ElementTrimFlag::trimmed, elementBoundaries.value(), false);
         else
-          return std::make_pair(ElementTrimFlag::empty, std::nullopt);
+          return std::make_tuple(ElementTrimFlag::empty, std::nullopt, true);
       }
     }
 
@@ -142,11 +147,9 @@ namespace Dune::IGA::Trim {
 
       for (auto it1 = clippedEdges.cbegin() + 1; it1 < clippedEdges.cend(); ++it1)
         for (auto it2 = clip_.cbegin() + 1; it2 < clip_.cend(); ++it2)
-          if (checkEquality(*it1, *it2))
-            foundLoops.push_back(std::distance(clip_.begin(), it2));
+          if (checkEquality(*it1, *it2)) foundLoops.push_back(std::distance(clip_.begin(), it2));
 
-      if (not foundLoops.empty())
-        innerLoops.emplace(foundLoops);
+      if (not foundLoops.empty()) innerLoops.emplace(foundLoops);
     }
 
     void clipElement(const auto& element) {
@@ -188,8 +191,7 @@ namespace Dune::IGA::Trim {
 
       // Look if there are two distinct regions // Not yet implemented
       int regions = clippedEdges.size() - (innerLoops.has_value() ? innerLoops.value().loopIndices.size() : 0);
-      if (regions > 1)
-        std::cerr << "More than one region, undefined behaviour, inspect output " << std::endl;
+      if (regions > 1) std::cerr << "More than one region, undefined behaviour, inspect output " << std::endl;
 
       // This keeps track of how many intersection Points there are at a given edge
       std::array<int, 4> edgeCounter{0, 0, 0, 0};
@@ -208,8 +210,6 @@ namespace Dune::IGA::Trim {
         }
       }
 
-      //assert(not std::ranges::all_of(nodeCounter, [](auto x) { return x == 1; }));
-
       // Sort IntersectionPoints counter-clockwise
       sortIntersectionPoints(*pointMap);
 
@@ -221,7 +221,7 @@ namespace Dune::IGA::Trim {
       try {
         std::vector<Boundary> elementBoundaries;
         auto& clipResult = clipResults_[directIndex].value();
-        auto corners = getElementCorners(directIndex);
+        auto corners     = getElementCorners(directIndex);
 
         // Determine the node where we begin to trace
         const auto nodeCounter = clipResult.nodeCounter;
@@ -248,9 +248,8 @@ namespace Dune::IGA::Trim {
       return result;
     }
     // TODO Make const
-    std::optional<std::vector<std::vector<Boundary>>> extractInnerBoundaries(const ClippingResult& clipResult) {
-      if (not clipResult.innerLoops.has_value())
-        return std::nullopt;
+    std::optional<std::vector<std::vector<Boundary>>> extractInnerBoundaries(const ClippingResult& clipResult) const {
+      if (not clipResult.innerLoops.has_value()) return std::nullopt;
 
       std::vector<std::vector<Boundary>> innerBoundaries;
       innerBoundaries.resize(clipResult.innerLoops.value().loopIndices.size());
@@ -265,14 +264,16 @@ namespace Dune::IGA::Trim {
       return std::make_optional(innerBoundaries);
     }
 
+    // TODO Get rid of wierd and redundant naming of outer-loop variables
     bool findNextBoundary(FindNextBoundaryLoopState* state, std::vector<Boundary>& elementBoundaries) {
-      int node = state->currentNode;
-      int edge = node;
+      int node              = state->currentNode;
+      int nextEntity        = node;
+      bool nextEntityIsNode = false;
 
-      // Check if edge has no intersections and next node has one
-      if (state->isCurrentlyOnNode && !state->hasIntersectionPointOnEdgeNr(edge)
+      // Check if nextEntity has no intersections and next node has one
+      if (state->isCurrentlyOnNode && !state->hasIntersectionPointOnEdgeNr(nextEntity)
           && state->hasIntersectionPointOnNodeNr(nextEntityIdx(node, 1))) {
-        elementBoundaries.push_back(boundaryForEdge(state->corners, edge));
+        elementBoundaries.push_back(boundaryForEdge(state->corners, nextEntity));
 
         // Update Node and Point
         node                    = nextEntityIdx(node, 1);
@@ -282,17 +283,22 @@ namespace Dune::IGA::Trim {
         return (node == state->nodeToBegin);
       }
       if (state->isCurrentlyOnNode) {
-        // Determine the next edge with an IP
+        // Determine the next nextEntity with an IP
         for (int i = 0; i < 4; ++i) {
-          if (state->hasIntersectionPointOnEdgeNr(nextEntityIdx(node, i))) {
-            edge = nextEntityIdx(node, i);
+          auto nextEdge = nextEntityIdx(node, i);
+          auto nextNode = nextEntityIdx(node, i + 1);
+
+          if (state->hasIntersectionPointOnEdgeNr(nextEdge)) {
+            nextEntity = nextEdge;
+            break;
+          }
+          if (state->hasIntersectionPointOnNodeNr(nextNode)) {
+            nextEntity       = nextNode;
+            nextEntityIsNode = true;
             break;
           }
         }
-        if (!(state->hasIntersectionPointOnEdgeNr(edge)))
-          throw std::runtime_error(
-              "No next edge with an intersection Point found. Maybe the IP is on an edge, which is not yet "
-              "implemented");
+        // TODO Assert if nextEntity was found or not
 
         // Set node for the next step
         state->currentNode      = node;
@@ -301,31 +307,31 @@ namespace Dune::IGA::Trim {
         int boundaryIndexThatHasIntersectionPoint;
         IntersectionResult edgeIntersectResult;
 
-        if (node == edge) {
+        if (node == nextEntity) {
           /// Find the intersection Point on the current Edge
           auto findNextBoundaryResult
-              = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
+              = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), nextEntity, state->corners);
 
           if (not findNextBoundaryResult.has_value())
             throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
 
           boundaryIndexThatHasIntersectionPoint = findNextBoundaryResult.value().edge;
-          edgeIntersectResult = findNextBoundaryResult.value().result;
+          edgeIntersectResult                   = findNextBoundaryResult.value().result;
 
           elementBoundaries.emplace_back(state->currentNodePoint, edgeIntersectResult.globalResult);
-        } else  {
-          // Startpoint is node -> find boundary
+        } else {
           auto findNextBoundaryResult = findNextBoundaryThatHasIntersectionPointOnNode(state, node);
 
           if (not findNextBoundaryResult.has_value())
             throw std::runtime_error("findNextBoundaryThatHasIntersectionPointOnNode not successful");
 
           boundaryIndexThatHasIntersectionPoint = findNextBoundaryResult.value().edge;
-          edgeIntersectResult = findNextBoundaryResult.value().result;
+          edgeIntersectResult                   = findNextBoundaryResult.value().result;
         }
 
         /// Curve Tracing
-        auto traceResult = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, edge});
+        auto traceResult
+            = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, nextEntity});
 
         if (not traceResult.has_value()) throw std::runtime_error("tracCurve not successful");
 
@@ -335,28 +341,27 @@ namespace Dune::IGA::Trim {
           elementBoundaries.push_back(newBoundary);
         }
 
-        auto lastResult = traceResult.value().back();
+        auto lastResult          = traceResult.value().back();
         state->isCurrentlyOnNode = lastResult.onNode;
         state->currentNodePoint  = lastResult.intersectionPoint;
 
         if (lastResult.onNode)
           state->currentNode = lastResult.edge;
         else {
-          state->edgeTheLoopIsOn   = lastResult.edge;
+          state->edgeTheLoopIsOn = lastResult.edge;
           state->moreIntersectionPointsOnEdge
               = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
         }
         return lastResult.onNode && state->currentNode == state->nodeToBegin;
       }
-      // There are two possibilities when the loop is not on a node, but on an edge
-      // 1. we have more than one intersectionPoint on this edge (here) or not (later)
+
       if (!(state->isCurrentlyOnNode) && state->moreIntersectionPointsOnEdge) {
-        edge = state->edgeTheLoopIsOn;
+        nextEntity = state->edgeTheLoopIsOn;
 
         /// Find the intersection Point on the current Edge
 
         auto findNextBoundaryResult
-            = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), edge, state->corners);
+            = findBoundaryThatHasIntersectionPoint(state->pointMapPtr.get(), nextEntity, state->corners);
 
         if (not findNextBoundaryResult.has_value())
           throw std::runtime_error("findBoundaryThatHasIntersectionPoint not successful");
@@ -367,7 +372,7 @@ namespace Dune::IGA::Trim {
         /// Curve Tracing
 
         auto traceResult
-            = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, edge});
+            = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, nextEntity});
 
         if (not traceResult.has_value()) throw std::runtime_error("tracCurve not successful");
 
@@ -377,14 +382,14 @@ namespace Dune::IGA::Trim {
           elementBoundaries.push_back(newBoundary);
         }
 
-        auto lastResult = traceResult.value().back();
+        auto lastResult          = traceResult.value().back();
         state->isCurrentlyOnNode = lastResult.onNode;
         state->currentNodePoint  = lastResult.intersectionPoint;
 
         if (lastResult.onNode)
           state->currentNode = lastResult.edge;
         else {
-          state->edgeTheLoopIsOn   = lastResult.edge;
+          state->edgeTheLoopIsOn = lastResult.edge;
           state->moreIntersectionPointsOnEdge
               = getNextIntersectionPointOnEdge(state->pointMapPtr.get(), state->edgeTheLoopIsOn).second;
         }
@@ -412,12 +417,6 @@ namespace Dune::IGA::Trim {
     ////////////
     /// Non-static Helper functions
     ////////////
-
-    /* Newton Raphson Control Variables */
-    static constexpr double objectiveFctTolerance       = 1e-4;
-    static constexpr int probesForStartingPoint         = 5;
-    static constexpr int fallbackProbesForStartingPoint = 350;
-    static constexpr int maxIterations                  = 50;
 
     /// Returns the element corners of the tensorGrid in the IntegerDomain
     std::vector<FieldVector<intType, dim>> getElementCorners(int index) {
@@ -465,18 +464,16 @@ namespace Dune::IGA::Trim {
 
       return std::nullopt;
     }
-    std::optional<FindNextBoundaryResult> findNextBoundaryThatHasIntersectionPointOnNode(FindNextBoundaryLoopState* state,
-                                                                                        int node) {
+    std::optional<FindNextBoundaryResult> findNextBoundaryThatHasIntersectionPointOnNode(
+        FindNextBoundaryLoopState* state, int node) {
       auto nodeCounter = state->nodeCounter;
-      if (nodeCounter[node]  != 1)
-        return std::nullopt;
+      if (nodeCounter[node] != 1) return std::nullopt;
 
       Point intersectionPointGuess = toFloatDomain(state->corners[node]);
       for (int i = 0; auto& boundary : globalBoundaries_) {
         auto result = newtonRaphson(boundary.nurbsGeometry, intersectionPointGuess, 50);
 
-        if (result.found)
-          return FindNextBoundaryResult(i, result);
+        if (result.found) return FindNextBoundaryResult(i, result);
         ++i;
       }
       return std::nullopt;
@@ -597,7 +594,7 @@ namespace Dune::IGA::Trim {
     static FieldVector<intType, 2> toIntDomain(const FieldVector<double, 2>& x) { return x * scaleFactor(); }
 
     static double toFloatDomain(intType x) { return x / scaleFactor(); }
-    static FieldVector<double, 2> toFloatDomain(const FieldVector<intType, 2>&  x) { return x / scaleFactor(); }
+    static FieldVector<double, 2> toFloatDomain(const FieldVector<intType, 2>& x) { return x / scaleFactor(); }
 
     static std::vector<Boundary> extractBoundaries(TrimData* trimData) {
       std::vector<Boundary> boundaries;
@@ -701,8 +698,8 @@ namespace Dune::IGA::Trim {
       return {localResult, globalResult, true};
     }
 
-    static std::optional<TraceCurveResult> traceCurveImpl(FindNextBoundaryLoopState* state,
-                                                          CurveGeometry& curveToTrace, const int startEdge) {
+    static std::optional<TraceCurveResult> traceCurveImpl(FindNextBoundaryLoopState* state, CurveGeometry& curveToTrace,
+                                                          const int startEdge) {
       // Look through edges and determine the next Intersection Point (the IPs are sorted counter-clockwise)
       auto pointMapPtr = state->pointMapPtr.get();
       for (auto probes : {probesForStartingPoint, fallbackProbesForStartingPoint}) {
@@ -719,10 +716,9 @@ namespace Dune::IGA::Trim {
           }
           // It may also be on the corresponding Node
           if (state->nodeCounter[entityIdx] > 0 and entityIdx != state->currentNode) {
-            auto nodePoint = toFloatDomain(state->corners[entityIdx]);
+            auto nodePoint                          = toFloatDomain(state->corners[entityIdx]);
             auto [localResult, globalResult, found] = newtonRaphson(curveToTrace, nodePoint, probes);
-            if (found)
-              return std::make_optional<TraceCurveResult>({localResult, globalResult, entityIdx, true});
+            if (found) return std::make_optional<TraceCurveResult>({localResult, globalResult, entityIdx, true});
           }
         }
       }
@@ -787,7 +783,6 @@ namespace Dune::IGA::Trim {
     /// \brief Checks if a point p is on the line spanned by the points a and b within a given tolerance
     static bool pointOnLine(const ClipperPoint& p, const ClipperPoint& a, const ClipperPoint& b,
                             const double tol = tolerance) {
-      // https://stackoverflow.com/a/17693146
       return distance(a, p) + distance(b, p) == distance(a, b);
     }
 

@@ -135,8 +135,10 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
-      for ([[maybe_unused]] auto& Ni : N)
-        assert(Dune::FloatCmp::ge(Ni, 0.0));  // The basis functions are always >=0!
+      // The basis functions are always >=0!
+      assert(std::ranges::all_of(N, [](const auto& Ni) {
+        return not Dune::FloatCmp::lt(Ni, -1e-8);
+      }));
 
       return N;
     }

@@ -76,7 +76,7 @@ namespace Dune::IGA {
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
-      trimData_(_trimData) {
+          trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -139,21 +139,14 @@ namespace Dune::IGA {
 
     [[nodiscard]] int size(int codim) const { return finestPatches_.get()->front().size(codim); }
 
-    /** \brief returns the number of boundary segments within the macro grid */
-    [[nodiscard]] int numBoundarySegments() const {
-      if constexpr (dimension == 1)
-        return 2;
-      else if constexpr (dimension == 2)
-        return (finestPatches_.get()->front().validKnotSize()[0] + finestPatches_.get()->front().validKnotSize()[1])
-               * 2;
-      else if constexpr (dimension == 3)
-        return 2
-               * (finestPatches_.get()->front().validKnotSize()[0] * finestPatches_.get()->front().validKnotSize()[1]
-                  + finestPatches_.get()->front().validKnotSize()[1] * finestPatches_.get()->front().validKnotSize()[2]
-                  + finestPatches_.get()->front().validKnotSize()[0]
-                        * finestPatches_.get()->front().validKnotSize()[2]);
-      __builtin_unreachable();
+    [[nodiscard]] bool reportTrimError() const {
+      for (const auto& patch : *finestPatches_)
+        if (patch.reportTrimError()) return true;
+      return false;
     }
+
+    /** \brief returns the number of boundary segments within the macro grid */
+    [[nodiscard]] int numBoundarySegments() const { return getPatch().numBoundarySegments(); }
     [[nodiscard]] int size(int level, int codim) const { return this->size(codim); }
 
     const GridView& leafGridView() const { return *leafGridView_; }
@@ -183,14 +176,14 @@ namespace Dune::IGA {
     // TODO Fix publicness and privateness
    private:
     void updateStateAfterRefinement(bool omitTrim = false) {
-
       finestPatches_->clear();
       finestPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
 
-      leafGridView_                 = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
-      indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
-      idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
+      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
+      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
     }
+
    public:
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;

@@ -27,13 +27,14 @@
 #include "linearElasticTrimmed.h"
 #include "stressEvaluator.h"
 #include "timer.h"
+#include "anaSolution.h"
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
 
   constexpr int gridDim  = 2;
   constexpr int worldDim = 2;
-  double lambdaLoad      = 10;
+  double lambdaLoad      = 1;
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
@@ -56,9 +57,14 @@ int main(int argc, char **argv) {
 
   const int subsample = postProcessParameters.get<int>("subsample");
 
+  // Log the Paramaters
+  spdlog::info(
+      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, u_degreeElevate, v_degreeElevate, globalRefine, refineInUDirection, refineInVDirection);
+
   /// Instantiate a timer
   Timer timer;
   timer.startTimer("all");
+  auto outputFileName = Timer<>::makeUniqueName(argv[0]);
 
   /// Create Grid
   timer.startTimer("grid");
@@ -69,12 +75,18 @@ int main(int argc, char **argv) {
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
 
+  const auto& patchData = grid->getPatch().getPatchData();
+  spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
+
   grid->globalMultiRefine(globalRefine, refineInUDirection, refineInVDirection);
 
   GridView gridView = grid->leafGridView();
 
   spdlog::info("Loading and trimming the grid took {} milliseconds ", timer.stopTimer("grid").count());
   timer.startTimer("basis");
+
+  // Instantiate Analytical Solution
+  AnalyticalSolution analyticalSolution{E, nu, lambdaLoad, 1, Dune::FieldVector<double, 2>{0, 0}};
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
@@ -89,11 +101,11 @@ int main(int argc, char **argv) {
     });
     Dune::Functions::forEachUntrimmedBoundaryDOF(
         Dune::Functions::subspaceBasis(basis_, 0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
-          if (std::fabs(intersection.geometry().center()[0]) > 4 - 1e-8)
+          if (std::fabs(intersection.geometry().center()[0]) < 1e-8)
             dirichletFlags[localView.index(localIndex)] = true;
         });
   });
-  spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs ",
+  spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs",
                timer.stopTimer("basis").count(), dirichletValues.fixedDOFsize());
 
   /// Declare a vector "fes" of linear elastic 2D planar solid elements
@@ -110,7 +122,15 @@ int main(int argc, char **argv) {
   /// neumann boundary load in horizontal direction
   auto neumannBoundaryLoad = [&](auto &globalCoord, auto &lamb) {
     Eigen::Vector2d F = Eigen::Vector2d::Zero();
-    F[0]              = -lamb;
+    auto stresses = analyticalSolution.stressSolution(globalCoord);
+
+    // left side
+    if (globalCoord(0, 0) > 4 - 1e-8)
+      F << stresses[0], stresses[2];
+    // Top side
+    else if (globalCoord(1, 0) > 4 - 1e-8)
+      F << stresses[2], stresses[1];
+
     return F;
   };
 
@@ -119,7 +139,7 @@ int main(int argc, char **argv) {
   /// Flagging the vertices on which neumann load is applied as true
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
   auto neumannPredicate = [](auto &vertex) -> bool {
-    return std::fabs(vertex[0]) < 1e-8;
+    return std::fabs(vertex[0]) > 4 - 1e-8 or std::fabs(vertex[1]) > 4 - 1e-8;
   };
   for (auto &&vertex : vertices(gridView)) {
     auto coords                             = vertex.geometry().corner(0);
@@ -133,10 +153,12 @@ int main(int argc, char **argv) {
   neumannBoundary.insertFacesByProperty(prop);
 
   /// Add the linear elastic 2D planar solid elements to the vector "fes"
-  for (auto &element : elements(gridView)) {
-    auto localView = basis.flat().localView();
+  timer.startTimer("createElement");
+  for (auto &element : elements(gridView))
     fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
-  }
+
+  spdlog::info("Creating the {} Finite Elements took {} milliseconds ", gridView.size(0), timer.stopTimer("createElement").count());
+
   /// Create a sparse assembler
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
 
@@ -192,111 +214,19 @@ int main(int argc, char **argv) {
     flags[i] = dirichletValues.isConstrained(i);
   auto dirichletFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), flags);
 
+  // Estimate error
+  auto stressFunction = Dune::Vtk::Function<GridView>(std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::user_function>>(
+          gridView, &fes, D_Glob, [](const auto& sigma){
+            Dune::FieldVector<double, 3> res;
+            res[0] = sigma(0, 0);
+            res[1] = sigma(1, 0);
+            res[2] = sigma(2, 0);
+            return res;
+      }, "all_sigmas", lambdaLoad));
 
-  // Analytical solution
-  auto mapToRange = []<std::floating_point T>(T value, T inputMin, T inputMax, T outputMin, T outputMax) -> T {
-    return (value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin) + outputMin;
-  };
-
-  auto toPolar = [&](const auto& pos) -> std::pair<double, double> {
-    auto x = pos[0] - 4;
-    auto y = pos[1];
-
-    auto r = std::hypot(x, y);
-    auto theta = std::atan2(y, x);
-
-    auto pi = std::numbers::pi;
-    if (theta <= pi and theta > pi/2)
-      theta = mapToRange(theta, pi, pi/2, 0.0, pi/2);
-    else if (theta < 0 and theta > -pi/2)
-      theta *= -1;
-    else if (theta <= -pi/2 and theta >= -pi)
-      theta = mapToRange(theta, -pi, -pi/2, 0.0, pi/2);
-
-    return {r, theta};
-  };
-
-
-  double Tx = lambdaLoad;
-  double R = 1;
-
-  auto analyticalSolution = [&](const auto& pos) -> Dune::FieldVector<double, 3>{
-    auto [r, theta] = toPolar(pos);
-
-    auto th  = Tx / 2;
-    auto rr2 = std::pow(R, 2) / std::pow(r, 2);
-    auto rr4 = std::pow(R, 4) / std::pow(r, 4);
-    auto cos2t = std::cos(2 * theta);
-    auto sin2t = std::sin(2 * theta);
-
-    Dune::FieldVector<double, 3> sigma_thetar;
-    sigma_thetar[0] = th * (1 - rr2) + th * (1 + 3 * rr4 - 4 * rr2) * cos2t;
-    sigma_thetar[1] = th * (1 + rr2) - th * (1 + 3 * rr4) * cos2t;
-    sigma_thetar[2] = - th * (1 - 3 * rr4 + 2 * rr2) * sin2t;
-
-    return sigma_thetar;
-  };
-
-  auto coordinateTransform = [&](const Dune::FieldVector<double, 3>& stress, double theta) -> Dune::FieldVector<double, 3> {
-    auto cos2t = std::cos(2 * theta);
-    auto sin2t = std::sin(2 * theta);
-
-    const auto s_x = stress[0];
-    const auto s_y = stress[1];
-    const auto s_xy = stress[2];
-
-    auto hpl = 0.5 * (s_x + s_y);
-    auto hmi = 0.5 * (s_x - s_y);
-
-    Dune::FieldVector<double, 3> sigma_transformed;
-    sigma_transformed[0] = hpl + hmi * cos2t + s_xy * sin2t;
-    sigma_transformed[1] = hpl - hmi * cos2t - s_xy * sin2t;
-    sigma_transformed[2] = - hmi  * sin2t + s_xy * cos2t;
-
-    return sigma_transformed;
-  };
-
-  auto analyticalSolutionBackTransformed = [&](const auto& pos) -> Dune::FieldVector<double, 3> {
-    auto sigma_thetar = analyticalSolution(pos);
-
-    auto [r, theta] = toPolar(pos);
-    theta *= -1;
-    return coordinateTransform(sigma_thetar, theta);
-  };
-
-  using namespace Dune::Functions;
-
-
-  auto allSigmas = [](const auto& sigma) {
-    Dune::FieldVector<double, 3> res;
-    res[0] = sigma(0, 0);
-    res[1] = sigma(1, 0);
-    res[2] = sigma(2, 0);
-    return res;
-  };
-
-  auto localStress = localFunction(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::user_function>>(
-          gridView, &fes, D_Glob, allSigmas, "all_sigmas", lambdaLoad)));
-
-  auto analyticalSolutionFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolutionBackTransformed, gridView);
-  auto localStressAnalytic = localFunction(analyticalSolutionFunction);
-
-  double l2_error = 0.0;
-  for (auto& ele : elements(gridView)) {
-    localStress.bind(ele);
-    localStressAnalytic.bind(ele);
-
-    const auto rule = ele.impl().getQuadratureRule();
-
-    for (auto& gp : rule) {
-      const auto stress_ana = localStressAnalytic(gp.position());
-      const auto stress_fe = localStress(gp.position());
-
-      l2_error += Dune::power(stress_ana[0] - stress_fe[0], 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
-    }
-  }
-  spdlog::info("l2 error: {}", l2_error);
+  auto l2_error = analyticalSolution.estimateError(gridView, stressFunction, dispGlobalFunc);
+  spdlog::info("Stress l2 error: x {}, y {}, z {}", l2_error[0], l2_error[1], l2_error[2]);
+  spdlog::info("Displacement l2 error: x {}, y {}", l2_error[3], l2_error[4]);
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
@@ -315,15 +245,14 @@ int main(int argc, char **argv) {
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
           gridView, &fes, D_Glob, lambdaLoad)));
 
-  vtkWriter.addPointData(analyticalSolutionFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
+  auto stressGridFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution.stressLambda(), gridView);
+  auto displacementGridFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution.displacementLambda(), gridView);
 
-  double totalForce = 0.0;
-  for (auto &f : Fext)
-    totalForce += f;
+  vtkWriter.addPointData(stressGridFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
+  vtkWriter.addPointData(displacementGridFunction, Dune::VTK::FieldInfo("displacement solution", Dune::VTK::FieldInfo::Type::vector, 2));
 
-  std::cout << "Total Force: " << totalForce << std::endl;
 
-  vtkWriter.write(gridFileName);
+  vtkWriter.write(outputFileName);
 
   return 0;
 }
