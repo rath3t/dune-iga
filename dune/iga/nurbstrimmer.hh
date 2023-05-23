@@ -45,7 +45,8 @@ namespace Dune::IGA::Trim {
     static constexpr double tolerance = 1e-8;
 
     /// Newton Raphson Control Parameters
-    static constexpr double objectiveFctTolerance       = 1e-8;
+    static constexpr double closestPointDistanceTolerance       = 1e-8;
+    static constexpr double objectiveFctTolerance       = 1e-4;
     static constexpr int probesForStartingPoint         = 5;
     static constexpr int fallbackProbesForStartingPoint = 350;
     static constexpr int maxIterations                  = 50;
@@ -669,8 +670,10 @@ namespace Dune::IGA::Trim {
       {
         return 0.5*(curve(u_) - intersectionPoint).two_norm2();
       };
-      auto [u,fu]= brentFindMinimum(dist,lowU,upperU,objectiveFctTolerance);
-
+      //FIXME ist das hier korrekt jetzt?
+      auto [u,fu]= brentFindMinimum(dist,lowU,upperU,closestPointDistanceTolerance);
+      if (fu>objectiveFctTolerance) return {u, intersectionPoint, false};
+      std::cout<<"u: "<<u<<"fu: "<<fu<<std::endl;
       return {u, curve(u), true};
     }
 

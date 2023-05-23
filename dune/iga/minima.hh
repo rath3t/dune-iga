@@ -112,7 +112,7 @@ namespace Dune {
     } while (--count);
 
     max_iter -= count;
-//    std::cout<<"countU: "<<countU<<std::endl;
+    std::cout<<"countU: "<<countU<<std::endl;
     return std::make_pair(x, fx);
   }
 
