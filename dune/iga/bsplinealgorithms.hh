@@ -106,6 +106,7 @@ namespace Dune::IGA {
       assert(spIndex < knots.size() - p - 1);
       DynamicVectorType N;
       N.resize(p + 1, 0.0);
+      u=std::clamp(u,knots.front(),knots.back());
       if (Dune::FloatCmp::eq(u, knots.back()))  // early exit
       {
         N.back() = 1;

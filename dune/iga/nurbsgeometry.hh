@@ -140,7 +140,7 @@ namespace Dune::IGA {
         {
           return 0.5*((*this).global(u) - global).two_norm2();
         };
-        auto [x,fx]= brentFindMinimum(dist,patchData_->knotSpans[0].front(),patchData_->knotSpans[0].back(),tolerance);
+        auto [x,fx]= brentFindMinimum(dist,0.0,1.0,tolerance);
         return x;
       }
         else {

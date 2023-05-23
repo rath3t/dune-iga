@@ -85,6 +85,8 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
 
+    [[nodiscard]] bool isConforming()const {return true;}
+
     NURBSLeafGridView(
         const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>>
             &leafpatches,

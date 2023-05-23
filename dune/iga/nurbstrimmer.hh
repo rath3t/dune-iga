@@ -11,6 +11,7 @@
 #include <dune/grid/yaspgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
+#include <dune/iga/minima.hh>
 
 namespace Dune::IGA {
   enum class ElementTrimFlag { full, empty, trimmed };
@@ -44,7 +45,7 @@ namespace Dune::IGA::Trim {
     static constexpr double tolerance = 1e-8;
 
     /// Newton Raphson Control Parameters
-    static constexpr double objectiveFctTolerance       = 1e-4;
+    static constexpr double objectiveFctTolerance       = 1e-8;
     static constexpr int probesForStartingPoint         = 5;
     static constexpr int fallbackProbesForStartingPoint = 350;
     static constexpr int maxIterations                  = 50;
@@ -664,35 +665,13 @@ namespace Dune::IGA::Trim {
 
       if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {lowU, start, true};
       if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {upperU, end, true};
+      auto dist=[&](auto&& u_)
+      {
+        return 0.5*(curve(u_) - intersectionPoint).two_norm2();
+      };
+      auto [u,fu]= brentFindMinimum(dist,lowU,upperU,objectiveFctTolerance);
 
-      // We assume that the intersectionPoint is "exactly" on the geometry, and the corresponding u has to be found
-      Dune::FieldVector<double, 1> u{findGoodStartingPoint(curve, intersectionPoint, probes)};
-      Dune::FieldVector<double, 1> du;
-
-      // Set up the algorithm
-      Point dGlobal;
-      int i = 0;
-      do {
-        dGlobal = curve(u[0]) - intersectionPoint;
-
-        using MatrixHelper = typename Dune::MultiLinearGeometryTraits<double>::MatrixHelper;
-        MatrixHelper::template xTRightInvA<1, 2>(curve.jacobianTransposed(u[0]), dGlobal, du);
-
-        // Update the guess
-        u -= du;
-
-        if (++i > maxIterations) return {u[0], intersectionPoint, false};
-
-        // Clamp result, this might be already an indicator that there is no solution
-        if (Dune::FloatCmp::gt(u[0], curve.patchData_->knotSpans[0].back())) u[0] = upperU;
-        if (Dune::FloatCmp::lt(u[0], curve.patchData_->knotSpans[0].front())) u[0] = lowU;
-
-      } while (dGlobal.two_norm() > objectiveFctTolerance);
-
-      double localResult = u[0];
-      auto globalResult  = curve(localResult);
-
-      return {localResult, globalResult, true};
+      return {u, curve(u), true};
     }
 
     static std::optional<TraceCurveResult> traceCurveImpl(FindNextBoundaryLoopState* state, CurveGeometry& curveToTrace,
