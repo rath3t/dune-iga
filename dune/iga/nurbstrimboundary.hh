@@ -144,7 +144,7 @@ namespace Dune::IGA {
     }
 
    private:
-    // TODO Maybe use Clipper::isPositive
+    // TODO Maybe use Clipper::isPositive FIXME yes?
     static auto determineOrientation(const std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
       // extract some vertices to test
       std::vector<Dune::FieldVector<double, 2>> vertices;
