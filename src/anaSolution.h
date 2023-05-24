@@ -116,7 +116,8 @@ struct AnalyticalSolution {
       auto localStressAnalytic = localFunction(Dune::Functions::makeAnalyticGridViewFunction(stressLambda(), gridView));
       auto localDisplacementAnalytic = localFunction(Dune::Functions::makeAnalyticGridViewFunction(displacementLambda(), gridView));
 
-      std::array<double, 5> l2_error{};
+      double l2_error_stress = 0.0;
+      double l2_error_displacement = 0.0;
 
       for (auto& ele : elements(gridView)) {
         localStress.bind(ele);
@@ -129,20 +130,24 @@ struct AnalyticalSolution {
 
         for (auto& gp : rule) {
           const auto stress_ana = localStressAnalytic(gp.position());
-          const auto stress_fe = localStress(gp.position());
+          const auto stress_fe_ = localStress(gp.position());
+
+          // As stress_fe is not a FieldVector but something strange we do
+          Dune::FieldVector<double, 3> stress_fe {stress_fe_[0], stress_fe_[1], stress_fe_[2]};
 
           const auto displ_ana = localDisplacementAnalytic(gp.position());
           const auto displ_fe = localDisplacements(gp.position());
 
-          for (int i : std::views::iota(0, 3))
-            l2_error[i] += Dune::power(stress_ana[i] - stress_fe[i], 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
-          for (int i : std::views::iota(3, 5))
-            l2_error[i] += Dune::power(displ_ana[i-3] - displ_fe[i-3], 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+          auto diff_stress = (stress_ana - stress_fe).two_norm();
+          auto diff_displacement = (displ_ana - displ_fe).two_norm();
+
+          l2_error_stress += Dune::power(diff_stress, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
+          l2_error_displacement += Dune::power(diff_displacement, 2) * ele.geometry().integrationElement(gp.position()) * gp.weight();
 
         }
       }
 
-      return l2_error;
+      return {std::sqrt(l2_error_stress), std::sqrt(l2_error_displacement)};
   }
 
  private:

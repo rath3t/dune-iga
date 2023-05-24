@@ -25,7 +25,7 @@
 #include <dune/vtk/vtkwriter.hh>
 
 #include "igaHelpers.h"
-#include "../../Masterarbeit-git/03_analysis/02_ikarus_fe/ikarus-analysis/src/stressEvaluator.h"
+#include "stressEvaluator.h"
 #include "timer.h"
 #include "ReissnerMindlinPlate.hh"
 
@@ -48,18 +48,25 @@ int main(int argc, char **argv) {
   const auto u_degreeElevate = gridParameters.get<int>("u_degreeElevate");
   const auto v_degreeElevate = gridParameters.get<int>("v_degreeElevate");
   const auto globalRefine    = gridParameters.get<int>("globalRefine");
+  const auto refineInUDirection = gridParameters.get<int>("u_refine");
+  const auto refineInVDirection = gridParameters.get<int>("v_refine");
 
   const auto E  = materialParameters.get<double>("E");
   const auto nu = materialParameters.get<double>("nu");
   const auto thk = materialParameters.get<double>("thk");
 
-  double lambdaLoad      = 1 * std::pow(thk, 3);
+  double lambdaLoad      = std::pow(thk, 3);
 
   const int subsample = postProcessParameters.get<int>("subsample");
+
+  // Log the Paramaters
+  spdlog::info(
+      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {}, thk {}\nLoad: {}\nRefinements: global {}, u {}, v {}", gridFileName, E, nu, thk, lambdaLoad, globalRefine, refineInUDirection, refineInVDirection);
 
   /// Instantiate a timer
   Timer timer;
   timer.startTimer("all");
+  auto outputFileName = Timer<>::makeUniqueName(argv[0]);
 
   /// Create Grid
   timer.startTimer("grid");
@@ -69,7 +76,12 @@ int main(int argc, char **argv) {
 
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
-  grid->globalRefine(globalRefine);
+
+  const auto& patchData = grid->getPatch().getPatchData();
+  spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
+
+  grid->globalMultiRefine(globalRefine, refineInUDirection, refineInVDirection);
+
   GridView gridView = grid->leafGridView();
 
   spdlog::info("Loading and trimming the grid took {} milliseconds ", timer.stopTimer("grid").count());
@@ -78,7 +90,6 @@ int main(int argc, char **argv) {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<3>(gridView.impl().getPreBasis(), FlatInterleaved()));
 
-  // Clamp the left boundary
   Ikarus::DirichletValues dirichletValues(basis.flat());
 
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
@@ -89,22 +100,25 @@ int main(int argc, char **argv) {
   spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs ",
                timer.stopTimer("basis").count(), dirichletValues.fixedDOFsize());
 
-  /// Declare a vector "fes" of kirchhoff plate 2D elements
+  /// Declare a vector "fes" of reissnerMindlin plate 2D elements
   using LinearElasticType = Ikarus::ReissnerMindlinPlate<decltype(basis)>;
   std::vector<LinearElasticType> fes;
 
   auto volumeLoad = [](auto &globalCoord, auto &lamb) {
     Eigen::Vector3d fext;
     fext.setZero();
-    fext[0] = lamb;
+    fext[0] = -lamb;
     return fext;
   };
 
-  /// Add the linear elastic 2D planar solid elements to the vector "fes"
-  for (auto &element : elements(gridView)) {
-    auto localView = basis.flat().localView();
+  /// Add the  elements to the vector "fes"
+  timer.startTimer("createElement");
+
+  for (auto &element : elements(gridView))
     fes.emplace_back(basis, element, E, nu, thk, volumeLoad);
-  }
+
+  spdlog::info("Creating the {} Finite Elements took {} milliseconds ", gridView.size(0), timer.stopTimer("createElement").count());
+
   /// Create a sparse assembler
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
 
@@ -138,7 +152,7 @@ int main(int argc, char **argv) {
   const auto &Fext = nonLinOp.value();
 
   /// solve the linear system
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::si_ConjugateGradient);
   timer.startTimer("solve");
 
   linSolver.compute(K);
@@ -161,6 +175,15 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 3));
 
+  // Dirichlet Flag func
+  std::vector<int> flags(dirichletValues.size());
+  for (size_t i : std::views::iota(0u, dirichletValues.size()))
+    flags[i] = dirichletValues.isConstrained(i);
+  auto dirichletFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 3>>(basis.flat(), flags);
+
+  vtkWriter.addPointData(dirichletFunc,
+                         Dune::VTK::FieldInfo("dirichlet BC", Dune::VTK::FieldInfo::Type::vector, 3));
+
 
   vtkWriter.addCellData(Dune::Vtk::Function<GridView>(
       std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::RM_moments>>(
@@ -173,10 +196,10 @@ int main(int argc, char **argv) {
   double totalForce = 0.0;
   for (auto &f : Fext)
     totalForce += f;
-  std::cout << "Total Force: " << totalForce << std::endl;
+  spdlog::info("Total Force {}", totalForce);
 
 
-  vtkWriter.write(gridFileName);
+  vtkWriter.write(outputFileName);
 
   return 0;
 }

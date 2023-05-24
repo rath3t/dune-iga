@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 
   // Log the Paramaters
   spdlog::info(
-      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, u_degreeElevate, v_degreeElevate, globalRefine, refineInUDirection, refineInVDirection);
+      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, refineInUDirection, refineInVDirection);
 
   /// Instantiate a timer
   Timer timer;
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   timer.startTimer("basis");
 
   // Instantiate Analytical Solution
-  AnalyticalSolution analyticalSolution{E, nu, lambdaLoad, 1, Dune::FieldVector<double, 2>{0, 0}};
+  AnalyticalSolution analyticalSolution{E, nu, lambdaLoad, 1.0, Dune::FieldVector<double, 2>{0, 0}};
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
@@ -188,8 +188,8 @@ int main(int argc, char **argv) {
   spdlog::info("The assembly took {} milliseconds with {} dofs", timer.stopTimer("assemble").count(),
                basis.flat().size());
 
-  const auto &K    = nonLinOp.derivative();
-  const auto &Fext = nonLinOp.value();
+  const auto& K    = nonLinOp.derivative();
+  const auto& Fext = nonLinOp.value();
 
   /// solve the linear system
   auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
@@ -225,8 +225,8 @@ int main(int argc, char **argv) {
       }, "all_sigmas", lambdaLoad));
 
   auto l2_error = analyticalSolution.estimateError(gridView, stressFunction, dispGlobalFunc);
-  spdlog::info("Stress l2 error: x {}, y {}, z {}", l2_error[0], l2_error[1], l2_error[2]);
-  spdlog::info("Displacement l2 error: x {}, y {}", l2_error[3], l2_error[4]);
+  spdlog::info("Stress l2 error: {}", l2_error[0]);
+  spdlog::info("Displacement l2 error: {}", l2_error[1]);
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
@@ -250,7 +250,6 @@ int main(int argc, char **argv) {
 
   vtkWriter.addPointData(stressGridFunction, Dune::VTK::FieldInfo("stress solution", Dune::VTK::FieldInfo::Type::vector, 3));
   vtkWriter.addPointData(displacementGridFunction, Dune::VTK::FieldInfo("displacement solution", Dune::VTK::FieldInfo::Type::vector, 2));
-
 
   vtkWriter.write(outputFileName);
 

@@ -164,7 +164,42 @@ namespace Ikarus {
       const auto C   = getMaterialTangent();
       const auto geo = this->localView().element().geometry();
 
+      auto& fe  = this->localView().tree().child(0).finiteElement();
+      const auto& lBasis = fe.localBasis();
+
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
+#if 0
+        const auto Jinv         = geo.jacobianInverseTransposed(gp.position());
+        const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+
+        std::vector<Dune::FieldMatrix<double, 1, 2>> referenceGradients;
+        lBasis.evaluateJacobian(gp.position(), referenceGradients);
+        std::vector<Dune::FieldVector<double, 2>> gradients(referenceGradients.size());
+
+        for (size_t i = 0; i < gradients.size(); i++)
+          Jinv.mv(referenceGradients[i][0], gradients[i]);
+
+        std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
+        lBasis.evaluateFunction(gp.position(), shapeFunctionValues);
+
+        Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(shapeFunctionValues.size());
+        Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(shapeFunctionValues.size());
+        for (size_t i = 0; i < shapeFunctionValues.size(); i++) {
+          dNdx[i] = gradients[i][0];
+          dNdy[i] = gradients[i][1];
+        }
+
+        Eigen::MatrixXd bop;
+        bop.setZero(3, this->localView().size());
+        for (auto i = 0U; i < shapeFunctionValues.size(); ++i) {
+          bop(0, 2 * i) = dNdx(i);
+          bop(2, 2 * i) = dNdy(i);
+
+          bop(1, 2 * i + 1) = dNdy(i);
+          bop(2, 2 * i + 1) = dNdx(i);
+        }
+        K += bop.transpose() * C * bop * intElement;
+#endif
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         for (size_t i = 0; i < numberOfNodes; ++i) {
           const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
@@ -183,12 +218,58 @@ namespace Ikarus {
       using namespace Dune;
 
       const auto eps = getStrainFunction(req.getFERequirements());
+      const auto& disp       = req.getGlobalSolution(Ikarus::FESolutions::displacement);
       const auto C   = getMaterialTangent();
       auto gp        = toDune(local);
-      auto epsVoigt  = eps.evaluate(gp, on(gridElement));
 
-      auto cauchyStress = (C * epsVoigt).eval();
+     auto epsVoigt  = eps.evaluate(gp, on(gridElement));
+     auto cauchyStress = (C * epsVoigt).eval();
+#if 0
+      auto& fe  = this->localView().tree().child(0).finiteElement();
+      const auto& lBasis = fe.localBasis();
+      const auto geo = this->localView().element().geometry();
 
+      Eigen::VectorXd local_disp;
+      local_disp.setZero(this->localView().size());
+
+      int disp_counter = 0;
+      for (size_t i = 0; i < fe.size(); ++i)
+        for (size_t j = 0; j < 2; ++j) {
+          auto globalIndex         = this->localView().index(this->localView().tree().child(j).localIndex(i));
+          local_disp[disp_counter] = disp[globalIndex];
+          disp_counter++;
+        }
+
+      const auto Jinv = geo.jacobianInverseTransposed(gp);
+      std::vector<Dune::FieldMatrix<double, 1, 2>> referenceGradients;
+      lBasis.evaluateJacobian(gp, referenceGradients);
+      std::vector<Dune::FieldVector<double, 2>> gradients(referenceGradients.size());
+
+      for (size_t i = 0; i < gradients.size(); i++)
+        Jinv.mv(referenceGradients[i][0], gradients[i]);
+
+      std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
+      lBasis.evaluateFunction(gp, shapeFunctionValues);
+
+      Eigen::VectorXd dNdx = Eigen::VectorXd::Zero(shapeFunctionValues.size());
+      Eigen::VectorXd dNdy = Eigen::VectorXd::Zero(shapeFunctionValues.size());
+      for (size_t i = 0; i < shapeFunctionValues.size(); i++) {
+        dNdx[i] = gradients[i][0];
+        dNdy[i] = gradients[i][1];
+      }
+
+      Eigen::MatrixXd bop;
+      bop.setZero(3, this->localView().size());
+      for (auto i = 0U; i < shapeFunctionValues.size(); ++i) {
+        bop(0, 2 * i) = dNdx(i);
+        bop(2, 2 * i) = dNdy(i);
+
+        bop(1, 2 * i + 1) = dNdy(i);
+        bop(2, 2 * i + 1) = dNdx(i);
+      }
+
+      auto cauchyStress = C * bop * local_disp;
+#endif
       typename ResultTypeMap<double>::ResultArray resultVector;
       if (req.isResultRequested(ResultType::cauchyStress)) {
         resultVector.resize(3, 1);

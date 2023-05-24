@@ -135,6 +135,7 @@ namespace Ikarus {
 
               energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
             }
+            std::cout << "There was a clamping" << std::endl;
           }
 
       return energy;

@@ -56,9 +56,14 @@ int main(int argc, char **argv) {
 
   const int subsample = postProcessParameters.get<int>("subsample");
 
+  // Log the Paramaters
+  spdlog::info(
+      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, refineInUDirection, refineInVDirection);
+
   /// Instantiate a timer
   Timer timer;
   timer.startTimer("all");
+  auto outputFileName = Timer<>::makeUniqueName(argv[0]);
 
   /// Create Grid
   timer.startTimer("grid");
@@ -70,6 +75,9 @@ int main(int argc, char **argv) {
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
   grid->globalRefine(globalRefine);
   GridView gridView = grid->leafGridView();
+
+  const auto& patchData = grid->getPatch().getPatchData();
+  spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 
   spdlog::info("Loading and trimming the grid took {} milliseconds ", timer.stopTimer("grid").count());
   timer.startTimer("basis");
@@ -85,7 +93,7 @@ int main(int argc, char **argv) {
       dirichletFlags[localView.index(localIndex)] = true;
     });
   });
-  spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs ",
+  spdlog::info("Creating a basis and fixing dofs took {} milliseconds, fixed {} dofs",
                timer.stopTimer("basis").count(), dirichletValues.fixedDOFsize());
 
   /// Declare a vector "fes" of kirchhoff plate 2D elements
@@ -93,10 +101,13 @@ int main(int argc, char **argv) {
   std::vector<LinearElasticType> fes;
 
   /// Add the linear elastic 2D planar solid elements to the vector "fes"
+  timer.startTimer("createElement");
   for (auto &element : elements(gridView)) {
     auto localView = basis.flat().localView();
     fes.emplace_back(basis, element, E, nu, thk);
   }
+  spdlog::info("Creating the {} Finite Elements took {} milliseconds ", gridView.size(0), timer.stopTimer("createElement").count());
+
   /// Create a sparse assembler
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
 
