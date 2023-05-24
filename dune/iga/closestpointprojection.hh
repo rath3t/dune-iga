@@ -136,7 +136,7 @@ namespace Dune {
         Rnorm = R.two_norm();
         if (Rnorm < tol) break;
       }
-      //      std::cout<<"i: "<<i;
+            std::cout<<"i: "<<i;
       // If we end up at the boundary, and the residual is non-zero, we restart at the opposite domain boundary
       // If this does also not help we return the point at the boundary with smaller energy(distance)
       for (int j = 0; j < dim; ++j)
@@ -150,11 +150,11 @@ namespace Dune {
             uRestart[j] = domain[j][0];
         decltype(uD) uARestart{};
         std::ranges::copy(uRestart, std::begin(uARestart));
-        //        std::cout << "lowUI " << domain[0][0] << " upperUI " << domain[0][1] << std::endl;
-        //        std::cout<<"uRestart "<<uRestart<<std::endl;
+                std::cout << "lowUI " << domain[0][0] << " upperUI " << domain[0][1] << std::endl;
+                std::cout<<"uRestart "<<uRestart<<std::endl;
         auto [u2, Rnorm2, energyVal2] = simpleClosestPointProjection(geo, point, uARestart);
-        //        std::cout<<" u2 "<<u2[0]<<" Rnorm2 "<<Rnorm2<<" energyVal2 "<<energyVal2<<std::endl;
-        //        std::cout<<" u "<<u<<" Rnorm "<<Rnorm<<" energyVal "<<energyVal<<std::endl;
+                std::cout<<" u2 "<<u2[0]<<" Rnorm2 "<<Rnorm2<<" energyVal2 "<<energyVal2<<std::endl;
+                std::cout<<" u "<<u<<" Rnorm "<<Rnorm<<" energyVal "<<energyVal<<std::endl;
 
         return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal) : std::make_tuple(u2, Rnorm2, energyVal2);
       }

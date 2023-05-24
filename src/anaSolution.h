@@ -9,7 +9,7 @@ struct AnalyticalSolution {
   double nu;
   double Tx;
   double R;
-  
+
   double kappa{(3 - nu) / (1 + nu)};
   double G{E / (2 * (1 + nu))};
 
