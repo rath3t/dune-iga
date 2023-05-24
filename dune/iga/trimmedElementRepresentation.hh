@@ -100,7 +100,7 @@ namespace Dune::IGA {
       VecType local;
       for (int i = 0; i < dim; ++i) {
         local[i] = (cp[i] - offset[i]) / scaling[i];
-        local[i] = local[i] < 0.0 ? 0.0 : local[i];
+        local[i] = local[i] < 0.0 ? 0.0 : local[i]; //FIXME use std:::clamp
         local[i] = local[i] > 1.0 ? 1.0 : local[i];
       }
       return local;
@@ -131,7 +131,7 @@ namespace Dune::IGA {
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
-      if (innerBoundaries.has_value())
+      if (innerBoundaries.has_value()) //FIXME is implicitly convertible to bool
         for (auto& innerLoop : innerBoundaries.value())
           for (auto& boundary : innerLoop)
             gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
@@ -211,7 +211,7 @@ namespace Dune::IGA {
           auto geometry = boundary.nurbsGeometry;
 
           innerLoop.clear();
-          auto u = Utilities::linspace(boundary.domain, 4);
+          auto u = Utilities::linspace(boundary.domain, 4); //FIXME what happens here?
 
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[0], u[1]});
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[1], u[2]});
@@ -271,7 +271,7 @@ namespace Dune::IGA {
     void splitBoundaries() {
       splitOuterBoundaries();
 
-      if (innerBoundaries.has_value())
+      if (innerBoundaries.has_value()) //FIXME is also implicitly convertable to bool
         std::ranges::for_each(innerBoundaries.value(), [&](auto& boundaries) { splitInnerBoundaryLoops(boundaries); });
     }
 
