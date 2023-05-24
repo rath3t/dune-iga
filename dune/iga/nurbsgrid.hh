@@ -17,6 +17,10 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
+#include <stdlib.h>
+#include <mutex>
+
+std::once_flag onceFlag;
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -122,6 +126,7 @@ namespace Dune::IGA {
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
       updateStateAfterRefinement(omitTrim);
+      std::call_once ( onceFlag, [ ]{ putenv(strdup("ALUGRID_VERBOSITY_LEVEL=0")); } );
     }
 
     void globalRefineInDirection(const int dir, const int refinementLevel, bool omitTrim = false) {
@@ -175,6 +180,7 @@ namespace Dune::IGA {
 
     // TODO Fix publicness and privateness
    private:
+
     void updateStateAfterRefinement(bool omitTrim = false) {
       finestPatches_->clear();
       finestPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);

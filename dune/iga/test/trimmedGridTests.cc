@@ -242,7 +242,7 @@ auto testDataCollectorAndVtkWriter() {
 
 
 auto testExampleSuite() {
-  TestSuite t;
+  TestSuite t("",TestSuite::AlwaysThrow);
 
   Dune::GeometryChecker<NURBSGrid<2, 2>> geometryChecker2;
   Dune::GeometryChecker<NURBSGrid<2, 3>> geometryChecker3;
@@ -280,6 +280,11 @@ auto testExampleSuite() {
   testLoop(grid, 4, "nurbs_1");
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
+  const auto gv = grid->leafGridView();
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
+
+  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+  writer2.write("TestFileTest");
   testLoop(grid, 2, "surface-multihole");
 
   auto grid3 = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");

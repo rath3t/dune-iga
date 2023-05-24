@@ -108,20 +108,20 @@ namespace Dune::IGA {
     IbraReader() = delete;
 
    private:
-    static auto constructGlobalBoundaries(Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
-      TrimData data{};
 
+    static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
+      auto data =std::make_shared<TrimData>();
       std::vector<Boundary> boundaries;
-      auto loops = brep.loops;
+      std::vector<Ibra::BrepLoop> loops = brep.loops;
       for (Ibra::BrepLoop& loop : loops) {
         boundaries.clear();
-        for (auto& trim : loop.trims) {
+        for (Ibra::BrepTrim& trim : loop.trims) {
           boundaries.emplace_back(trim);
         }
-        data.addLoop(boundaries);
+        data->addLoop(boundaries);
       }
 
-      return std::make_shared<TrimData>(data);
+      return data;
     }
   };
 

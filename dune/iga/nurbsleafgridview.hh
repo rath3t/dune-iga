@@ -24,6 +24,7 @@ namespace Dune::IGA {
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
     typedef typename GridImp ::Traits ::CollectiveCommunication CollectiveCommunication;
+    typedef typename GridImp ::Traits ::CollectiveCommunication Communication;
     typedef typename GridImp ::Traits ::LeafIntersection Intersection;
 
     template <int cd>

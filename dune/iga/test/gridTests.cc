@@ -654,7 +654,7 @@ auto testBsplineBasisFunctions() {
     test.check(eq(Nf(i / (NAtEvalPoints.size() - 1.0) * 2.0)[0], NAtEvalPoints[i]));
   }
 
-  std::array<double, 2> xieta{0.2, 0.25};
+  Dune::FieldVector<double, 2> xieta{0.2, 0.25};
   std::array<std::vector<double>, 2> knots2 = {{{0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3}, {0, 0, 0, 2, 2, 2}}};
   std::array<int, 2> degree2{2, 2};
   const std::vector<std::vector<double>> weights2

@@ -7,6 +7,7 @@
 #include <clipper2/clipper.core.h>
 #include <mapbox/earcut.hpp>
 
+
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
@@ -54,7 +55,6 @@ namespace Dune::IGA {
     std::vector<Boundary> outerBoundaries;
     std::optional<std::vector<std::vector<Boundary>>> innerBoundaries;
     bool trimmed{};
-    bool gridConstructed{};
     bool verbose{};
     std::array<double, dim> scaling{};
     std::array<double, dim> offset{};
@@ -89,7 +89,7 @@ namespace Dune::IGA {
     }
     [[nodiscard]] bool isTrimmed() const { return trimmed; }
     void refineAndConstructGrid(unsigned int refinement = 0) {
-      if (not gridConstructed) constructFromCorners();
+      if (not grid) constructFromCorners();
 
       if (refinement > 0) grid->globalRefine(refinement);
     }
@@ -139,7 +139,7 @@ namespace Dune::IGA {
 
       // Create Grid
       grid            = gridFactory.createGrid();
-      gridConstructed = true;
+
       if (preGlobalRefine > 0) grid->globalRefine(preGlobalRefine);
 
       refineGridOnEdges(edgeRefinements);
@@ -236,7 +236,6 @@ namespace Dune::IGA {
       }
 
       grid            = gridFactory.createGrid();
-      gridConstructed = true;
     }
 
    public:
@@ -257,7 +256,7 @@ namespace Dune::IGA {
 
     /// \brief Calculates the area from the simplex elements in the current grid
     [[nodiscard]] double calculateArea() const {
-      if (not gridConstructed)
+      if (not grid)
         throw std::runtime_error("Grid for full element not yet constructed, use refinedGridView to lazily construct");
 
       GridView gv = grid->leafGridView();

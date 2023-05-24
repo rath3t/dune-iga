@@ -9,9 +9,9 @@
 
 #include "dune/iga/nurbstrimutils.hh"
 #include <dune/grid/yaspgrid.hh>
+#include <dune/iga/closestpointprojection.hh>
 #include <dune/iga/nurbspatchgeometry.h>
 #include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/minima.hh>
 
 namespace Dune::IGA {
   enum class ElementTrimFlag { full, empty, trimmed };
@@ -45,8 +45,7 @@ namespace Dune::IGA::Trim {
     static constexpr double tolerance = 1e-8;
 
     /// Newton Raphson Control Parameters
-    static constexpr double closestPointDistanceTolerance       = 1e-8;
-    static constexpr double objectiveFctTolerance       = 1e-4;
+    static constexpr double gapTolerance       = 1e-4;
     static constexpr int probesForStartingPoint         = 5;
     static constexpr int fallbackProbesForStartingPoint = 350;
     static constexpr int maxIterations                  = 50;
@@ -654,6 +653,7 @@ namespace Dune::IGA::Trim {
       std::ranges::transform(linSpace, std::back_inserter(distances),
                              [&](const auto& u) { return distance(curve(u), intersectionPoint); });
       auto min_it  = std::ranges::min_element(distances);
+
       auto min_idx = std::ranges::distance(distances.begin(), min_it);
       return linSpace[min_idx];
     }
@@ -666,15 +666,78 @@ namespace Dune::IGA::Trim {
 
       if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {lowU, start, true};
       if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {upperU, end, true};
-      auto dist=[&](auto&& u_)
-      {
-        return 0.5*(curve(u_) - intersectionPoint).two_norm2();
-      };
+
+      auto [u,Ru,fu]=Dune::IGA::simpleClosestPointProjection(curve,intersectionPoint);
       //FIXME ist das hier korrekt jetzt?
-      auto [u,fu]= brentFindMinimum(dist,lowU,upperU,closestPointDistanceTolerance);
-      if (fu>objectiveFctTolerance) return {u, intersectionPoint, false};
-      std::cout<<"u: "<<u<<"fu: "<<fu<<std::endl;
-      return {u, curve(u), true};
+      auto [u2, intersectionPoint2, found]= newtonRaphson2(curve,intersectionPoint,probes);
+      auto gap = (curve(u[0])-intersectionPoint).two_norm();
+      bool newFound = gap <= gapTolerance;
+      if(!(found==newFound) and !newFound) { //write statements if the old methods found a point and the new didn't
+        std::cout << "start " << start << std::endl;
+        std::cout << "end " << end << std::endl;
+        std::cout << "u: " << u << " fu: " << fu << std::endl;
+        std::cout << "Ru " << Ru << std::endl;
+        std::cout << "curve(u) " << curve(u[0]) << std::endl;
+        std::cout << "intersectionPoint " << intersectionPoint << std::endl;
+        std::cout << "found: " << (gap <= gapTolerance) << std::endl;
+        std::cout << "gap: " << gap  << std::endl;
+        std::cout << "lowU " << lowU << " upperU " << upperU << std::endl;
+
+        std::cout << "ResFromOdl " << std::endl;
+        std::cout << "u2: " << u2 << std::endl;
+        std::cout << "found: " << found << std::endl;
+        std::cout << "curve(u) " << curve(u2) << std::endl;
+        std::cout << "intersectionPoint2 " << intersectionPoint2 << std::endl;
+        for (auto cp : curve.patchData_->controlPoints.directGetAll()) {
+          std::cout << cp.p << std::endl;
+        }
+      }
+      //      assert(found==!(std::sqrt(fu)>gapTolerance));
+      if (gap>gapTolerance) return {u[0], intersectionPoint, false};
+      return {u[0], curve(u[0]), true};
+      return {u2, intersectionPoint2, found};
+    }
+
+    //FIXME modify things from std::array to FieldVector
+
+    static IntersectionResult newtonRaphson2(CurveGeometry& curve, Point& intersectionPoint, int probes) {
+      // There are some easy cases where the IP is at the back or at the front of the domain, check these cases first
+      auto [start, end] = curveStartEndPoint(curve);
+
+      auto [lowU, upperU] = curve.domain()[0];
+
+      if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {lowU, start, true};
+      if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {upperU, end, true};
+
+      //      // We assume that the intersectionPoint is "exactly" on the geometry, and the corresponding u has to be found
+      Dune::FieldVector<double, 1> u{findGoodStartingPoint(curve, intersectionPoint, probes)};
+      Dune::FieldVector<double, 1> du;
+
+      // Set up the algorithm
+      Point dGlobal;
+      int i = 0;
+      do {
+        dGlobal = curve(u[0]) - intersectionPoint;
+
+        using MatrixHelper = typename Dune::MultiLinearGeometryTraits<double>::MatrixHelper;
+        MatrixHelper::template xTRightInvA<1, 2>(curve.jacobianTransposed(u[0]), dGlobal, du);
+
+        // Update the guess
+        u -= du;
+
+        if (++i > maxIterations) return {u[0], intersectionPoint, false};
+        //FIX GGF. wird hier punkt außerderhalb der domain zurückgegeben das ist bei der oberen emthode anderst
+
+        // Clamp result, this might be already an indicator that there is no solution
+        if (Dune::FloatCmp::gt(u[0], curve.patchData_->knotSpans[0].back())) u[0] = upperU;
+        if (Dune::FloatCmp::lt(u[0], curve.patchData_->knotSpans[0].front())) u[0] = lowU;
+
+      } while (dGlobal.two_norm() > gapTolerance);
+
+      double localResult = u[0];
+      auto globalResult  = curve(localResult);
+
+      return {localResult, globalResult, true};
     }
 
     static std::optional<TraceCurveResult> traceCurveImpl(FindNextBoundaryLoopState* state, CurveGeometry& curveToTrace,

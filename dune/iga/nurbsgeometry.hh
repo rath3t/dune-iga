@@ -9,9 +9,9 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/geometry.hh>
+#include <dune/iga/closestpointprojection.hh>
 #include <dune/iga/igaalgorithms.hh>
 #include <dune/iga/trimmedElementRepresentation.hh>
-#include <dune/iga/minima.hh>
 
 namespace Dune::IGA {
   namespace Impl {
@@ -32,8 +32,9 @@ namespace Dune::IGA {
     using LocalCoordinate     = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
     using GlobalCoordinate    = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
     using JacobianTransposed  = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
-    using JacobianInverseTransposed =
-        typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
+    using Jacobian  = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension,mydimension>;
+    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
+    using JacobianInverse = typename LinearAlgebraTraits::template FixedMatrixType< mydimension,coorddimension>;
 
     using ControlPointType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
 
@@ -134,14 +135,12 @@ namespace Dune::IGA {
      */
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
-      if constexpr (mydimension==1)
+      if constexpr (mydimension==0)
+        return {};
+      else if constexpr (mydimension!=coorddimension)
       {
-        auto dist=[&](auto&& u)
-        {
-          return 0.5*((*this).global(u) - global).two_norm2();
-        };
-        auto [x,fx]= brentFindMinimum(dist,0.0,1.0,tolerance);
-        return x;
+        auto [u,Ru,fu]=Dune::IGA::simpleClosestPointProjection(*this,global);
+        return u;
       }
         else {
 
@@ -189,6 +188,10 @@ namespace Dune::IGA {
       return result;
     }
 
+    [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const {
+      return transpose(jacobianTransposed(local));
+    }
+
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
       auto j = jacobianTransposed(local);
       return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(j);
@@ -199,6 +202,10 @@ namespace Dune::IGA {
       MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local),
                                                                     jacobianInverseTransposed1);
       return jacobianInverseTransposed1;
+    }
+
+    [[nodiscard]] JacobianInverse jacobianInverse(const LocalCoordinate& local) const {
+      return transpose(jacobianInverseTransposed(local));
     }
 
     [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const
@@ -271,6 +278,52 @@ namespace Dune::IGA {
       return result;
     }
 
+
+    auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& uL) const {
+      const auto u              = localToSpan(uL);
+      FieldVector<ctype, dimworld> pos;
+      JacobianTransposed J;
+      FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension> H;
+      std::array<unsigned int, mydimension> subDirs;
+      for (int subI = 0, i = 0; i < griddim; ++i) {
+        if (fixedOrVaryingDirections_[i] == Dune::IGA::Impl::FixedOrFree::fixed) continue;
+        subDirs[subI++] = i;
+      }
+
+      const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
+
+      std::array<unsigned int, griddim> ithVecZero{};
+      pos=Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), cpCoordinateNet_);
+
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, griddim> ithVec{};
+        ithVec[subDirs[dir]] = 1;
+        J[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
+        J[dir] *= scaling_[subDirs[dir]];  // transform back to 0..1 domain
+      }
+
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, griddim> ithVec{};
+        ithVec[subDirs[dir]] = 2;                               // second derivative in dir direction
+        H[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
+        H[dir] *= Dune::power(scaling_[subDirs[dir]], 2);  // transform back to 0..1
+      }
+      std::array<int, mydimension> mixeDerivs;
+      std::ranges::fill_n(mixeDerivs.begin(), 2, 1);  // first mixed derivatives
+      int mixedDireCounter = mydimension;
+      do {
+        H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), cpCoordinateNet_);
+        for (int dir = 0; dir < mixeDerivs.size(); ++dir) {
+          if (mixeDerivs[dir] == 0) continue;
+          H[mixedDireCounter - 1] *= scaling_[subDirs[dir]];
+        }
+      } while (std::ranges::next_permutation(mixeDerivs, std::greater()).found);
+
+      return std::make_tuple(pos,J,H);
+    }
+
+
+
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const {
       if (trimRepr_ and trimRepr_->isTrimmed())
@@ -280,11 +333,8 @@ namespace Dune::IGA {
     }
 
     /** \brief Return from the 0 to 1 domain the position in the current knot span */
-    template <typename ReturnType = std::array<typename LocalCoordinate::value_type, griddim>>
+    template <typename ReturnType = Dune::FieldVector<typename LocalCoordinate::value_type, griddim>>
     auto localToSpan(const LocalCoordinate& local) const {
-      //      for (int i = 0; i < griddim; ++i) {
-      //        assert(local[i]); // assert  that local is in range
-      //      }
 
       ReturnType localInSpan;
       if constexpr (LocalCoordinate::dimension != 0) {
@@ -310,6 +360,26 @@ namespace Dune::IGA {
       }
 
       return local;
+    }
+
+    // The following are functions are not part of the Geometry Interface
+    [[nodiscard]] std::array<std::array<double, 2>, mydimension> domain() const {
+      std::array<std::array<double, 2>, mydimension> result;
+      for (int i = 0; i < mydimension; ++i)
+        result[i]       = {0.0, 1.0};
+
+      return result;
+    }
+
+    [[nodiscard]] std::array<int, griddim> degree() const { return patchData_->degree; }
+
+    [[nodiscard]] Dune::FieldVector<ctype, mydimension> domainMidPoint() const {
+      auto dom = domain();
+      Dune::FieldVector<ctype, mydimension> result{};
+      for (int i = 0; i < mydimension; ++i)
+        result[i] = 0.5;
+
+      return result;
     }
 
     [[nodiscard]] const auto& nurbs() const { return nurbs_; }

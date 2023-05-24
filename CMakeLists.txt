@@ -19,6 +19,8 @@ find_package(dune-common REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
      ${dune-common_MODULE_PATH})
 
+set(ENV{ALUGRID_VERBOSITY_LEVEL} 0)
+
 #find_package(PkgConfig REQUIRED)
 #pkg_check_modules(Clipper2Lib REQUIRED IMPORTED_TARGET Clipper2)
 #find_package(nlohmann_json 3.11.2 REQUIRED)
@@ -27,7 +29,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
 #find_package(Matplot++ REQUIRED)
 #find_package(spdlog REQUIRED)
 
-
+message(STATUS "ALUGRID_VERBOSITY_LEVEL $ENV{ALUGRID_VERBOSITY_LEVEL}")
 # include the dune macros
 include(DuneMacros)
 

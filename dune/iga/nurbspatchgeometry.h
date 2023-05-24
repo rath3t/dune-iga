@@ -68,18 +68,52 @@ namespace Dune::IGA {
 
     /** \brief evaluates the geometric position
      *
-     *  \param[in] local local coordinates for each dimension in [0,1] domain
+     *  \param[in] local local coordinates for each dimension in the [knotSpan.front(), knotSpan.back() ] domain
      */
-    [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& local) const {
-      std::array<double, dim> u{};
-      std::ranges::copy(local, std::begin(u));
+    [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& u) const {
 
-      auto spanIndex       = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
+//      auto spanIndex       = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
       auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
                                        extractControlCoordinates(patchData_->controlPoints));
       auto basis           = nurbs_.basisFunctionNet(u);
 
       return Dune::IGA::dot(basis, cpCoordinateNet);
+    }
+
+
+    auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
+
+      FieldVector<ctype, dimworld> pos;
+      JacobianTransposed J;
+      FieldMatrix<ctype, dim*(dim + 1) / 2, coorddimension> H;
+      std::array<unsigned int, dim> subDirs;
+      for (int subI = 0, i = 0; i < patchDim; ++i)
+        subDirs[subI++] = i;
+
+      const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
+      auto cpCoordinateNet                = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
+                                                      extractControlCoordinates(patchData_->controlPoints));
+      std::array<unsigned int, patchDim> ithVecZero{};
+      pos=Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), cpCoordinateNet);
+
+      for (int dir = 0; dir < patchDim; ++dir) {
+        std::array<unsigned int, patchDim> ithVec{};
+        ithVec[subDirs[dir]] = 1;
+        J[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
+      }
+      for (int dir = 0; dir < dim; ++dir) {
+        std::array<unsigned int, patchDim> ithVec{};
+        ithVec[subDirs[dir]] = 2;                               // second derivative in dir direction
+        H[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
+      }
+      std::array<int, dim> mixeDerivs;
+      std::ranges::fill_n(mixeDerivs.begin(), 2, 1);  // first mixed derivatives
+      int mixedDireCounter = dim;
+      do {
+        H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), cpCoordinateNet);
+      } while (std::ranges::next_permutation(mixeDerivs, std::greater()).found);
+
+      return std::make_tuple(pos,J,H);
     }
 
     FieldVector<ctype, dimworld> operator()(const LocalCoordinate& local) const { return global(local); }
@@ -117,22 +151,20 @@ namespace Dune::IGA {
      *
      *  \param local local coordinates for each dimension
      */
-    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-      std::array<double, dim> u{};
-      std::ranges::copy(local, std::begin(u));
+    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
+      auto cpCoordinateNet                = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
+                                       extractControlCoordinates(patchData_->controlPoints));
+      return jacobianTransposedImpl(u,cpCoordinateNet);
+    }
 
+    [[nodiscard]] JacobianTransposed jacobianTransposedImpl(const LocalCoordinate& u, const auto& cpCoordinateNet ) const {
       JacobianTransposed result;
-      std::array<unsigned int, patchDim> subDirs;
-      for (int subI = 0, i = 0; i < patchDim; ++i)
-        subDirs[subI++] = i;
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 1);
-      auto cpCoordinateNet                = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
-                                                      extractControlCoordinates(patchData_->controlPoints));
 
       for (int dir = 0; dir < patchDim; ++dir) {
         std::array<unsigned int, patchDim> ithVec{};
-        ithVec[subDirs[dir]] = 1;
+        ithVec[dir] = 1;
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
       }
       return result;
@@ -159,9 +191,9 @@ namespace Dune::IGA {
 
     [[nodiscard]] std::array<int, patchDim> degree() const { return patchData_->degree; }
 
-    [[nodiscard]] std::array<ctype, patchDim> domainMidPoint() const {
+    [[nodiscard]] Dune::FieldVector<ctype, patchDim> domainMidPoint() const {
       auto dom = domain();
-      std::array<ctype, patchDim> result{};
+      Dune::FieldVector<ctype, patchDim> result{};
       for (int i = 0; i < patchDim; ++i)
         result[i] = (dom[i][0] + dom[i][1]) / 2;
 

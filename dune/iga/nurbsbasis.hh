@@ -619,10 +619,9 @@ namespace Dune::Functions {
      */
     void evaluateFunction(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
                           const std::array<int, dim>& currentKnotSpan) const {
-      std::array<typename GV::ctype, dim> inArray;
-      std::ranges::copy(in, inArray.begin());
+
       const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(
-          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), currentKnotSpan);
+          in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), currentKnotSpan);
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
     }
@@ -634,10 +633,9 @@ namespace Dune::Functions {
      */
     void evaluateJacobian(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldMatrix<R, 1, dim>>& out,
                           const std::array<int, dim>& currentKnotSpan) const {
-      std::array<typename GV::ctype, dim> inArray;
-      std::ranges::copy(in, inArray.begin());
+
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
-          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false,
+          in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false,
           currentKnotSpan);
       out.resize(dN.get(std::array<int, dim>{}).directSize());
       for (int j = 0; j < dim; ++j) {
@@ -653,11 +651,9 @@ namespace Dune::Functions {
 
     void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
                  std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
-      std::array<typename GV::ctype, dim> inArray;
-      std::ranges::copy(in, inArray.begin());
 
       const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
-          inArray, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
+          in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
           std::accumulate(order.begin(), order.end(), 0));
 
       auto& dNpart = dN.get(order).directGetAll();

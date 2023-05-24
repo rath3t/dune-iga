@@ -41,6 +41,7 @@ namespace Dune::IGA {
           domain(_trim.domain),
           endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
 
+    //FIXME macht diers konstruktor sinn=?
     explicit Boundary(const Point& a, const Point& b)
         : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
       assert(std::ranges::all_of(a, [](auto x) { return x < 100; }));
@@ -116,7 +117,7 @@ namespace Dune::IGA {
     std::vector<Boundary> boundaries;
     Orientation orientation;
 
-    size_t size() const { return boundaries.size(); };
+    [[nodiscard]] size_t size() const { return boundaries.size(); };
   };
 
   class TrimData {
@@ -144,7 +145,7 @@ namespace Dune::IGA {
 
    private:
     // TODO Maybe use Clipper::isPositive
-    static auto determineOrientation(std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
+    static auto determineOrientation(const std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
       // extract some vertices to test
       std::vector<Dune::FieldVector<double, 2>> vertices;
       if (_boundaries.size() == 1) {
