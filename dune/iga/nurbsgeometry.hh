@@ -137,11 +137,11 @@ namespace Dune::IGA {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
       if constexpr (mydimension==0)
         return {};
-      else if constexpr (mydimension!=coorddimension)
-      {
-        auto [u,Ru,fu]=Dune::IGA::simpleClosestPointProjection(*this,global);
-        return u;
-      }
+//      else if constexpr (mydimension!=coorddimension)
+//      {
+//        auto [u,Ru,fu]=Dune::IGA::simpleClosestPointProjection(*this,global);
+//        return u;
+//      }
         else {
 
           LocalCoordinate x     = LocalCoordinate(0.5);

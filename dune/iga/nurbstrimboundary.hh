@@ -41,7 +41,7 @@ namespace Dune::IGA {
           domain(_trim.domain),
           endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
 
-    //FIXME macht diers konstruktor sinn=?
+    //FIXME macht diers konstruktor sinn=? warum x<100?
     explicit Boundary(const Point& a, const Point& b)
         : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
       assert(std::ranges::all_of(a, [](auto x) { return x < 100; }));

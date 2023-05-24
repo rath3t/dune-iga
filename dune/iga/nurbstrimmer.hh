@@ -614,7 +614,7 @@ namespace Dune::IGA::Trim {
 
     static inline int getEdgeOrientation(const int edge) { return (edge == 0 || edge == 2) ? 0 : 1; }
 
-    static inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
+    static inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; } //FIXME why?
 
     template <std::integral T>
     static inline bool intCmpEq(T i1, T i2, T tol = 0) {

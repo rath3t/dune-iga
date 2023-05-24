@@ -7,7 +7,6 @@
 #include <clipper2/clipper.core.h>
 #include <mapbox/earcut.hpp>
 
-
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/nurbstrimboundary.hh>
@@ -100,8 +99,7 @@ namespace Dune::IGA {
       VecType local;
       for (int i = 0; i < dim; ++i) {
         local[i] = (cp[i] - offset[i]) / scaling[i];
-        local[i] = local[i] < 0.0 ? 0.0 : local[i]; //FIXME use std:::clamp
-        local[i] = local[i] > 1.0 ? 1.0 : local[i];
+        local[i] = std::clamp(local[i], 0.0, 1.0);
       }
       return local;
     }
@@ -112,7 +110,7 @@ namespace Dune::IGA {
     }
 
     void reconstructTrimmedElement() {
-      if (innerBoundaries.has_value()) prepareInnerBoundaries();
+      if (innerBoundaries) prepareInnerBoundaries();
 
       splitBoundaries();
 
@@ -131,14 +129,14 @@ namespace Dune::IGA {
         gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
-      if (innerBoundaries.has_value()) //FIXME is implicitly convertible to bool
+      if (innerBoundaries)  // FIXME is implicitly convertible to bool
         for (auto& innerLoop : innerBoundaries.value())
           for (auto& boundary : innerLoop)
             gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
                                               std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
       // Create Grid
-      grid            = gridFactory.createGrid();
+      grid = gridFactory.createGrid();
 
       if (preGlobalRefine > 0) grid->globalRefine(preGlobalRefine);
 
@@ -205,13 +203,13 @@ namespace Dune::IGA {
       assert(innerBoundaries.has_value());
       for (auto& innerLoop : innerBoundaries.value()) {
         if (innerLoop.size() == 1) {
-          // Divide into 3 parts
+          // Divide into 3 parts //FIXME why?
           auto boundary = innerLoop.front();
           assert(Dune::FloatCmp::eq(boundary.endPoints.front(), boundary.endPoints.back()));
           auto geometry = boundary.nurbsGeometry;
 
           innerLoop.clear();
-          auto u = Utilities::linspace(boundary.domain, 4); //FIXME what happens here?
+          auto u = Utilities::linspace(boundary.domain, 4);  // FIXME what happens here?
 
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[0], u[1]});
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[1], u[2]});
@@ -235,7 +233,7 @@ namespace Dune::IGA {
         gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
       }
 
-      grid            = gridFactory.createGrid();
+      grid = gridFactory.createGrid();
     }
 
    public:
@@ -251,7 +249,7 @@ namespace Dune::IGA {
         for (Clipper2Lib::PointD point : path)
           polygon.emplace_back(toLocal(point));
       }
-      return std::fabs(Clipper2Lib::Area(polygon));
+      return std::fabs(Clipper2Lib::Area(polygon));  // FIXME why fabs? does it return signed area?
     }
 
     /// \brief Calculates the area from the simplex elements in the current grid
@@ -271,7 +269,7 @@ namespace Dune::IGA {
     void splitBoundaries() {
       splitOuterBoundaries();
 
-      if (innerBoundaries.has_value()) //FIXME is also implicitly convertable to bool
+      if (innerBoundaries)
         std::ranges::for_each(innerBoundaries.value(), [&](auto& boundaries) { splitInnerBoundaryLoops(boundaries); });
     }
 
@@ -297,8 +295,9 @@ namespace Dune::IGA {
       std::vector<DomainInformation> domains;
       domains.reserve((1 << maxSample) * outerBoundaries.size());
 
-      for (auto i : std::views::iota(0u, outerBoundaries.size()))
-        domains.emplace_back(outerBoundaries[i].domain, i);
+      auto transformFunc = [&](std::size_t i) { return DomainInformation{outerBoundaries[i].domain, i}; };
+
+      std::ranges::transform(std::views::iota(0u, outerBoundaries.size()), std::back_inserter(domains), transformFunc);
 
       std::vector<DomainInformation> tempDomains;
       tempDomains.reserve((1 << maxSample) * outerBoundaries.size());
