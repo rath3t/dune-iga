@@ -13,10 +13,10 @@ struct AnalyticalSolution {
   double Tx;
   double R;
 
-  double kappa{(3 - nu) / (1 + nu)};
-  double G{E / (2 * (1 + nu))};
+  double kappa;
+  double G;
 
-  double factor{Tx * R / (8 * G)};
+  double factor;
   Dune::FieldVector<double, 2> offset;
 
   AnalyticalSolution(auto pE, auto pnu, auto pTx, auto pR, auto poffset)
