@@ -85,7 +85,6 @@ namespace Dune::IGA {
     [[nodiscard]] bool affine() const { return false; }
 
     /** \brief Type of the element: a hypercube of the correct dimension */
-    // TODO Change
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     /** \brief Evaluates the mapping from a subKnotSpan to the global one, e.g. from an edge of an surface it construct
@@ -240,7 +239,7 @@ namespace Dune::IGA {
     int localIndexInElement_;
     bool isTrimmed_ {false};
   };
-  /// Todo: Either here a another type or another NURBSLocalGeometry
+
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
     return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();

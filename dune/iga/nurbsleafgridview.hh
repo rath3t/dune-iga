@@ -210,7 +210,6 @@ namespace Dune::IGA {
    private:
     void createEntities() {
       for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
-        // TODO maybe use iotaView
         Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
           std::get<i>(*entityVector_.get()).reserve(patch.size(i));
           for (unsigned int j = 0; j < patch.size(i); ++j) {

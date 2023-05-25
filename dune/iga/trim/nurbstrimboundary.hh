@@ -42,12 +42,8 @@ namespace Dune::IGA {
           domain(_trim.domain),
           endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
 
-    //FIXME  why x<100?
     explicit Boundary(const Point& a, const Point& b)
-        : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
-      assert(std::ranges::all_of(a, [](auto x) { return x < 100; }));
-      assert(std::ranges::all_of(b, [](auto x) { return x < 100; }));
-    }
+        : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {}
 
     // Helper classes for construction of nurbsGeometry
    private:
@@ -92,14 +88,12 @@ namespace Dune::IGA {
     }
 
     template <typename ctype = double>
-    [[nodiscard]] Clipper2Lib::Path<ctype> path(unsigned int samples = 200, const int intScale = 0,
-                                                bool getOnlyTwoPointsIfStraight = true) const {
+    [[nodiscard]] Clipper2Lib::Path<ctype> path(unsigned int samples = 200, const int intScale = 0) const {
       Clipper2Lib::Path<ctype> path;
 
       auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(Dune::power(10, intScale)); };
 
-      //FIXME is this custommization with getOnlyTwoPointsIfStraight even needed?
-      if (getOnlyTwoPointsIfStraight && degree() == 1 && endPoints.size() == 2) {
+      if (degree() == 1 && endPoints.size() == 2) {
         path.emplace_back(scaler(endPoints.front()[0]), scaler(endPoints.front()[1]));
         path.emplace_back(scaler(endPoints.back()[0]), scaler(endPoints.back()[1]));
         return path;
@@ -146,7 +140,7 @@ namespace Dune::IGA {
     }
 
    private:
-    // TODO Maybe use Clipper::isPositive FIXME yes? this should bew in a geometryHelper.hh file
+    // FIXME DELETE
     static auto determineOrientation(const std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
       // extract some vertices to test
       std::vector<Dune::FieldVector<double, 2>> vertices;

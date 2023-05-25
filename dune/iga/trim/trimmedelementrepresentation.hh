@@ -35,6 +35,7 @@ namespace Dune::IGA {
 
     Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
       // u has to be mapped on the domain of 0 to 1
+      local[0] = std::clamp(local[0], 0.0, 1.0);
       double u = Utilities::mapToRange(local[0], 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
       return transformFct(boundary.nurbsGeometry(u));
     }
@@ -60,11 +61,11 @@ namespace Dune::IGA {
     std::array<double, dim> offset{};
 
     /// Parameters
-    static constexpr int maxPreSamplesOuterBoundaries{4};
-    static constexpr int innerLoopPreSample{3};
-    static constexpr int preGlobalRefine{0};
-    static constexpr int edgeRefinements{0};
-    static constexpr double targetTolerance{1e-3};
+    int maxPreSamplesOuterBoundaries{4};
+    int innerLoopPreSample{3};
+    int preGlobalRefine{0};
+    int edgeRefinements{0};
+    double targetTolerance{1e-3};
 
    public:
     /// brief: Constructs an trimmed elementRepresentation with outer and inner boundaries
@@ -114,7 +115,8 @@ namespace Dune::IGA {
       return {cpLoc[0], cpLoc[1]};
     }
 
-    //FIXME explanation
+    //FIXME explanation TODO
+    /// \brief
     void reconstructTrimmedElement() {
       if (innerBoundaries) prepareInnerBoundaries();
 
@@ -131,14 +133,15 @@ namespace Dune::IGA {
         gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
 
       auto toLocalLambda = [&](const auto& cp) { return toLocal(cp); };
+      // TODO Without search
       for (auto& boundary : outerBoundaries)
-        gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
+        gridFactory.insertBoundarySegment(getVerticesIndices(vertices, boundary),
                                           std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
-      if (innerBoundaries)  // FIXME is implicitly convertible to bool
+      if (innerBoundaries)
         for (auto& innerLoop : innerBoundaries.value())
           for (auto& boundary : innerLoop)
-            gridFactory.insertBoundarySegment(getControlPointIndices(vertices, boundary),
+            gridFactory.insertBoundarySegment(getVerticesIndices(vertices, boundary),
                                               std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
 
       // Create Grid
@@ -189,7 +192,7 @@ namespace Dune::IGA {
       std::vector<std::vector<Point>> polygonInput;
       polygonInput.push_back(vertices);
 
-      if (innerBoundaries.has_value())
+      if (innerBoundaries)
         for (auto& innerLoop : innerBoundaries.value()) {
           assert(innerLoop.size() > 1);
           std::vector<Point> holeInput;
@@ -206,17 +209,18 @@ namespace Dune::IGA {
     }
 
     //FIXME better name preparing for what?
+    /// \brief
     void prepareInnerBoundaries() {
       assert(innerBoundaries.has_value());
       for (auto& innerLoop : innerBoundaries.value()) {
         if (innerLoop.size() == 1) {
-          // Divide into 3 parts //FIXME why?
+          // Divide into 3 parts
           auto boundary = innerLoop.front();
           assert(Dune::FloatCmp::eq(boundary.endPoints.front(), boundary.endPoints.back()));
           auto geometry = boundary.nurbsGeometry;
 
           innerLoop.clear();
-          auto u = Utilities::linspace(boundary.domain, 4);  // FIXME what happens here?
+          auto u = Utilities::linspace(boundary.domain, 4);
 
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[0], u[1]});
           innerLoop.emplace_back(geometry, std::array<double, 2>{u[1], u[2]});
@@ -256,7 +260,8 @@ namespace Dune::IGA {
         for (Clipper2Lib::PointD point : path)
           polygon.emplace_back(toLocal(point));
       }
-      return std::fabs(Clipper2Lib::Area(polygon));  // FIXME why fabs? does it return signed area?
+      // ClipperLib returns signed area
+      return std::fabs(Clipper2Lib::Area(polygon));
     }
 
     /// \brief Calculates the area from the simplex elements in the current grid
@@ -281,6 +286,7 @@ namespace Dune::IGA {
     }
 
     //FIXME why
+    // TODO Deduplicating
     void splitOuterBoundaries() {
       auto maxSample = maxPreSamplesOuterBoundaries;
       auto refineMap = determineBoundariesToRefine(outerBoundaries);
@@ -296,7 +302,7 @@ namespace Dune::IGA {
           auto u = toLocal(outerBoundaries[domainInfo.second].nurbsGeometry(domainInfo.first.front()));
           path.emplace_back(u[0], u[1]);
         }
-        return Clipper2Lib::Area(path);
+        return std::fabs(Clipper2Lib::Area(path));
       };
 
       // Get all domains
@@ -372,7 +378,6 @@ namespace Dune::IGA {
       }
 
       // Create split outerBoundaries from DomainInformation
-      //FIXME why not use boundaries directly?
       std::vector<Boundary> newBoundaries;
       std::ranges::transform(domains, std::back_inserter(newBoundaries), [&](const auto& domain_info) -> Boundary {
         return {boundaries[domain_info.second].nurbsGeometry, domain_info.first};
@@ -380,8 +385,7 @@ namespace Dune::IGA {
       boundaries = std::move(newBoundaries);
     }
 
-    //FIXME why
-    [[nodiscard]] auto getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) const
+    [[nodiscard]] auto getVerticesIndices(std::vector<Point>& vertices, Boundary& boundary) const
         -> std::vector<unsigned int> {
       auto it1 = std::ranges::find_if(
           vertices, [&](const Point& v) { return approxSamePoint(v, toLocal(boundary.endPoints.front())); });

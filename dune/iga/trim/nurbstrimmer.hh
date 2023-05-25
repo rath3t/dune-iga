@@ -249,7 +249,7 @@ namespace Dune::IGA::Trim {
       }
       return result;
     }
-    // TODO Make const
+
     std::optional<std::vector<std::vector<Boundary>>> extractInnerBoundaries(const ClippingResult& clipResult) const {
       if (not clipResult.innerLoops.has_value()) return std::nullopt;
 
@@ -698,8 +698,6 @@ namespace Dune::IGA::Trim {
       return {u[0], curve(u[0]), true};
       return {u2, intersectionPoint2, found};
     }
-
-    //FIXME modify things from std::array to FieldVector
 
     static IntersectionResult newtonRaphson2(CurveGeometry& curve, Point& intersectionPoint, int probes) {
       // There are some easy cases where the IP is at the back or at the front of the domain, check these cases first
