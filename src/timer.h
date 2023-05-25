@@ -3,7 +3,8 @@
 //
 
 #pragma once
-
+#include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/chrono.h>
 template <typename Name = std::string, typename Period = std::chrono::milliseconds>
 class Timer {
   using Clock = std::chrono::high_resolution_clock;

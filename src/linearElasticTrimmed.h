@@ -218,7 +218,6 @@ namespace Ikarus {
       const auto C   = getMaterialTangent();
       auto epsVoigt  = eps.evaluate(local, on(gridElement));
 
-     auto epsVoigt  = eps.evaluate(gp, on(gridElement));
      auto cauchyStress = (C * epsVoigt).eval();
 #if 0
       auto& fe  = this->localView().tree().child(0).finiteElement();

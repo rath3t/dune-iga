@@ -17,7 +17,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-#include "dune/iga/ibra/ibraReader.hh"
+#include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igaDataCollector.h"
 #include "dune/iga/utils/igaHelpers.h"
 #include <dune/common/parametertreeparser.hh>

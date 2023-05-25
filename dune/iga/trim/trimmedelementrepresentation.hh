@@ -33,10 +33,10 @@ namespace Dune::IGA {
   struct GridBoundarySegment : Dune::BoundarySegment<dim, dim, double> {
     explicit GridBoundarySegment(Boundary& _boundary, auto _trFct) : boundary(_boundary), transformFct(_trFct) {}
 
-    Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& local) const override {
+    Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& localI) const override {
       // u has to be mapped on the domain of 0 to 1
-      local[0] = std::clamp(local[0], 0.0, 1.0);
-      double u = Utilities::mapToRange(local[0], 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
+      const auto local= std::clamp(localI[0], 0.0, 1.0);
+      double u = Utilities::mapToRange(local, 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
       return transformFct(boundary.nurbsGeometry(u));
     }
     std::function<Dune::FieldVector<double, dim>(const Dune::FieldVector<double, dim>& )> transformFct;
