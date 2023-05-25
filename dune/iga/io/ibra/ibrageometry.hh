@@ -5,9 +5,9 @@
 #ifndef DUNE_IGA_IBRAGEOMETRY_HH
 #define DUNE_IGA_IBRAGEOMETRY_HH
 
-#include "nurbspatchdata.hh"
-
 #include <nlohmann/json.hpp>
+
+#include "dune/iga/nurbspatchdata.hh"
 
 namespace Dune::IGA::Ibra {
 

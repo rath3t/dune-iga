@@ -4,29 +4,25 @@
 
 #include <config.h>
 
-
-#include <ikarus/linearAlgebra/dirichletValues.hh>
-#include <ikarus/finiteElements/feRequirements.hh>
-
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/ibraReader.hh>
-#include <ikarus/utils/init.hh>
-#include <ikarus/utils/basis.hh>
-
-#include <ikarus/assembler/simpleAssemblers.hh>
-#include <ikarus/linearAlgebra/nonLinearOperator.hh>
-#include <ikarus/solver/linearSolver/linearSolver.hh>
-
-#include <ikarus/utils/observer/controlVTKWriter.hh>
-#include <dune/common/parametertreeparser.hh>
-
-#include <dune/iga/igaDataCollector.h>
-#include <dune/vtk/vtkwriter.hh>
-
-#include "igaHelpers.h"
+#include "kirchhoffPlate.hh"
 #include "stressEvaluator.h"
 #include "timer.h"
-#include "kirchhoffPlate.hh"
+
+#include <ikarus/assembler/simpleAssemblers.hh>
+#include <ikarus/finiteElements/feRequirements.hh>
+#include <ikarus/linearAlgebra/dirichletValues.hh>
+#include <ikarus/linearAlgebra/nonLinearOperator.hh>
+#include <ikarus/solver/linearSolver/linearSolver.hh>
+#include <ikarus/utils/basis.hh>
+#include <ikarus/utils/init.hh>
+#include <ikarus/utils/observer/controlVTKWriter.hh>
+
+#include "dune/iga/ibra/ibraReader.hh"
+#include "dune/iga/io/igaDataCollector.h"
+#include "dune/iga/utils/igaHelpers.h"
+#include <dune/common/parametertreeparser.hh>
+#include <dune/iga/nurbsgrid.hh>
+#include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);

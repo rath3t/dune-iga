@@ -7,6 +7,9 @@
 #  include "config.h"
 #endif
 
+#include <dune/iga/io/ibra/ibrareader.hh>
+#include <dune/iga/io/igaDataCollector.h>
+#include <dune/iga/trim/nurbstrimmer.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -23,11 +26,8 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/gridcapabilities.hh>
-#include <dune/iga/ibraReader.hh>
-#include <dune/iga/igaDataCollector.h>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/iga/nurbspatchgeometry.h>
-#include <dune/iga/nurbstrimmer.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 // #define TEST_ALL

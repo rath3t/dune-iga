@@ -3,17 +3,17 @@
 
 #pragma once
 
-#include "igaalgorithms.hh"
+#include "nurbsalgorithms.hh"
 
-#include "dune/iga/nurbstrimmer.hh"
+#include "dune/iga/trim/nurbstrimboundary.hh"
+#include "dune/iga/trim/nurbstrimmer.hh"
+#include "dune/iga/trim/trimmedelementrepresentation.hh"
+#include "dune/iga/utils/concepts.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
-#include <dune/iga/concepts.hh>
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 #include <dune/iga/nurbsgeometry.hh>
-#include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/trimmedElementRepresentation.hh>
 namespace Dune::IGA {
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>

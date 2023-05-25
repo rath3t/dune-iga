@@ -11,11 +11,11 @@
 #include <numbers>
 #include <ranges>
 
+#include "dune/iga/utils/linearalgebra.hh"
+#include "dune/iga/utils/multidimensionNet.hh"
+#include "dune/iga/utils/typetraits.hh"
 #include <dune/iga/bsplinealgorithms.hh>
-#include <dune/iga/linearalgebra.hh>
-#include <dune/iga/multidimensionNet.hh>
 #include <dune/iga/nurbspatchdata.hh>
-#include <dune/iga/typetraits.hh>
 namespace Dune::IGA {
 
   namespace Impl {
@@ -120,6 +120,7 @@ namespace Dune::IGA {
     using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
     using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
 
+    //FIXME should be the controploints alos be included here?
     template <std::integral auto dimworld>
     Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,
           const std::optional<std::array<int, dim>>& spIndex = std::nullopt)

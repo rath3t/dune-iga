@@ -10,9 +10,7 @@
 #include <dune/grid/common/gridenums.hh>
 #include <dune/iga/nurbsleafgridview.hh>
 
-/** \brief This class is a copy of GridTraits dune-grid/grid/common/grid.hh.
- * This class removes all fascade class from GridTraits since some exported types do not work with c++20
- * ranges ,eg.  Dune::IteratorRange<Dune::EntityIterator<0, con*/
+/** \brief This class is a modified copy of GridTraits dune-grid/grid/common/grid.hh. */
 template <int dim, int dimw, class GridImp, template <int, int, class> class GeometryImp,
           template <int, int, class> class EntityImp,
           template <int, Dune::PartitionIteratorType, class> class LevelIteratorImp,

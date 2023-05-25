@@ -4,10 +4,11 @@
 #pragma once
 
 #include "nurbstrimutils.hh"
+
 #include <clipper2/clipper.core.h>
 
-#include <dune/iga/ibraGeometry.hh>
-#include <dune/iga/nurbspatchgeometry.h>
+#include "dune/iga/io/ibra/ibrageometry.hh"
+#include "dune/iga/nurbspatchgeometry.h"
 
 namespace Dune::IGA {
 
@@ -41,7 +42,7 @@ namespace Dune::IGA {
           domain(_trim.domain),
           endPoints({nurbsGeometry(domain[0]), nurbsGeometry(domain[1])}) {}
 
-    //FIXME macht diers konstruktor sinn=? warum x<100?
+    //FIXME  why x<100?
     explicit Boundary(const Point& a, const Point& b)
         : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {
       assert(std::ranges::all_of(a, [](auto x) { return x < 100; }));
@@ -95,8 +96,9 @@ namespace Dune::IGA {
                                                 bool getOnlyTwoPointsIfStraight = true) const {
       Clipper2Lib::Path<ctype> path;
 
-      auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(std::pow(10, intScale)); };
+      auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(Dune::power(10, intScale)); };
 
+      //FIXME is this custommization with getOnlyTwoPointsIfStraight even needed?
       if (getOnlyTwoPointsIfStraight && degree() == 1 && endPoints.size() == 2) {
         path.emplace_back(scaler(endPoints.front()[0]), scaler(endPoints.front()[1]));
         path.emplace_back(scaler(endPoints.back()[0]), scaler(endPoints.back()[1]));
@@ -104,7 +106,7 @@ namespace Dune::IGA {
       }
 
       path.reserve(samples);
-      auto linS = Utilities::linspace<double>(domain[0], domain[1], samples);
+      auto linS = Utilities::linspace(domain[0], domain[1], samples);
       for (auto u : linS) {
         auto vertex = nurbsGeometry(u);
         path.emplace_back(scaler(vertex[0]), scaler(vertex[1]));
@@ -144,19 +146,16 @@ namespace Dune::IGA {
     }
 
    private:
-    // TODO Maybe use Clipper::isPositive FIXME yes?
+    // TODO Maybe use Clipper::isPositive FIXME yes? this should bew in a geometryHelper.hh file
     static auto determineOrientation(const std::vector<Boundary>& _boundaries) -> BoundaryLoop::Orientation {
       // extract some vertices to test
       std::vector<Dune::FieldVector<double, 2>> vertices;
       if (_boundaries.size() == 1) {
         auto boundary = _boundaries[0];
         auto linSpace = Utilities::linspace(boundary.domain, 4);
-        linSpace.pop_back();
-        for (auto u : linSpace)
-          vertices.push_back(boundary.nurbsGeometry(u));
+        std::ranges::transform(linSpace | std::views::take(linSpace.size() - 1),std::back_inserter(vertices),[&](const auto& u){return boundary.nurbsGeometry(u);});
       } else {
-        for (const auto& boundary : _boundaries)
-          vertices.push_back(boundary.endPoints[0]);
+        std::ranges::transform(_boundaries,std::back_inserter(vertices),[&](const auto& endPoints){return endPoints[0];},&Boundary::endPoints);
       }
 
       // C.f. https://stackoverflow.com/a/1180256 and http://www.faqs.org/faqs/graphics/algorithms-faq/ Subject 2.07
@@ -177,7 +176,7 @@ namespace Dune::IGA {
       auto ab = b - a;
       auto ac = c - a;
 
-      auto isCrossPositive = [](Dune::FieldVector<double, 2>& a, Dune::FieldVector<double, 2>& b) {
+      auto isCrossPositive = [](const Dune::FieldVector<double, 2>& a, const Dune::FieldVector<double, 2>& b) {
         double cross = a[0] * b[1] - b[0] * a[1];
         if (cross > 0)
           return true;

@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "dune/iga/utils/concepts.hh"
 #include <dune/grid/common/capabilities.hh>
-#include <dune/iga/concepts.hh>
 //#include <dune/grid/test/checkidset.hh>
 //#include <dune/grid/test/gridcheck.hh>
 

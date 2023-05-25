@@ -93,8 +93,9 @@ namespace Dune::IGA {
           directIndex_(directIndex),
           patchID_{patchID},
           parType_{PartitionType::InteriorEntity},
-          trimFlag(NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)) {
-      intersections_ = std::make_shared<std::vector<Intersection>>();
+          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)},
+      intersections_{std::make_shared<std::vector<Intersection>>()} //FIXME why shared?
+    {
       intersections_->reserve(this->subEntities(1));
 
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {

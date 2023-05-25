@@ -6,12 +6,12 @@
 //
 
 #pragma once
+#include "dune/iga/trim/trimmedelementrepresentation.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/closestpointprojection.hh>
-#include <dune/iga/igaalgorithms.hh>
-#include <dune/iga/trimmedElementRepresentation.hh>
+#include <dune/iga/nurbsalgorithms.hh>
 
 namespace Dune::IGA {
   namespace Impl {

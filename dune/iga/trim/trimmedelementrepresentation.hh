@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include "nurbstrimboundary.hh"
+#include "nurbstrimmer.hh"
+
 #include <clipper2/clipper.core.h>
 #include <mapbox/earcut.hpp>
 
 #include <dune/alugrid/grid.hh>
 #include <dune/grid/uggrid.hh>
-#include <dune/iga/nurbstrimboundary.hh>
-#include <dune/iga/nurbstrimmer.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -37,7 +38,7 @@ namespace Dune::IGA {
       double u = Utilities::mapToRange(local[0], 0.0, 1.0, boundary.domain[0], boundary.domain[1]);
       return transformFct(boundary.nurbsGeometry(u));
     }
-    std::function<Dune::FieldVector<double, dim>(Dune::FieldVector<double, dim>)> transformFct;
+    std::function<Dune::FieldVector<double, dim>(const Dune::FieldVector<double, dim>& )> transformFct;
     Boundary boundary;
   };
 
@@ -94,6 +95,8 @@ namespace Dune::IGA {
     }
 
    private:
+
+    //FIXME Helper function
     template <typename VecType>
     [[nodiscard]] auto toLocal(const VecType& cp) const -> VecType {
       VecType local;
@@ -103,12 +106,15 @@ namespace Dune::IGA {
       }
       return local;
     }
+
+    //FIXME Helper function
     [[nodiscard]] auto toLocal(const Clipper2Lib::PointD& p) const -> Clipper2Lib::PointD {
       std::array<double, 2> cp{p.x, p.y};
       auto cpLoc = toLocal(cp);
       return {cpLoc[0], cpLoc[1]};
     }
 
+    //FIXME explanation
     void reconstructTrimmedElement() {
       if (innerBoundaries) prepareInnerBoundaries();
 
@@ -199,6 +205,7 @@ namespace Dune::IGA {
       return std::make_pair(indices, vertices);
     }
 
+    //FIXME better name preparing for what?
     void prepareInnerBoundaries() {
       assert(innerBoundaries.has_value());
       for (auto& innerLoop : innerBoundaries.value()) {
@@ -273,6 +280,7 @@ namespace Dune::IGA {
         std::ranges::for_each(innerBoundaries.value(), [&](auto& boundaries) { splitInnerBoundaryLoops(boundaries); });
     }
 
+    //FIXME why
     void splitOuterBoundaries() {
       auto maxSample = maxPreSamplesOuterBoundaries;
       auto refineMap = determineBoundariesToRefine(outerBoundaries);
@@ -364,6 +372,7 @@ namespace Dune::IGA {
       }
 
       // Create split outerBoundaries from DomainInformation
+      //FIXME why not use boundaries directly?
       std::vector<Boundary> newBoundaries;
       std::ranges::transform(domains, std::back_inserter(newBoundaries), [&](const auto& domain_info) -> Boundary {
         return {boundaries[domain_info.second].nurbsGeometry, domain_info.first};
@@ -371,6 +380,7 @@ namespace Dune::IGA {
       boundaries = std::move(newBoundaries);
     }
 
+    //FIXME why
     [[nodiscard]] auto getControlPointIndices(std::vector<Point>& vertices, Boundary& boundary) const
         -> std::vector<unsigned int> {
       auto it1 = std::ranges::find_if(

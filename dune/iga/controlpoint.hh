@@ -6,7 +6,7 @@
 //
 
 #pragma once
-#include <dune/iga/concepts.hh>
+#include "dune/iga/utils/concepts.hh"
 #include <dune/iga/dunelinearalgebratraits.hh>
 namespace Dune::IGA {
 

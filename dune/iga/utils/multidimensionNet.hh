@@ -7,13 +7,15 @@
 
 #pragma once
 
+#include "concepts.hh"
+
 #include <concepts>
+#include <functional>
 #include <iterator>
 #include <numeric>
-#include <functional>
 #include <ranges>
 
-#include <dune/iga/concepts.hh>
+#include <dune/common/fvector.hh>
 
 namespace Dune::IGA {
 
@@ -233,9 +235,8 @@ namespace Dune::IGA {
       ReturnType multiIndex;
 
       int help = index;
-      int temp;
       for (int i = 0; i < netdim; ++i) {
-        temp          = help % (dimSize[i]);
+        int temp          = help % (dimSize[i]);
         multiIndex[i] = temp;
         help -= temp;
         help = help / dimSize[i];
@@ -259,11 +260,8 @@ namespace Dune::IGA {
 
     void resize(std::array<int, netdim> dimSize) {
       dimSize_ = dimSize;
-      int size = 1;
-      for (auto ds : dimSize_)
-        size *= ds;
 
-      values_.resize(size);
+      values_.resize(std::accumulate(dimSize_.begin(), dimSize_.end(), 1, std::multiplies{}));
     }
 
     template <typename rValueType>
@@ -286,14 +284,14 @@ namespace Dune::IGA {
     &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->size() == rnet.size() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(),
-                             [](auto& lval, auto& rval) { return lval / rval; });
+                             [](const auto& lval, const auto& rval) { return lval / rval; });
       return *this;
     }
 
     template <typename rValueType>
     requires MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator*=(const rValueType& fac) {
-      std::ranges::transform(values_, values_.begin(), [&fac](auto& val) { return val * fac; });
+      std::ranges::transform(values_, values_.begin(), [&fac](const auto& val) { return val * fac; });
       return *this;
     }
 
@@ -315,14 +313,14 @@ namespace Dune::IGA {
 
     template <typename ArrayType = std::array<int, netdim>>
     int index(const ArrayType& multiIndex) const {
-      int index{}, help;
       assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; })
              && "The passed multiIndex has negative values");
       assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
              && "The passed multiIndex has too large values");
 
+      int index=0;
       for (int i = 0; i < netdim; ++i) {
-        help = 1;
+        int help = 1;
         for (int j = i - 1; j > -1; --j)
           help *= dimSize_[j];
 

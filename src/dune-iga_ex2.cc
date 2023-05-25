@@ -4,6 +4,11 @@
 
 #include <config.h>
 
+#include "anaSolution.h"
+#include "linearElasticTrimmed.h"
+#include "stressEvaluator.h"
+#include "timer.h"
+
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
@@ -12,22 +17,16 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+
+#include "dune/iga/ibra/ibraReader.hh"
+#include "dune/iga/io/igaDataCollector.h"
+#include "dune/iga/utils/igaHelpers.h"
+#include <dune/common/parametertreeparser.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 #include <dune/functions/gridfunctions/gridviewfunction.hh>
-
-
-#include <dune/common/parametertreeparser.hh>
-#include <dune/iga/ibraReader.hh>
-#include <dune/iga/igaDataCollector.h>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
-
-#include "igaHelpers.h"
-#include "linearElasticTrimmed.h"
-#include "stressEvaluator.h"
-#include "timer.h"
-#include "anaSolution.h"
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);

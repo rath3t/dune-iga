@@ -133,7 +133,7 @@ namespace Ikarus {
               const double w_x = dN_x.dot(wNodal);
               const double w_y = dN_y.dot(wNodal);
 
-              energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y);
+              energy += 0.0 * 0.5 * penaltyFactor * (w_x * w_x + w_y * w_y)* geometry_.integrationElement(gp.position()) * gp.weight();
             }
             std::cout << "There was a clamping" << std::endl;
           }
@@ -141,6 +141,7 @@ namespace Ikarus {
       return energy;
     }
 
+    //FIXME Derivatives do nbot support clamping
     void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto D       = constitutiveMatrix(Emodul, nu, thickness);

@@ -3,13 +3,14 @@
 //
 #pragma once
 
+#include "ibrageometry.hh"
+
 #include <clipper2/clipper.h>
 #include <nlohmann/json.hpp>
 
-#include "dune/iga/igaalgorithms.hh"
-#include <dune/iga/ibraGeometry.hh>
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/nurbstrimboundary.hh>
+#include "dune/iga/nurbsalgorithms.hh"
+#include "dune/iga/nurbsgrid.hh"
+#include "dune/iga/trim/nurbstrimboundary.hh"
 
 namespace Dune::IGA {
 

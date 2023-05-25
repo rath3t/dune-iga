@@ -6,7 +6,7 @@
 //
 
 #pragma once
-#include <dune/iga/concepts.hh>
+#include "dune/iga/utils/concepts.hh"
 namespace Dune::IGA {
 
   /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back to

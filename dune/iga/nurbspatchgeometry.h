@@ -6,7 +6,7 @@
 
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/nurbsalgorithms.hh>
 
 namespace Dune::IGA {
 
@@ -34,8 +34,9 @@ namespace Dune::IGA {
     NURBSPatchGeometry() = default;
 
     explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData)
-        : patchData_(patchData) {
-      nurbs_ = Nurbs<patchDim, LinearAlgebraTraits>(*patchData);
+        : patchData_(patchData),
+      nurbs_{*patchData}
+    {
     }
 
     /** \brief Map the center of the element to the geometry */
@@ -72,7 +73,6 @@ namespace Dune::IGA {
      */
     [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& u) const {
 
-//      auto spanIndex       = findSpanUncorrected(patchData_->degree, u, patchData_->knotSpans);
       auto cpCoordinateNet = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
                                        extractControlCoordinates(patchData_->controlPoints));
       auto basis           = nurbs_.basisFunctionNet(u);

@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <dune/iga/concepts.hh>
+#include "dune/iga/utils/concepts.hh"
+#include "dune/iga/utils/multidimensionNet.hh"
 #include <dune/iga/controlpoint.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/multidimensionNet.hh>
 
 namespace Dune::IGA {
   /** \brief class that holds all data regarding the NURBS structure

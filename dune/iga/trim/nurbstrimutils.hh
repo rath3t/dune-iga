@@ -5,24 +5,39 @@
 
 namespace Dune::IGA::Utilities {
 
+//  template <std::floating_point T>
+//  std::vector<T> linspace(T a, T b, unsigned int N) {
+//    T inc    = (b - a) / static_cast<T>(N - 1);
+//    auto val = [a, inc](int i) -> T { return a + i * inc; };
+//
+//    std::vector<T> xs(N);
+//    for (auto i : std::views::iota(1u, N - 1))
+//      xs[i] = val(i);
+//
+//    // Make sure the beginning and end are interpolatory
+//    xs.front() = a;
+//    xs.back()  = b;
+//
+//    return xs;
+//  }
+
   template <std::floating_point T>
-  std::vector<T> linspace(T a, T b, unsigned int N) {
+  auto linspace(T a, T b, unsigned int N) {
     T inc    = (b - a) / static_cast<T>(N - 1);
-    auto val = [a, inc](int i) -> T { return a + i * inc; };
+    auto val = [=](int i) -> T {
+      if(i!=0 and i!=N-1)
+        return a + i * inc;
+      else if(i==N-1)
+        return b;
+      else
+      return a;
+    };
 
-    std::vector<T> xs(N);
-    for (auto i : std::views::iota(1u, N - 1))
-      xs[i] = val(i);
-
-    // Make sure the beginning and end are interpolatory
-    xs.front() = a;
-    xs.back()  = b;
-
-    return xs;
+    return std::views::iota(0u, N) | std::views::transform(val);
   }
 
   template <std::floating_point T>
-  std::vector<T> linspace(std::array<T, 2> ab, unsigned int N) {
+  auto linspace(std::array<T, 2> ab, unsigned int N) {
     return linspace(ab[0], ab[1], N);
   }
 

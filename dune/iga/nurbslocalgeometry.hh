@@ -8,7 +8,7 @@
 #pragma once
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/nurbsalgorithms.hh>
 
 namespace Dune::IGA {
   /** \brief a geometry implementation for NURBS*/
@@ -243,7 +243,6 @@ namespace Dune::IGA {
   /// Todo: Either here a another type or another NURBSLocalGeometry
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
-    std::cout << "Reference Element erstellt mit mydim: " << mydim << std::endl;
     return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();
   };
 }  // namespace Dune::IGA

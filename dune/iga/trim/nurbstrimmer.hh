@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include "nurbstrimboundary.hh"
+#include "nurbstrimutils.hh"
+
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
 
-#include "dune/iga/nurbstrimutils.hh"
+#include "dune/iga/closestpointprojection.hh"
+#include "dune/iga/nurbspatchgeometry.h"
 #include <dune/grid/yaspgrid.hh>
-#include <dune/iga/closestpointprojection.hh>
-#include <dune/iga/nurbspatchgeometry.h>
-#include <dune/iga/nurbstrimboundary.hh>
 
 namespace Dune::IGA {
   enum class ElementTrimFlag { full, empty, trimmed };

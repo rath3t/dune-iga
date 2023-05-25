@@ -4,12 +4,14 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
+#include <mutex>
 #include <optional>
+#include <stdlib.h>
 #include <utility>
 
-#include <dune/iga/concepts.hh>
+#include "dune/iga/utils/concepts.hh"
 #include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/igaalgorithms.hh>
+#include <dune/iga/nurbsalgorithms.hh>
 #include <dune/iga/nurbsgridindexsets.hh>
 #include <dune/iga/nurbsgridtraits.hh>
 #include <dune/iga/nurbsidset.hh>
@@ -17,8 +19,6 @@
 #include <dune/iga/nurbsleafgridview.hh>
 #include <dune/iga/nurbslocalgeometry.hh>
 #include <dune/iga/nurbspatch.hh>
-#include <stdlib.h>
-#include <mutex>
 
 std::once_flag onceFlag;
 

@@ -10,9 +10,9 @@
 #include <concepts>
 #include <ranges>
 
+#include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
-#include <dune/iga/concepts.hh>
 #include <dune/iga/dunelinearalgebratraits.hh>
 
 namespace Dune::IGA {
