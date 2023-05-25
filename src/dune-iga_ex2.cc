@@ -18,7 +18,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-#include "dune/iga/ibra/ibraReader.hh"
+#include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igaDataCollector.h"
 #include "dune/iga/utils/igaHelpers.h"
 #include <dune/common/parametertreeparser.hh>
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   /// Add the linear elastic 2D planar solid elements to the vector "fes"
   timer.startTimer("createElement");
   for (auto &element : elements(gridView))
-    fes.emplace_back(basis, element, E, nu, &volumeLoad, &neumannBoundary, &neumannBoundaryLoad);
+    fes.emplace_back(basis, element, E, nu, volumeLoad, &neumannBoundary, neumannBoundaryLoad);
 
   spdlog::info("Creating the {} Finite Elements took {} milliseconds ", gridView.size(0), timer.stopTimer("createElement").count());
 

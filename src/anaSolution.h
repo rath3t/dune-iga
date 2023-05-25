@@ -3,7 +3,10 @@
 //
 
 #pragma once
-
+#include <utility>
+#include <dune/common/fvector.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <ranges>
 struct AnalyticalSolution {
   double E;
   double nu;
