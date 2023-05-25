@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   using GridView = Dune::IGA::NURBSGrid<gridDim, worldDim>::LeafGridView;
 
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
-      "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
+      "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate}, {globalRefine, globalRefine});
 
   const auto& patchData = grid->getPatch().getPatchData();
   spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);

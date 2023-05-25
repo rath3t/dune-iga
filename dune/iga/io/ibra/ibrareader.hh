@@ -25,7 +25,7 @@ namespace Dune::IGA {
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
     static std::shared_ptr<Grid> read(const std::string& fileName, const bool trim = true,
-                                      std::array<int, 2> elevateDegree = {0, 0}) {
+                                      std::array<int, 2> elevateDegree = {0, 0}, std::array<int, 2> preKnotRefine = {0, 0}) {
       using json = nlohmann::json;
 
       // Result
@@ -93,8 +93,16 @@ namespace Dune::IGA {
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData _patchData{knotSpans, controlNet, _surface.degree};
 
+      // Optional Pre Refinement of knots
+//      for (int i = 0; i < gridDim; ++i) {
+//        if (preKnotRefine[i] > 0) {
+//          auto additionalKnots = generateRefinedKnots(knotSpans, i, preKnotRefine[i]);
+//          _patchData = knotRefinement<gridDim>(_patchData, additionalKnots, i);
+//        }
+//      }
+
       // Optional Degree Elevate
-      for (int i = 0; i < 2; ++i)
+      for (int i = 0; i < gridDim; ++i)
         if (elevateDegree[i] > 0) _patchData = degreeElevate(_patchData, i, elevateDegree[i]);
 
       // Make the trimData, and pass them into the grid
