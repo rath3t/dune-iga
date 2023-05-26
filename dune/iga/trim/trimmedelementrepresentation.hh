@@ -51,6 +51,8 @@ namespace Dune::IGA {
     using GridView = Grid::LeafGridView;
     using Point    = Dune::FieldVector<double, dim>;
 
+    static constexpr double targetTolerance{1e-3};
+
    private:
     std::unique_ptr<Grid> grid{};
     std::vector<Boundary> outerBoundaries;
@@ -61,11 +63,10 @@ namespace Dune::IGA {
     std::array<double, dim> offset{};
 
     /// Parameters
-    int maxPreSamplesOuterBoundaries{4};
+    int maxPreSamplesOuterBoundaries{10};
     int innerLoopPreSample{3};
     int preGlobalRefine{0};
     int edgeRefinements{0};
-    double targetTolerance{1e-3};
 
    public:
     /// brief: Constructs an trimmed elementRepresentation with outer and inner boundaries

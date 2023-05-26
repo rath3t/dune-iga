@@ -76,6 +76,9 @@ namespace Ikarus {
     [[nodiscard]] int numOfQuadraturePoints() const {
       return localBasis.integrationPointSize();
     }
+    [[nodiscard]] int integrationOrder() const {
+      return order;
+    }
     //    const auto& localView() const { return localView(); }
 
     auto getDisplacementFunction(const FERequirementType& par) const {
@@ -135,7 +138,7 @@ namespace Ikarus {
       for (auto&& intersection : intersections(neumannBoundary->gridView(), element)) {
         if (not neumannBoundary->contains(intersection)) continue;
 
-        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), 2*order);
+        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), order);
 
         for (const auto& curQuad : quadLine) {
           // Local position of the quadrature point
@@ -320,7 +323,7 @@ namespace Ikarus {
         if (not neumannBoundary->contains(intersection)) continue;
 
         // Integration rule along the boundary
-        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), 2*order);
+        const auto& quadLine = Dune::QuadratureRules<double, mydim - 1>::rule(intersection.type(), order);
 
         for (const auto& curQuad : quadLine) {
           const Dune::FieldVector<double, mydim>& quadPos = intersection.geometryInInside().global(curQuad.position());

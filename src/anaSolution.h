@@ -112,7 +112,7 @@ struct AnalyticalSolution {
     return [&](const auto& pos) { return displacementSolution(pos); };
   }
 
-  std::array<double, 5> estimateError(const auto& gridView, auto& igaStress, auto& dispGlobalFunc) {
+  std::array<double, 5> estimateError(const auto& gridView, auto& igaStress, auto& dispGlobalFunc, int order) {
     using namespace Dune::Functions;
 
     auto localStress        = localFunction(igaStress);
@@ -131,7 +131,7 @@ struct AnalyticalSolution {
       localDisplacements.bind(ele);
       localDisplacementAnalytic.bind(ele);
 
-      const auto rule = ele.impl().getQuadratureRule();
+      const auto rule = ele.impl().getQuadratureRule(order);
 
       for (auto& gp : rule) {
         const auto stress_ana = localStressAnalytic(gp.position());

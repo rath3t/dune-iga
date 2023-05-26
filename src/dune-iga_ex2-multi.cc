@@ -29,13 +29,11 @@
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-int main(int argc, char **argv) {
-  Ikarus::init(argc, argv);
+constexpr int gridDim  = 2;
+constexpr int worldDim = 2;
+double lambdaLoad      = 1;
 
-  constexpr int gridDim  = 2;
-  constexpr int worldDim = 2;
-  double lambdaLoad      = 1;
-
+void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefine, bool writeVTK) {
   /// Read Parameter
   Dune::ParameterTree parameterSet;
   Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
@@ -46,9 +44,9 @@ int main(int argc, char **argv) {
 
   const auto gridFileName       = gridParameters.get<std::string>("filename");
   const bool trimGrid           = gridParameters.get<bool>("trim");
-  const auto u_degreeElevate    = gridParameters.get<int>("u_degreeElevate");
-  const auto v_degreeElevate    = gridParameters.get<int>("v_degreeElevate");
-  const auto globalRefine       = gridParameters.get<int>("globalRefine");
+  //const auto u_degreeElevate    = gridParameters.get<int>("u_degreeElevate");
+  //const auto v_degreeElevate    = gridParameters.get<int>("v_degreeElevate");
+  //const auto globalRefine       = gridParameters.get<int>("globalRefine");
   const auto refineInUDirection = gridParameters.get<int>("u_refine");
   const auto refineInVDirection = gridParameters.get<int>("v_refine");
 
@@ -59,7 +57,7 @@ int main(int argc, char **argv) {
 
   // Log the Paramaters
   spdlog::info(
-      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, refineInUDirection, refineInVDirection);
+      "Filename: {} \nThe following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, refineInUDirection, refineInVDirection);
 
   /// Instantiate a timer
   Timer timer;
@@ -98,7 +96,7 @@ int main(int argc, char **argv) {
         Dune::Functions::subspaceBasis(basis_, 1), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
           if (std::fabs(intersection.geometry().center()[1]) < 1e-8)
             dirichletFlags[localView.index(localIndex)] = true;
-    });
+        });
     Dune::Functions::forEachUntrimmedBoundaryDOF(
         Dune::Functions::subspaceBasis(basis_, 0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
           if (std::fabs(intersection.geometry().center()[0]) < 1e-8)
@@ -224,7 +222,10 @@ int main(int argc, char **argv) {
   int nQuadraturePoints = 0;
   std::ranges::for_each(fes, [&](const auto& fe) {nQuadraturePoints += fe.numOfQuadraturePoints();});
   spdlog::info("Num Quadrature Points: {}", nQuadraturePoints);
+  spdlog::info("RefinementTarget: {}", Grid::Traits::TrimmedElementRepresentationType::targetTolerance);
 
+  if (not writeVTK)
+    return;
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
 
@@ -242,6 +243,17 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(displacementGridFunction, Dune::VTK::FieldInfo("displacement solution", Dune::VTK::FieldInfo::Type::vector, 2));
 
   vtkWriter.write(outputFileName);
+}
+
+
+
+int main(int argc, char **argv) {
+  Ikarus::init(argc, argv);
+  for (auto i : std::views::iota(0, 5))
+    for (auto j : std::views::iota(2, 9))
+      analyse(argv, i, i, j, false);
+
+
 
   return 0;
 }
