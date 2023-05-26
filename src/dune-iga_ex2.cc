@@ -6,7 +6,7 @@
 
 #include "anaSolution.h"
 #include "linearElasticTrimmed.h"
-#include "stressEvaluator.h"
+// #include "stressEvaluator.h"
 #include "timer.h"
 
 #include <ikarus/assembler/simpleAssemblers.hh>
@@ -17,6 +17,7 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
+#include <ikarus/io/resultFunction.hh>
 
 #include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igaDataCollector.h"
@@ -89,7 +90,7 @@ int main(int argc, char **argv) {
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
-
+  auto basisSize = basis.flat().size();
   Ikarus::DirichletValues dirichletValues(basis.flat());
 
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
@@ -162,7 +163,7 @@ int main(int argc, char **argv) {
   auto sparseAssembler = Ikarus::SparseFlatAssembler(fes, dirichletValues);
 
   /// Define "elastoStatics" affordances and create functions for stiffness matrix and residual calculations
-  auto req = Ikarus::FErequirements().addAffordance(Ikarus::AffordanceCollections::elastoStatics);
+  auto req = Ikarus::FErequirements().insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad).addAffordance(Ikarus::AffordanceCollections::elastoStatics);
 
   auto KFunction = [&](auto &&disp, auto &&lambdaLocal) -> auto & {
     req.insertGlobalSolution(Ikarus::FESolutions::displacement, disp)
@@ -207,25 +208,22 @@ int main(int argc, char **argv) {
   auto forceGlobalFunc
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), Fext);
 
-  // Dirichlet Flag func
-  std::vector<int> flags(dirichletValues.size());
-  for (size_t i : std::views::iota(0u, dirichletValues.size()))
-    flags[i] = dirichletValues.isConstrained(i);
-  auto dirichletFunc = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), flags);
-
   // Estimate error
-  auto stressFunction = Dune::Vtk::Function<GridView>(std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::user_function>>(
-          gridView, &fes, D_Glob, [](const auto& sigma){
-            Dune::FieldVector<double, 3> res;
-            res[0] = sigma(0, 0);
-            res[1] = sigma(1, 0);
-            res[2] = sigma(2, 0);
-            return res;
-      }, "all_sigmas", lambdaLoad));
+  auto resReq = Ikarus::ResultRequirements()
+                    .insertGlobalSolution(Ikarus::FESolutions::displacement, D_Glob)
+                    .insertParameter(Ikarus::FEParameter::loadfactor, lambdaLoad)
+                    .addResultRequest(Ikarus::ResultType::linearStress);
+  auto stressFunction = Dune::Vtk::Function<GridView>(std::make_shared<Ikarus::ResultFunction<LinearElasticType>>(&fes, resReq));
 
   auto l2_error = analyticalSolution.estimateError(gridView, stressFunction, dispGlobalFunc);
+
   spdlog::info("Stress l2 error: {}", l2_error[0]);
   spdlog::info("Displacement l2 error: {}", l2_error[1]);
+
+  // Amount of quadrature Points
+  int nQuadraturePoints = 0;
+  std::ranges::for_each(fes, [&](const auto& fe) {nQuadraturePoints += fe.numOfQuadraturePoints();});
+  spdlog::info("Num Quadrature Points: {}", nQuadraturePoints);
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
@@ -233,16 +231,9 @@ int main(int argc, char **argv) {
   vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::vector, 2));
-  vtkWriter.addPointData(dirichletFunc,
-                         Dune::VTK::FieldInfo("dirichlet BC", Dune::VTK::FieldInfo::Type::vector, 2));
 
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::normalStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
 
-  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(
-      std::make_shared<StressEvaluator2D<GridView, LinearElasticType, StressEvaluatorComponents::shearStress>>(
-          gridView, &fes, D_Glob, lambdaLoad)));
+  vtkWriter.addPointData(Dune::Vtk::Function<GridView>(stressFunction));
 
   auto stressGridFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution.stressLambda(), gridView);
   auto displacementGridFunction =  Dune::Functions::makeAnalyticGridViewFunction(analyticalSolution.displacementLambda(), gridView);

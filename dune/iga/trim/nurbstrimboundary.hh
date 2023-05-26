@@ -91,7 +91,7 @@ namespace Dune::IGA {
     [[nodiscard]] Clipper2Lib::Path<ctype> path(unsigned int samples = 200, const int intScale = 0) const {
       Clipper2Lib::Path<ctype> path;
 
-      auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(Dune::power(10, intScale)); };
+      auto scaler = [intScale](const auto x) -> ctype { return x * static_cast<ctype>(std::pow(10, intScale)); };
 
       if (degree() == 1 && endPoints.size() == 2) {
         path.emplace_back(scaler(endPoints.front()[0]), scaler(endPoints.front()[1]));

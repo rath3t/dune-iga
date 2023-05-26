@@ -122,7 +122,7 @@ struct AnalyticalSolution {
     auto localDisplacementAnalytic
         = localFunction(Dune::Functions::makeAnalyticGridViewFunction(displacementLambda(), gridView));
 
-    std::array<double, 5> l2_error{};
+    std::array<double, 5> errors{};
 
     for (auto& ele : elements(gridView)) {
       localStress.bind(ele);
@@ -141,14 +141,16 @@ struct AnalyticalSolution {
         const auto displ_fe  = localDisplacements(gp.position());
 
         for (int i : std::views::iota(0, 3))
-          l2_error[i] += Dune::power(stress_ana[i] - stress_fe[i], 2) * ele.geometry().integrationElement(gp.position())
+          errors[i] += Dune::power(stress_ana[i] - stress_fe[i], 2) * ele.geometry().integrationElement(gp.position())
                          * gp.weight();
         for (int i : std::views::iota(3, 5))
-          l2_error[i] += Dune::power(displ_ana[i - 3] - displ_fe[i - 3], 2)
+          errors[i] += Dune::power(displ_ana[i - 3] - displ_fe[i - 3], 2)
                          * ele.geometry().integrationElement(gp.position()) * gp.weight();
       }
     }
 
-    return l2_error;
+    auto l2_error_stress = std::sqrt(errors[0]) + std::sqrt(errors[1]) + std::sqrt(errors[2]);
+    auto l2_error_displacements = std::sqrt(errors[3]) + std::sqrt(errors[4]);
+    return {l2_error_stress, l2_error_displacements};
   }
 };
