@@ -1,9 +1,5 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by lex on 23.11.21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -149,6 +145,8 @@ namespace Dune::IGA {
       auto N = this->outerNormal(xi);
       return N / N.two_norm();
     }
+
+    [[nodiscard]] GlobalCoordinate centerUnitOuterNormal() const { return unitOuterNormal(0.5); }
 
     /** \brief Same as outerNormal() but with the length of the integration element */
     [[nodiscard]] GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {

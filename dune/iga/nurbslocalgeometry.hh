@@ -1,14 +1,10 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by lex on 16.11.21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include "dune/iga/nurbsalgorithms.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/igaalgorithms.hh>
 
 namespace Dune::IGA {
   /** \brief a geometry implementation for NURBS*/
@@ -237,7 +233,9 @@ namespace Dune::IGA {
 
    private : Dune::Geo::ReferenceElements<ctype, mydimension> referenceElement_;
     int localIndexInElement_;
+    bool isTrimmed_{false};
   };
+
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
     return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();

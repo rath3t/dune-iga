@@ -1,19 +1,16 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include <ranges>
-
+#include "dune/iga/nurbsbasis.hh"
+#include "dune/iga/nurbsgridentity.hh"
+#include "dune/iga/nurbsgridindexsets.hh"
+#include "dune/iga/nurbsgridleafiterator.hh"
+#include "dune/iga/nurbsgridtraits.hh"
+#include "dune/iga/nurbspatch.hh"
 #include <dune/grid/common/datahandleif.hh>
 #include <dune/grid/common/gridenums.hh>
-#include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/nurbsgridentity.hh>
-#include <dune/iga/nurbsgridindexsets.hh>
-#include <dune/iga/nurbsgridleafiterator.hh>
-#include <dune/iga/nurbspatch.hh>
 
 namespace Dune::IGA {
 
@@ -27,6 +24,7 @@ namespace Dune::IGA {
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
     typedef typename GridImp ::Traits ::CollectiveCommunication CollectiveCommunication;
+    typedef typename GridImp ::Traits ::CollectiveCommunication Communication;
     typedef typename GridImp ::Traits ::LeafIntersection Intersection;
 
     template <int cd>
@@ -37,7 +35,7 @@ namespace Dune::IGA {
       typedef typename GridImp::Traits::template Codim<cd>::Geometry Geometry;
       typedef typename GridImp::Traits::template Codim<cd>::LocalGeometry LocalGeometry;
 
-      //      /** \brief Define types needed to iterate over entities of a given partition type */
+      ///** \brief Define types needed to iterate over entities of a given partition type */
       template <PartitionIteratorType pit>
       struct Partition {
         /** \brief iterator over a given codim and partition type */
@@ -88,6 +86,8 @@ namespace Dune::IGA {
 
     using Grid = typename Traits::Grid;
 
+    [[nodiscard]] bool isConforming() const { return true; }
+
     NURBSLeafGridView(
         const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>>
             &leafpatches,
@@ -96,15 +96,8 @@ namespace Dune::IGA {
           grid_{&grid},
           entityVector_{std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
               std::make_integer_sequence<int, dimension + 1>()))>()} {
-      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
-        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
-          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
-          for (unsigned int j = 0; j < patch.size(i); ++j)
-            std::get<i>(*entityVector_.get())
-                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
-        });
-        ++currentPatchId;
-      }
+      createEntities();
+
       indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
     }
 
@@ -140,11 +133,22 @@ namespace Dune::IGA {
 
     /** \brief obtain how many entities of a give geometry type do live in this grid view */
     [[nodiscard]] int size(const GeometryType &type) const {
-      if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
-          || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
-        return this->size(dimension - type.dim());
-      else
-        return 0;
+      if constexpr (dimension != 2) {
+        if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
+            || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
+          return this->size(dimension - type.dim());
+        else
+          return 0;
+      } else {
+        if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1))
+          return this->size(dimension - type.dim());
+        else if (type == Dune::GeometryTypes::none(2))
+          return getPatch().n_trimmedElement;
+        else if (type == Dune::GeometryTypes::cube(2))
+          return getPatch().n_fullElement;
+        else
+          return 0;
+      }
     }
 
     const auto &getPatchData(int patchID = 0) const { return *(leafPatches_->at(patchID).getPatchData()); }
@@ -208,19 +212,24 @@ namespace Dune::IGA {
     }
 
    private:
+    void createEntities() {
+      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
+        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
+          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
+          for (unsigned int j = 0; j < patch.size(i); ++j) {
+            std::get<i>(*entityVector_.get())
+                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
+          }
+        });
+        ++currentPatchId;
+      }
+    }
+
     void updateGridViewForEntities() {
       entityVector_ = std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
           std::make_integer_sequence<int, dimension + 1>()))>();
 
-      for (int currentPatchId = 0; auto &&patch : *leafPatches_.get()) {
-        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
-          std::get<i>(*entityVector_.get()).reserve(patch.size(i));
-          for (unsigned int j = 0; j < patch.size(i); ++j)
-            std::get<i>(*entityVector_.get())
-                .emplace_back(NURBSGridEntity<i, dimension, GridImpl>(*this, j, currentPatchId));
-        });
-        ++currentPatchId;
-      }
+      createEntities();
     }
     template <int codim>
     typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {

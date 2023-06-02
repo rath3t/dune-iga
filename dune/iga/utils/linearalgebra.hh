@@ -1,12 +1,8 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by alex on 12/8/21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <dune/iga/concepts.hh>
+#include "dune/iga/utils/concepts.hh"
 namespace Dune::IGA {
 
   /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back to

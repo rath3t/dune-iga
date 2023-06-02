@@ -1,20 +1,22 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
 #pragma once
-#include <dune/common/parallel/communication.hh>
-#include <dune/iga/concepts.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/igaalgorithms.hh>
-#include <dune/iga/nurbsgridindexsets.hh>
-#include <dune/iga/nurbsgridtraits.hh>
-#include <dune/iga/nurbsidset.hh>
-#include <dune/iga/nurbsintersection.hh>
-#include <dune/iga/nurbsleafgridview.hh>
-#include <dune/iga/nurbslocalgeometry.hh>
-#include <dune/iga/nurbspatch.hh>
+#include <cstdlib>
+#include <mutex>
+#include <optional>
+#include <utility>
+
+#include "dune/iga/dunelinearalgebratraits.hh"
+#include "dune/iga/nurbsalgorithms.hh"
+#include "dune/iga/nurbsgridindexsets.hh"
+#include "dune/iga/nurbsgridtraits.hh"
+#include "dune/iga/nurbsidset.hh"
+#include "dune/iga/nurbsintersection.hh"
+#include "dune/iga/nurbsleafgridview.hh"
+#include "dune/iga/nurbslocalgeometry.hh"
+#include "dune/iga/nurbspatch.hh"
+#include "dune/iga/utils/concepts.hh"
 
 namespace Dune::IGA {
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
@@ -66,13 +68,16 @@ namespace Dune::IGA {
     using GlobalIdSet   = typename Traits::GlobalIdSet;
     NURBSGrid()         = default;
 
-    explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData)
+    explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData,
+                       std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
         : coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())},
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>(
+              1, NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_, _trimData))},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())} {
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
+          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
+          trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
@@ -85,10 +90,8 @@ namespace Dune::IGA {
                    == nurbsPatchData.controlPoints.size()[2]
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
       // FIXME check sanity of knotvector and degree
-      finestPatches_->emplace_back(currentPatchRepresentation_);
-      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
-      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
-      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
+
+      silenceGrid();
     }
 
     /** \brief  constructor
@@ -106,43 +109,46 @@ namespace Dune::IGA {
           finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl())} {}
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))} {
+      silenceGrid();
+    }
 
-    void globalRefine(int refinementLevel) {
+    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
+
+    void globalRefine(int refinementLevel, bool omitTrim) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
         auto additionalKnots
             = generateRefinedKnots(currentPatchRepresentation_.knotSpans, refDirection, refinementLevel);
         currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, refDirection);
       }
-      updateStateAfterRefinement();
+      updateStateAfterRefinement(omitTrim);
     }
 
-    void globalRefineInDirection(const int dir, const int refinementLevel) {
+    void globalRefineInDirection(const int dir, const int refinementLevel, bool omitTrim = false) {
       if (refinementLevel == 0) return;
       auto additionalKnots        = generateRefinedKnots(currentPatchRepresentation_.knotSpans, dir, refinementLevel);
       currentPatchRepresentation_ = knotRefinement<dim>(currentPatchRepresentation_, additionalKnots, dir);
-      updateStateAfterRefinement();
+      updateStateAfterRefinement(omitTrim);
     }
 
-    [[nodiscard]] int size(int codim) const { return finestPatches_.get()->front().size(codim); }
+    void globalMultiRefine(const int global, const int uDir, const int vDir) {
+      this->globalRefine(global, uDir > 0 or vDir > 0);
+      this->globalRefineInDirection(0, uDir, vDir > 0);
+      this->globalRefineInDirection(1, vDir);
+    }
+
+    int size(int codim) const { return finestPatches_.get()->front().size(codim); }
+
+    bool reportTrimError() const {
+      for (const auto& patch : *finestPatches_)
+        if (patch.reportTrimError()) return true;
+      return false;
+    }
 
     /** \brief returns the number of boundary segments within the macro grid */
-    [[nodiscard]] int numBoundarySegments() const {
-      if constexpr (dimension == 1)
-        return 2;
-      else if constexpr (dimension == 2)
-        return (finestPatches_.get()->front().validKnotSize()[0] + finestPatches_.get()->front().validKnotSize()[1])
-               * 2;
-      else if constexpr (dimension == 3)
-        return 2
-               * (finestPatches_.get()->front().validKnotSize()[0] * finestPatches_.get()->front().validKnotSize()[1]
-                  + finestPatches_.get()->front().validKnotSize()[1] * finestPatches_.get()->front().validKnotSize()[2]
-                  + finestPatches_.get()->front().validKnotSize()[0]
-                        * finestPatches_.get()->front().validKnotSize()[2]);
-      __builtin_unreachable();
-    }
-    [[nodiscard]] int size(int level, int codim) const { return this->size(codim); }
+    int numBoundarySegments() const { return getPatch().numBoundarySegments(); }
+    int size(int level, int codim) const { return this->size(codim); }
 
     const GridView& leafGridView() const { return *leafGridView_; }
     const GridView& levelGridView([[maybe_unused]] int level) const { return *leafGridView_; }
@@ -154,40 +160,42 @@ namespace Dune::IGA {
       return leafGridView_->impl().template getEntity<Seed::codimension>(seed.impl().index_);
     }
 
-    [[nodiscard]] int size(const GeometryType& type) const {
-      if (type == Dune::GeometryTypes::vertex || type == Dune::GeometryTypes::cube(1)
-          || type == Dune::GeometryTypes::cube(2) || type == Dune::GeometryTypes::cube(3))
-        return this->leafGridView().size(dimension - type.dim());
-      else
-        return 0;
-    }
+    int size(const GeometryType& type) const { return this->leafGridView().size(type); }
+
     int size(int lvl, const GeometryType& type) const { return this->size(type); }
 
     const GlobalIdSet& globalIdSet() const { return *idSet_; }
     const LevelIndexSet& levelIndexSet(int lvl) const { return *indexdSet_; }
     const LeafIndexSet& leafIndexSet() const { return *indexdSet_; }
 
-    [[nodiscard]] int maxLevel() const { return 0; }
+    int maxLevel() const { return 0; }
 
     const auto& localIdSet() const { return this->globalIdSet(); }
 
-    [[nodiscard]] const typename Traits::CollectiveCommunication& comm() const { return ccobj; }
+    const typename Traits::CollectiveCommunication& comm() const { return ccobj; }
 
+    // TODO Fix publicness and privateness
    private:
-    void updateStateAfterRefinement() {
-      finestPatches_.get()->front() = NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_);
-      leafGridView_                 = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
-      indexdSet_                    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>(this->leafGridView().impl());
-      idSet_                        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+    void updateStateAfterRefinement(bool omitTrim = false) {
+      finestPatches_->clear();
+      finestPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
+
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
+      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()));
+      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
     }
 
+   public:
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;
     std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>> finestPatches_;
     std::shared_ptr<GridView> leafGridView_;
-    std::unique_ptr<LeafIndexSet> indexdSet_;
+    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexdSet_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
+    std::optional<std::shared_ptr<TrimData>> trimData_ = std::nullopt;
+
+    auto& getPatch() const { return finestPatches_->front(); }
   };
 
   template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>

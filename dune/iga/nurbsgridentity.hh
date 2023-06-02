@@ -1,26 +1,18 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
 #ifndef DUNE_IGA_NURBSGRIDENTITY_HH
 #define DUNE_IGA_NURBSGRIDENTITY_HH
 
-#include "nurbsgridleafiterator.hh"
-#include "nurbsintersection.hh"
-
-#include <array>
-#include <numeric>
-
+#include "dune/iga/nurbsintersection.hh"
+#include "dune/iga/nurbsleafgridview.hh"
+#include "dune/iga/nurbspatch.hh"
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/gridenums.hh>
-#include <dune/iga/nurbsleafgridview.hh>
-#include <dune/iga/nurbspatch.hh>
 
 /** \file
  * \brief The NURBSGridEntity class
  */
-
 namespace Dune::IGA {
 
   template <int codim, int dim, typename GridImpl>
@@ -98,21 +90,53 @@ namespace Dune::IGA {
         : NURBSGridView_(&gridView),
           directIndex_(directIndex),
           patchID_{patchID},
-          parType_{PartitionType::InteriorEntity} {
-      intersections_ = std::make_shared<std::vector<Intersection>>();
+          parType_{PartitionType::InteriorEntity},
+          trimFlag{NURBSGridView_->getPatch(patchID_).getTrimFlag(directIndex_)},
+          intersections_{std::make_shared<std::vector<Intersection>>()}  // FIXME why shared?
+    {
       intersections_->reserve(this->subEntities(1));
+
       for (int innerLocalIndex = 0, outerLocalIndex = 1; innerLocalIndex < this->subEntities(1); ++innerLocalIndex) {
-        const auto& eleNet = NURBSGridView_->getPatch(patchID_).elementNet_;
-        auto multiIndex    = eleNet->directToMultiIndex(directIndex_);
+        const auto& eleNet    = NURBSGridView_->getPatch(patchID_).elementNet_;
+        auto nurbsDirectIndex = NURBSGridView_->getPatch(patchID_).template getDirectIndex<0>(directIndex_);
+        auto multiIndex       = eleNet->directToMultiIndex(nurbsDirectIndex);
         multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
             += ((innerLocalIndex % 2)
                     ? 1
                     : Impl::noNeighbor);  // increase the multiIndex depending on where the outer element should lie
         auto directOuterIndex = (eleNet->isValid(multiIndex)) ? eleNet->index(multiIndex) : Impl::noNeighbor;
+        directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
         intersections_->emplace_back(NURBSintersection<GridImpl>(innerLocalIndex, outerLocalIndex, directIndex_,
                                                                  directOuterIndex, *NURBSGridView_));
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
+    }
+
+    auto trimmedElementRepresentation() const {
+      return NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+    }
+
+    void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector, const std::optional<int>& p_order = std::nullopt,
+                            const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
+      vector.clear();
+      int order
+          = p_order.value_or(mydimension * (*std::ranges::max_element(NURBSGridView_->getPatchData(patchID_).degree)));
+      if constexpr (dim == 2)
+        if (isTrimmed()) {
+          auto elementRepr = NURBSGridView_->getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+          fillQuadratureRuleImpl(vector, *elementRepr, order, qt);
+          return;
+        }
+      const auto& rule = Dune::QuadratureRules<double, mydimension>::rule(this->type(), order, qt);
+      vector.insert(vector.end(), rule.begin(), rule.end());
+    }
+
+    [[nodiscard]] Dune::QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
+                                                                      const QuadratureType::Enum qt
+                                                                      = QuadratureType::GaussLegendre) const {
+      Dune::QuadratureRule<double, dim> rule;
+      fillQuadratureRule(rule, p_order, qt);
+      return rule;
     }
 
     //! Geometry of this entity
@@ -121,6 +145,9 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] unsigned int getIndex() const { return directIndex_; }
+    [[nodiscard]] unsigned int getDirectIndexInPatch() const {
+      return NURBSGridView_->getPatch(patchID_).template getDirectIndex<0>(directIndex_);
+    }
     [[nodiscard]] bool hasFather() const { return false; }
     [[nodiscard]] EntitySeed seed() const {
       EntitySeed e;
@@ -134,9 +161,14 @@ namespace Dune::IGA {
     [[nodiscard]] unsigned int subEntities(unsigned int codim1) const {
       return (mydimension < codim1 ? 0 : Dune::binomial(static_cast<unsigned int>(mydimension), codim1) << codim1);
     }
+
     [[nodiscard]] bool hasBoundaryIntersections() const {
-      return NURBSGridView_->getPatch(patchID_).isPatchBoundary(directIndex_);
+      return std::ranges::any_of(*intersections_,
+                                 [](const Intersection& intersection) { return intersection.boundary(); });
     }
+
+    [[nodiscard]] ElementTrimFlag getTrimFlag() const { return trimFlag; }
+    [[nodiscard]] bool isTrimmed() const { return trimFlag == ElementTrimFlag::trimmed; }
 
     template <int codimSub>
     typename GridImpl::Traits::template Codim<codimSub>::Entity subEntity(int i) const {
@@ -176,7 +208,13 @@ namespace Dune::IGA {
     HierarchicIterator hend([[maybe_unused]] int lvl) const { return NurbsHierarchicIterator<GridImpl>(*this); }
 
     [[nodiscard]] bool isLeaf() const { return true; }
-    [[nodiscard]] auto type() const { return GeometryTypes::cube(mydimension); }
+
+    [[nodiscard]] auto type() const {
+      if (trimFlag == ElementTrimFlag::full)
+        return GeometryTypes::cube(mydimension);
+      else
+        return GeometryTypes::none(mydimension);
+    }
     [[nodiscard]] int level() const { return 0; }
     [[nodiscard]] PartitionType partitionType() const { return parType_; }
 
@@ -199,12 +237,30 @@ namespace Dune::IGA {
     PartitionType parType_{PartitionType::InteriorEntity};
     unsigned int patchID_{};
 
-  };  // end of OneDGridEntity codim = 0
+    ElementTrimFlag trimFlag;
+
+    // Helpers
+    int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
+
+    int getRealIndexForOuterIndex(int outerIndex) requires(dim == 2) {
+      if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
+      return NURBSGridView_->getPatch(patchID_).template getRealIndexOr<0>(outerIndex, Impl::noNeighbor);
+    }
+
+  };  // end of Template Specialization for codim = 0
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<codim, dim, GridImp>& e) {
     return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydimension>::cube();
-  };
+  }
+
+  template <std::integral auto codim, std::integral auto dim, typename GridImp>
+  auto referenceElement(const NURBSGridEntity<0, dim, GridImp>& e) {
+    if (e.getTrimFlag() == ElementTrimFlag::trimmed)
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::none();
+    else
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::cube();
+  }
 
 }  // namespace Dune::IGA
 
