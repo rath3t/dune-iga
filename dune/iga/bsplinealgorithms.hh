@@ -1,19 +1,15 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by lex on 07.11.21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include <algorithm>
 #include <concepts>
 #include <ranges>
 
+#include "dune/iga/dunelinearalgebratraits.hh"
+#include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
-#include <dune/iga/concepts.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
 
 namespace Dune::IGA {
 
@@ -43,9 +39,9 @@ namespace Dune::IGA {
   }
 
   /** \brief Same as findSpanCorrected() but for dim - knotvectors  */
-  template <std::size_t dim, typename ValueType>
-  auto findSpanCorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
-                         const std::array<std::vector<ValueType>, dim>& U) {
+  template <int dim, size_t dim2, typename ValueType>
+  auto findSpanCorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
+                         const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpanCorrected(p[i], u[i], U[i]);
@@ -53,9 +49,9 @@ namespace Dune::IGA {
   }
 
   /** \brief Same as findSpanUncorrected() but for dim - knotvectors  */
-  template <std::size_t dim, typename ValueType>
-  auto findSpanUncorrected(const std::array<int, dim>& p, const std::array<ValueType, dim>& u,
-                           const std::array<std::vector<ValueType>, dim>& U) {
+  template <int dim, size_t dim2, typename ValueType>
+  auto findSpanUncorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
+                           const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpanUncorrected(p[i], u[i], U[i]);
@@ -106,6 +102,7 @@ namespace Dune::IGA {
       assert(spIndex < knots.size() - p - 1);
       DynamicVectorType N;
       N.resize(p + 1, 0.0);
+      u = std::clamp(u, knots.front(), knots.back());
       if (Dune::FloatCmp::eq(u, knots.back()))  // early exit
       {
         N.back() = 1;
@@ -135,8 +132,8 @@ namespace Dune::IGA {
         }
         N[j + 1] = saved;
       }
-      for ([[maybe_unused]] auto& Ni : N)
-        assert(Dune::FloatCmp::ge(Ni, 0.0));  // The basis functions are always >=0!
+      // The basis functions are always >=0!
+      assert(std::ranges::all_of(N, [](const auto& Ni) { return not Dune::FloatCmp::lt(Ni, -1e-8); }));
 
       return N;
     }

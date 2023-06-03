@@ -1,18 +1,19 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
-#include "igaalgorithms.hh"
+#include "nurbsalgorithms.hh"
 
-#include <memory>
-
+#include "dune/iga/controlpoint.hh"
+#include "dune/iga/dunelinearalgebratraits.hh"
+#include "dune/iga/nurbsgeometry.hh"
+#include "dune/iga/trim/nurbstrimboundary.hh"
+#include "dune/iga/trim/nurbstrimmer.hh"
+#include "dune/iga/trim/trimmedelementrepresentation.hh"
+#include "dune/iga/utils/concepts.hh"
 #include <dune/common/float_cmp.hh>
-#include <dune/iga/concepts.hh>
-#include <dune/iga/controlpoint.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/nurbsgeometry.hh>
-
+#include <dune/grid/yaspgrid.hh>
 namespace Dune::IGA {
 
   template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
@@ -30,9 +31,15 @@ namespace Dune::IGA {
   class NURBSPatch {
    public:
     using GridImpl = NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>;
+    using Types    = typename GridImpl::Traits::LeafIndexSet::Types;
     friend class NURBSLeafGridView<GridImpl>;
     template <int codim, int dim1, typename GridImpl1>
     friend class NURBSGridEntity;
+
+    using DirectIndex = unsigned int;
+    using RealIndex   = unsigned int;
+
+    using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
 
     /** \brief Constructor of NURBS from knots, control points, weights and degree
      *  \param knotSpans vector of knotSpans for each dimension
@@ -43,10 +50,16 @@ namespace Dune::IGA {
         const std::array<std::vector<double>, dim>& knotSpans,
         const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
         const std::array<int, dim> degree)
-        : NURBSPatch(NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>(knotSpans, controlPoints, degree)) {}
+        : NURBSPatch(NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>(knotSpans, controlPoints, degree)) {
+      silenceGrid();
+    }
 
-    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData)
-        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)} {
+    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData,
+                        std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
+        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)},
+          patchGeometry_{std::make_shared<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
+          trimData_(std::move(trimData)) {
+      silenceGrid();
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -56,10 +69,20 @@ namespace Dune::IGA {
 
       elementNet_ = std::make_shared<MultiDimensionNet<dim, double>>(uniqueSpanSize_);
       vertexNet_  = std::make_shared<MultiDimensionNet<dim, double>>(uniqueKnotVector_);
+
+      computeElementTrimInfo();
     }
 
-    /** \brief Returns the number of entities of a given codimension */
-    [[nodiscard]] int size(int codim) const {
+    template <unsigned int codim, std::integral T = int>
+    requires(codim == 0 || codim == dim) [[nodiscard]] std::array<unsigned int, dim> originalGridSize() const {
+      if constexpr (codim == 0)
+        return elementNet_->template sizeAsT<T>();
+      else
+        return vertexNet_->template sizeAsT<T>();
+    }
+
+    /** \brief Returns the number of entities of a given codimension in the untrimmed case */
+    [[nodiscard]] int originalSize(int codim) const {
       assert((codim <= dim) and (codim <= 3) and (codim >= 0));
 
       if (codim == 0)
@@ -90,18 +113,50 @@ namespace Dune::IGA {
       __builtin_unreachable();
     }
 
+    /** \brief Returns the number of entities of a given codimension (considers trimmed elements) */
+    [[nodiscard]] int size(int codim) const {
+      assert((codim <= dim) and (codim <= 3) and (codim >= 0));
+      if constexpr (dim != 2 && dimworld != 2) return originalSize(codim);
+
+      if (!(trimData_.has_value())) return originalSize(codim);
+
+      assert(!(std::isnan(n_fullElement)));
+      if (codim == 0)
+        return (n_fullElement + n_trimmedElement);
+      else if (codim == 1)
+        return edgeIndexMap.size();
+      else
+        return vertexIndexMap.size();
+    }
+
     /** \brief Returns the patch for this patch, i.e. the control points and knotvectors */
     const auto& getPatchData() { return patchData_; }
 
     /** \brief Checks if the element given by it's id is on the patch boundary */
     [[nodiscard]] bool isPatchBoundary(const int& id) const {
-      auto const& knotElementNet = this->elementNet_;
-      auto const& multiIndex     = knotElementNet->directToMultiIndex(id);
+      throw std::logic_error("Not Implemented: ask the element if it has a neighbor");
+    }
 
-      for (int i = 0; i < dim; ++i)
-        if ((multiIndex[i] == knotElementNet->size()[i] - 1) or (multiIndex[i] == 0)) return true;
+    [[nodiscard]] int numBoundarySegments() const {
+      if constexpr (dim == 1)
+        return 2;
+      else if constexpr (dim == 2) {
+        if (trimData_.has_value()) return boundarySegmentList().size();
+        return (validKnotSize()[0] + validKnotSize()[1]) * 2;
+      } else if constexpr (dim == 3)
+        return 2
+               * (validKnotSize()[0] * validKnotSize()[1] + validKnotSize()[1] * validKnotSize()[2]
+                  + validKnotSize()[0] * validKnotSize()[2]);
+      __builtin_unreachable();
+    }
 
-      return false;
+    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const requires(dim == 2) {
+      auto realIndexOfBoundaryIntersections = boundarySegmentList();
+
+      auto it = std::ranges::find(realIndexOfBoundaryIntersections, intersectionRealIndex);
+      assert(it != realIndexOfBoundaryIntersections.end());
+
+      return static_cast<int>(std::ranges::distance(realIndexOfBoundaryIntersections.begin(), it));
     }
 
     /** \brief Returns the boundary index of the passed codim 1 entity index
@@ -109,6 +164,7 @@ namespace Dune::IGA {
      * @param ocdim1Id
      * @return Increasing boundary index
      */
+
     [[nodiscard]] int patchBoundaryIndex(const int ocdim1Id) const {
       int index = ocdim1Id;
 
@@ -314,23 +370,62 @@ namespace Dune::IGA {
      *  \param[in] ijk array of indices for each dimension
      */
     template <std::integral auto codim>
-    typename GridImpl::template Codim<codim>::Geometry geometry(const int directIndex) const {
+    typename GridImpl::template Codim<codim>::Geometry geometry(const RealIndex realIndex) const {
+      DirectIndex directIndex = getDirectIndex<codim>(realIndex);
+
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
-      auto geo = NURBSGeometry<dim - codim, dimworld, GridImpl>(patchData_, fixedOrFreeDirection, currentKnotSpan);
+
+      auto geo = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
+                     patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
+                                                       : NURBSGeometry<dim - codim, dimworld, GridImpl>(
+                                                           patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
+    }
+
+    std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset(const DirectIndex directIndex) {
+      // This is a mirroring of nurbsGeometryCode
+      std::array<double, dim> scaling;
+      std::array<double, dim> offset;
+
+      auto [thisSpanIndices, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<0>(directIndex);
+      for (int i = 0; i < dim; ++i) {
+        if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
+          scaling[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
+        offset[i] = patchData_->knotSpans[i][thisSpanIndices[i]];
+      }
+      return std::make_pair(scaling, offset);
     }
 
     /** \brief returns the size of knot spans where knot[i] < knot[i+1] of each dimension */
     std::array<int, dim> validKnotSize() const { return uniqueSpanSize_; }
 
+    Types typesInCodim(const int codim) const {
+      assert(!std::isnan(n_fullElement));  // This would mean that the trim Code hasn't been run
+      if (codim != 2)
+        return {GeometryTypes::cube(codim)};
+      else {
+        if (n_fullElement == 0)
+          return {GeometryTypes::none(codim)};
+        else if (n_trimmedElement > 0)
+          return {GeometryTypes::cube(codim), GeometryTypes::none(codim)};
+        else
+          return {GeometryTypes::cube(codim)};
+      }
+    }
+
+    /// \brief returns false if an error happened during processing the trim
+    [[nodiscard]] bool reportTrimError() const { return not trimErrorFlag_; }
+
    private:
-    [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const int elementDirectIndex,
-                                                           const int localVertexIndex) const {
-      auto multiIndexOfVertex = elementNet_->directToMultiIndex(elementDirectIndex);
-      const auto bs           = std::bitset<dim>(localVertexIndex);
+    [[nodiscard]] int getGlobalVertexIndexFromElementIndex(const RealIndex realIndex, const int localVertexIndex,
+                                                           const bool returnOriginal = false) const {
+      DirectIndex elementDirectIndex = getDirectIndex<0>(realIndex);
+      auto multiIndexOfVertex        = elementNet_->directToMultiIndex(elementDirectIndex);
+      const auto bs                  = std::bitset<dim>(localVertexIndex);
       for (int i = 0; i < bs.size(); ++i)
         multiIndexOfVertex[i] += bs[i];
-      return vertexNet_->index(multiIndexOfVertex);
+      if (returnOriginal) return vertexNet_->index(multiIndexOfVertex);
+      return getRealIndex<2>(vertexNet_->index(multiIndexOfVertex));
     }
 
     template <int codim>
@@ -350,8 +445,10 @@ namespace Dune::IGA {
       return codim1Sizes;
     }
 
-    [[nodiscard]] int getGlobalEdgeIndexFromElementIndex(const int elementDirectIndex, const int eI) const {
-      const auto eleI = elementNet_->directToMultiIndex(elementDirectIndex);
+    [[nodiscard]] int getGlobalEdgeIndexFromElementIndex(const int realIndex, const int eI,
+                                                         const bool returnOriginal = false) const {
+      DirectIndex elementDirectIndex = getDirectIndex<0>(realIndex);
+      const auto eleI                = elementNet_->directToMultiIndex(elementDirectIndex);
       std::array<int, dim> edgeSizes;
       std::ranges::fill(edgeSizes, 1);
       for (int i = 0; i < dim; ++i)
@@ -424,11 +521,13 @@ namespace Dune::IGA {
               break;
           }
       }
-      return dIndex;
+      if (returnOriginal) return dIndex;
+      return getRealIndex<1>(dIndex);
     }
 
-    [[nodiscard]] int getGlobalSurfaceIndexFromElementIndex(const int elementDirectIndex, const int eI) const {
-      auto eleI = elementNet_->directToMultiIndex(elementDirectIndex);
+    [[nodiscard]] int getGlobalSurfaceIndexFromElementIndex(const int realIndex, const int eI) const {
+      DirectIndex elementDirectIndex = getDirectIndex<0>(realIndex);
+      auto eleI                      = elementNet_->directToMultiIndex(elementDirectIndex);
 
       std::array<int, dim> edgeSizes;
       std::ranges::fill(edgeSizes, 1);
@@ -466,15 +565,269 @@ namespace Dune::IGA {
       return dIndex;
     }
 
-    template <typename GridImpl>
-    friend class NURBSGridLeafIndexSet;
+   public:
+    template <typename ctype = double>
+    auto parameterSpaceGrid(int scale = 0) const {
+      using TensorSpaceCoordinates = TensorProductCoordinates<ctype, dim>;
+      using ParameterSpaceGrid     = YaspGrid<dim, TensorSpaceCoordinates>;
+
+      std::array<std::vector<double>, dim> uniqueKnots;
+      for (int i = 0; i < dim; ++i)
+        std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnots[i]));
+
+      if constexpr (std::is_same<double, ctype>::value) return std::make_unique<ParameterSpaceGrid>(uniqueKnots);
+
+      std::array<std::vector<ctype>, dim> uniqueKnotsTransformed;
+      for (int i = 0; i < dim; ++i)
+        std::ranges::transform(uniqueKnots[i], std::back_inserter(uniqueKnotsTransformed[i]),
+                               [scale](const auto& knot) { return knot * static_cast<ctype>(std::pow(10, scale)); });
+
+      return std::make_unique<ParameterSpaceGrid>(uniqueKnotsTransformed);
+    }
+
+    // In the following a DirectIndex is the flat index of the knot span in the tensor-product net of the untrimmed
+    // patch The RealIndex refers to a flat index that runs from 0 ... j with j = n_T + n_F
+
+    [[nodiscard]] bool hasEmptyElements() const { return (n_fullElement + n_trimmedElement < originalSize(0)); }
+    [[nodiscard]] int emptyElements() const { return originalSize(0) - (n_fullElement + n_trimmedElement); }
+
+    template <unsigned int codim>
+    [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
+      return idx;
+    }
+    template <unsigned int codim>
+    [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
+      return idx;
+    }
+    template <unsigned int codim>
+    requires(dim == 2) [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
+      return getEntityMap<codim>()[idx];
+    }
+
+    template <unsigned int codim>
+    requires(dim == 2) [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
+      constexpr auto orVal = std::numeric_limits<DirectIndex>::max();
+      auto res             = getRealIndexOr<codim>(idx, orVal);
+      if (res != orVal)
+        return res;
+      else
+        throw std::runtime_error("No corresponding realIndex");
+    }
+    template <unsigned int codim>
+    requires(dim == 2) [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept
+        requires(std::same_as<decltype(idx), decltype(orValue)>) {
+      auto& map = this->getEntityMap<codim>();
+      auto it   = std::ranges::find(map, idx);
+      return it != map.end() ? std::ranges::distance(map.begin(), it) : orValue;
+    }
+
+    [[nodiscard]] auto getTrimFlagForDirectIndex(DirectIndex directIndex) const -> ElementTrimFlag {
+      return trimFlags_[directIndex];
+    }
+    [[nodiscard]] auto getTrimFlag(RealIndex realIndex) const -> ElementTrimFlag {
+      int nurbsIdx = getDirectIndex<0>(realIndex);
+      return getTrimFlagForDirectIndex(nurbsIdx);
+    }
+    [[nodiscard]] auto getTrimmedElementRepresentation(RealIndex realIndex) const
+        -> std::shared_ptr<TrimmedElementRepresentationType> {
+      auto directIndex = getDirectIndex<0>(realIndex);
+      return trimInfoMap.at(directIndex).repr;
+    }
+
+    void prepareForNoTrim() {
+      auto n_ele = originalSize(0);
+      trimFlags_ = std::vector<ElementTrimFlag>(n_ele);
+      std::ranges::fill(trimFlags_, ElementTrimFlag::full);
+
+      if constexpr (dim == 2) {
+        fill1to1Maps<0>();
+        fill1to1Maps<1>();
+        fill1to1Maps<2>();
+      }
+
+      n_fullElement = n_ele;
+
+      if constexpr (dim == 2) {
+        auto paraGrid               = parameterSpaceGrid();
+        auto parameterSpaceGridView = paraGrid->leafGridView();
+
+        const auto& indexSet = parameterSpaceGridView.indexSet();
+        for (const auto& element : elements(parameterSpaceGridView)) {
+          auto geo = element.geometry();
+
+          DirectIndex directIndex = indexSet.index(element);
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = directIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               scalingAndOffset(directIndex))});
+        }
+      }
+    }
+
+    template <unsigned int codim>
+    requires(dim == 2) void fill1to1Maps() {
+      int n_entity = originalSize(codim);
+      auto& map    = getEntityMap<codim>();
+
+      auto iView = std::views::iota(0, n_entity);
+      map.reserve(n_entity);
+      map.insert(map.end(), iView.begin(), iView.end());
+    }
+
+    // This is for grid dims where no trimming functionality is enabled
+    void computeElementTrimInfo() { prepareForNoTrim(); }
+
+    // Trim Info gets computed for dim == 2 && dimworld == 2
+    void computeElementTrimInfo() requires(dim == 2) {
+      if (!trimData_.has_value()) {
+        prepareForNoTrim();
+        return;
+      }
+      // Prepare Results
+      n_fullElement    = 0;
+      n_trimmedElement = 0;
+      trimFlags_.resize(originalSize(0));
+
+      using Trimmer = Trim::NURBSPatchTrimmer<>;
+
+      auto paraGrid               = parameterSpaceGrid<Trimmer::intType>(Trimmer::scale);
+      auto parameterSpaceGridView = paraGrid->leafGridView();
+
+      Trimmer trimmer(parameterSpaceGridView, trimData_.value().get());
+
+      const auto& indexSet = parameterSpaceGridView.indexSet();
+      for (auto& element : elements(parameterSpaceGridView)) {
+        DirectIndex directIndex = indexSet.index(element);
+        RealIndex realIndex     = n_fullElement + n_trimmedElement;
+
+        auto [trimFlag, boundaries, errorFlag] = trimmer.trimElement(directIndex);
+        trimFlags_[directIndex]                = trimFlag;
+        if (errorFlag) trimErrorFlag_ = true;
+
+        if (trimFlag == ElementTrimFlag::trimmed) {
+          ++n_trimmedElement;
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               boundaries.value(), scalingAndOffset(directIndex))});
+        } else if (trimFlag == ElementTrimFlag::full) {
+          ++n_fullElement;
+          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
+                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+                                                               scalingAndOffset(directIndex))});
+        }
+      }
+
+      // Construct elementIndexMap
+      elementIndexMap.reserve(n_trimmedElement + n_fullElement);
+      for (auto& [directIndex, _] : trimInfoMap)
+        elementIndexMap.push_back(directIndex);
+
+      constructSubEntityMaps<2>();
+      constructSubEntityMaps<1>();
+    }
+    template <unsigned int codim>
+    requires(codim == 2 || codim == 1) && (dim == 2) void constructSubEntityMaps() {
+      int n_entities_original = originalSize(codim);
+      std::set<DirectIndex> indicesOfEntityInTrim;
+
+      for (auto& [eleDirectIdx, trimInfo] : trimInfoMap) {
+        for (int i = 0; i < 4; ++i) {
+          if constexpr (codim == 2)
+            indicesOfEntityInTrim.insert(getGlobalVertexIndexFromElementIndex(trimInfo.realIndex, i, true));
+          else
+            indicesOfEntityInTrim.insert(getGlobalEdgeIndexFromElementIndex(trimInfo.realIndex, i, true));
+        }
+      }
+
+      unsigned int realIndexCounter = 0;
+      auto& map                     = getEntityMap<codim>();
+
+      for (auto i : std::views::iota(0, n_entities_original)) {
+        auto it = std::ranges::find(indicesOfEntityInTrim, i);
+        if (it != indicesOfEntityInTrim.end()) {
+          map.push_back(i);
+          ++realIndexCounter;
+        }
+      }
+    }
+
+    // TODO Cache this
+    [[nodiscard]] std::set<RealIndex> boundarySegmentList() const requires(dim == 2) {
+      // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it
+      // when the elements are created as well
+      constexpr int noNeighbor = -1;
+
+      auto getRealIndexForOuterIndex = [&](int outerIndex) -> int {
+        if (outerIndex == noNeighbor) return noNeighbor;
+        return getRealIndexOr<0>(outerIndex, noNeighbor);
+      };
+
+      std::set<RealIndex> realIndexOfBoundaryIntersections;
+
+      for (int i : std::views::iota(0, size(0))) {
+        auto nurbsDirectIndex = getDirectIndex<0>(i);
+        for (int innerLocalIndex = 0; innerLocalIndex < 4; ++innerLocalIndex) {
+          auto multiIndex = elementNet_->directToMultiIndex(nurbsDirectIndex);
+          multiIndex[static_cast<int>(std::floor(innerLocalIndex / 2))]
+              += ((innerLocalIndex % 2)
+                      ? 1
+                      : noNeighbor);  // increase the multiIndex depending on where the outer element should lie
+          auto directOuterIndex = (elementNet_->isValid(multiIndex)) ? elementNet_->index(multiIndex) : noNeighbor;
+          directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
+          if (directOuterIndex == noNeighbor)
+            realIndexOfBoundaryIntersections.insert(getGlobalEdgeIndexFromElementIndex(i, innerLocalIndex));
+        }
+      }
+      return realIndexOfBoundaryIntersections;
+    }
+
+   private : template <typename GridImpl>
+             friend class NURBSGridLeafIndexSet;
     template <typename GridImpl>
     friend class NURBSintersection;
     std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
+    std::shared_ptr<NURBSPatchGeometry<dim, dimworld>> patchGeometry_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;
+
     std::shared_ptr<MultiDimensionNet<dim, double>> elementNet_;
     std::shared_ptr<MultiDimensionNet<dim, double>> vertexNet_;
+
+    std::optional<std::shared_ptr<TrimData>> trimData_;
+    std::vector<ElementTrimFlag> trimFlags_;
+    bool trimErrorFlag_{false};
+
+    std::vector<DirectIndex> elementIndexMap;
+    std::vector<DirectIndex> vertexIndexMap;
+    std::vector<DirectIndex> edgeIndexMap;
+
+    unsigned int n_fullElement{std::numeric_limits<unsigned int>::signaling_NaN()};
+    unsigned int n_trimmedElement{0};
+
+    struct ElementTrimInfo {
+      RealIndex realIndex{};
+      std::shared_ptr<TrimmedElementRepresentationType> repr;
+    };
+
+    std::map<DirectIndex, ElementTrimInfo> trimInfoMap;
+
+    template <unsigned int codim>
+    requires(dim == 2) auto& getEntityMap() const {
+      if constexpr (codim == 0)
+        return elementIndexMap;
+      else if constexpr (codim == 1)
+        return edgeIndexMap;
+      else
+        return vertexIndexMap;
+    }
+    template <unsigned int codim>
+    requires(dim == 2) auto& getEntityMap() {
+      if constexpr (codim == 0)
+        return elementIndexMap;
+      else if constexpr (codim == 1)
+        return edgeIndexMap;
+      else
+        return vertexIndexMap;
+    }
   };
 
 }  // namespace Dune::IGA

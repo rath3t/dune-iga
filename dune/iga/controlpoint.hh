@@ -1,13 +1,9 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by lex on 27.10.21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include <dune/iga/concepts.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
+#include "dune/iga/dunelinearalgebratraits.hh"
+#include "dune/iga/utils/concepts.hh"
 namespace Dune::IGA {
 
   /** \brief The class which stored a Nurbs ControlPoint

@@ -1,16 +1,13 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
 #include <span>
 
 #include <dune/common/iteratorfacades.hh>
-//#include <dune/iga/nurbsleafgridview.hh>
-#include <dune/iga/nurbspatch.hh>
+//#include "dune/iga/nurbsleafgridview.hh"
+#include "dune/iga/nurbspatch.hh"
 
 namespace Dune::IGA {
 

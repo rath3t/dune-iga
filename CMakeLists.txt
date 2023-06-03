@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2022 The dune-iga developers
-# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2023 The dune-iga developers
+# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.16)
 project(dune-iga CXX)
@@ -19,16 +19,23 @@ find_package(dune-common REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
      ${dune-common_MODULE_PATH})
 
+# silence alugrid
+set(ENV{ALUGRID_VERBOSITY_LEVEL} 0)
+
 # include the dune macros
+
 include(DuneMacros)
 
 # start a dune project with information from dune.module
 dune_project()
 
-add_subdirectory(src)
+if(ikarus_FOUND
+   AND Eigen3_FOUND
+   AND autodiff_FOUND)
+  add_subdirectory(src)
+endif()
 add_subdirectory(dune)
-add_subdirectory(cmake/modules)
-add_subdirectory(cmake/FormatTarget)
+add_subdirectory(cmake)
 
 # finalize the dune project, e.g. generating config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)

@@ -1,18 +1,12 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-//
-// Created by lex on 29/11/2021.
-//
+#pragma once
 
-#pragma
-
+#include "dune/iga/nurbsleafgridview.hh"
 #include <dune/grid/common/gridenums.hh>
-#include <dune/iga/nurbsleafgridview.hh>
 
-/** \brief This class is a copy of GridTraits dune-grid/grid/common/grid.hh.
- * This class removes all fascade class from GridTraits since some exported types do not work with c++20
- * ranges ,eg.  Dune::IteratorRange<Dune::EntityIterator<0, con*/
+/** \brief This class is a modified copy of GridTraits dune-grid/grid/common/grid.hh. */
 template <int dim, int dimw, class GridImp, template <int, int, class> class GeometryImp,
           template <int, int, class> class EntityImp,
           template <int, Dune::PartitionIteratorType, class> class LevelIteratorImp,
@@ -91,9 +85,9 @@ struct NurbsGridTraits {
   using LevelGridView = Dune::GridView<LevelGridViewTraits<GridImp>>;
   /** \brief The type of the level index set. */
   //  typedef LevelIndexSetImp LevelIndexSet;
-  using LevelIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::array<Dune::GeometryType, 1>>;
+  using LevelIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the leaf index set. */
-  using LeafIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::array<Dune::GeometryType, 1>>;
+  using LeafIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the global id set. */
   //  typedef GlobalIdSetImp GlobalIdSet;
   using GlobalIdSet = Dune::IdSet<GridImp, GlobalIdSetImp, GIDType>;
@@ -103,4 +97,9 @@ struct NurbsGridTraits {
 
   /** \brief The type of the collective communication. */
   typedef CCType CollectiveCommunication;
+  typedef CCType Communication;
+
+  // using TrimmedElementGridType = Dune::UGGrid<2>;
+  using TrimmedElementGridType           = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
+  using TrimmedElementRepresentationType = Dune::IGA::TrimmedElementRepresentation<2, TrimmedElementGridType>;
 };

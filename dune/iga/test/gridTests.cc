@@ -1,14 +1,16 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
-
 #include <iostream>
 
+#include "dune/iga/dunelinearalgebratraits.hh"
+#include "dune/iga/gridcapabilities.hh"
+#include "dune/iga/nurbsbasis.hh"
+#include "dune/iga/nurbsgrid.hh"
+#include "dune/iga/nurbspatch.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -20,18 +22,9 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
-// #include <dune/grid/test/checkidset.hh>
-// #include <dune/grid/test/checkindexset.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
-// template <class Grid, class IdSet>
-// void checkIdSet ( const Grid &grid, const IdSet& idSet);
 #include <dune/grid/test/gridcheck.hh>
-#include <dune/iga/dunelinearalgebratraits.hh>
-#include <dune/iga/gridcapabilities.hh>
-#include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/nurbspatch.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -654,7 +647,7 @@ auto testBsplineBasisFunctions() {
     test.check(eq(Nf(i / (NAtEvalPoints.size() - 1.0) * 2.0)[0], NAtEvalPoints[i]));
   }
 
-  std::array<double, 2> xieta{0.2, 0.25};
+  Dune::FieldVector<double, 2> xieta{0.2, 0.25};
   std::array<std::vector<double>, 2> knots2 = {{{0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3}, {0, 0, 0, 2, 2, 2}}};
   std::array<int, 2> degree2{2, 2};
   const std::vector<std::vector<double>> weights2
@@ -873,8 +866,8 @@ auto testBsplineBasisFunctions() {
   return test;
 }
 
+#include "dune/iga/gridcapabilities.hh"
 #include <dune/grid/test/checkindexset.hh>
-#include <dune/iga/gridcapabilities.hh>
 void gridCheck() {
   TestSuite test;
 
@@ -896,13 +889,7 @@ bool checkIfFinite(const C& v) {
     if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
       if (not std::isfinite(vi)) return false;
     } else {
-      for (auto& vii : vi)
-        if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vii)>>) {
-          if (not std::isfinite(vii)) return false;
-        } else {
-          for (auto& viii : vii)
-            if (not std::isfinite(viii)) return false;
-        }
+      return checkIfFinite(vi);
     }
   }
   return true;
@@ -914,13 +901,7 @@ bool checkIfZero(const C& v) {
     if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
       if (Dune::FloatCmp::ne(vi, 0.0)) return false;
     } else {
-      for (auto& vii : vi)
-        if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vii)>>) {
-          if (Dune::FloatCmp::ne(vii, 0.0)) return false;
-        } else {
-          for (auto& viii : vii)
-            if (Dune::FloatCmp::ne(viii, 0.0)) return false;
-        }
+      return checkIfZero(vi);
     }
   }
   return true;
@@ -1018,7 +999,11 @@ int main(int argc, char** argv) try {
 
   gridCheck();
   t.subTest(testBsplineBasisFunctions());
-  return 0;
+
+  t.report();
+
+  return t.exit();
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
+  return 1;
 }

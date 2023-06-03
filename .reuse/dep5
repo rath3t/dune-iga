@@ -5,6 +5,11 @@ Source: https://github.com/rath3t/dune-iga
 
 # Sample paragraph, commented out:
 #
-# Files: src/*
-# Copyright: $YEAR $NAME <$CONTACT>
-# License: ...
+Files: dune/iga/test/auxiliaryFiles/*
+Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+License: LGPL-3.0-or-later
+
+
+Files: src/auxiliaryFiles/*
+Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+License: LGPL-3.0-or-later

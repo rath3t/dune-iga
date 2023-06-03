@@ -1,17 +1,17 @@
-// SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
-
-//
-// Created by lex on 21.10.21.
-//
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
+#include "concepts.hh"
+
 #include <concepts>
+#include <functional>
+#include <iterator>
 #include <numeric>
 #include <ranges>
 
-#include <dune/iga/concepts.hh>
+#include <dune/common/fvector.hh>
 
 namespace Dune::IGA {
 
@@ -46,11 +46,11 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      */
     explicit MultiDimensionNet(const std::array<int, netdim>& dimSize) : dimSize_(dimSize) {
-      int size = 1;
+      int size_ = 1;
       for (auto ds : dimSize)
-        size *= ds;
+        size_ *= ds;
 
-      values_.resize(size);
+      values_.resize(size_);
     }
 
     template <typename... Args>
@@ -231,9 +231,8 @@ namespace Dune::IGA {
       ReturnType multiIndex;
 
       int help = index;
-      int temp;
       for (int i = 0; i < netdim; ++i) {
-        temp          = help % (dimSize[i]);
+        int temp      = help % (dimSize[i]);
         multiIndex[i] = temp;
         help -= temp;
         help = help / dimSize[i];
@@ -244,15 +243,24 @@ namespace Dune::IGA {
     /** \brief returns an array with the size of each dimension */
     std::array<int, netdim> size() const { return dimSize_; }
 
+    /** \brief returns an array with the size of each dimension */
+    template <std::integral T>
+    std::array<T, netdim> sizeAsT() const {
+      std::array<T, netdim> sizeUI;
+      for (int i = 0; i < netdim; ++i)
+        sizeUI[i] = static_cast<T>(dimSize_[i]);
+      return sizeUI;
+    }
+
     [[nodiscard]] std::size_t directSize() const { return values_.size(); }
 
     void resize(std::array<int, netdim> dimSize) {
-      dimSize_ = dimSize;
-      int size = 1;
+      dimSize_  = dimSize;
+      int sizeT = 1;
       for (auto ds : dimSize_)
-        size *= ds;
+        sizeT *= ds;
 
-      values_.resize(size);
+      values_.resize(sizeT);
     }
 
     template <typename rValueType>
@@ -275,14 +283,14 @@ namespace Dune::IGA {
     &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->size() == rnet.size() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(),
-                             [](auto& lval, auto& rval) { return lval / rval; });
+                             [](const auto& lval, const auto& rval) { return lval / rval; });
       return *this;
     }
 
     template <typename rValueType>
     requires MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator*=(const rValueType& fac) {
-      std::ranges::transform(values_, values_.begin(), [&fac](auto& val) { return val * fac; });
+      std::ranges::transform(values_, values_.begin(), [&fac](const auto& val) { return val * fac; });
       return *this;
     }
 
@@ -303,19 +311,19 @@ namespace Dune::IGA {
     }
 
     template <typename ArrayType = std::array<int, netdim>>
-    int index(const ArrayType& multiIndex) const {
-      int index{}, help;
+    size_t index(const ArrayType& multiIndex) const {
       assert(!std::ranges::any_of(multiIndex, [](int i) { return i < 0; })
              && "The passed multiIndex has negative values");
       assert(!std::ranges::any_of(multiIndex, [id = 0, this](int i) mutable { return i > dimSize_[id++] - 1; })
              && "The passed multiIndex has too large values");
 
+      size_t index = 0;
       for (int i = 0; i < netdim; ++i) {
-        help = 1;
+        int help = 1;
         for (int j = i - 1; j > -1; --j)
           help *= dimSize_[j];
 
-        index += help * multiIndex[i];
+        index += help * static_cast<size_t>(multiIndex[i]);
       }
       return index;
     }
