@@ -16,6 +16,8 @@
 #include <dune/vtk/vtkwriter.hh>
 #include "timer.h"
 
+#include "plotFunctionality.h"
+
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
@@ -80,7 +82,23 @@ int main(int argc, char **argv) {
   auto targetArea = 4 * 4  - 0.25 * (std::numbers::pi * std::pow(1, 2));
   spdlog::info("Area {}, (target {})", area, targetArea);
 
+  // Plot::plotEveryReconstructedGrid(grid, "_sf");
+  // Plot::saveEveryReconstructedGrid(grid);
+
   vtkWriter.write(outputFileName);
+
+  // Write Quadrature points
+  std::ofstream file("quadrature_points.txt");
+
+  for (auto& ele : Dune::elements(gridView)) {
+    auto qPs = ele.impl().getQuadratureRule(std::nullopt, Dune::QuadratureType::Enum::GaussLobatto);
+    //auto qPs = ele.impl().getQuadratureRule();
+    auto geo = ele.geometry();
+    for (auto& gp : qPs)
+      file << geo.global(gp.position()) << "\n";
+  }
+  file.close();
+
 
   return 0;
 }
