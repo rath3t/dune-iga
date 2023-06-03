@@ -6,7 +6,6 @@
 #include <concepts>
 #include <ranges>
 
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
@@ -60,25 +59,15 @@ namespace Dune::IGA {
 
   /** \brief One dimensional b-spline basis
    *
-   * @tparam T is either the scalar type pf the point where to evaluate or a specific non-default LinearAlgebraTraits
-   * where DynamicMatrixType and DynamicVectorType,... is derived from
-   */
-  template <typename T = DuneLinearAlgebraTraits<double>>
-  requires LinearAlgebra<T> || std::floating_point<T>
-  class BsplineBasis1D;
-
-  /** \brief One dimensional b-spline basis
-   *
    * @tparam NurbsGridLinearAlgebraTraits Specialization where the Traits are directly given
    */
-  template <LinearAlgebra NurbsGridLinearAlgebraTraits>
-  class BsplineBasis1D<NurbsGridLinearAlgebraTraits> {
+  template <typename ScalarType_>
+  class BsplineBasis1D {
    public:
-    using ScalarType        = typename NurbsGridLinearAlgebraTraits::value_type;
-    using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
-    using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
-    template <int cols = 0>
-    using RowFixedMatrix = typename NurbsGridLinearAlgebraTraits::template RowFixedMatrix<cols>;
+    using ScalarType        = ScalarType_;
+    using DynamicVectorType = Dune::DynamicVector<ScalarType>;
+    using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
+    using RowFixedMatrix    = std::array<DynamicVectorType, 2>;
 
     BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : knots_{knots}, degree_{degree} {}
 
@@ -185,7 +174,9 @@ namespace Dune::IGA {
         dN[0][j] = ndu[j][p];
 
       // Compute the derivatives
-      RowFixedMatrix<2> a(2, p + 1);
+      RowFixedMatrix a;
+      a[0].resize(p + 1);
+      a[1].resize(p + 1);
       auto& a1Row = a[0];
       auto& a2Row = a[1];
       for (int r = 0; r <= p; ++r) {
@@ -233,17 +224,4 @@ namespace Dune::IGA {
     std::vector<ScalarType> knots_;
     int degree_;
   };
-
-  /** \brief One dimensional b-spline basis
-   *
-   * @tparam ScalarType Specialization where the scalar type is given and the LinearAlgebraTraits are defaulted
-   */
-  template <std::floating_point ScalarType>
-  class BsplineBasis1D<ScalarType> : public BsplineBasis1D<DuneLinearAlgebraTraits<ScalarType>> {
-    using Base = BsplineBasis1D<DuneLinearAlgebraTraits<ScalarType>>;
-
-   public:
-    BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : Base(knots, degree) {}
-  };
-
 }  // namespace Dune::IGA

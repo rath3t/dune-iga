@@ -6,7 +6,6 @@
 #include "nurbsalgorithms.hh"
 
 #include "dune/iga/controlpoint.hh"
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/nurbsgeometry.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
@@ -16,7 +15,7 @@
 #include <dune/grid/yaspgrid.hh>
 namespace Dune::IGA {
 
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
 
   template <typename GridImpl>
@@ -26,11 +25,10 @@ namespace Dune::IGA {
   class NURBSLeafGridView;
 
   /** \brief Class where the NURBS geometry can work on */
-  template <std::integral auto dim, std::integral auto dimworld,
-            LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType = double>
   class NURBSPatch {
    public:
-    using GridImpl = NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>;
+    using GridImpl = NURBSGrid<dim, dimworld, ScalarType>;
     using Types    = typename GridImpl::Traits::LeafIndexSet::Types;
     friend class NURBSLeafGridView<GridImpl>;
     template <int codim, int dim1, typename GridImpl1>
@@ -46,17 +44,16 @@ namespace Dune::IGA {
      *  \param controlPoints a dim-dimensional net of control points
      *  \param degree degree of the spline basis for each dimension
      */
-    NURBSPatch(
-        const std::array<std::vector<double>, dim>& knotSpans,
-        const typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>::ControlPointNetType controlPoints,
-        const std::array<int, dim> degree)
-        : NURBSPatch(NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>(knotSpans, controlPoints, degree)) {
+    NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
+               const typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType controlPoints,
+               const std::array<int, dim> degree)
+        : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {
       silenceGrid();
     }
 
-    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>& patchData,
+    explicit NURBSPatch(const NURBSPatchData<dim, dimworld, ScalarType>& patchData,
                         std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
-        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>>(patchData)},
+        : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, ScalarType>>(patchData)},
           patchGeometry_{std::make_shared<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
           trimData_(std::move(trimData)) {
       silenceGrid();
@@ -784,7 +781,7 @@ namespace Dune::IGA {
              friend class NURBSGridLeafIndexSet;
     template <typename GridImpl>
     friend class NURBSintersection;
-    std::shared_ptr<NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraits>> patchData_;
+    std::shared_ptr<NURBSPatchData<dim, dimworld, ScalarType>> patchData_;
     std::shared_ptr<NURBSPatchGeometry<dim, dimworld>> patchGeometry_;
     std::array<int, dim> uniqueSpanSize_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;

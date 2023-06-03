@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/utils/concepts.hh"
 namespace Dune::IGA {
 
@@ -20,7 +19,7 @@ namespace Dune::IGA {
 
     /** \brief Reset the coordinates and the weight of the controlpoint to zero */
     void setZero() {
-      Dune::IGA::setZero(p);
+      p = typename VectorType::value_type{0};
       w = typename VectorType::value_type{0};
     }
 

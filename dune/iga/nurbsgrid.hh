@@ -7,7 +7,6 @@
 #include <optional>
 #include <utility>
 
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/nurbsgridindexsets.hh"
 #include "dune/iga/nurbsgridtraits.hh"
@@ -19,7 +18,7 @@
 #include "dune/iga/utils/concepts.hh"
 
 namespace Dune::IGA {
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
 
   template <int cd, typename GridImpl>
@@ -32,30 +31,26 @@ namespace Dune::IGA {
     bool valid_{false};
     template <int codim, int dim, typename GridImpl1>
     friend class NURBSGridEntity;
-    template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+    template <int dim, int dimworld, typename ScalarType>
     friend class NURBSGrid;
 
     int index_{-1};
   };
 
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  template <int dim, int dimworld, typename ScalarType>
   struct NurbsGridFamily;
 
   /** \brief NURBS grid manager */
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  class NURBSGrid : public Dune::Grid<dim, dimworld, typename NurbsGridLinearAlgebraTraitsImpl::value_type,
-                                      NurbsGridFamily<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>> {
+  template <int dim, int dimworld, typename ScalarType = double>
+  class NURBSGrid : public Dune::Grid<dim, dimworld, ScalarType, NurbsGridFamily<dim, dimworld, ScalarType>> {
    public:
-    using LinearAlgebraTraits = NurbsGridLinearAlgebraTraitsImpl;
-
     static constexpr std::integral auto dimension      = dim;
     static constexpr std::integral auto dimensionworld = dimworld;
-    using ctype                                        = typename LinearAlgebraTraits::value_type;
+    using ctype                                        = ScalarType;
 
-    using ControlPointNetType =
-        typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType;
+    using ControlPointNetType = typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType;
 
-    using GridFamily = NurbsGridFamily<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
+    using GridFamily = NurbsGridFamily<dim, dimworld, ScalarType>;
 
     using Traits = typename GridFamily::Traits;
     template <int cd>
@@ -68,12 +63,12 @@ namespace Dune::IGA {
     using GlobalIdSet   = typename Traits::GlobalIdSet;
     NURBSGrid()         = default;
 
-    explicit NURBSGrid(const NURBSPatchData<dim, dimworld, LinearAlgebraTraits>& nurbsPatchData,
+    explicit NURBSGrid(const NURBSPatchData<dim, dimworld, ScalarType>& nurbsPatchData,
                        std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
         : coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>(
-              1, NURBSPatch<dim, dimworld, LinearAlgebraTraits>(currentPatchRepresentation_, _trimData))},
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
+              1, NURBSPatch<dim, dimworld, ScalarType>(currentPatchRepresentation_, _trimData))},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
@@ -103,10 +98,9 @@ namespace Dune::IGA {
      */
     NURBSGrid(const std::array<std::vector<double>, dim>& knotSpans, const ControlPointNetType& controlPoints,
               const std::array<int, dim>& order)
-        : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, LinearAlgebraTraits>(knotSpans, controlPoints,
-                                                                                          order)},
+        : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, order)},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>>()},
+          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>()},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
           idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
           indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))} {
@@ -187,9 +181,9 @@ namespace Dune::IGA {
 
    public:
     typename Traits::CollectiveCommunication ccobj;
-    NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> coarsestPatchRepresentation_;
-    NURBSPatchData<(size_t)dim, (size_t)dimworld, LinearAlgebraTraits> currentPatchRepresentation_;
-    std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, LinearAlgebraTraits>>> finestPatches_;
+    NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> coarsestPatchRepresentation_;
+    NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> currentPatchRepresentation_;
+    std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> finestPatches_;
     std::shared_ptr<GridView> leafGridView_;
     std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexdSet_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
@@ -198,19 +192,19 @@ namespace Dune::IGA {
     auto& getPatch() const { return finestPatches_->front(); }
   };
 
-  template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto levelGridView(const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid, int level) {
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  auto levelGridView(const NURBSGrid<dim, dimworld, ScalarType>& grid, int level) {
     return grid.levelGridView(level);
   }
 
-  template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto leafGridView(const NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& grid) {
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  auto leafGridView(const NURBSGrid<dim, dimworld, ScalarType>& grid) {
     return grid.leafGridView();
   }
 
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
+  template <int dim, int dimworld, typename ScalarType>
   struct NurbsGridFamily {
-    using GridImpl = Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
+    using GridImpl = Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>;
     using Traits   = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator,
                                    NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
                                    NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,

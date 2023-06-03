@@ -5,7 +5,6 @@
 install(
   FILES bsplinealgorithms.hh
         controlpoint.hh
-        dunelinearalgebratraits.hh
         gridcapabilities.hh
         nurbsalgorithms.hh
         nurbsbasis.hh
