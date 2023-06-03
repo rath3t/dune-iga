@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "dune/iga/bsplinealgorithms.hh"
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
 #include "dune/iga/utils/concepts.hh"
@@ -38,8 +37,7 @@ namespace Dune::Functions {
   template <typename GV, typename R>
   class NurbsLocalFiniteElement;
 
-  template <typename GV,
-            Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits = Dune::IGA::DuneLinearAlgebraTraits<double>>
+  template <typename GV, typename ScalarType = double>
   class NurbsPreBasis;
 
   /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
@@ -319,7 +317,7 @@ namespace Dune::Functions {
 
     /** \brief Constructor with a given B-spline basis
      */
-    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV>& preBasis)
+    explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, R>& preBasis)
         : preBasis_(preBasis), localBasis_(preBasis, *this) {}
 
     /** \brief Copy constructor
@@ -395,7 +393,7 @@ namespace Dune::Functions {
     /** \brief Number of degrees of freedom for one coordinate direction */
     [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.degree[i] + 1; }
 
-    const NurbsPreBasis<GV>& preBasis_;
+    const NurbsPreBasis<GV, R>& preBasis_;
 
     NurbsLocalCoefficients<dim> localCoefficients_;
     NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>> localInterpolation_;
@@ -419,7 +417,7 @@ namespace Dune::Functions {
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
    */
-  template <typename GV, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <typename GV, typename ScalarType>
   class NurbsPreBasis {
     static const auto dim      = GV::dimension;
     static const auto dimworld = GV::dimensionworld;
@@ -485,7 +483,7 @@ namespace Dune::Functions {
     //    using SizePrefix = Dune::ReservedVector<size_type, 1>;
 
     // Type used for function values
-    using R = typename NurbsGridLinearAlgebraTraits::value_type;
+    using R = ScalarType;
 
     explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
@@ -618,7 +616,7 @@ namespace Dune::Functions {
      */
     void evaluateFunction(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
                           const std::array<int, dim>& currentKnotSpan) const {
-      const auto N = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctions(
+      const auto N = IGA::Nurbs<dim, ScalarType>::basisFunctions(
           in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), currentKnotSpan);
       out.resize(N.directSize());
       std::ranges::copy(N.directGetAll(), out.begin());
@@ -631,9 +629,9 @@ namespace Dune::Functions {
      */
     void evaluateJacobian(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldMatrix<R, 1, dim>>& out,
                           const std::array<int, dim>& currentKnotSpan) const {
-      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
-          in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false,
-          currentKnotSpan);
+      const auto dN = IGA::Nurbs<dim, ScalarType>::basisFunctionDerivatives(in, patchData_.knotSpans, patchData_.degree,
+                                                                            extractWeights(patchData_.controlPoints), 1,
+                                                                            false, currentKnotSpan);
       out.resize(dN.get(std::array<int, dim>{}).directSize());
       for (int j = 0; j < dim; ++j) {
         std::array<int, dim> multiIndex{};
@@ -648,7 +646,7 @@ namespace Dune::Functions {
 
     void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
                  std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
-      const auto dN = IGA::Nurbs<dim, NurbsGridLinearAlgebraTraits>::basisFunctionDerivatives(
+      const auto dN = IGA::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
           in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
           std::accumulate(order.begin(), order.end(), 0));
 

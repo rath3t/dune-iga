@@ -4,7 +4,6 @@
 #pragma once
 
 #include "dune/iga/controlpoint.hh"
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/utils/concepts.hh"
 #include "dune/iga/utils/mdnet.hh"
 
@@ -15,10 +14,9 @@ namespace Dune::IGA {
    * @tparam dimworld Dimension of the control point coordinates , i.e. where the patch lives in
    * @tparam NurbsGridLinearAlgebraTraits Traits where FixedVectorType is derived
    */
-  template <std::size_t dim, std::size_t dimworld,
-            LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <std::size_t dim, std::size_t dimworld, typename ScalarType = double>
   struct NURBSPatchData {
-    using GlobalCoordinateType = typename NurbsGridLinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using GlobalCoordinateType = Dune::FieldVector<ScalarType, dimworld>;
     using ControlPointType     = ControlPoint<GlobalCoordinateType>;
     using ControlPointNetType  = MultiDimensionNet<dim, ControlPointType>;
 

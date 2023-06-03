@@ -12,7 +12,7 @@ namespace Dune::IGA {
   class NURBSLocalGeometry {
    public:
     /** coordinate type */
-    typedef double ctype;
+    using ctype = typename GridImpl::ctype;
 
     /** \brief Dimension of the cube element */
     static constexpr std::integral auto mydimension = mydim;
@@ -21,23 +21,20 @@ namespace Dune::IGA {
     static constexpr std::integral auto coorddimension = GridImpl::dimensionworld;
     static constexpr std::integral auto griddim        = GridImpl::dimension;
 
-    using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
-
     /** \brief Type used for a vector of element coordinates */
-    using LocalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
+    using LocalCoordinate = Dune::FieldVector<ctype, mydimension>;
 
     /** \brief Type used for a vector of world coordinates */
-    using GlobalCoordinate = typename LinearAlgebraTraits::template FixedVectorType<griddim>;
+    using GlobalCoordinate = Dune::FieldVector<ctype, griddim>;
 
     /** \brief Type for the transposed Jacobian matrix */
-    using JacobianTransposed = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
+    using JacobianTransposed = Dune::FieldMatrix<ctype, mydimension, coorddimension>;
 
     /** \brief Type for the transposed inverse Jacobian matrix */
-    using JacobianInverseTransposed =
-        typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
+    using JacobianInverseTransposed = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
 
-    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
-    using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointNetType;
+    using ControlPointType    = typename NURBSPatchData<griddim, dimworld, ctype>::ControlPointType;
+    using ControlPointNetType = typename NURBSPatchData<griddim, dimworld, ctype>::ControlPointNetType;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -238,6 +235,6 @@ namespace Dune::IGA {
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSLocalGeometry<mydim, dimworld, GridImpl>& geo) {
-    return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();
+    return Dune::ReferenceElements<typename GridImpl::ctype, mydim>::cube();
   };
 }  // namespace Dune::IGA

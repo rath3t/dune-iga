@@ -18,7 +18,6 @@ namespace Dune::IGA {
   template <int codim, int dim, typename GridImpl>
   class NURBSGridEntity : public EntityDefaultImplementation<codim, dim, GridImpl, NURBSGridEntity> {
    public:
-    using LinearAlgebraTraits         = typename GridImpl::LinearAlgebraTraits;
     static constexpr auto mydimension = GridImpl::dimension - codim;
     static constexpr int codimension  = codim;
     static constexpr int dimension    = GridImpl::dimension;

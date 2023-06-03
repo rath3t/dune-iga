@@ -24,17 +24,15 @@ namespace Dune::IGA {
     static constexpr std::integral auto coorddimension = dimworld;
     static constexpr std::integral auto griddim        = GridImpl::dimension;
 
-    using ctype               = typename GridImpl::LinearAlgebraTraits::value_type;
-    using LinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
-    using LocalCoordinate     = typename LinearAlgebraTraits::template FixedVectorType<mydimension>;
-    using GlobalCoordinate    = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
-    using JacobianTransposed  = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
-    using Jacobian            = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
-    using JacobianInverseTransposed =
-        typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, mydimension>;
-    using JacobianInverse = typename LinearAlgebraTraits::template FixedMatrixType<mydimension, coorddimension>;
+    using ctype                     = typename GridImpl::ctype;
+    using LocalCoordinate           = Dune::FieldVector<ctype, mydimension>;
+    using GlobalCoordinate          = Dune::FieldVector<ctype, coorddimension>;
+    using JacobianTransposed        = Dune::FieldMatrix<ctype, mydimension, coorddimension>;
+    using Jacobian                  = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
+    using JacobianInverseTransposed = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
+    using JacobianInverse           = Dune::FieldMatrix<ctype, mydimension, coorddimension>;
 
-    using ControlPointType = typename NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>::ControlPointType;
+    using ControlPointType = typename NURBSPatchData<griddim, dimworld, ctype>::ControlPointType;
 
     using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
 
@@ -50,7 +48,7 @@ namespace Dune::IGA {
      * "run" in the fixed direction, e.g. an edge in the first direction is fixed in the second direction and a vertex
      * is fixed in all directions
      */
-    NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData,
+    NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, ctype>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
                   const std::array<int, griddim>& thisSpanIndices,
                   const std::shared_ptr<TrimmedElementRepresentationType> trimRepr = nullptr)
@@ -73,7 +71,7 @@ namespace Dune::IGA {
           if (thisSpanIndices[i] == patchData->knotSpans[i].size() - 1)
             thisSpanIndices_[i] = patchData->knotSpans[i].size() - patchData->degree[i] - 2;
 
-      nurbs_ = Dune::IGA::Nurbs<griddim, LinearAlgebraTraits>(*patchData, thisSpanIndices_);
+      nurbs_ = Dune::IGA::Nurbs<griddim, ctype>(*patchData, thisSpanIndices_);
       cpCoordinateNet_
           = netOfSpan(thisSpanIndices_, patchData_->degree, extractControlCoordinates(patchData_->controlPoints));
     }
@@ -392,10 +390,10 @@ namespace Dune::IGA {
 
     [[nodiscard]] const auto& controlPoints() const { return cpCoordinateNet_; }
 
-    std::shared_ptr<NURBSPatchData<griddim, dimworld, LinearAlgebraTraits>> patchData_;
+    std::shared_ptr<NURBSPatchData<griddim, dimworld, ctype>> patchData_;
     std::array<int, griddim> thisSpanIndices_;
     std::array<Impl::FixedOrFree, griddim> fixedOrVaryingDirections_{Impl::FixedOrFree::free};
-    Dune::IGA::Nurbs<griddim, LinearAlgebraTraits> nurbs_;
+    Dune::IGA::Nurbs<griddim, ctype> nurbs_;
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
@@ -404,6 +402,6 @@ namespace Dune::IGA {
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>
   auto referenceElement(const NURBSGeometry<mydim, dimworld, GridImpl>& geo) {
-    return Dune::ReferenceElements<typename GridImpl::LinearAlgebraTraits::value_type, mydim>::cube();
+    return Dune::ReferenceElements<typename GridImpl::ctype, mydim>::cube();
   };
 }  // namespace Dune::IGA

@@ -26,21 +26,6 @@ namespace Dune::IGA {
     { A /= a } -> std::same_as<MatrixType&>;
   };
 
-  template <typename LinearAlgebraTraits, int a = 1>
-  concept LinearAlgebra = Matrix<typename LinearAlgebraTraits::template FixedMatrixType<a, a>> && Matrix<
-      typename LinearAlgebraTraits::
-          DynamicMatrixType> && Vector<typename LinearAlgebraTraits::
-                                           template FixedVectorType<a>> && Vector<typename LinearAlgebraTraits::
-                                                                                      DynamicVectorType> && requires() {
-    typename LinearAlgebraTraits::value_type;
-    typename LinearAlgebraTraits::template FixedMatrixType<a, a>;
-    typename LinearAlgebraTraits::template FixedVectorType<a>;
-    typename LinearAlgebraTraits::DynamicMatrixType;
-    typename LinearAlgebraTraits::DynamicVectorType;
-    typename LinearAlgebraTraits::template RowFixedMatrix<a>;
-    typename LinearAlgebraTraits::template ColumnFixedMatrix<a>;
-  };
-
   template <typename ControlPointType>
   concept ControlPointConcept = Vector<typename ControlPointType::VectorType> && requires(ControlPointType cp) {
     typename ControlPointType::VectorType;

@@ -8,32 +8,31 @@
 #include <dune/grid/test/gridcheck.hh>
 
 namespace Dune::IGA {
-  template <int dim, int dimworld, LinearAlgebra NurbsGridLinearAlgebraTraits>
+  template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
 }
 namespace Dune::Capabilities {
-  template <std::integral auto dim, std::integral auto dimworld, int codim,
-            Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-  requires(dim <= 3) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>, codim> {
+  template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
+  requires(dim <= 3) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {
     static const bool v = true;
   };
 
-  template <Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, NurbsGridLinearAlgebraTraits>, 1> {
+  template <typename ScalarType>
+  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, ScalarType>, 1> {
     static const bool v = true;
   };
 
-  template <Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, NurbsGridLinearAlgebraTraits>, 2> {
+  template <typename ScalarType>
+  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, ScalarType>, 2> {
     static const bool v = true;
   };
 }  // namespace Dune::Capabilities
 
-template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>>
-    : public std::true_type {};
+template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> : public std::true_type {
+};
 
-template <std::integral auto dim, std::integral auto dimworld, Dune::IGA::LinearAlgebra NurbsGridLinearAlgebraTraits>
-struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, NurbsGridLinearAlgebraTraits>> {
+template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
   static const bool v = true;
 };

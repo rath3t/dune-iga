@@ -11,21 +11,19 @@
 
 namespace Dune::IGA {
 
-  template <std::integral auto dim, std::integral auto dimworld,
-            LinearAlgebra NurbsGridLinearAlgebraTraitsImpl = DuneLinearAlgebraTraits<double>>
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType = double>
   class NURBSPatchGeometry {
    public:
     static constexpr std::integral auto patchDim       = dim;
     static constexpr std::integral auto coorddimension = dimworld;
 
-    using LinearAlgebraTraits       = NurbsGridLinearAlgebraTraitsImpl;
-    using ctype                     = typename LinearAlgebraTraits::value_type;
-    using LocalCoordinate           = typename LinearAlgebraTraits::template FixedVectorType<patchDim>;
-    using GlobalCoordinate          = typename LinearAlgebraTraits::template FixedVectorType<coorddimension>;
-    using JacobianTransposed        = typename LinearAlgebraTraits::template FixedMatrixType<patchDim, coorddimension>;
-    using JacobianInverseTransposed = typename LinearAlgebraTraits::template FixedMatrixType<coorddimension, patchDim>;
+    using ctype                     = ScalarType;
+    using LocalCoordinate           = Dune::FieldVector<ScalarType, patchDim>;
+    using GlobalCoordinate          = Dune::FieldVector<ScalarType, coorddimension>;
+    using JacobianTransposed        = Dune::FieldMatrix<ScalarType, patchDim, coorddimension>;
+    using JacobianInverseTransposed = Dune::FieldMatrix<ScalarType, coorddimension, patchDim>;
 
-    using ControlPointType = typename NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>::ControlPointType;
+    using ControlPointType = typename NURBSPatchData<patchDim, dimworld, ScalarType>::ControlPointType;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -34,7 +32,7 @@ namespace Dune::IGA {
    public:
     NURBSPatchGeometry() = default;
 
-    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData)
+    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, ScalarType>> patchData)
         : patchData_(patchData), nurbs_{*patchData} {}
 
     /** \brief Map the center of the element to the geometry */
@@ -202,10 +200,10 @@ namespace Dune::IGA {
     }
 
    public:
-    std::shared_ptr<NURBSPatchData<patchDim, dimworld, LinearAlgebraTraits>> patchData_;
+    std::shared_ptr<NURBSPatchData<patchDim, dimworld, ScalarType>> patchData_;
 
    private:
-    Dune::IGA::Nurbs<patchDim, LinearAlgebraTraits> nurbs_;
+    Dune::IGA::Nurbs<patchDim, ScalarType> nurbs_;
   };
 
 }  // namespace Dune::IGA

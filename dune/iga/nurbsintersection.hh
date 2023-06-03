@@ -22,12 +22,12 @@ namespace Dune::IGA {
     using LocalGeometry = typename GridImp::Traits::template Codim<1>::LocalGeometry;
     using GridView      = typename GridImp::Traits::LeafGridView;
 
-    using ctype = typename GridImp::LinearAlgebraTraits::value_type;
+    using ctype = typename GridImp::ctype;
 
     static constexpr std::integral auto mydimension = GridImp::dimension - 1;
     static constexpr std::integral auto dimworld    = GridImp::dimensionworld;
-    using LocalCoordinate  = typename GridImp::LinearAlgebraTraits::template FixedVectorType<mydimension>;
-    using GlobalCoordinate = typename GridImp::LinearAlgebraTraits::template FixedVectorType<dimworld>;
+    using LocalCoordinate                           = Dune::FieldVector<ctype, mydimension>;
+    using GlobalCoordinate                          = Dune::FieldVector<ctype, dimworld>;
 
     NURBSintersection() = default;
 

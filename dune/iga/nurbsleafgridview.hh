@@ -61,8 +61,7 @@ namespace Dune::IGA {
   template <typename GridImpl>
   class NURBSLeafGridView {
    public:
-    using NurbsGridLinearAlgebraTraits = typename GridImpl::LinearAlgebraTraits;
-    using Traits                       = typename GridImpl::Traits;
+    using Traits = typename GridImpl::Traits;
 
     using ControlPointNetType = typename GridImpl::ControlPointNetType;
 
@@ -77,7 +76,7 @@ namespace Dune::IGA {
     using Intersection            = typename Traits::LeafIntersection;
     using IntersectionIterator    = LeafIntersectionIterator;
 
-    using ctype                          = typename NurbsGridLinearAlgebraTraits::value_type;
+    using ctype                          = typename GridImpl::ctype;
     static constexpr auto dimension      = GridImpl::dimension;
     static constexpr auto dimensionworld = GridImpl::dimensionworld;
 
@@ -88,10 +87,8 @@ namespace Dune::IGA {
 
     [[nodiscard]] bool isConforming() const { return true; }
 
-    NURBSLeafGridView(
-        const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>>
-            &leafpatches,
-        const GridImpl &grid)
+    NURBSLeafGridView(const std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> &leafpatches,
+                      const GridImpl &grid)
         : leafPatches_(leafpatches),
           grid_{&grid},
           entityVector_{std::make_unique<decltype(gridEntityTupleGenerator<Grid, dimension>(
@@ -250,7 +247,7 @@ namespace Dune::IGA {
     friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
     template <typename GridImp1>
     friend class NURBSintersection;
-    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, NurbsGridLinearAlgebraTraits>>> leafPatches_;
+    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> leafPatches_;
     const GridImpl *grid_;
     using EntityVectorType
         = decltype(gridEntityTupleGenerator<GridImpl, dimension>(std::make_integer_sequence<int, dimension + 1>()));

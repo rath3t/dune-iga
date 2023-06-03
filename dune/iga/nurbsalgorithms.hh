@@ -108,16 +108,16 @@ namespace Dune::IGA {
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
   }
 
-  template <int dim, LinearAlgebra NurbsGridLinearAlgebraTraits = DuneLinearAlgebraTraits<double>>
+  template <int dim, typename ScalarType_ = double>
   class Nurbs {
    public:
     Nurbs()                 = default;
-    using ScalarType        = typename NurbsGridLinearAlgebraTraits::value_type;
-    using DynamicVectorType = typename NurbsGridLinearAlgebraTraits::DynamicVectorType;
-    using DynamicMatrixType = typename NurbsGridLinearAlgebraTraits::DynamicMatrixType;
+    using ScalarType        = ScalarType_;
+    using DynamicVectorType = Dune::DynamicVector<ScalarType>;
+    using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
 
     template <std::integral auto dimworld>
-    explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data,
+    explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data,
                    const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
         : knots_{data.knotSpans},
           degree_{data.degree},
@@ -175,7 +175,7 @@ namespace Dune::IGA {
                                          const MultiDimensionNet<dim, double>& weights, const int derivativeOrder,
                                          const bool triangleDerivatives              = false,
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
-      std::array<typename NurbsGridLinearAlgebraTraits::DynamicMatrixType, dim> bSplineDerivatives;
+      std::array<DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
         bSplineDerivatives[i] = BsplineBasis1D<ScalarType>::basisFunctionDerivatives(
             u[i], knots[i], degree[i], derivativeOrder,
@@ -239,16 +239,19 @@ namespace Dune::IGA {
     std::optional<std::array<int, dim>> spIndex_;
   };
 
-  template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto degreeElevate(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
-                     const int refinementDirection, const int elevationFactor) {
-    using DynamicMatrixType = typename NurbsGridLinearAlgebraTraitsImpl::DynamicMatrixType;
-    using ScalarType        = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
-    const int t             = elevationFactor;
-    const int p             = oldData.degree[refinementDirection];
-    const int m             = oldData.controlPoints.size()[refinementDirection] + p;
-    const int ph            = p + t;
-    const int ph2           = ph / 2;
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType_>
+  auto degreeElevate(const NURBSPatchData<dim, dimworld, ScalarType_>& oldData, const int refinementDirection,
+                     const int elevationFactor) {
+    using ScalarType          = ScalarType_;
+    using DynamicMatrixType   = Dune::DynamicMatrix<ScalarType>;
+    using NURBSPatchData      = NURBSPatchData<dim, dimworld, ScalarType_>;
+    using ControlPointNetType = typename NURBSPatchData::ControlPointNetType;
+    using ControlPointType    = typename NURBSPatchData::ControlPointType;
+    const int t               = elevationFactor;
+    const int p               = oldData.degree[refinementDirection];
+    const int m               = oldData.controlPoints.size()[refinementDirection] + p;
+    const int ph              = p + t;
+    const int ph2             = ph / 2;
     /* Compute Bezier degree elevation coefficients */
     DynamicMatrixType bezalfs(p + t + 1, p + 1);
     bezalfs[0][0] = bezalfs[ph][p] = 1.0;
@@ -262,9 +265,7 @@ namespace Dune::IGA {
         bezalfs[i][j] = bezalfs[ph - i][p - j];
 
     double ua = oldData.knotSpans[refinementDirection][0];
-    typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType newCPv(
-        oldData.controlPoints.size());
-    using ControlPointType = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+    ControlPointNetType newCPv(oldData.controlPoints.size());
 
     auto oldCPs = oldData.controlPoints;
 
@@ -273,7 +274,7 @@ namespace Dune::IGA {
 
     std::vector<ControlPointType> bpts(p + 1), ebpts(ph + 1), nextbpts(p - 1);
 
-    NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl> newData;
+    NURBSPatchData newData;
     newData.degree = oldData.degree;
     newData.degree[refinementDirection] += t;
     const auto& U = oldData.knotSpans[refinementDirection];
@@ -411,13 +412,13 @@ namespace Dune::IGA {
     return newData;
   }
 
-  template <std::integral auto dim, std::integral auto dimworld, LinearAlgebra NurbsGridLinearAlgebraTraitsImpl>
-  auto knotRefinement(const NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>& oldData,
-                      const std::vector<double>& newKnots, const int refinementDirection) {
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  auto knotRefinement(const NURBSPatchData<dim, dimworld, ScalarType>& oldData, const std::vector<double>& newKnots,
+                      const int refinementDirection) {
     assert(std::ranges::is_sorted(newKnots)
            && "You passed a non-sorted vector of new knots. Sort it first or check if you passed the correct vector.");
-    using NurbsPatchData = NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>;
-    using ControlPoint   = typename NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
+    using NurbsPatchData = NURBSPatchData<dim, dimworld, ScalarType>;
+    using ControlPoint   = typename NurbsPatchData::ControlPointType;
     using namespace std::ranges;
     std::array<std::vector<double>, dim> newKnotsArray;
     std::array<int, dim - 1> otherDirections;
@@ -497,7 +498,7 @@ namespace Dune::IGA {
     std::ranges::transform(newCPv.directGetAll(), newCPv.directGetAll().begin(),
                            [](auto& cp) -> ControlPoint { return {.p = cp.p / cp.w, .w = cp.w}; });
 
-    return NURBSPatchData<dim, dimworld, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, newCPv, oldData.degree);
+    return NURBSPatchData<dim, dimworld, ScalarType>(newKnotsArray, newCPv, oldData.degree);
   }
 
   namespace Impl {
@@ -507,7 +508,7 @@ namespace Dune::IGA {
       const VectorType e2 = point - basepoint;
       using Dune::dot;
       const typename VectorType::value_type angle = dot(e1, e2);
-      const typename VectorType::value_type len2  = two_norm(e1);
+      const typename VectorType::value_type len2  = e1.two_norm();
 
       VectorType p = basepoint + angle * e1 / len2;
       return p;
@@ -540,22 +541,19 @@ namespace Dune::IGA {
   }  // namespace Impl
 
   // Piegl and Tiller Algo A7.1
-  template <LinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::DuneLinearAlgebraTraits<double>>
-  auto makeCircularArc(const typename NurbsGridLinearAlgebraTraitsImpl::value_type radius                  = 1.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::value_type startAngle              = 0.0,
-                       typename NurbsGridLinearAlgebraTraitsImpl::value_type endAngle                      = 360.0,
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> origin = {0, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> X      = {1, 0, 0},
-                       const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> Y = {0, 1, 0}) {
-    using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
-    using GlobalCoordinateType = typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
-    const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::value_type>;
+  template <typename ScalarType = double>
+  auto makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0, ScalarType endAngle = 360.0,
+                       const Dune::FieldVector<ScalarType, 3>& origin = {0, 0, 0},
+                       const Dune::FieldVector<ScalarType, 3>& X      = {1, 0, 0},
+                       const Dune::FieldVector<ScalarType, 3>& Y      = {0, 1, 0}) {
+    using GlobalCoordinateType = typename NURBSPatchData<1, 3, ScalarType>::GlobalCoordinateType;
+    const auto pi              = std::numbers::pi_v<ScalarType>;
 
     if (endAngle < startAngle) endAngle += 360.0;
     const ScalarType theta = endAngle - startAngle;
     const int narcs        = std::ceil(theta / 90);
 
-    typename NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType circleCPs(2 * narcs + 1);
+    typename NURBSPatchData<1, 3, ScalarType>::ControlPointNetType circleCPs(2 * narcs + 1);
     const ScalarType dtheta  = theta / narcs * pi / 180;
     const int n              = 2 * narcs;
     const ScalarType w1      = cos(dtheta / 2.0);
@@ -594,22 +592,19 @@ namespace Dune::IGA {
 
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
-    return NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>(knotVec, circleCPs, {2});
+    return NURBSPatchData<1, 3, ScalarType>(knotVec, circleCPs, {2});
   }
 
   // Algo 8.1
-  template <LinearAlgebra NurbsGridLinearAlgebraTraitsImpl = Dune::IGA::DuneLinearAlgebraTraits<double>>
-  auto makeSurfaceOfRevolution(
-      const NURBSPatchData<1, 3, NurbsGridLinearAlgebraTraitsImpl>& generatrix,
-      const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> point,
-      const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3> revolutionaxisI,
-      const typename NurbsGridLinearAlgebraTraitsImpl::template FixedVectorType<3>::value_type revolutionAngle
-      = 360.0) {
+  template <typename ScalarType = double>
+  auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, ScalarType>& generatrix,
+                               const Dune::FieldVector<ScalarType, 3>& point,
+                               const Dune::FieldVector<ScalarType, 3>& revolutionaxisI,
+                               const ScalarType& revolutionAngle = 360.0) {
     const auto& genCP          = generatrix.controlPoints;
-    using ScalarType           = typename NurbsGridLinearAlgebraTraitsImpl::value_type;
-    using ControlPoint         = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::ControlPointType;
-    using GlobalCoordinateType = typename NURBSPatchData<2, 3, NurbsGridLinearAlgebraTraitsImpl>::GlobalCoordinateType;
-    const auto pi              = std::numbers::pi_v<typename NurbsGridLinearAlgebraTraitsImpl::value_type>;
+    using ControlPoint         = typename NURBSPatchData<2, 3, ScalarType>::ControlPointType;
+    using GlobalCoordinateType = typename NURBSPatchData<2, 3, ScalarType>::GlobalCoordinateType;
+    const auto pi              = std::numbers::pi_v<ScalarType>;
 
     const auto revolutionaxis = revolutionaxisI / revolutionaxisI.two_norm();
     auto newKnotsArray        = std::array<std::vector<double>, 2UL>();
@@ -633,8 +628,8 @@ namespace Dune::IGA {
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
 
-    typename NURBSPatchData<2UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>::ControlPointNetType surfaceCP(
-        2 * narcs + 1, generatrix.controlPoints.size()[0]);
+    typename NURBSPatchData<2UL, 3UL, ScalarType>::ControlPointNetType surfaceCP(2 * narcs + 1,
+                                                                                 generatrix.controlPoints.size()[0]);
     using std::cos;
     using std::sin;
     const ScalarType wm = cos(dtheta / 2.0);
@@ -669,7 +664,6 @@ namespace Dune::IGA {
         }
       }
     }
-    return NURBSPatchData<2UL, 3UL, NurbsGridLinearAlgebraTraitsImpl>(newKnotsArray, surfaceCP,
-                                                                      {2, generatrix.degree[0]});
+    return NURBSPatchData<2UL, 3UL, ScalarType>(newKnotsArray, surfaceCP, {2, generatrix.degree[0]});
   }
 }  // namespace Dune::IGA

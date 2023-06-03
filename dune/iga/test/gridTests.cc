@@ -6,7 +6,6 @@
 #endif
 #include <iostream>
 
-#include "dune/iga/dunelinearalgebratraits.hh"
 #include "dune/iga/gridcapabilities.hh"
 #include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgrid.hh"
