@@ -19,7 +19,7 @@ namespace Dune::IGA {
   struct NurbsLeafGridViewTraits {
     using Grid        = GridImp;
     using IndexSet    = typename GridImp::Traits::LeafIndexSet;
-    using GridViewImp = NURBSLeafGridView<GridImp>;
+    using GridViewImp = NURBSLeafGridView<const GridImp>;
 
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
@@ -49,9 +49,9 @@ namespace Dune::IGA {
   class NURBSGridEntity;
 
   template <typename GridImpl>
-  const auto &elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
+  const auto &elements(const NURBSLeafGridView<const GridImpl> &gridLeafView);
   template <typename GridImpl>
-  auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView);
+  auto &elements(NURBSLeafGridView<const GridImpl> &gridLeafView);
 
   /** \brief NURBS leaf grid view, see Dune Book Ch. 5.1 */
   template <typename GridImpl>
@@ -139,7 +139,7 @@ namespace Dune::IGA {
     }
 
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>
-    using LeafIteratorImpl = NURBSGridLeafIterator<cd, ptype, GridImpl>;
+    using LeafIteratorImpl = NURBSGridLeafIterator<cd, ptype, const GridImpl>;
 
     template <int cd>
     typename Codim<cd>::LeafIterator begin() const {
@@ -206,8 +206,8 @@ namespace Dune::IGA {
     }
 
     friend GridImpl;
-    friend const auto &elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
-    friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
+    friend const auto &elements<GridImpl>(const NURBSLeafGridView<const GridImpl> &gridLeafView);
+    friend auto &elements<GridImpl>(NURBSLeafGridView<const GridImpl> &gridLeafView);
     template <typename GridImp1>
     friend class NURBSintersection;
     //    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> leafPatches_;

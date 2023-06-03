@@ -7,6 +7,7 @@
 
 #include <clipper2/clipper.h>
 #include <nlohmann/json.hpp>
+#include <utility>
 
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/nurbsgrid.hh"
@@ -23,7 +24,16 @@ namespace Dune::IGA {
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
-    static std::unique_ptr<Grid> read(const std::string& fileName, const bool trim = true,
+  static std::unique_ptr<Grid> read(const std::string& fileName, const bool trim = true,
+                                    std::array<int, 2> elevateDegree = {0, 0},
+                                    std::array<int, 2> preKnotRefine = {0, 0}) {
+    std::ifstream ibraInputFile;
+    ibraInputFile.open(fileName);
+    return read(ibraInputFile,trim,elevateDegree,preKnotRefine);
+  }
+
+  template <typename InputStringType> requires (not std::convertible_to<std::string,InputStringType> and not std::convertible_to<InputStringType,const char*>)
+    static std::unique_ptr<Grid> read( InputStringType& ibraInputFile, const bool trim = true,
                                       std::array<int, 2> elevateDegree = {0, 0},
                                       std::array<int, 2> preKnotRefine = {0, 0}) {
       using json = nlohmann::json;
@@ -35,9 +45,6 @@ namespace Dune::IGA {
       std::vector<Ibra::BrepRepresentation> brepRepresentations;
       std::vector<Ibra::BrepLoopRepresentation> brepLoopRepresentations;
       std::vector<Ibra::BrepTrimRepresentation> brepTrimRepresentations;
-
-      std::ifstream ibraInputFile;
-      ibraInputFile.open(fileName);
 
       json ibraJson;
       try {
@@ -69,7 +76,7 @@ namespace Dune::IGA {
         }
       } catch (json::parse_error& ex) {
         DUNE_THROW(Dune::IOError,
-                   "Error in file: " << fileName << ", parse error at byte " << ex.byte << " What: " << ex.what());
+                   "Error in reading input stream: " << ", parse error at byte " << ex.byte << " What: " << ex.what());
       }
 
       // Make Connections
@@ -115,9 +122,6 @@ namespace Dune::IGA {
         return std::make_unique<Grid>(_patchData);
     }
 
-    // Deleted Default Constructor, use static method read
-    IbraReader() = delete;
-
    private:
     static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
       auto data = std::make_shared<TrimData>();
@@ -136,3 +140,34 @@ namespace Dune::IGA {
   };
 
 }  // namespace Dune::IGA
+
+namespace Dune{
+
+template <int gridDim, int worldDim>
+struct DGFGridInfo<Dune::IGA::NURBSGrid<gridDim, worldDim>>
+{
+  static int refineStepsForHalf() {return 1;}
+  static double refineWeight() {return std::pow(0.5,gridDim);}
+};
+
+template <int gridDim, int worldDim>
+struct DGFGridFactory<Dune::IGA::NURBSGrid<gridDim, worldDim>>
+{
+
+  using Grid = Dune::IGA::NURBSGrid<gridDim, worldDim>;
+  DGFGridFactory(std::string  p_fileName): fileName{std::move(p_fileName)} {}
+  DGFGridFactory( std::istream&   p_istreamGrid): istreamGrid{&p_istreamGrid} {}
+
+  std::shared_ptr<Grid> grid() const
+  {
+    if(!fileName.empty())
+      return IGA::IbraReader<gridDim,worldDim>::read(fileName);
+    else if(istreamGrid)
+      return IGA::IbraReader<gridDim,worldDim>::read(*istreamGrid);
+    else
+      DUNE_THROW(Dune::IOError,"fileName or istreamGrid got invalid");
+  }
+      std::string fileName;
+   std::istream* istreamGrid= nullptr;
+};
+}

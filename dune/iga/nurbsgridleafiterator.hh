@@ -29,7 +29,7 @@ namespace Dune::IGA {
     const Entity& dereference() const { return *virtualEntity_; }
 
     //! equality
-    bool equals(const NURBSGridLeafIterator<codim, pitype, GridImp>& other) const {
+    bool equals(const NURBSGridLeafIterator& other) const {
       return virtualEntity_ == other.virtualEntity_;
     }
 

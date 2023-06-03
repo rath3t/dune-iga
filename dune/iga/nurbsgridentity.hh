@@ -228,7 +228,7 @@ namespace Dune::IGA {
 
    private:
     friend GridView;
-    friend NURBSLeafGridView<GridImpl>;
+    friend NURBSLeafGridView<const GridImpl>;
 
     void updateGridView(const GridView& other) { NURBSGridView_ = &other; }
     template <typename GridImpl1, typename ElementEntity>
@@ -252,16 +252,16 @@ namespace Dune::IGA {
   };  // end of Template Specialization for codim = 0
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
-  auto referenceElement(const NURBSGridEntity<codim, dim, GridImp>& e) {
-    return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, GridImp>::mydimension>::cube();
+  auto referenceElement(const NURBSGridEntity<codim, dim, const GridImp>& e) {
+    return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, const GridImp>::mydimension>::cube();
   }
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
-  auto referenceElement(const NURBSGridEntity<0, dim, GridImp>& e) {
+  auto referenceElement(const NURBSGridEntity<0, dim, const GridImp>& e) {
     if (e.getTrimFlag() == ElementTrimFlag::trimmed)
-      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::none();
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, const GridImp>::mydimension>::none();
     else
-      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, GridImp>::mydimension>::cube();
+      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, const GridImp>::mydimension>::cube();
   }
 
 }  // namespace Dune::IGA

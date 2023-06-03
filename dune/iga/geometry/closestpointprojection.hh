@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "dune/iga/nurbspatchgeometry.h"
+#include <dune/common/transpose.hh>
 
 namespace Dune::IGA {
   template <template <std::integral auto, std::integral auto, typename> typename Geo, std::integral auto dim,

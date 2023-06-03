@@ -30,7 +30,7 @@ namespace Dune::IGA {
    public:
     using GridImpl = NURBSGrid<dim, dimworld, ScalarType>;
     using Types    = typename GridImpl::Traits::LeafIndexSet::Types;
-    friend class NURBSLeafGridView<GridImpl>;
+    friend class NURBSLeafGridView<const GridImpl>;
     template <int codim, int dim1, typename GridImpl1>
     friend class NURBSGridEntity;
 
@@ -372,9 +372,9 @@ namespace Dune::IGA {
 
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
 
-      auto geo = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
+      auto geo = (codim == 0 && trimData_) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
-                                                       : NURBSGeometry<dim - codim, dimworld, GridImpl>(
+                                                       : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                                                            patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
     }

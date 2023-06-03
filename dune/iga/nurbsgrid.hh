@@ -14,8 +14,10 @@
 #include "dune/iga/nurbsintersection.hh"
 #include "dune/iga/nurbsleafgridview.hh"
 #include "dune/iga/nurbslocalgeometry.hh"
+#include "dune/iga/nurbsgridleafiterator.hh"
 #include "dune/iga/nurbspatch.hh"
 #include "dune/iga/utils/concepts.hh"
+#include "dune/iga/gridcapabilities.hh"
 
 namespace Dune::IGA {
 
@@ -87,9 +89,9 @@ namespace Dune::IGA {
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           leafPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
               1, NURBSPatch<dim, dimworld, ScalarType>(currentPatchRepresentation_, _trimData))},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0))},
-          indexSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<const NURBSGrid>(*this,0))},
+          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()))},
+          idSet_{std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView())},
           trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
       assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
@@ -175,10 +177,10 @@ namespace Dune::IGA {
       leafPatches_->clear();
       leafPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
 
-      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0));
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<const NURBSGrid>(*this, 0));
       updateEntities();
-      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()));
-      idSet_    = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()));
+      idSet_    = std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView());
     }
 
     void createEntities() {
@@ -209,8 +211,8 @@ namespace Dune::IGA {
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> currentPatchRepresentation_;
     std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> leafPatches_;
     std::shared_ptr<GridView> leafGridView_;
-    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexSet_;
-    std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
+    std::unique_ptr<NURBSGridLeafIndexSet<const NURBSGrid>> indexSet_;
+    std::unique_ptr<IgaIdSet<const NURBSGrid>> idSet_;
     std::optional<std::shared_ptr<TrimData>> trimData_ = std::nullopt;
 
     auto& getPatch() const { return leafPatches_->front(); }
@@ -232,8 +234,8 @@ namespace Dune::IGA {
     using Traits   = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator,
                                    NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
                                    NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,
-                                   NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>,
-                                   int, IgaIdSet<GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
+                                   NURBSGridLeafIndexSet<const GridImpl>, NURBSGridLeafIndexSet<const GridImpl>, IgaIdSet<const GridImpl>,
+                                   int, IgaIdSet<const GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
                                    NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 
