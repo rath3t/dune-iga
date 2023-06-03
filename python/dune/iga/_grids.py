@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def igaGrid(constructor, dimgrid=None, dimworld=None):
+    print("BLA0")
     """
     Create an ALUGrid instance.
 
@@ -27,21 +28,28 @@ def igaGrid(constructor, dimgrid=None, dimworld=None):
     An IGAGrid instance with given refinement (conforming or nonconforming) and element type (simplex or cube).
     """
     from dune.grid.grid_generator import module, getDimgrid
-
+    print("BLA0")
     if not dimgrid:
         dimgrid = getDimgrid(constructor)
+
 
     if dimworld is None:
         dimworld = dimgrid
 
     typeName = "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ">"
 
-    includes = ["dune/iga/nurbsgrid.hh", "dune/iga/io/ibra/ibrareader.hh","dune/iga/nurbsleafgridview.hh","dune/iga/nurbsgridleafiterator.hh"]
+    includes = ["dune/iga/nurbsgrid.hh", "dune/iga/io/ibra/ibrareader.hh"]
+    print("BLA0")
     gridModule = module(includes, typeName)
-
-    gridView = gridModule.LeafGrid(gridModule.reader(constructor))
-
-    return gridView
+    print("BLA")
+    # print(help(gridModule))
+    readGrid = gridModule.reader(constructor)
+    # print(help(readGrid))
+    print("help(readGrid)")
+    readGrid = gridModule.LeafGrid(readGrid)
+    # print(help(readGrid))
+    print("help(readGrid)")
+    return readGrid
 
 
 grid_registry = {

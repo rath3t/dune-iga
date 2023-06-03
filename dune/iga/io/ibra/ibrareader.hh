@@ -91,15 +91,15 @@ namespace Dune::IGA {
       // Reader has done its job, now NURBSGrid can be constructed
 
       Ibra::Surface<worldDim> _surface = brep.surfaces[0];
-
+    std::cout << "2" << std::endl;
       const std::array<std::vector<double>, gridDim> knotSpans   = _surface.compileKnotVectors();
       const std::vector<std::vector<ControlPoint>> controlPoints = _surface.transformControlPoints();
-
+    std::cout << "3" << std::endl;
       std::array<int, gridDim> dimsize = _surface.n_controlPoints;
 
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData _patchData{knotSpans, controlNet, _surface.degree};
-
+    std::cout << "4" << std::endl;
       // Optional Pre Refinement of knots
       //      for (int i = 0; i < gridDim; ++i) {
       //        if (preKnotRefine[i] > 0) {
@@ -115,7 +115,8 @@ namespace Dune::IGA {
       // Make the trimData and pass them into the grid
       // So the grid can figure out what to do with it
       auto trimData = constructGlobalBoundaries(brep);
-
+    std::cout << "5" << std::endl;
+    std::cout << "Trim " << trim<<std::endl;
       if (trim)
         return std::make_unique<Grid>(_patchData, trimData);
       else
@@ -155,19 +156,26 @@ struct DGFGridFactory<Dune::IGA::NURBSGrid<gridDim, worldDim>>
 {
 
   using Grid = Dune::IGA::NURBSGrid<gridDim, worldDim>;
-  DGFGridFactory(std::string  p_fileName): fileName{std::move(p_fileName)} {}
-  DGFGridFactory( std::istream&   p_istreamGrid): istreamGrid{&p_istreamGrid} {}
-
-  std::shared_ptr<Grid> grid() const
-  {
-    if(!fileName.empty())
-      return IGA::IbraReader<gridDim,worldDim>::read(fileName);
-    else if(istreamGrid)
-      return IGA::IbraReader<gridDim,worldDim>::read(*istreamGrid);
-    else
-      DUNE_THROW(Dune::IOError,"fileName or istreamGrid got invalid");
+  DGFGridFactory(std::string  p_fileName) {
+    std::cout<<"DGFGridFactory: "<<std::endl;
+    auto grid = IGA::IbraReader < gridDim, worldDim > ::read(p_fileName);
+    std::cout<<"DGFGridFactory: "<<Dune::className(grid)<<std::endl;
+    grid_ = grid.release();
+    std::cout<<"DGFGridFactory: gripP "<<Dune::className(grid_)<<std::endl;
   }
-      std::string fileName;
-   std::istream* istreamGrid= nullptr;
+  DGFGridFactory( std::istream& p_istreamGrid) {
+    std::cout<<"DGFGridFactory: istream"<<std::endl;
+    auto grid = IGA::IbraReader < gridDim, worldDim > ::read(p_istreamGrid);
+    std::cout<<"DGFGridFactory: "<<Dune::className(grid)<<std::endl;
+    grid_ = grid.release();
+    std::cout<<"DGFGridFactory: gripP istream"<<Dune::className(grid_)<<std::endl;
+  }
+
+  Grid* grid_;
+
+  Grid* grid() const
+  {
+    return grid_;
+  }
 };
 }
