@@ -89,7 +89,9 @@ namespace Dune::IGA {
     }
     /// brief: Constructs an untrimmed elementRepresentation gets lazily constructed when called upon the GridView
     explicit TrimmedElementRepresentation(std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
-        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {}
+        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
+      silenceGrid();
+    }
 
     // Accessors
     GridView gridView() const {
