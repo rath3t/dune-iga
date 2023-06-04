@@ -9,7 +9,7 @@ from ._iga import reader
 def igaGrid(constructor, dimgrid=None, dimworld=None):
     print("BLA0")
     """
-    Create an ALUGrid instance.
+    Create an IGAGrid instance.
 
     Note: This functions has to be called on all cores and the parameters passed should be the same.
           Otherwise unexpected behavior will occur.
@@ -38,10 +38,9 @@ def igaGrid(constructor, dimgrid=None, dimworld=None):
     typeName = "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ",double>"
 
     includes = ["dune/iga/nurbsgrid.hh"]
-    print("BLA0")
+
     gridModule = module(includes, typeName)
-    print("BLA")
-    print(help(constructor))
+
     if type(constructor) is dict:
         readGrid = gridModule.reader(constructor)
     elif type(constructor) is tuple:
@@ -51,11 +50,8 @@ def igaGrid(constructor, dimgrid=None, dimworld=None):
             raise Exception("Only tuple of size two are allowed   (readeriga.json, filename)")
     else:
         readGrid = gridModule.reader(constructor)
-    # print(help(readGrid))
-    readGrid = gridModule.LeafGrid(readGrid)
-    # print(help(readGrid))
-    print("help(readGrid)")
-    return readGrid
+    gridView = gridModule.LeafGrid(readGrid)
+    return gridView
 
 
 grid_registry = {

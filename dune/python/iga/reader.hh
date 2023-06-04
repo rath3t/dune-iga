@@ -61,7 +61,6 @@ struct Capabilities::HasGridFactory<Dune::IGA::NURBSGrid<dim,dimworld,ScalarType
 inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
 {
 
-  std::cout << "Reader::Tuple" << std::endl;
   std::string file_path;
   Dune::Python::IGA::Reader reader=IGA::Reader::json;
   bool trim = true;
@@ -84,7 +83,7 @@ inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
         elevateDegree = dict["elevate_degree"].cast<std::array<int, 2>>();
       if (dict.contains("pre_knot_refine"))
         preKnotRefine = dict["pre_knot_refine"].cast<std::array<int, 2>>();
-      if (dict.contains("elevate_degree"))
+      if (dict.contains("post_knot_refine"))
         postKnotRefine = dict["post_knot_refine"].cast<std::array<int, 2>>();
 
       static constexpr std::integral auto dim = Grid::dimension;
@@ -92,11 +91,8 @@ inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
       using ScalarType = typename Grid::ctype;
       return Dune::IGA::IbraReader < dim, dimworld, ScalarType
           > ::read(file_path, trim, elevateDegree, preKnotRefine, postKnotRefine);
-      break;
     default:
       DUNE_THROW(Dune::NotImplemented, "Your requested reader is not implemeneted");
-      return nullptr;
-      break;
   }
 }
 }

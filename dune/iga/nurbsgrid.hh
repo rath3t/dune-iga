@@ -105,14 +105,12 @@ namespace Dune::IGA {
                    == nurbsPatchData.controlPoints.size()[2]
                && "The size of the controlpoints and the knotvector size do not match in the third direction");
       // FIXME check sanity of knotvector and degree
-      std::cout << "4C" << std::endl;
       silenceGrid();
       createEntities();
     }
 
     bool loadBalance()
     {
-      std::cout<<"bool loadBalance()"<<std::endl;
       return false;
     }
 
