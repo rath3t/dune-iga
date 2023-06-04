@@ -106,7 +106,7 @@ namespace Dune::IGA {
         auto directOuterIndex = (eleNet->isValid(multiIndex)) ? eleNet->index(multiIndex) : Impl::noNeighbor;
         directOuterIndex      = getRealIndexForOuterIndex(directOuterIndex);
         intersections_->emplace_back(NURBSintersection<GridImpl>(innerLocalIndex, outerLocalIndex, directIndex_,
-                                                                 directOuterIndex, (*NURBSGridView_).impl()));
+                                                                 directOuterIndex, *NURBSGridView_));
         outerLocalIndex += ((innerLocalIndex - 1) % 2) ? -1 : 3;
       }
     }

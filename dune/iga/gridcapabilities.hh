@@ -75,7 +75,6 @@ struct isCartesian< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
 };
 
 
-
 }  // namespace Dune::Capabilities
 
 template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>

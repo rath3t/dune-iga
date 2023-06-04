@@ -90,7 +90,7 @@ namespace Dune::IGA {
           leafPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
               1, NURBSPatch<dim, dimworld, ScalarType>(currentPatchRepresentation_, _trimData))},
           leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<const NURBSGrid>(*this,0))},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()))},
+          indexSet_{std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()))},
           idSet_{std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView())},
           trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
@@ -116,6 +116,7 @@ namespace Dune::IGA {
       return false;
     }
 
+    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
     void globalRefine(int refinementLevel, bool omitTrim) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
@@ -193,7 +194,7 @@ namespace Dune::IGA {
           std::get<i>(*entityVector.get()).reserve(patch.size(i));
           for (unsigned int j = 0; j < patch.size(i); ++j) {
             std::get<i>(*entityVector.get())
-                .emplace_back(NURBSGridEntity<i, dimension, NURBSGrid>(*leafGridView_, j, currentPatchId));
+                .emplace_back(NURBSGridEntity<i, dimension, const NURBSGrid>(*leafGridView_, j, currentPatchId));
           }
         });
         ++currentPatchId;
@@ -244,3 +245,11 @@ namespace Dune::IGA {
   };
 
 }  // namespace Dune::IGA
+
+//This header is here for the sole purpose that Python is aware of this reader.
+// If we include in <python/dune/iga/_grids.py in the includes  "includes = ["dune/iga/nurbsgrid.hh"]",
+// we end up with the situations that dune-py generates the includes like:
+// Dune::Python::IncludeFiles{"dune/iga/nurbsgrid.hh","dune/python/grid/hierarchical.hh","dune/python/iga/reader.hh"}
+// Thus, the reader comes after hierarchical.hh but inside their should the template argument deduction for the correct reader happen
+// The sorting happens in https://gitlab.dune-project.org/core/dune-common/-/blob/releases/2.9/python/dune/generator/generator.py?ref_type=heads#L166 but maybe this is changed later
+#include <dune/python/iga/reader.hh>
