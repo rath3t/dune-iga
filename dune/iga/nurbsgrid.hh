@@ -18,6 +18,11 @@
 #include "dune/iga/utils/concepts.hh"
 
 namespace Dune::IGA {
+
+  template <typename GridImpl, int griddim, std::integral auto... codim>
+  std::tuple<std::vector<typename NurbsLeafGridViewTraits<GridImpl>::template Codim<codim>::Entity>...>
+      gridEntityTupleGenerator(std::integer_sequence<std::common_type_t<decltype(codim)...>, codim...>);
+
   template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
 
@@ -63,14 +68,27 @@ namespace Dune::IGA {
     using GlobalIdSet   = typename Traits::GlobalIdSet;
     NURBSGrid()         = default;
 
+    /** \brief  constructor
+     *
+     *  \param[in] knotSpans vector of knotSpans for each dimension
+     *  \param[in] controlPoints a n-dimensional net of control points
+     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
+     *  \param[in] order degree of the B-Spline structure for each dimension
+     */
+    NURBSGrid(const std::array<std::vector<double>, dim>& knotSpans, const ControlPointNetType& controlPoints,
+              const std::array<int, dim>& order)
+        : NURBSGrid(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, order)) {}
+
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, ScalarType>& nurbsPatchData,
                        std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
-        : coarsestPatchRepresentation_{nurbsPatchData},
+        : entityVector{std::make_unique<decltype(gridEntityTupleGenerator<NURBSGrid, dimension>(
+            std::make_integer_sequence<int, dimension + 1>()))>()},
+          coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
+          leafPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
               1, NURBSPatch<dim, dimworld, ScalarType>(currentPatchRepresentation_, _trimData))},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this))},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0))},
+          indexSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
           idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
           trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
@@ -87,24 +105,7 @@ namespace Dune::IGA {
       // FIXME check sanity of knotvector and degree
 
       silenceGrid();
-    }
-
-    /** \brief  constructor
-     *
-     *  \param[in] knotSpans vector of knotSpans for each dimension
-     *  \param[in] controlPoints a n-dimensional net of control points
-     *  \param[in] weights vector a n-dimensional net of weights for each corresponding control points
-     *  \param[in] order degree of the B-Spline structure for each dimension
-     */
-    NURBSGrid(const std::array<std::vector<double>, dim>& knotSpans, const ControlPointNetType& controlPoints,
-              const std::array<int, dim>& order)
-        : coarsestPatchRepresentation_{NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, order)},
-          currentPatchRepresentation_{coarsestPatchRepresentation_},
-          finestPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>()},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(currentPatchRepresentation_, *this))},
-          idSet_{std::make_unique<Dune::IGA::IgaIdSet<NURBSGrid>>(*this)},
-          indexdSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))} {
-      silenceGrid();
+      createEntities();
     }
 
     void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
@@ -132,10 +133,10 @@ namespace Dune::IGA {
       this->globalRefineInDirection(1, vDir);
     }
 
-    int size(int codim) const { return finestPatches_.get()->front().size(codim); }
+    int size(int codim) const { return leafPatches_.get()->front().size(codim); }
 
     bool reportTrimError() const {
-      for (const auto& patch : *finestPatches_)
+      for (const auto& patch : *leafPatches_)
         if (patch.reportTrimError()) return true;
       return false;
     }
@@ -159,8 +160,8 @@ namespace Dune::IGA {
     int size(int lvl, const GeometryType& type) const { return this->size(type); }
 
     const GlobalIdSet& globalIdSet() const { return *idSet_; }
-    const LevelIndexSet& levelIndexSet(int lvl) const { return *indexdSet_; }
-    const LeafIndexSet& leafIndexSet() const { return *indexdSet_; }
+    const LevelIndexSet& levelIndexSet(int lvl) const { return *indexSet_; }
+    const LeafIndexSet& leafIndexSet() const { return *indexSet_; }
 
     int maxLevel() const { return 0; }
 
@@ -171,25 +172,48 @@ namespace Dune::IGA {
     // TODO Fix publicness and privateness
    private:
     void updateStateAfterRefinement(bool omitTrim = false) {
-      finestPatches_->clear();
-      finestPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
+      leafPatches_->clear();
+      leafPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
 
-      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(finestPatches_, *this));
-      indexdSet_    = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()));
-      idSet_        = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0));
+      updateEntities();
+      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()));
+      idSet_    = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+    }
+
+    void createEntities() {
+      for (int currentPatchId = 0; auto&& patch : *leafPatches_.get()) {
+        Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<dimension + 1>()), [&](const auto i) {
+          std::get<i>(*entityVector.get()).reserve(patch.size(i));
+          for (unsigned int j = 0; j < patch.size(i); ++j) {
+            std::get<i>(*entityVector.get())
+                .emplace_back(NURBSGridEntity<i, dimension, NURBSGrid>(*leafGridView_, j, currentPatchId));
+          }
+        });
+        ++currentPatchId;
+      }
+    }
+    void updateEntities() {
+      entityVector = std::make_unique<decltype(gridEntityTupleGenerator<NURBSGrid, dimension>(
+          std::make_integer_sequence<int, dimension + 1>()))>();
+
+      createEntities();
     }
 
    public:
+    using EntityVectorType
+        = decltype(gridEntityTupleGenerator<NURBSGrid, dimension>(std::make_integer_sequence<int, dimension + 1>()));
+    std::unique_ptr<EntityVectorType> entityVector{};
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> currentPatchRepresentation_;
-    std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> finestPatches_;
+    std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> leafPatches_;
     std::shared_ptr<GridView> leafGridView_;
-    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexdSet_;
+    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexSet_;
     std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
     std::optional<std::shared_ptr<TrimData>> trimData_ = std::nullopt;
 
-    auto& getPatch() const { return finestPatches_->front(); }
+    auto& getPatch() const { return leafPatches_->front(); }
   };
 
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
