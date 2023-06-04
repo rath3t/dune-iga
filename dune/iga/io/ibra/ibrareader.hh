@@ -33,7 +33,7 @@ namespace Dune::IGA {
                                     std::array<int, 2> preKnotRefine = {0, 0}, std::array<int, 2> postKnotRefine= {0, 0}) {
     std::ifstream ibraInputFile;
     ibraInputFile.open(fileName);
-    return read(ibraInputFile,trim,elevateDegree,preKnotRefine);
+    return read(ibraInputFile,trim,elevateDegree,preKnotRefine,postKnotRefine);
   }
 
   template <typename InputStringType> requires (not std::convertible_to<std::string,InputStringType> and not std::convertible_to<InputStringType,const char*>)

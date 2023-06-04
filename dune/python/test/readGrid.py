@@ -42,6 +42,24 @@ if __name__ == "__main__":
         elevate_degree= (1,1)    )
     gridView2 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
     # degree elevation shouldn't change anything
-    assert gridView.size(0)==1
-    assert gridView.size(1)==4
-    assert gridView.size(2)==4
+    assert gridView2.size(0)==1
+    assert gridView2.size(1)==4
+    assert gridView2.size(2)==4
+
+    inputParameter= dict(
+        file_path="../../iga/test/auxiliaryFiles/element.ibra",
+        reader= readeriga.json,
+        pre_knot_refine= (1,1)    )
+    gridView3 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
+    # degree elevation shouldn't change anything
+    assert gridView3.size(0)==4
+    assert gridView3.size(2)==9
+
+    inputParameter= dict(
+        file_path="../../iga/test/auxiliaryFiles/element.ibra",
+        reader= readeriga.json,
+        post_knot_refine= (1,1)    )
+    gridView4 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
+    # degree elevation shouldn't change anything
+    assert gridView4.size(0)==4
+    assert gridView4.size(2)==9
