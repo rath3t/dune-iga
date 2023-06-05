@@ -89,8 +89,8 @@ inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
       static constexpr std::integral auto dim = Grid::dimension;
       static constexpr std::integral auto dimworld = Grid::dimensionworld;
       using ScalarType = typename Grid::ctype;
-      return Dune::IGA::IbraReader < dim, dimworld, ScalarType
-          > ::read(file_path, trim, elevateDegree, preKnotRefine, postKnotRefine);
+      return std::make_shared<Grid>(Dune::IGA::IbraReader < dim, dimworld, ScalarType
+          > ::read(file_path, trim, elevateDegree, preKnotRefine, postKnotRefine));
     default:
       DUNE_THROW(Dune::NotImplemented, "Your requested reader is not implemeneted");
   }

@@ -20,7 +20,7 @@ namespace Dune::IGA {
   class NURBSGrid;
 
   // At the moment only gridDim und worldDim == 2 or 3 supported
-  template <int gridDim, int worldDim,typename ScalarType>
+  template <int gridDim, int worldDim,typename ScalarType=double>
   requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim) class IbraReader {
    public:
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim,ScalarType>;
@@ -177,7 +177,7 @@ struct JSONGridFactory
 
   std::unique_ptr<Grid> grid_;
 
-  [[no_discard]] Grid* grid() const
+  [[nodiscard]] Grid* grid() const
   {
     return grid_.release();
   }

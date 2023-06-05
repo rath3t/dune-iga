@@ -28,11 +28,12 @@ namespace Dune::IGA {
   /** \brief class holds a n-dim net */
   template <std::size_t netdim, typename ValueType>
   class MultiDimensionNet {
-    using value_type = ValueType;
 
-    static conste
 
    public:
+    using value_type = ValueType;
+
+    static constexpr std::size_t netDim = netdim;
     MultiDimensionNet() = default;
 
     MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>> values) {
@@ -122,7 +123,7 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>> values)
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>>& values)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size());
       for (int i = 0; i < values.size(); ++i)
@@ -135,7 +136,7 @@ namespace Dune::IGA {
      *  \param[in] dimSize array of the size of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>> values)
+    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size() * values[0][0].size());
 
