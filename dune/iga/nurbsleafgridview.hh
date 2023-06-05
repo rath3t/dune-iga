@@ -133,9 +133,9 @@ namespace Dune::IGA {
     const auto &getPatchData(int patchID = 0) const { return *(grid_->leafPatches_->at(patchID).getPatchData()); }
     const auto &getPatch(int patchID = 0) const { return grid_->leafPatches_->at(patchID); }
 
-    auto getPreBasis() {
+    auto preBasis(int i=0)const {
       assert(grid_->leafPatches_->size() == 1 && "The basis is only defined for single patch gridview");
-      return Dune::Functions::BasisFactory::nurbs<dimension>(this->getPatchData(0));
+      return Dune::Functions::BasisFactory::nurbs<dimension>(this->getPatchData(i));
     }
 
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>

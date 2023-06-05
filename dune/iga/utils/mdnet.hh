@@ -30,6 +30,8 @@ namespace Dune::IGA {
   class MultiDimensionNet {
     using value_type = ValueType;
 
+    static conste
+
    public:
     MultiDimensionNet() = default;
 
