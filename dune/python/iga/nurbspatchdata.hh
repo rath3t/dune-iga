@@ -81,12 +81,12 @@ void registerNurbsPatchData(pybind11::handle scope, pybind11::class_<NURBSPatchD
    constexpr int dimWorld    =  NURBSPatchData::GlobalCoordinateType::dimension;
   using ControlPointType      = typename NURBSPatchData::ControlPointType;
   using ControlPointNetType      = typename NURBSPatchData::ControlPointNetType;
-  constexpr std::size_t netDim = ControlPointNetType::netdim;
+  constexpr std::size_t netDim = ControlPointNetType::netDim;
 
   cls.def(pybind11::init());
   cls.def(pybind11::init([](const std::array<std::vector<double>, netDim>& knotSpansI, const ControlPointNetType& controlPointsI,
                             const std::array<int, netDim>& degreeInput) {
-            return new NURBSPatchData(netDim,controlPointsI,degreeInput);
+            return new NURBSPatchData(knotSpansI,controlPointsI,degreeInput);
           })
           );
   cls.def_readwrite("knotSpans", &NURBSPatchData::knotSpans)

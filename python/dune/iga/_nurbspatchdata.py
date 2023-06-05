@@ -46,7 +46,7 @@ def NurbsPatchData(knotSpans,controlPointNet,degree):
     element_type = f"Dune::IGA::NURBSPatchData<{worldDim},{dim},double>"
 
     includes = []
-    includes += ["dune/iga/nurbspatchdata.hh"]
+    includes += ["dune/python/iga/nurbspatchdata.hh"]
     moduleName = "NurbsPatchData_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
