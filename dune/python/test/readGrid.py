@@ -12,18 +12,28 @@ setpath.set_path()
 
 
 
-from dune.iga import igaGrid,ControlPoint,ControlPointNet
+from dune.iga import igaGrid,ControlPoint,ControlPointNet,NurbsPatchData
 from dune.grid import reader
 from dune.iga import reader as readeriga
 if __name__ == "__main__":
 
     cp=ControlPoint((1,2),3)
+    cp2=cp+cp
+
     assert cp.coords[0]==1
     assert cp.coords[1]==2
     assert cp.weight==3
 
-    netC=((cp,cp),(cp,cp))
+    netC=((cp,cp2),(cp,cp))
     net=ControlPointNet(netC)
+    print(net.get((0,1)))
+    print(net.get((1,0)))
+    net.set((1,0),ControlPoint((1,4),3))
+    assert net.get((1,0)).coords[0]==1
+    assert net.get((1,0)).coords[1]==4
+
+    nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
+
 
     if False:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")

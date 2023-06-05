@@ -30,7 +30,7 @@ def ControlPointNet(controlPoints):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
 
-    return module.ControlPointNet(controlPoints)
+    return module.MultiDimensionNet(controlPoints)
 
 
 
@@ -38,10 +38,12 @@ def ControlPointNet(controlPoints):
 
 
 def NurbsPatchData(knotSpans,controlPointNet,degree):
-    generator = MySimpleGenerator("NurbsPatchData", "Dune::Python")
+    generator = SimpleGenerator("NurbsPatchData", "Dune::Python")
 
-
-    element_type = f"Dune::IGA::NURBSPatchData<{pbfName}>"
+    worldDim= len(controlPointNet.get((0,0)).coords)
+    dim= controlPointNet.netDim
+    # scalarType=print(typestr(controlPointNet.get((0,0)).weight))
+    element_type = f"Dune::IGA::NURBSPatchData<{worldDim},{dim},double>"
 
     includes = []
     includes += ["dune/iga/nurbspatchdata.hh"]
@@ -49,5 +51,5 @@ def NurbsPatchData(knotSpans,controlPointNet,degree):
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
     )
-    basis = defaultGlobalBasis(gv, tree)
+
     return module.NurbsPatchData(knotSpans,controlPointNet,degree)

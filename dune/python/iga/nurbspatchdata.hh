@@ -28,12 +28,20 @@ void registerControlPoint(pybind11::handle scope, pybind11::class_<ControlPoint,
   using ScalarType    = typename VectorType::value_type;
 
   cls.def(pybind11::init());
+  cls.def(pybind11::self + pybind11::self)
+      .def(pybind11::self - pybind11::self)
+      .def(pybind11::self += pybind11::self)
+      .def(-pybind11::self)
+      .def(pybind11::self *= double())
+      .def(double() * pybind11::self)
+      .def(pybind11::self * double());
   cls.def(pybind11::init([](const VectorType& vec, const ScalarType& weight=1) {
             return new ControlPoint({.p=vec,.w=weight});
           }),"Coordinates"_a,"Weight"_a
   );
   cls.def_readwrite("coords", &ControlPoint::p)
   .def_readwrite("weight", &ControlPoint::w);
+
 }
 
 
@@ -45,20 +53,23 @@ void registerMultiDimensionNet(pybind11::handle scope, pybind11::class_<MultiDim
   constexpr std::size_t netDim =      MultiDimensionNet::netDim;
 
   cls.def(pybind11::init());
-  cls.def(pybind11::init([](std::initializer_list<std::initializer_list<ValueType>> values) {
+  cls.def(pybind11::init([](const std::vector<std::vector<ValueType>>& values) {
             return new MultiDimensionNet(values);
           })
   );
 
-  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<ValueType>> values) {
-            return new MultiDimensionNet(dimSize,values);
-          })
-  );
-
-  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values) {
-            return new MultiDimensionNet(dimSize,values);
-          })
-  );
+  cls.def("set", &MultiDimensionNet::set);
+  cls.def("get", [](MultiDimensionNet& self,const std::array<int, netDim>& multIndex  ) { return self.get(multIndex); });
+  cls.def_property_readonly_static("netDim", [](pybind11::object /* self */) { return MultiDimensionNet::netDim; });
+//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<ValueType>> values) {
+//            return new MultiDimensionNet(dimSize,values);
+//          })
+//  );
+//
+//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values) {
+//            return new MultiDimensionNet(dimSize,values);
+//          })
+//  );
 
 }
 
