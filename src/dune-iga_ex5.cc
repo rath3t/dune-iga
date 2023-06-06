@@ -4,10 +4,6 @@
 
 #include <config.h>
 
-#include "ReissnerMindlinPlate.hh"
-#include "stressEvaluator.h"
-#include "timer.h"
-
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/linearAlgebra/dirichletValues.hh>
@@ -17,13 +13,17 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-#include "dune/iga/ibra/ibraReader.hh"
+#include "dune/iga/io/ibra/ibraReader.hh"
 #include "dune/iga/io/igaDataCollector.h"
 #include "dune/iga/utils/igaHelpers.h"
 #include <dune/common/parametertreeparser.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
+
+#include "ReissnerMindlinPlate.hh"
+#include "stressEvaluator.h"
+#include "timer.h"
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
   Ikarus::DirichletValues dirichletValues(basis.flat());
 
   dirichletValues.fixDOFs([](auto &basis_, auto &dirichletFlags) {
-    Dune::Functions::forEachUntrimmedBoundaryDOF(basis_, [&](auto &&localIndex, auto &&localView, auto &&intersection) {
+    Dune::Functions::forEachUntrimmedBoundaryDOF(Dune::Functions::subspaceBasis(basis_, 0), [&](auto &&localIndex, auto &&localView, auto &&intersection) {
       dirichletFlags[localView.index(localIndex)] = true;
     });
   });

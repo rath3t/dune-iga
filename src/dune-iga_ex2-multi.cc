@@ -31,7 +31,7 @@
 
 constexpr int gridDim  = 2;
 constexpr int worldDim = 2;
-double lambdaLoad      = 1;
+double lambdaLoad      = 10;
 
 void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefine, bool writeVTK) {
   /// Read Parameter
@@ -47,8 +47,8 @@ void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefi
   //const auto u_degreeElevate    = gridParameters.get<int>("u_degreeElevate");
   //const auto v_degreeElevate    = gridParameters.get<int>("v_degreeElevate");
   //const auto globalRefine       = gridParameters.get<int>("globalRefine");
-  const auto refineInUDirection = gridParameters.get<int>("u_refine");
-  const auto refineInVDirection = gridParameters.get<int>("v_refine");
+  //const auto refineInUDirection = gridParameters.get<int>("u_refine");
+  //const auto refineInVDirection = gridParameters.get<int>("v_refine");
 
   const auto E  = materialParameters.get<double>("E");
   const auto nu = materialParameters.get<double>("nu");
@@ -57,7 +57,7 @@ void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefi
 
   // Log the Paramaters
   spdlog::info(
-      "Filename: {} \nThe following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, refineInUDirection, refineInVDirection);
+      "Filename: {} \nThe following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v {}", gridFileName, E, nu, globalRefine, 0, 0);
 
   /// Instantiate a timer
   Timer timer;
@@ -76,7 +76,7 @@ void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefi
   const auto& patchData = grid->getPatch().getPatchData();
   spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 
-  grid->globalMultiRefine(globalRefine, refineInUDirection, refineInVDirection);
+  grid->globalMultiRefine(globalRefine, 0, 0);
 
   GridView gridView = grid->leafGridView();
 
@@ -223,6 +223,7 @@ void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefi
   std::ranges::for_each(fes, [&](const auto& fe) {nQuadraturePoints += fe.numOfQuadraturePoints();});
   spdlog::info("Num Quadrature Points: {}", nQuadraturePoints);
   spdlog::info("RefinementTarget: {}", Grid::Traits::TrimmedElementRepresentationType::targetTolerance);
+  spdlog::info("maxEdgeDivisions: {}", Grid::Traits::TrimmedElementRepresentationType::maxPreSamplesOuterBoundaries);
 
   if (not writeVTK)
     return;
@@ -249,8 +250,8 @@ void analyse(auto argv, int u_degreeElevate, int v_degreeElevate, int globalRefi
 
 int main(int argc, char **argv) {
   Ikarus::init(argc, argv);
-  for (auto i : std::views::iota(0, 5))
-    for (auto j : std::views::iota(2, 9))
+  for (auto i : std::views::iota(4, 5))
+    for (auto j : std::views::iota(7, 8))
       analyse(argv, i, i, j, false);
 
 

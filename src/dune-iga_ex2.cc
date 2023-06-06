@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
   constexpr int gridDim  = 2;
   constexpr int worldDim = 2;
-  double lambdaLoad      = 1;
+  double lambdaLoad      = 10;
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
@@ -224,6 +224,8 @@ int main(int argc, char **argv) {
   int nQuadraturePoints = 0;
   std::ranges::for_each(fes, [&](const auto& fe) {nQuadraturePoints += fe.numOfQuadraturePoints();});
   spdlog::info("Num Quadrature Points: {}", nQuadraturePoints);
+  spdlog::info("RefinementTarget: {}", Grid::Traits::TrimmedElementRepresentationType::targetTolerance);
+  spdlog::info("maxEdgeDivisions: {}", Grid::Traits::TrimmedElementRepresentationType::maxPreSamplesOuterBoundaries);
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
   Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);

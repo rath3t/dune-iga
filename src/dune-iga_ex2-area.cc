@@ -24,7 +24,6 @@ int main(int argc, char **argv) {
 
   constexpr int gridDim  = 2;
   constexpr int worldDim = 2;
-  double lambdaLoad      = 1;
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
@@ -67,9 +66,6 @@ int main(int argc, char **argv) {
 
   GridView gridView = grid->leafGridView();
 
-  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
-  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
-
   // Calculate Area
   Dune::QuadratureRule<double, 2> rule;
   double area = 0.0;
@@ -79,26 +75,32 @@ int main(int argc, char **argv) {
     for (auto& ip : rule)
       area += geo.integrationElement(ip.position()) * ip.weight();
   }
-  auto targetArea = 4 * 4  - 0.25 * (std::numbers::pi * std::pow(1, 2));
-  spdlog::info("Area {}, (target {})", area, targetArea);
+//  auto targetArea = 4 * 4  - 0.25 * (std::numbers::pi * std::pow(1, 2));
+  spdlog::info("Area {}", area);
 
   // Plot::plotEveryReconstructedGrid(grid, "_sf");
   // Plot::saveEveryReconstructedGrid(grid);
 
-  vtkWriter.write(outputFileName);
+//  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
+//  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
+//  vtkWriter.write(outputFileName);
 
+  /*
   // Write Quadrature points
   std::ofstream file("quadrature_points.txt");
 
+  int num_qp = 0;
   for (auto& ele : Dune::elements(gridView)) {
-    auto qPs = ele.impl().getQuadratureRule(std::nullopt, Dune::QuadratureType::Enum::GaussLobatto);
-    //auto qPs = ele.impl().getQuadratureRule();
+    //auto qPs = ele.impl().getQuadratureRule(std::nullopt, Dune::QuadratureType::Enum::GaussLobatto);
+    auto qPs = ele.impl().getQuadratureRule();
     auto geo = ele.geometry();
-    for (auto& gp : qPs)
-      file << geo.global(gp.position()) << "\n";
+    for (auto& gp : qPs) {
+      file << geo.global(gp.position()) << " " << gp.weight() << "\n";
+      ++num_qp;
+    }
   }
   file.close();
-
-
+  spdlog::info("Num QuadraturePoints: {}", num_qp);
+  */
   return 0;
 }

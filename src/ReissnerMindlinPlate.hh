@@ -47,11 +47,7 @@ namespace Ikarus {
           volumeLoad_(p_volumeLoad) {
       this->localView().bind(element);
       const int order = 2 * (this->localView().tree().child(0).finiteElement().localBasis().order());
-      localBasis_     = Dune::CachedLocalBasis(this->localView().tree().child(0).finiteElement().localBasis());
-
       element.impl().fillQuadratureRule(rule, order);
-
-      localBasis_.bind(rule,Dune::bindDerivatives(0, 1));
     }
 
     static Eigen::Matrix<double, 5, 5> constitutiveMatrix(double Emod, double p_nu, double p_thickness) {
@@ -88,7 +84,7 @@ namespace Ikarus {
       g.template setZero(this->localView().size());
       if (volumeLoad_) {
         for (const auto& gp : rule) {
-          Eigen::Vector<double, 3> fext = (*volumeLoad_)(toEigen(gp.position()), lambda);
+          Eigen::Vector<double, 3> fext = (*volumeLoad_)(geo.global(gp.position()), lambda);
           const auto Jinv               = toEigen(geo.jacobianInverseTransposed(gp.position())).transpose().eval();
           const double intElement       = geo.integrationElement(gp.position()) * gp.weight();
           std::vector<Dune::FieldVector<double, 1>> shapeFunctionValues;
@@ -230,15 +226,12 @@ namespace Ikarus {
       }
     }
 
-    Dune::CachedLocalBasis<
-        std::remove_cvref_t<decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis())>>
-        localBasis_;
     Dune::QuadratureRule<double, 2> rule;
     double Emodul;
     double nu;
     double thickness;
     std::optional<
-        std::function<Eigen::Vector<double, 3>(const Eigen::Vector<double, Traits::worlddim>&, const double&)>>
+        std::function<Eigen::Vector<double, 3>(const Dune::FieldVector<double, Traits::worlddim>&, const double&)>>
         volumeLoad_;
   };
 

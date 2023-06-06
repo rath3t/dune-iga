@@ -51,7 +51,8 @@ namespace Dune::IGA {
     using GridView = Grid::LeafGridView;
     using Point    = Dune::FieldVector<double, dim>;
 
-    static constexpr double targetTolerance{1e-3};
+    static constexpr double targetTolerance{1e-4};
+    static constexpr int maxPreSamplesOuterBoundaries{10};
 
    private:
     std::unique_ptr<Grid> grid{};
@@ -63,7 +64,6 @@ namespace Dune::IGA {
     std::array<double, dim> offset{};
 
     /// Parameters
-    int maxPreSamplesOuterBoundaries{10};
     int innerLoopPreSample{3};
     int preGlobalRefine{0};
     int edgeRefinements{0};
