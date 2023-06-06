@@ -14,6 +14,7 @@ setpath.set_path()
 
 from dune.iga import igaGrid,ControlPoint,ControlPointNet,NurbsPatchData
 from dune.grid import reader
+from dune.functions import defaultGlobalBasis
 from dune.iga import reader as readeriga
 if __name__ == "__main__":
 
@@ -33,6 +34,12 @@ if __name__ == "__main__":
     assert net.get((1,0)).coords[1]==4
 
     nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
+    nurbsBasis= nurbsPatchData.asBasis()
+    globalBasis = dune.functions.defaultGlobalBasis(
+        grid, dune.functions.Power(nurbsBasis, 2)
+    )
+
+    assert len(net)==len(globalBasis)*2
 
 
     if False:

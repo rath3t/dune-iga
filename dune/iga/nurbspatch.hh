@@ -83,9 +83,9 @@ namespace Dune::IGA {
       assert((codim <= dim) and (codim <= 3) and (codim >= 0));
 
       if (codim == 0)
-        return elementNet_->directSize();
+        return elementNet_->size();
       else if (codim == dim)
-        return vertexNet_->directSize();
+        return vertexNet_->size();
       else if (dim - codim == 1)  // edge case
       {
         int edgeSize = 0;

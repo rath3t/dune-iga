@@ -94,16 +94,16 @@ namespace Dune::IGA {
           idSet_{std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView())},
           trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
-      assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
+      assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.strideSizes()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
       if constexpr (dim > 1)
         assert(nurbsPatchData.knotSpans[1].size() - nurbsPatchData.degree[1] - 1
-                   == nurbsPatchData.controlPoints.size()[1]
+                   == nurbsPatchData.controlPoints.strideSizes()[1]
                && "The size of the controlpoints and the knotvector size do not match in the second direction");
       if constexpr (dim > 2)
         assert(nurbsPatchData.knotSpans[2].size() - nurbsPatchData.degree[2] - 1
-                   == nurbsPatchData.controlPoints.size()[2]
-               && "The size of the controlpoints and the knotvector size do not match in the third direction");
+                   ==nurbsPatchData.controlPoints.strideSizes()[2]
+               && "The size of the controlpoints and the knotvector strideSizes do not match in the third direction");
       // FIXME check sanity of knotvector and degree
       silenceGrid();
       createEntities();

@@ -5,6 +5,48 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ._iga import reader
+from dune.functions import Tree
+from dune.functions import defaultGlobalBasis as defaultGlobalBasisBase
+from dune.functions import preBasisTypeName as preBasisTypeNameBase
+from dune.functions import indexMergingStrategy
+class Nurbs(Tree):
+    def __init__(self, order, dimRange=1):
+        Tree.__init__(self, "Nurbs")
+        self.dimRange = dimRange
+
+    def __repr__(self):
+            return "Nurbs"
+
+
+def preBasisTypeName(tree, gridViewTypeName):
+    assert isinstance(tree, Tree)
+    if isinstance(tree, Nurbs):
+        scalarPreBasis = "Dune::Functions::NurbsPreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
+        if tree.dimRange != 1:
+            IMS = indexMergingStrategy(False, "interleaved")
+            return "Dune::Functions::PowerPreBasis< " + IMS + " , " + scalarPreBasis + " , " + str(tree.dimRange) + " >"
+        else:
+            return scalarPreBasis
+    else
+        return preBasisTypeNameBase(tree, gridViewTypeName)
+
+
+def defaultGlobalBasis(gridView, tree):
+    from dune.functions import load
+
+    headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
+
+    includes = []
+    includes += list(gridView.cppIncludes)
+    includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
+    includes += ["dune/iga/nurbsbasis.hh"]
+
+    typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
+
+    return load(includes, typeName).GlobalBasis(gridView)
+
+
+
 
 def igaGrid(constructor, dimgrid=None, dimworld=None):
     print("BLA0")

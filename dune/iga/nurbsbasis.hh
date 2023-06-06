@@ -618,7 +618,7 @@ namespace Dune::Functions {
                           const std::array<int, dim>& currentKnotSpan) const {
       const auto N = IGA::Nurbs<dim, ScalarType>::basisFunctions(
           in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), currentKnotSpan);
-      out.resize(N.directSize());
+      out.resize(N.size());
       std::ranges::copy(N.directGetAll(), out.begin());
     }
 
@@ -632,12 +632,12 @@ namespace Dune::Functions {
       const auto dN = IGA::Nurbs<dim, ScalarType>::basisFunctionDerivatives(in, patchData_.knotSpans, patchData_.degree,
                                                                             extractWeights(patchData_.controlPoints), 1,
                                                                             false, currentKnotSpan);
-      out.resize(dN.get(std::array<int, dim>{}).directSize());
+      out.resize(dN.get(std::array<int, dim>{}).size());
       for (int j = 0; j < dim; ++j) {
         std::array<int, dim> multiIndex{};
         multiIndex[j]         = 1;
         const auto& dNcurrent = dN.get(multiIndex);
-        for (int i = 0; i < dNcurrent.directSize(); ++i)
+        for (int i = 0; i < dNcurrent.size(); ++i)
           out[i][0][j] = dNcurrent.directGet(i);
       }
     }

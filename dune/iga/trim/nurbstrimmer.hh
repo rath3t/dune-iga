@@ -615,7 +615,7 @@ namespace Dune::IGA::Trim {
     }
 
     static std::array<Point, 2> curveStartEndPoint(const CurveGeometry& curve) {
-      std::array<int, 2> indices{0, static_cast<int>(curve.patchData_->controlPoints.size()[0]) - 1};
+      std::array<int, 2> indices{0, static_cast<int>(curve.patchData_->controlPoints.strideSizes()[0]) - 1};
       return {curve.patchData_->controlPoints.get({indices[0]}).p, curve.patchData_->controlPoints.get({indices[1]}).p};
     }
 

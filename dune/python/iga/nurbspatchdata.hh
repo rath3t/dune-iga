@@ -58,6 +58,8 @@ void registerMultiDimensionNet(pybind11::handle scope, pybind11::class_<MultiDim
           })
   );
 
+  cls.def("__len__", &MultiDimensionNet::size);
+  cls.def("strideSizes", &MultiDimensionNet::strideSizes);
   cls.def("set", &MultiDimensionNet::set);
   cls.def("get", [](MultiDimensionNet& self,const std::array<int, netDim>& multIndex  ) { return self.get(multIndex); });
   cls.def_property_readonly_static("netDim", [](pybind11::object /* self */) { return MultiDimensionNet::netDim; });
@@ -94,9 +96,9 @@ void registerNurbsPatchData(pybind11::handle scope, pybind11::class_<NURBSPatchD
       .def_readwrite("degree", &NURBSPatchData::degree);
 
 
-  cls.def("asNurbs", [](NURBSPatchData& self) {
+  cls.def("asBasis", [](NURBSPatchData& self) {
     return Dune::Functions::BasisFactory::nurbs(self);
-  },pybind11::keep_alive<0, 1>());
+  });
 }
 
 }  // namespace Ikarus::Python
