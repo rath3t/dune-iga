@@ -55,7 +55,9 @@ namespace Dune::IGA {
     static constexpr std::integral auto dimensionworld = dimworld;
     using ctype                                        = ScalarType;
 
-    using ControlPointNetType = typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType;
+
+    using NURBSPatchDataType = NURBSPatchData<dim, dimworld, ScalarType>;
+    using ControlPointNetType = typename NURBSPatchDataType::ControlPointNetType;
 
     using GridFamily = NurbsGridFamily<dim, dimworld, ScalarType>;
 

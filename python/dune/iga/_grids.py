@@ -5,51 +5,55 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ._iga import reader
+from dune.generator.generator import SimpleGenerator
+from dune.common.hashit import hashIt
 from dune.functions import Tree
 from dune.functions import defaultGlobalBasis as defaultGlobalBasisBase
-from dune.functions import preBasisTypeName as preBasisTypeNameBase
-from dune.functions import indexMergingStrategy
-class Nurbs(Tree):
-    def __init__(self, order, dimRange=1):
-        Tree.__init__(self, "Nurbs")
-        self.dimRange = dimRange
+# from dune.functions import preBasisTypeName as preBasisTypeNameBase
 
-    def __repr__(self):
-            return "Nurbs"
+# from dune.functions import indexMergingStrategy
+# class Nurbs(Tree):
+#     def __init__(self, order, dimRange=1):
+#         Tree.__init__(self, "Nurbs")
+#         self.dimRange = dimRange
+#         self.dimRange = dimRange
+#
+#     def __repr__(self):
+#             return "Nurbs"
+#
+#
+# def preBasisTypeName(tree, gridViewTypeName):
+#     assert isinstance(tree, Tree)
+#     if isinstance(tree, Nurbs):
+#         scalarPreBasis = "Dune::Functions::NurbsPreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
+#         if tree.dimRange != 1:
+#             IMS = indexMergingStrategy(False, "interleaved")
+#             return "Dune::Functions::PowerPreBasis< " + IMS + " , " + scalarPreBasis + " , " + str(tree.dimRange) + " >"
+#         else:
+#             return scalarPreBasis
+#     else:
+#         return preBasisTypeNameBase(tree, gridViewTypeName)
+#
+#
+# def defaultGlobalBasis(gridView, tree):
+#     from dune.functions import load
+#
+#     headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
+#
+#     includes = []
+#     includes += list(gridView.cppIncludes)
+#     includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
+#     includes += ["dune/iga/nurbsbasis.hh"]
+#
+#     typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
+#
+#     return load(includes, typeName).GlobalBasis(gridView)
 
 
-def preBasisTypeName(tree, gridViewTypeName):
-    assert isinstance(tree, Tree)
-    if isinstance(tree, Nurbs):
-        scalarPreBasis = "Dune::Functions::NurbsPreBasis< " + gridViewTypeName + " , " + str(tree.order) + " >"
-        if tree.dimRange != 1:
-            IMS = indexMergingStrategy(False, "interleaved")
-            return "Dune::Functions::PowerPreBasis< " + IMS + " , " + scalarPreBasis + " , " + str(tree.dimRange) + " >"
-        else:
-            return scalarPreBasis
-    else
-        return preBasisTypeNameBase(tree, gridViewTypeName)
 
+import dune.iga
 
-def defaultGlobalBasis(gridView, tree):
-    from dune.functions import load
-
-    headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
-
-    includes = []
-    includes += list(gridView.cppIncludes)
-    includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
-    includes += ["dune/iga/nurbsbasis.hh"]
-
-    typeName = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
-
-    return load(includes, typeName).GlobalBasis(gridView)
-
-
-
-
-def igaGrid(constructor, dimgrid=None, dimworld=None):
-    print("BLA0")
+def IgaGrid(constructor, dimgrid=None, dimworld=None):
     """
     Create an IGAGrid instance.
 
@@ -69,19 +73,35 @@ def igaGrid(constructor, dimgrid=None, dimworld=None):
 
     An IGAGrid instance with given refinement (conforming or nonconforming) and element type (simplex or cube).
     """
-    from dune.grid.grid_generator import module, getDimgrid
-    print("BLA0")
-    if not dimgrid:
-        dimgrid = getDimgrid(constructor)
+    # from dune.grid.grid_generator import module, getDimgrid
 
-    if dimworld is None:
-        dimworld = dimgrid
+    # if not dimgrid:
+    #     dimgrid = getDimgrid(constructor)
+    print(help(constructor))
+    if hasattr(constructor, 'patchDim'):
+        dimgrid = constructor.patchDim
+
+    if hasattr(constructor, 'dimworld'):
+        dimworld = constructor.dimworld
+
+    if dimgrid==None and dimworld==None:
+        raise Exception("If you don't pass the patch data you have to pass dimgrid and dimworld")
 
     typeName = "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ",double>"
 
-    includes = ["dune/iga/nurbsgrid.hh"]
+    includes = ["dune/python/iga/reader.hh"]
 
-    gridModule = module(includes, typeName)
+    generator = SimpleGenerator("HierarchicalGrid", "Dune::Python::IGA")
+    moduleName = "NURBSGrid_" + hashIt(typeName)
+    kwargs=dict()
+    kwargs["dynamicAttr"] = True
+    kwargs["holder"] = "std::shared_ptr"
+
+    gridModule = generator.load(
+        includes=includes, typeName=typeName, moduleName=moduleName,**kwargs
+    )
+    print(help(gridModule))
+    # print(help(gridModule.LeafGrid))
 
     if type(constructor) is dict:
         readGrid = gridModule.reader(constructor)
@@ -91,12 +111,12 @@ def igaGrid(constructor, dimgrid=None, dimworld=None):
         else:
             raise Exception("Only tuple of size two are allowed   (readeriga.json, filename)")
     else:
-        readGrid = gridModule.reader(constructor)
+        readGrid = gridModule.HierarchicalGrid(constructor)
     gridView = gridModule.LeafGrid(readGrid)
     return gridView
 
 
 grid_registry = {
-    "IGA"        : igaGrid,
+    "IGA"        : IgaGrid,
 
 }

@@ -83,17 +83,21 @@ void registerNurbsPatchData(pybind11::handle scope, pybind11::class_<NURBSPatchD
    constexpr int dimWorld    =  NURBSPatchData::GlobalCoordinateType::dimension;
   using ControlPointType      = typename NURBSPatchData::ControlPointType;
   using ControlPointNetType      = typename NURBSPatchData::ControlPointNetType;
-  constexpr std::size_t netDim = ControlPointNetType::netDim;
+  constexpr std::size_t patchDim = NURBSPatchData::patchDim;
+  constexpr std::size_t dimworld = NURBSPatchData::dimworld;
 
   cls.def(pybind11::init());
-  cls.def(pybind11::init([](const std::array<std::vector<double>, netDim>& knotSpansI, const ControlPointNetType& controlPointsI,
-                            const std::array<int, netDim>& degreeInput) {
+  cls.def(pybind11::init([](const std::array<std::vector<double>, patchDim>& knotSpansI, const ControlPointNetType& controlPointsI,
+                            const std::array<int, patchDim>& degreeInput) {
             return new NURBSPatchData(knotSpansI,controlPointsI,degreeInput);
           })
           );
   cls.def_readwrite("knotSpans", &NURBSPatchData::knotSpans)
       .def_readwrite("controlPoints", &NURBSPatchData::controlPoints)
       .def_readwrite("degree", &NURBSPatchData::degree);
+
+  cls.def_property_readonly_static("patchDim", [](pybind11::object /* self */) { return patchDim; });
+  cls.def_property_readonly_static("dimworld", [](pybind11::object /* self */) { return dimworld; });
 
 
   cls.def("asBasis", [](NURBSPatchData& self) {

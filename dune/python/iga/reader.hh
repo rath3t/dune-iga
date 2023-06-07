@@ -6,6 +6,10 @@
 #include <dune/iga/io/ibra/ibrareader.hh>
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/grid/capabilities.hh>
+#include <dune/python/grid/hierarchical.hh>
+#include <dune/python/common/typeregistry.hh>
+#include <dune/iga/trim/nurbstrimboundary.hh>
+#include <dune/iga/nurbsgrid.hh>
 
 namespace Dune::Python::IGA
 {
@@ -13,62 +17,38 @@ enum class Reader { json };
 
 } // namespace Dune
 
-namespace Dune::Python
-{
-template <int dim, int dimworld, typename ScalarType>
-class NURBSGrid;
-//template< class Grid, typename In >
-//inline static std::shared_ptr< Grid > readJSON ( In &input )
-//{
-//  JSONGridFactory< Grid > dgfFactory( input );
-//  std::shared_ptr< Grid > grid( dgfFactory.grid() );
-//  grid->loadBalance();
-//  return grid;
-//}
-
-//template <std::integral auto dim, auto ReaderType, std::integral auto dimworld, typename ScalarType> requires (std::is_same_v<Reader, decltype(ReaderType)> or std::is_same_v<Dune::Python::IGA::Reader,decltype(ReaderType)>)
-//inline static std::shared_ptr< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> > reader ( const std::tuple< Reader, std::string > &args )
-//{
-//  return nullptr;
-//}
-//
-//template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-//inline static std::shared_ptr< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> > reader ( const std::tuple< Dune::Python::IGA::Reader, std::string > &args )
-//{
-//
-//    switch (std::get<0>(args)) {
-//      std::cout << "Reader::json" << std::endl;
-//      case Dune::Python::IGA::Reader::json:
-//        return readJSON<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>>(std::get<1>(args));
-//
-//      default:return nullptr;
-//    }
-//}
-// we have to ahead of https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233 thus we provide  Dune::PriorityTag< 42 > and
+namespace Dune::Python {
+// we have to ahead of https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233 thus we use requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value)
+// to be sure this overload is used
 //make sure this type is used if an iga grid is passed this is function is enabled and used by adl
-template <template <auto,auto, typename> class Type, typename>
+template<template<auto, auto, typename> class Type, typename>
 struct IsSpecializationTwoNonTypesAndType : std::false_type {};
 
-template <template <auto,auto, typename> class Type, auto T, auto T2, typename S>
-struct IsSpecializationTwoNonTypesAndType<Type, Type<T, T2,S>> : std::true_type {};
+template<template<auto, auto, typename> class Type, auto T, auto T2, typename S>
+struct IsSpecializationTwoNonTypesAndType<Type, Type<T, T2, S>> : std::true_type {};
 
-template <int dim, int dimworld, typename ScalarType>
-struct Capabilities::HasGridFactory<Dune::IGA::NURBSGrid<dim,dimworld,ScalarType>> : public std::integral_constant< bool, false >
-{};
+template<int dim, int dimworld, typename ScalarType>
+struct Capabilities::HasGridFactory<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> : public std::integral_constant<
+    bool,
+    false> {
+};
 
 
-   template< class Grid> requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value)
-inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
+}
+namespace Dune::Python::IGA
 {
+template<class Grid>
+requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, Grid>::value)
+inline static std::shared_ptr<Grid> reader(const pybind11::dict &dict) {
 
   std::string file_path;
-  Dune::Python::IGA::Reader reader=IGA::Reader::json;
+  Dune::Python::IGA::Reader reader = IGA::Reader::json;
   bool trim = true;
   std::array<int, 2> elevateDegree = {0, 0};
   std::array<int, 2> preKnotRefine = {0, 0};
   std::array<int, 2> postKnotRefine = {0, 0};
   if (dict.contains("reader"))
-    reader =  dict["reader"].cast<Dune::Python::IGA::Reader>();
+    reader = dict["reader"].cast<Dune::Python::IGA::Reader>();
 
   switch (reader) {
     case IGA::Reader::json:
@@ -89,10 +69,52 @@ inline static std::shared_ptr< Grid > reader ( const pybind11::dict &dict)
       static constexpr std::integral auto dim = Grid::dimension;
       static constexpr std::integral auto dimworld = Grid::dimensionworld;
       using ScalarType = typename Grid::ctype;
-      return std::make_shared<Grid>(Dune::IGA::IbraReader < dim, dimworld, ScalarType
-          > ::read(file_path, trim, elevateDegree, preKnotRefine, postKnotRefine));
-    default:
-      DUNE_THROW(Dune::NotImplemented, "Your requested reader is not implemeneted");
+      return Dune::IGA::IbraReader < dim, dimworld, ScalarType
+          > ::read(file_path, trim, elevateDegree, preKnotRefine, postKnotRefine);
+    default:DUNE_THROW(Dune::NotImplemented, "Your requested reader is not implemeneted");
   }
+}
+
+template <class NURBSGrid, class... options>  requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,NURBSGrid>::value)
+void registerHierarchicalGrid(pybind11::module module, pybind11::class_<NURBSGrid, options...> cls) {
+  using pybind11::operator""_a;
+
+static constexpr std::integral auto dimension      = NURBSGrid::dimension;
+static constexpr std::integral auto dimensionworld = NURBSGrid::dimensionworld;
+using ctype                                        = typename NURBSGrid::ctype;
+
+  module.def( "reader", [] ( const pybind11::dict &args_ ) { return Dune::Python::IGA::reader< NURBSGrid >( args_ ); } );
+
+    Dune::Python::registerHierarchicalGrid (module, cls);
+
+  auto clsLeafView = insertClass< typename NURBSGrid::LeafGridView >( module, "LeafGrid", GenerateTypeName( cls, "LeafGridView" ) );
+  if( clsLeafView.second )
+  registerGridView( module, clsLeafView.first );
+
+  clsLeafView.first.def("preBasis",[](const typename NURBSGrid::LeafGridView& self){return self.impl().preBasis();});
+
+
+using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
+  using NURBSPatchDataType    = typename NURBSGrid::NURBSPatchDataType;
+
+  cls.def(pybind11::init([](const std::array<std::vector<double>, dimension>& knotSpans, const ControlPointNetType& controlPoints,
+                            const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
+
+  cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
+//  cls.def("hierarchicalGrid",[](const self& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
+
+
+
+
+//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<ValueType>> values) {
+//            return new MultiDimensionNet(dimSize,values);
+//          })
+//  );
+//
+//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values) {
+//            return new MultiDimensionNet(dimSize,values);
+//          })
+//  );
+
 }
 }

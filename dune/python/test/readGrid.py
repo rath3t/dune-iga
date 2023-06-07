@@ -12,39 +12,41 @@ setpath.set_path()
 
 
 
-from dune.iga import igaGrid,ControlPoint,ControlPointNet,NurbsPatchData
+from dune.iga import IgaGrid,ControlPoint,ControlPointNet,NurbsPatchData
 from dune.grid import reader
 from dune.functions import defaultGlobalBasis
 from dune.iga import reader as readeriga
 if __name__ == "__main__":
+    if True:
+        cp=ControlPoint((1,2),3)
+        cp2=cp+cp
 
-    cp=ControlPoint((1,2),3)
-    cp2=cp+cp
+        assert cp.coords[0]==1
+        assert cp.coords[1]==2
+        assert cp.weight==3
 
-    assert cp.coords[0]==1
-    assert cp.coords[1]==2
-    assert cp.weight==3
+        netC=((cp,cp2),(cp,cp))
+        net=ControlPointNet(netC)
+        print(net.get((0,1)))
+        print(net.get((1,0)))
+        net.set((1,0),ControlPoint((1,4),3))
+        assert net.get((1,0)).coords[0]==1
+        assert net.get((1,0)).coords[1]==4
 
-    netC=((cp,cp2),(cp,cp))
-    net=ControlPointNet(netC)
-    print(net.get((0,1)))
-    print(net.get((1,0)))
-    net.set((1,0),ControlPoint((1,4),3))
-    assert net.get((1,0)).coords[0]==1
-    assert net.get((1,0)).coords[1]==4
+        nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
 
-    nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
-    nurbsBasis= nurbsPatchData.asBasis()
-    globalBasis = dune.functions.defaultGlobalBasis(
-        grid, dune.functions.Power(nurbsBasis, 2)
-    )
-
-    assert len(net)==len(globalBasis)*2
+        gridView=IgaGrid(nurbsPatchData)
+        # nurbsBasis= nurbsPatchData.asBasis()
+        # globalBasis = dune.functions.defaultGlobalBasis(
+        #     grid, dune.functions.Power(nurbsBasis, 2)
+        # )
+        #
+        # assert len(net)==len(globalBasis)*2
 
 
-    if False:
+    if True:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
-        gridView = igaGrid(reader, dimgrid=2,dimworld=2)
+        gridView = IgaGrid(reader, dimgrid=2,dimworld=2)
 
         assert gridView.size(0)==1
         assert gridView.size(1)==4
@@ -66,7 +68,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             elevate_degree= (1,1)    )
-        gridView2 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView2 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView2.size(0)==1
         assert gridView2.size(1)==4
@@ -76,7 +78,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             pre_knot_refine= (1,1)    )
-        gridView3 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView3 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView3.size(0)==4
         assert gridView3.size(2)==9
@@ -85,7 +87,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             post_knot_refine= (1,1)    )
-        gridView4 = igaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView4 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView4.size(0)==4
         assert gridView4.size(2)==9
