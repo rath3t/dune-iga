@@ -5,7 +5,7 @@ from ._nurbspatchdata import *
 from .basis import *
 registry = dict()
 registry["grid"] = grid_registry
-
+#
 # registry["globalBasis"] = {
-#      "IGA" : defaultGlobalBasis
+#      "IGA" : igaDefaultGlobalBasis
 #  }

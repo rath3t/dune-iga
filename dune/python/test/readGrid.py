@@ -11,13 +11,15 @@ setpath.set_path()
 # from dune.iga import gridReader
 
 #DUNE_LOG_LEVEL
-
+#DUNE_FORCE_BUILD
+#DUNE_SAVE_BUILD
+import mpi4py
 from dune.iga import IgaGrid,ControlPoint,ControlPointNet,NurbsPatchData
 
 from dune.functions import Power,Lagrange,defaultGlobalBasis
 #import dune.functions
 from dune.iga import reader as readeriga
-#from dune.iga.basis import Nurbs,defaultGlobalBasis
+# from dune.iga.basis import Nurbs,igaDefaultGlobalBasis,Power,Lagrange
 if __name__ == "__main__":
     lowerLeft = []
     upperRight = []
