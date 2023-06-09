@@ -77,7 +77,7 @@ def IgaGrid(constructor, dimgrid=None, dimworld=None):
 
     # if not dimgrid:
     #     dimgrid = getDimgrid(constructor)
-    print(help(constructor))
+    # print(help(constructor))
     if hasattr(constructor, 'patchDim'):
         dimgrid = constructor.patchDim
 
@@ -100,7 +100,7 @@ def IgaGrid(constructor, dimgrid=None, dimworld=None):
     gridModule = generator.load(
         includes=includes, typeName=typeName, moduleName=moduleName,**kwargs
     )
-    print(help(gridModule))
+    # print(help(gridModule))
     # print(help(gridModule.LeafGrid))
 
     if type(constructor) is dict:

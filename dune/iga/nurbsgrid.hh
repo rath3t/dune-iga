@@ -142,6 +142,9 @@ namespace Dune::IGA {
 
     int size(int codim) const { return leafPatches_.get()->front().size(codim); }
 
+
+    const auto& patchData(int i=0) const { return currentPatchRepresentation_;}
+
     bool reportTrimError() const {
       for (const auto& patch : *leafPatches_)
         if (patch.reportTrimError()) return true;

@@ -11,7 +11,7 @@
 
 #include "dune/iga/geometry/geohelper.hh"
 #include <dune/alugrid/grid.hh>
-#include <dune/grid/uggrid.hh>
+//#include <dune/grid/uggrid.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -247,12 +247,12 @@ namespace Dune::IGA {
       gridFactory.insertVertex({0, 1});
       gridFactory.insertVertex({1, 1});
 
-      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
-        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
-      else {
+//      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
+//        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+//      else {
         gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
         gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
-      }
+//      }
 
       grid = gridFactory.createGrid();
     }

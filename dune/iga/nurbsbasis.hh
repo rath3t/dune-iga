@@ -487,8 +487,13 @@ namespace Dune::Functions {
 
     explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
-    NurbsPreBasis(const GridView& gridView, const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
-        : gridView_{gridView}, patchData_{patchData}, cachedSize_(computeOriginalSize()) {
+    NurbsPreBasis(const GridView& gridView, const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
+        : gridView_{gridView}, cachedSize_(computeOriginalSize()) {
+
+      if (patchData)
+        patchData_=patchData;
+      else
+        patchData_=gridView_->grid().patchData();
       for (int i = 0; i < dim; ++i)
         std::ranges::unique_copy(patchData_.knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });

@@ -96,7 +96,8 @@ using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
                             const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
 
   cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
-//  cls.def("hierarchicalGrid",[](const self& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
+  cls.def("globalRefineInDirection",[]( NURBSGrid& self,const int dir, const int refinementLevel, bool omitTrim = false){self.globalRefineInDirection(dir,refinementLevel,omitTrim);});
+  cls.def("patchData",[](const NURBSGrid& self,int i = 0){return self.patchData(i);});
 
 
 

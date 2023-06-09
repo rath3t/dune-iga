@@ -10,13 +10,28 @@ setpath.set_path()
 
 # from dune.iga import gridReader
 
-
+#DUNE_LOG_LEVEL
 
 from dune.iga import IgaGrid,ControlPoint,ControlPointNet,NurbsPatchData
-from dune.grid import reader
-from dune.functions import defaultGlobalBasis
+
+from dune.functions import Power,Lagrange,defaultGlobalBasis
+#import dune.functions
 from dune.iga import reader as readeriga
+#from dune.iga.basis import Nurbs,defaultGlobalBasis
 if __name__ == "__main__":
+    lowerLeft = []
+    upperRight = []
+    elements = []
+    for i in range(2):
+        lowerLeft.append(-1)
+        upperRight.append(1)
+        elements.append(3)
+
+    # grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
+    #
+    # basisLagrange12 = dune.functions.defaultGlobalBasis(
+    #     grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
+    # )
     if True:
         cp=ControlPoint((1,2),3)
         cp2=cp+cp
@@ -36,7 +51,11 @@ if __name__ == "__main__":
         nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
 
         gridView=IgaGrid(nurbsPatchData)
-        # nurbsBasis= nurbsPatchData.asBasis()
+        basisLagrange12 = defaultGlobalBasis(
+            gridView, Power(Lagrange(order=1), 2)
+        )
+
+    # nurbsBasis= nurbsPatchData.asBasis()
         # globalBasis = dune.functions.defaultGlobalBasis(
         #     grid, dune.functions.Power(nurbsBasis, 2)
         # )
