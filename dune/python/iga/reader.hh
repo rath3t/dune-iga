@@ -8,14 +8,9 @@
 #include <dune/python/grid/capabilities.hh>
 #include <dune/python/grid/hierarchical.hh>
 #include <dune/python/common/typeregistry.hh>
-#include <dune/iga/trim/nurbstrimboundary.hh>
+#include "dune/python/iga/gridenums.hh"
 #include <dune/iga/nurbsgrid.hh>
 
-namespace Dune::Python::IGA
-{
-enum class Reader { json };
-
-} // namespace Dune
 
 namespace Dune::Python {
 // we have to ahead of https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233 thus we use requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value)
