@@ -1,7 +1,8 @@
-from dune.common.hashit import hashIt
-from dune.common import FieldVector
-from dune.generator.generator import SimpleGenerator
+
 def ControlPoint(coords,weight=1):
+    from dune.common.hashit import hashIt
+    from dune.common import FieldVector
+    from dune.generator.generator import SimpleGenerator
     fv= FieldVector(coords)
     generator = SimpleGenerator("ControlPoint", "Dune::Python")
 
@@ -19,6 +20,9 @@ def ControlPoint(coords,weight=1):
 
 
 def ControlPointNet(controlPoints):
+    from dune.common.hashit import hashIt
+    from dune.common import FieldVector
+    from dune.generator.generator import SimpleGenerator
     generator = SimpleGenerator("MultiDimensionNet", "Dune::Python")
 
     element_type = f"Dune::IGA::MultiDimensionNet<{len(controlPoints)},{controlPoints[0][0].cppTypeName}>"
@@ -38,6 +42,9 @@ def ControlPointNet(controlPoints):
 
 
 def NurbsPatchData(knotSpans,controlPointNet,degree):
+    from dune.common.hashit import hashIt
+    from dune.common import FieldVector
+    from dune.generator.generator import SimpleGenerator
     generator = SimpleGenerator("NurbsPatchData", "Dune::Python")
 
     worldDim= len(controlPointNet.get((0,0)).coords)

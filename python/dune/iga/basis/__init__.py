@@ -1,6 +1,3 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-
 class Tree(object):
     def __init__(self, name, children=None):
         self.name = name
@@ -135,7 +132,7 @@ def preBasisTypeName(tree, gridViewTypeName):
 from dune.generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 # from dune.functions import load
-def igaDefaultGlobalBasis(gridView, tree):
+def testData(gridView, tree):
 
     generator = SimpleGenerator("IGAGlobalBasis", "Dune::Python::IGA")
 
@@ -153,12 +150,25 @@ def igaDefaultGlobalBasis(gridView, tree):
     element_type  = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
     print(element_type)
     moduleName = "igaGlobalBasis_" + hashIt(element_type)
-    kwargs=dict()
-    kwargs["dynamicAttr"] = True
-    kwargs["holder"] = "std::shared_ptr"
+
     module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName,**kwargs
+        includes=includes, typeName=element_type, moduleName=moduleName
     )
 
     return module.IGAGlobalBasis(gridView)
+
+
+    generator = SimpleGenerator("MultiDimensionNet", "Dune::Python")
+
+    element_type = f"Dune::IGA::MultiDimensionNet<>"
+
+    includes = []
+    includes += ["dune/python/iga/nurbspatchdata.hh"]
+    moduleName = "NurbsPatchData_" + hashIt(element_type)
+    module = generator.load(
+        includes=includes, typeName=element_type, moduleName=moduleName
+    )
+
+    return module.MultiDimensionNet(gridView)
+
     # return load( includes=includes, typeName=element_type).GlobalBasis(gridView)

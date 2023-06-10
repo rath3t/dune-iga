@@ -13,4 +13,4 @@ import sys
 # Maybe there is a fix comiong from clion, see the bugreport https://youtrack.jetbrains.com/issue/CPP-32280
 
 def set_path():
-    sys.path.append('/tmp/dune-iga/cmake-build-debug/python')
+    sys.path.append('/workspaces/dune-iga/build/python')

@@ -1,14 +1,6 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import sys, os
-import logging
-logger = logging.getLogger(__name__)
 
 
-from dune.generator.generator import SimpleGenerator
-from dune.common.hashit import hashIt
-from dune.functions import Tree
-from dune.functions import defaultGlobalBasis as defaultGlobalBasisBase
+
 # from dune.functions import preBasisTypeName as preBasisTypeNameBase
 
 # from dune.functions import indexMergingStrategy
@@ -53,7 +45,7 @@ from dune.functions import defaultGlobalBasis as defaultGlobalBasisBase
 
 import dune.iga
 
-def IgaGrid(constructor, dimgrid=None, dimworld=None):
+def IGAGrid(constructor, dimgrid=None, dimworld=None):
     """
     Create an IGAGrid instance.
 
@@ -90,7 +82,8 @@ def IgaGrid(constructor, dimgrid=None, dimworld=None):
     typeName = "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ",double>"
 
     includes = ["dune/python/iga/reader.hh"]
-
+    from dune.generator.generator import SimpleGenerator
+    from dune.common.hashit import hashIt
     generator = SimpleGenerator("HierarchicalGrid", "Dune::Python::IGA")
     moduleName = "NURBSGrid_" + hashIt(typeName)
     kwargs=dict()
@@ -117,6 +110,6 @@ def IgaGrid(constructor, dimgrid=None, dimworld=None):
 
 
 grid_registry = {
-    "IGA"        : IgaGrid,
+    "IGA"        : IGAGrid,
 
 }

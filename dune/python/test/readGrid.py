@@ -2,25 +2,28 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 
+import sys
 import setpath
 
-
+from mpi4py import MPI
 setpath.set_path()
-
+print(sys.path)
 
 # from dune.iga import gridReader
 
 #DUNE_LOG_LEVEL
 #DUNE_FORCE_BUILD
 #DUNE_SAVE_BUILD
-import mpi4py
-from dune.iga import IgaGrid,ControlPoint,ControlPointNet,NurbsPatchData
-
-from dune.functions import Power,Lagrange,defaultGlobalBasis
+from dune.iga import IGAGrid,ControlPoint,ControlPointNet,NurbsPatchData
+from dune.grid import structuredGrid
+#from dune.functions import Power,Lagrange,defaultGlobalBasis
 #import dune.functions
 from dune.iga import reader as readeriga
-# from dune.iga.basis import Nurbs,igaDefaultGlobalBasis,Power,Lagrange
+from dune.iga.basis import testData,Power,Lagrange
 if __name__ == "__main__":
+    reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
+    gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
+
     lowerLeft = []
     upperRight = []
     elements = []
@@ -29,33 +32,38 @@ if __name__ == "__main__":
         upperRight.append(1)
         elements.append(3)
 
-    # grid = dune.grid.structuredGrid(lowerLeft, upperRight, elements)
+    grid = structuredGrid(lowerLeft, upperRight, elements)
+
+    basisLagrange12 = testData(
+        grid, Power(Lagrange(order=1),2)
+    )
+
     #
     # basisLagrange12 = dune.functions.defaultGlobalBasis(
     #     grid, dune.functions.Power(dune.functions.Lagrange(order=1), 2)
     # )
-    if True:
-        cp=ControlPoint((1,2),3)
-        cp2=cp+cp
 
-        assert cp.coords[0]==1
-        assert cp.coords[1]==2
-        assert cp.weight==3
+    cp=ControlPoint((1,2),3)
+    cp2=cp+cp
 
-        netC=((cp,cp2),(cp,cp))
-        net=ControlPointNet(netC)
-        print(net.get((0,1)))
-        print(net.get((1,0)))
-        net.set((1,0),ControlPoint((1,4),3))
-        assert net.get((1,0)).coords[0]==1
-        assert net.get((1,0)).coords[1]==4
+    assert cp.coords[0]==1
+    assert cp.coords[1]==2
+    assert cp.weight==3
 
-        nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
+    netC=((cp,cp2),(cp,cp))
+    net=ControlPointNet(netC)
+    print(net.get((0,1)))
+    print(net.get((1,0)))
+    net.set((1,0),ControlPoint((1,4),3))
+    assert net.get((1,0)).coords[0]==1
+    assert net.get((1,0)).coords[1]==4
 
-        gridView=IgaGrid(nurbsPatchData)
-        basisLagrange12 = defaultGlobalBasis(
-            gridView, Power(Lagrange(order=1), 2)
-        )
+    nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
+
+    gridView=IGAGrid(nurbsPatchData)
+    basisLagrange12 = testData(
+        gridView, (1,2)
+    )
 
     # nurbsBasis= nurbsPatchData.asBasis()
         # globalBasis = dune.functions.defaultGlobalBasis(
