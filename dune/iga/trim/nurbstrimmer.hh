@@ -155,11 +155,12 @@ namespace Dune::IGA::Trim {
       auto elementEdges = getElementEdgesFromElementCorners(corners);
 
       ClipperPaths clippedEdges;
+      // Rule NonZero to ensure that inner boundaries are defined clockwise and outer boundaries counter-clockwuse
       if (clip_.size() == 1) {
         Clipper2Lib::Rect<intType> elementRect{corners[0][0], corners[1][1], corners[1][0], corners[3][1]};
         clippedEdges = Clipper2Lib::RectClip(elementRect, clip_);
       } else
-        clippedEdges = Clipper2Lib::Intersect(ClipperPaths{elementEdges}, clip_, Clipper2Lib::FillRule::EvenOdd);
+        clippedEdges = Clipper2Lib::Intersect(ClipperPaths{elementEdges}, clip_, Clipper2Lib::FillRule::NonZero);
 
       // At the moment there is no hole, if there are more than 2 Paths, then there is a hole
       std::optional<InnerLoops> innerLoops = std::nullopt;
