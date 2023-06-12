@@ -14,15 +14,17 @@ print(sys.path)
 #DUNE_LOG_LEVEL
 #DUNE_FORCE_BUILD
 #DUNE_SAVE_BUILD
-from dune.iga import IGAGrid,ControlPoint,ControlPointNet,NurbsPatchData
+from dune.iga import IGAGrid
 from dune.grid import structuredGrid
 #from dune.functions import Power,Lagrange,defaultGlobalBasis
 #import dune.functions
 from dune.iga import reader as readeriga
-from dune.iga.basis import testData,Power,Lagrange
+#from dune.iga.basis import testData,Power,Lagrange
+from dune.common import FieldVector
 if __name__ == "__main__":
     reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
     gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
+    fv = FieldVector(10*[0.1])
 
     lowerLeft = []
     upperRight = []

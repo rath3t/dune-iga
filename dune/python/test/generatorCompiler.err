@@ -1,0 +1,19 @@
+###############################
+###cmake --build /dune/dune-common/build-cmake/dune-env/.cache/dune-py --target NURBSGrid_cc2260334160fd59946b2e64fd441123 --parallel --
+In file included from /tmp/dune-iga/dune/iga/nurbsgrid.hh:20,
+                 from /tmp/dune-iga/dune/python/iga/reader.hh:12,
+                 from /dune/dune-common/build-cmake/dune-env/.cache/dune-py/python/dune/generated/NURBSGrid_cc2260334160fd59946b2e64fd441123.cc:8:
+/tmp/dune-iga/dune/iga/gridcapabilities.hh:78:8: warning: partial specialization ‘struct Dune::Capabilities::canCommunicate<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim>’ is not more specialized than
+   78 | struct canCommunicate< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> , codim >
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /dune/dune-grid/dune/grid/common/grid.hh:27,
+                 from /dune/dune-grid/dune/grid/common/intersection.hh:9,
+                 from /dune/dune-grid/dune/grid/io/file/dgfparser/gridptr.hh:25,
+                 from /dune/dune-grid/dune/grid/io/file/dgfparser/dgfparser.hh:30,
+                 from /tmp/dune-iga/dune/iga/io/ibra/ibrareader.hh:15,
+                 from /tmp/dune-iga/dune/python/iga/reader.hh:6:
+/dune/dune-grid/dune/grid/common/capabilities.hh:96:12: note: primary template ‘template<class Grid, int codim> struct Dune::Capabilities::canCommunicate’
+   96 |     struct canCommunicate
+      |            ^~~~~~~~~~~~~~
+
+###############################
