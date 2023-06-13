@@ -18,7 +18,7 @@
 #endif
 
 
-
+#define PYBIND11_DETAILED_ERROR_MESSAGES
 
 namespace Dune::Python {
 // we have to ahead of https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233 thus we use requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value)
@@ -96,9 +96,12 @@ using ctype                                        = typename NURBSGrid::ctype;
   registerGridView( module, clsLeafView.first );
 
 #if HAVE_DUNE_VTK
+  pybind11::module::import( "dune.vtk" );
 
-//  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
-  Dune::Vtk::registerVtkWriter< LeafGridView >( module, clsLeafView.first );
+  using TrimmedWriterType= Dune::VtkUnstructuredGridWriter<LeafGridView,Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>;
+  auto clsLeafViewWriter = insertClass< TrimmedWriterType >( module, "TrimmedVtkWriter", GenerateTypeName( clsLeafView.first, "TrimmedVtkWriter" ) );
+  if( clsLeafViewWriter.second )
+    Dune::Vtk::registerVtkWriter< TrimmedWriterType >( module, clsLeafViewWriter.first );
   //Maybe ad here insert class SaveGard?
   clsLeafView.first.def("trimmedVtkWriter",[](const LeafGridView& self){
     Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(self);
@@ -112,8 +115,9 @@ using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
                             const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
 
   cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
-  cls.def("globalRefineInDirection",[]( NURBSGrid& self,const int dir, const int refinementLevel, bool omitTrim = false){self.globalRefineInDirection(dir,refinementLevel,omitTrim);});
-  cls.def("patchData",[](const NURBSGrid& self,int i = 0){return self.patchData(i);});
+  cls.def("globalRefineInDirection",[]( NURBSGrid& self, int dir,  int refinementLevel, bool omitTrim = false){self.globalRefineInDirection(dir,refinementLevel,omitTrim);},
+      pybind11::arg("dir") , pybind11::arg("refinementLevel"), pybind11::arg("omitTrim") = false);
+  cls.def("patchData",[](const NURBSGrid& self,int i = 0){return self.patchData(i);}, pybind11::arg("i") = 0);
 
 }
 }
