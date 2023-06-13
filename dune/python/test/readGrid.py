@@ -19,8 +19,9 @@ from dune.grid import structuredGrid
 from dune.iga import reader as readeriga
 from dune.iga.basis import defaultGlobalBasis,Power,Lagrange,Nurbs
 from dune.common import FieldVector
+from dune.grid import gridFunction
 if __name__ == "__main__":
-    reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
+    reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim.ibra")
     refineMents=5
     gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
     gridView.hierarchicalGrid.globalRefine(refineMents)
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
     gridView.writeVTK("test",pointdata=[gf1])
     # print(help(arg))
-    from dune.grid import gridFunction
+
     @gridFunction(gridView)
     def g(x):
         return [math.sin(2*math.pi*x[0]*x[1]), x[0]*x[1]]*5

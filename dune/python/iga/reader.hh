@@ -46,7 +46,7 @@ inline static std::shared_ptr<Grid> reader(const pybind11::dict &dict) {
 
   std::string file_path;
   Dune::Python::IGA::Reader reader = IGA::Reader::json;
-  bool trim = false;
+  bool trim = true;
   std::array<int, 2> elevateDegree = {0, 0};
   std::array<int, 2> preKnotRefine = {0, 0};
   std::array<int, 2> postKnotRefine = {0, 0};

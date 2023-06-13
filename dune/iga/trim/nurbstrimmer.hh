@@ -44,7 +44,7 @@ namespace Dune::IGA::Trim {
     static constexpr double tolerance = 1e-8;
 
     /// How far the curve to point distance is allowed to be, to be considered "on" the curve
-    static constexpr double gapTolerance = 1e-4;
+    static constexpr double gapTolerance = 1e-3;
 
     using intType      = intType_;
     using ClipperPoint = Clipper2Lib::Point<intType>;
@@ -329,7 +329,7 @@ namespace Dune::IGA::Trim {
         auto traceResult
             = traceCurve(state, {boundaryIndexThatHasIntersectionPoint, edgeIntersectResult.localResult, nextEntity});
 
-        if (not traceResult.has_value()) throw std::runtime_error("tracCurve not successful");
+        if (not traceResult.has_value()) throw std::runtime_error("traceCurve not successful");
 
         for (const auto& result : traceResult.value()) {
           auto curveToTrace    = globalBoundaries_[result.boundaryIdx].nurbsGeometry;
