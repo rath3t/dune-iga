@@ -14,8 +14,10 @@
 #include "dune/iga/nurbsintersection.hh"
 #include "dune/iga/nurbsleafgridview.hh"
 #include "dune/iga/nurbslocalgeometry.hh"
+#include "dune/iga/nurbsgridleafiterator.hh"
 #include "dune/iga/nurbspatch.hh"
 #include "dune/iga/utils/concepts.hh"
+#include "dune/iga/gridcapabilities.hh"
 
 namespace Dune::IGA {
 
@@ -53,7 +55,9 @@ namespace Dune::IGA {
     static constexpr std::integral auto dimensionworld = dimworld;
     using ctype                                        = ScalarType;
 
-    using ControlPointNetType = typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType;
+
+    using NURBSPatchDataType = NURBSPatchData<dim, dimworld, ScalarType>;
+    using ControlPointNetType = typename NURBSPatchDataType::ControlPointNetType;
 
     using GridFamily = NurbsGridFamily<dim, dimworld, ScalarType>;
 
@@ -87,29 +91,32 @@ namespace Dune::IGA {
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           leafPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(
               1, NURBSPatch<dim, dimworld, ScalarType>(currentPatchRepresentation_, _trimData))},
-          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0))},
-          indexSet_{std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()))},
-          idSet_{std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView())},
+          leafGridView_{std::make_shared<GridView>(NURBSLeafGridView<const NURBSGrid>(*this,0))},
+          indexSet_{std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()))},
+          idSet_{std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView())},
           trimData_(_trimData) {
       static_assert(dim <= 3, "Higher grid dimensions are unsupported");
-      assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.size()[0]
+      assert(nurbsPatchData.knotSpans[0].size() - nurbsPatchData.degree[0] - 1 == nurbsPatchData.controlPoints.strideSizes()[0]
              && "The size of the controlpoints and the knotvector size do not match in the first direction");
       if constexpr (dim > 1)
         assert(nurbsPatchData.knotSpans[1].size() - nurbsPatchData.degree[1] - 1
-                   == nurbsPatchData.controlPoints.size()[1]
+                   == nurbsPatchData.controlPoints.strideSizes()[1]
                && "The size of the controlpoints and the knotvector size do not match in the second direction");
       if constexpr (dim > 2)
         assert(nurbsPatchData.knotSpans[2].size() - nurbsPatchData.degree[2] - 1
-                   == nurbsPatchData.controlPoints.size()[2]
-               && "The size of the controlpoints and the knotvector size do not match in the third direction");
+                   ==nurbsPatchData.controlPoints.strideSizes()[2]
+               && "The size of the controlpoints and the knotvector strideSizes do not match in the third direction");
       // FIXME check sanity of knotvector and degree
-
-      silenceGrid();
+//      silenceGrid();
       createEntities();
     }
 
-    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
+    bool loadBalance()
+    {
+      return false;
+    }
 
+    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
     void globalRefine(int refinementLevel, bool omitTrim) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
@@ -134,6 +141,9 @@ namespace Dune::IGA {
     }
 
     int size(int codim) const { return leafPatches_.get()->front().size(codim); }
+
+
+    const auto& patchData(int i=0) const { return currentPatchRepresentation_;}
 
     bool reportTrimError() const {
       for (const auto& patch : *leafPatches_)
@@ -175,10 +185,10 @@ namespace Dune::IGA {
       leafPatches_->clear();
       leafPatches_->emplace_back(currentPatchRepresentation_, omitTrim ? std::nullopt : trimData_);
 
-      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<NURBSGrid>(*this, 0));
+      leafGridView_ = std::make_shared<GridView>(NURBSLeafGridView<const NURBSGrid>(*this, 0));
       updateEntities();
-      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<NURBSGrid>>((this->leafGridView().impl()));
-      idSet_    = std::make_unique<IgaIdSet<NURBSGrid>>(this->leafGridView());
+      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<const NURBSGrid>>((this->leafGridView().impl()));
+      idSet_    = std::make_unique<IgaIdSet<const NURBSGrid>>(this->leafGridView());
     }
 
     void createEntities() {
@@ -187,7 +197,7 @@ namespace Dune::IGA {
           std::get<i>(*entityVector.get()).reserve(patch.size(i));
           for (unsigned int j = 0; j < patch.size(i); ++j) {
             std::get<i>(*entityVector.get())
-                .emplace_back(NURBSGridEntity<i, dimension, NURBSGrid>(*leafGridView_, j, currentPatchId));
+                .emplace_back(NURBSGridEntity<i, dimension, const NURBSGrid>(*leafGridView_, j, currentPatchId));
           }
         });
         ++currentPatchId;
@@ -209,8 +219,8 @@ namespace Dune::IGA {
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> currentPatchRepresentation_;
     std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> leafPatches_;
     std::shared_ptr<GridView> leafGridView_;
-    std::unique_ptr<NURBSGridLeafIndexSet<NURBSGrid>> indexSet_;
-    std::unique_ptr<IgaIdSet<NURBSGrid>> idSet_;
+    std::unique_ptr<NURBSGridLeafIndexSet<const NURBSGrid>> indexSet_;
+    std::unique_ptr<IgaIdSet<const NURBSGrid>> idSet_;
     std::optional<std::shared_ptr<TrimData>> trimData_ = std::nullopt;
 
     auto& getPatch() const { return leafPatches_->front(); }
@@ -232,9 +242,17 @@ namespace Dune::IGA {
     using Traits   = NurbsGridTraits<dim, dimworld, GridImpl, NURBSGeometry, NURBSGridEntity, NURBSGridLeafIterator,
                                    NURBSintersection, NURBSintersection, NURBSGridInterSectionIterator,
                                    NURBSGridInterSectionIterator, NurbsHierarchicIterator, NURBSGridLeafIterator,
-                                   NURBSGridLeafIndexSet<GridImpl>, NURBSGridLeafIndexSet<GridImpl>, IgaIdSet<GridImpl>,
-                                   int, IgaIdSet<GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
+                                   NURBSGridLeafIndexSet<const GridImpl>, NURBSGridLeafIndexSet<const GridImpl>, IgaIdSet<const GridImpl>,
+                                   int, IgaIdSet<const GridImpl>, int, Communication<No_Comm>, NurbsLeafGridViewTraits,
                                    NurbsLeafGridViewTraits, EntitySeedStruct, NURBSLocalGeometry>;
   };
 
 }  // namespace Dune::IGA
+
+//This header is here for the sole purpose that Python is aware of this reader.
+// If we include in <python/dune/iga/_grids.py in the includes  "includes = ["dune/iga/nurbsgrid.hh"]",
+// we end up with the situations that dune-py generates the includes like:
+// Dune::Python::IncludeFiles{"dune/iga/nurbsgrid.hh","dune/python/grid/hierarchical.hh","dune/python/iga/reader.hh"}
+// Thus, the reader comes after hierarchical.hh but inside their should the template argument deduction for the correct reader happen
+// The sorting happens in https://gitlab.dune-project.org/core/dune-common/-/blob/releases/2.9/python/dune/generator/generator.py?ref_type=heads#L166 but maybe this is changed later
+//#include <dune/python/iga/reader.hh>

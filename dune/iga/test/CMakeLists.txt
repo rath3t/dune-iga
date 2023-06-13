@@ -4,7 +4,7 @@
 set(TESTS gridTests trimmedGridTests)
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 foreach(_test ${TESTS})
-  dune_add_test(SOURCES ${_test}.cc TIMEOUT 10000)
+  dune_add_test(SOURCES ${_test}.cc TIMEOUT 10000 LABELS cpp)
   target_compile_options(${_test} PRIVATE -g)
 
   # find_package(Matplot++ REQUIRED)

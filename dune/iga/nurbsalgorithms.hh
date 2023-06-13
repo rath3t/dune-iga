@@ -75,7 +75,7 @@ namespace Dune::IGA {
    * subtracted to get the correct control point index start
    * @param degree array of degrees per direction
    * @param net the full net itself
-   * @return subNet with the size degree+1 per direction
+   * @return subNet with the strideSizes degree+1 per direction
    */
   template <std::integral auto dim, typename NetValueType>
   requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
@@ -99,13 +99,13 @@ namespace Dune::IGA {
   template <std::integral auto dim, ControlPointConcept ValueType>
   auto extractWeights(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
-    return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.size(), viewOverWeights);
+    return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(), viewOverWeights);
   }
 
   template <std::integral auto dim, ControlPointConcept ValueType>
   auto extractControlCoordinates(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
-    return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.size(), viewOverCps);
+    return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
 
   template <int dim, typename ScalarType_ = double>
@@ -197,13 +197,13 @@ namespace Dune::IGA {
       auto subNetStart         = spIndex ? spIndex.value() : findSpanCorrected(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
-      for (int j = 0; j < R.directSize(); ++j) {
+      for (int j = 0; j < R.size(); ++j) {
         R.directGet(j) *= subNetWeights;
         netsOfWeightfunctions.directGet(j) = dot(netOfDerivativeNets.directGet(j), subNetWeights);
       }
 
       std::vector<FieldVector<int, dim>> perms;
-      for (int j = 0; j < R.directSize(); ++j) {
+      for (int j = 0; j < R.size(); ++j) {
         const auto derivOrders = R.template directToMultiIndex<FieldVector<int, dim>>(j);
         if (triangleDerivatives)
           if (std::accumulate(derivOrders.begin(), derivOrders.end(), derivativeOrder)) continue;
@@ -213,12 +213,12 @@ namespace Dune::IGA {
           const MultiDimensionNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
           auto startMultiIndex = perm;
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](const auto& v) { return (v != 0); });
-          for (int kk = kNet.index(startMultiIndex); kk < kNet.directSize(); ++kk) {
+          for (int kk = kNet.index(startMultiIndex); kk < kNet.size(); ++kk) {
             const auto multik     = kNet.template directToMultiIndex<FieldVector<int, dim>>(kk);
             const ScalarType fac  = (Impl::binom(perm, multik) * netsOfWeightfunctions.get(multik));
             const auto& Rdirect_d = R.get(derivOrders - multik);
             auto& Rdirect         = R.directGet(j);
-            for (int i = 0; i < R.directGet(j).directSize(); ++i)
+            for (int i = 0; i < R.directGet(j).size(); ++i)
               Rdirect.directGet(i) -= fac * Rdirect_d.directGet(i);  // generalized Piegl Tiller (4.20)
           }
         }
@@ -249,7 +249,7 @@ namespace Dune::IGA {
     using ControlPointType    = typename NURBSPatchData::ControlPointType;
     const int t               = elevationFactor;
     const int p               = oldData.degree[refinementDirection];
-    const int m               = oldData.controlPoints.size()[refinementDirection] + p;
+    const int m               = oldData.controlPoints.strideSizes()[refinementDirection] + p;
     const int ph              = p + t;
     const int ph2             = ph / 2;
     /* Compute Bezier degree elevation coefficients */
@@ -265,7 +265,7 @@ namespace Dune::IGA {
         bezalfs[i][j] = bezalfs[ph - i][p - j];
 
     double ua = oldData.knotSpans[refinementDirection][0];
-    ControlPointNetType newCPv(oldData.controlPoints.size());
+    ControlPointNetType newCPv(oldData.controlPoints.strideSizes());
 
     auto oldCPs = oldData.controlPoints;
 
@@ -295,7 +295,7 @@ namespace Dune::IGA {
       else
         newData.knotSpans[i] = oldData.knotSpans[i];
 
-    auto dimSize                 = oldData.controlPoints.size();
+    auto dimSize                 = oldData.controlPoints.strideSizes();
     dimSize[refinementDirection] = Uh.size() - ph - 1;
     newData.controlPoints        = MultiDimensionNet<dim, ControlPointType>(dimSize);
     auto& newCPs                 = newData.controlPoints;
@@ -428,7 +428,7 @@ namespace Dune::IGA {
       otherDirections[counter++] = i;
     }
 
-    typename NurbsPatchData::ControlPointNetType newCPv(oldData.controlPoints.size());
+    typename NurbsPatchData::ControlPointNetType newCPv(oldData.controlPoints.strideSizes());
 
     auto oldCPv     = oldData.controlPoints;
     auto oldKnotVec = oldData.knotSpans[refinementDirection];
@@ -439,7 +439,7 @@ namespace Dune::IGA {
     merge(oldKnotVec, newKnots, std::back_inserter(newKnotVec));
 
     const auto newKSize                   = newKnots.size();
-    std::array<int, dim> numberOfCPperDir = oldCPv.size();
+    std::array<int, dim> numberOfCPperDir = oldCPv.strideSizes();
     numberOfCPperDir[refinementDirection] += newKSize;
 
     newCPv.resize(numberOfCPperDir);
@@ -629,7 +629,7 @@ namespace Dune::IGA {
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
 
     typename NURBSPatchData<2UL, 3UL, ScalarType>::ControlPointNetType surfaceCP(2 * narcs + 1,
-                                                                                 generatrix.controlPoints.size()[0]);
+                                                                                 generatrix.controlPoints.strideSizes()[0]);
     using std::cos;
     using std::sin;
     const ScalarType wm = cos(dtheta / 2.0);
@@ -642,7 +642,7 @@ namespace Dune::IGA {
       sines[i]   = sin(angle);
     }
     ControlPoint PO = genCP.directGet(0);
-    for (int j = 0; j < genCP.size()[0]; j++) {
+    for (int j = 0; j < genCP.strideSizes()[0]; j++) {
       const GlobalCoordinateType Om = Impl::projectPointOntoLine(point, revolutionaxis, genCP.directGet(j).p);
       GlobalCoordinateType X        = genCP.directGet(j).p - Om;
       const ScalarType r            = X.two_norm();

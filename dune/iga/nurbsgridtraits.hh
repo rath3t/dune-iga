@@ -22,18 +22,18 @@ struct NurbsGridTraits {
   typedef GridImp Grid;
 
   /** \brief The type of the intersection at the leafs of the grid. */
-  using LeafIntersection = Dune::Intersection<GridImp, LeafIntersectionImp<GridImp>>;
+  using LeafIntersection = Dune::Intersection<const GridImp, LeafIntersectionImp<const GridImp>>;
   /** \brief The type of the intersection at the levels of the grid. */
-  using LevelIntersection = Dune::Intersection<GridImp, LeafIntersectionImp<GridImp>>;
+  using LevelIntersection = Dune::Intersection<const GridImp, LeafIntersectionImp<const GridImp>>;
   /** \brief The type of the intersection iterator at the leafs of the grid. */
   using LeafIntersectionIterator
-      = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
+      = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>, LeafIntersectionImp<const GridImp>>;
   /** \brief The type of the intersection iterator at the levels of the grid. */
   using LevelIntersectionIterator
-      = Dune::IntersectionIterator<GridImp, LeafIntersectionIteratorImp<GridImp>, LeafIntersectionImp<GridImp>>;
+      = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>, LeafIntersectionImp<const GridImp>>;
 
   /** \brief The type of the  hierarchic iterator. */
-  using HierarchicIterator = Dune::EntityIterator<0, GridImp, HierarchicIteratorImp<GridImp>>;
+  using HierarchicIterator = Dune::EntityIterator<0, const GridImp, HierarchicIteratorImp<const GridImp>>;
 
   /**
    * \brief Traits associated with a specific codim.
@@ -42,19 +42,18 @@ struct NurbsGridTraits {
   template <int cd>
   struct Codim {
    public:
-    typedef GridImp GeometryImpl;
-    typedef GridImp LocalGeometryImpl;
+
     //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
     /** \brief The type of the geometry associated with the entity.*/
-    using Geometry = Dune::Geometry<dim - cd, dimw, GridImp, GeometryImp>;
+    using Geometry = Dune::Geometry<dim - cd, dimw, const GridImp, GeometryImp>;
     /** \brief The type of the local geometry associated with the entity.*/
-    using LocalGeometry = Dune::Geometry<dim - cd, dim, GridImp, LocalGeometryImp>;
+    using LocalGeometry = Dune::Geometry<dim - cd, dim, const GridImp, LocalGeometryImp>;
     /** \brief The type of the entity. */
     // we could - if needed - introduce another struct for dimglobal of Geometry
-    using Entity = Dune::Entity<cd, dim, GridImp, EntityImp>;
+    using Entity = Dune::Entity<cd, dim, const GridImp, EntityImp>;
 
     /** \brief The type of the entity seed of this codim.*/
-    using EntitySeed = Dune::EntitySeed<GridImp, EntitySeedImp<cd, GridImp>>;
+    using EntitySeed = Dune::EntitySeed<const GridImp, EntitySeedImp<cd, const GridImp>>;
 
     /**
      * \brief Traits associated with a specific grid partition type.
@@ -63,9 +62,9 @@ struct NurbsGridTraits {
     template <Dune::PartitionIteratorType pitype>
     struct Partition {
       /** \brief The type of the iterator over the level entities of this codim on this partition. */
-      using LevelIterator = Dune::EntityIterator<cd, GridImp, LevelIteratorImp<cd, pitype, GridImp>>;
+      using LevelIterator = Dune::EntityIterator<cd, const GridImp, LevelIteratorImp<cd, pitype, const GridImp>>;
       /** \brief The type of the iterator over the leaf entities of this codim on this partition. */
-      using LeafIterator = Dune::EntityIterator<cd, GridImp, LeafIteratorImp<cd, pitype, GridImp>>;
+      using LeafIterator = Dune::EntityIterator<cd, const GridImp, LeafIteratorImp<cd, pitype, const GridImp>>;
     };
 
     /** \brief The type of the iterator over all leaf entities of this codim. */
@@ -79,27 +78,27 @@ struct NurbsGridTraits {
   };
 
   /** \brief type of view for leaf grid */
-  using LeafGridView = Dune::GridView<LeafGridViewTraits<GridImp>>;
+  using LeafGridView = Dune::GridView<LeafGridViewTraits<const GridImp>>;
   /** \brief type of view for level grid */
-  //  typedef typename Dune::IGA::NURBSLeafGridView<GridImp> LevelGridView;
-  using LevelGridView = Dune::GridView<LevelGridViewTraits<GridImp>>;
+  //  typedef typename Dune::IGA::NURBSLeafGridView<const GridImp> LevelGridView;
+  using LevelGridView = Dune::GridView<LevelGridViewTraits<const GridImp>>;
   /** \brief The type of the level index set. */
   //  typedef LevelIndexSetImp LevelIndexSet;
-  using LevelIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
+  using LevelIndexSet = Dune::IndexSet<const GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the leaf index set. */
-  using LeafIndexSet = Dune::IndexSet<GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
+  using LeafIndexSet = Dune::IndexSet<const GridImp, LevelIndexSetImp, GIDType, std::vector<Dune::GeometryType>>;
   /** \brief The type of the global id set. */
   //  typedef GlobalIdSetImp GlobalIdSet;
-  using GlobalIdSet = Dune::IdSet<GridImp, GlobalIdSetImp, GIDType>;
+  using GlobalIdSet = Dune::IdSet<const GridImp, GlobalIdSetImp, GIDType>;
   /** \brief The type of the local id set. */
   //  typedef LocalIdSetImp LocalIdSet;
-  using LocalIdSet = Dune::IdSet<GridImp, LocalIdSetImp, GIDType>;
+  using LocalIdSet = Dune::IdSet<const GridImp, LocalIdSetImp, GIDType>;
 
   /** \brief The type of the collective communication. */
   typedef CCType CollectiveCommunication;
   typedef CCType Communication;
 
   // using TrimmedElementGridType = Dune::UGGrid<2>;
-  using TrimmedElementGridType           = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
+  using TrimmedElementGridType           = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming>;
   using TrimmedElementRepresentationType = Dune::IGA::TrimmedElementRepresentation<2, TrimmedElementGridType>;
 };

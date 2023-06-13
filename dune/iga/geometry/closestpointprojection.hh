@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "dune/iga/nurbspatchgeometry.h"
+#include <dune/common/transpose.hh>
 
 namespace Dune::IGA {
   template <template <std::integral auto, std::integral auto, typename> typename Geo, std::integral auto dim,
@@ -136,7 +137,7 @@ namespace Dune::IGA {
       return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm())
                                     : std::make_tuple(u2, Rnorm2, energyVal2, (geo.global(u2) - point).two_norm());
     }
-
+    std::cout<<"u "<<u<< " Rnorm "<<Rnorm <<" energyVal "<<energyVal<< "geo " <<geo.global(u)<<std::endl;
     return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());
   }
 }  // namespace Dune::IGA

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgridentity.hh"
 #include "dune/iga/nurbsgridindexsets.hh"
 #include "dune/iga/nurbsgridleafiterator.hh"
@@ -19,7 +18,7 @@ namespace Dune::IGA {
   struct NurbsLeafGridViewTraits {
     using Grid        = GridImp;
     using IndexSet    = typename GridImp::Traits::LeafIndexSet;
-    using GridViewImp = NURBSLeafGridView<GridImp>;
+    using GridViewImp = NURBSLeafGridView<const GridImp>;
 
     typedef typename GridImp ::Traits ::LeafIntersectionIterator LeafIntersectionIterator;
     typedef typename GridImp ::Traits ::LeafIntersectionIterator IntersectionIterator;
@@ -49,9 +48,9 @@ namespace Dune::IGA {
   class NURBSGridEntity;
 
   template <typename GridImpl>
-  const auto &elements(const NURBSLeafGridView<GridImpl> &gridLeafView);
+  const auto &elements(const NURBSLeafGridView<const GridImpl> &gridLeafView);
   template <typename GridImpl>
-  auto &elements(NURBSLeafGridView<GridImpl> &gridLeafView);
+  auto &elements(NURBSLeafGridView<const GridImpl> &gridLeafView);
 
   /** \brief NURBS leaf grid view, see Dune Book Ch. 5.1 */
   template <typename GridImpl>
@@ -83,7 +82,7 @@ namespace Dune::IGA {
 
     [[nodiscard]] bool isConforming() const { return true; }
 
-    NURBSLeafGridView(const GridImpl &grid, int p_level) : grid_{&grid}, level_{p_level} {
+    NURBSLeafGridView(GridImpl &grid, int p_level) : grid_{&grid}, level_{p_level} {
       //      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
     }
 
@@ -133,13 +132,8 @@ namespace Dune::IGA {
     const auto &getPatchData(int patchID = 0) const { return *(grid_->leafPatches_->at(patchID).getPatchData()); }
     const auto &getPatch(int patchID = 0) const { return grid_->leafPatches_->at(patchID); }
 
-    auto getPreBasis() {
-      assert(grid_->leafPatches_->size() == 1 && "The basis is only defined for single patch gridview");
-      return Dune::Functions::BasisFactory::nurbs<dimension>(this->getPatchData(0));
-    }
-
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>
-    using LeafIteratorImpl = NURBSGridLeafIterator<cd, ptype, GridImpl>;
+    using LeafIteratorImpl = NURBSGridLeafIterator<cd, ptype, const GridImpl>;
 
     template <int cd>
     typename Codim<cd>::LeafIterator begin() const {
@@ -206,12 +200,11 @@ namespace Dune::IGA {
     }
 
     friend GridImpl;
-    friend const auto &elements<GridImpl>(const NURBSLeafGridView<GridImpl> &gridLeafView);
-    friend auto &elements<GridImpl>(NURBSLeafGridView<GridImpl> &gridLeafView);
+
     template <typename GridImp1>
     friend class NURBSintersection;
     //    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> leafPatches_;
-    const GridImpl *grid_;
+    GridImpl *grid_;
     int level_{};
   };
 

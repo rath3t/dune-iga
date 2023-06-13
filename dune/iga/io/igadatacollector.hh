@@ -25,7 +25,7 @@ namespace Dune::Vtk {
 
    public:
     explicit DiscontinuousIgaDataCollector(GridView const& gridView, int subSample = 0) : Super(gridView) {
-      // FIXME this destroys the original trimmed element representation, if someones wants to continue calculating with
+      // FIXME this destroys the original trimmed element representation, if someone's wants to continue calculating with
       // this grid?
       for (auto element : elements(gridView_)) {
         element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSample);
