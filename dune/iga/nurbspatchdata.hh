@@ -18,9 +18,9 @@ namespace Dune::IGA {
   struct NURBSPatchData {
     static constexpr int patchDim = dim;
     static constexpr int dimworld = dimworld_;
-    using GlobalCoordinateType = Dune::FieldVector<ScalarType, dimworld>;
-    using ControlPointType     = ControlPoint<GlobalCoordinateType>;
-    using ControlPointNetType  = MultiDimensionNet<dim, ControlPointType>;
+    using GlobalCoordinateType    = Dune::FieldVector<ScalarType, dimworld>;
+    using ControlPointType        = ControlPoint<GlobalCoordinateType>;
+    using ControlPointNetType     = MultiDimensionNet<dim, ControlPointType>;
 
     NURBSPatchData() = default;
     NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,

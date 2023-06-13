@@ -29,9 +29,7 @@ namespace Dune::IGA {
     const Entity& dereference() const { return *virtualEntity_; }
 
     //! equality
-    bool equals(const NURBSGridLeafIterator& other) const {
-      return virtualEntity_ == other.virtualEntity_;
-    }
+    bool equals(const NURBSGridLeafIterator& other) const { return virtualEntity_ == other.virtualEntity_; }
 
    private:
     //    /** \brief This increment makes the iterator wander over all entities on all levels */

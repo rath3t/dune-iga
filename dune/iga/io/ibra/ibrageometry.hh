@@ -8,10 +8,10 @@
 
 #include "dune/iga/geometry/geohelper.hh"
 #include "dune/iga/nurbspatchdata.hh"
+#include <dune/common/dynmatrix.hh>
+#include <dune/common/dynvector.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
-#include <dune/common/dynvector.hh>
-#include <dune/common/dynmatrix.hh>
 
 namespace Dune::IGA::Ibra {
 

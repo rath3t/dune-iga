@@ -3,6 +3,6 @@
 
 add_subdirectory(iga)
 
-if( DUNE_ENABLE_PYTHONBINDINGS )
-    add_subdirectory(python)
+if(DUNE_ENABLE_PYTHONBINDINGS)
+  add_subdirectory(python)
 endif()

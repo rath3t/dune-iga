@@ -34,8 +34,6 @@ namespace Dune::IGA {
       w *= v;
       return *this;
     }
-
-
   };
 
   template <Vector VectorType>
@@ -53,14 +51,14 @@ namespace Dune::IGA {
     return {.p = cpL.p + cpR.p, .w = cpL.w + cpR.w};
   }
 
-template <Vector VectorType>
-ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL) {
-  return {.p = -cpL.p , .w = -cpL.w };
-}
+  template <Vector VectorType>
+  ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL) {
+    return {.p = -cpL.p, .w = -cpL.w};
+  }
 
-template <Vector VectorType>
-ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL, const ControlPoint<VectorType>& cpR) {
-  return {.p = cpL.p - cpR.p, .w = cpL.w - cpR.w};
-}
+  template <Vector VectorType>
+  ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL, const ControlPoint<VectorType>& cpR) {
+    return {.p = cpL.p - cpR.p, .w = cpL.w - cpR.w};
+  }
 
 }  // namespace Dune::IGA

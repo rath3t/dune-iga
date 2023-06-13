@@ -1,16 +1,9 @@
-
-
-
-
-
-import dune.iga
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 def IGAGrid(constructor, dimgrid=None, dimworld=None):
     """
     Create an IGAGrid instance.
-
-    Note: This functions has to be called on all cores and the parameters passed should be the same.
-          Otherwise unexpected behavior will occur.
 
     Parameters:
     -----------
@@ -23,13 +16,9 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None):
     Returns:
     --------
 
-    An IGAGrid instance with given refinement (conforming or nonconforming) and element type (simplex or cube).
+    An IGAGrid instance
     """
-    # from dune.grid.grid_generator import module, getDimgrid
 
-    # if not dimgrid:
-    #     dimgrid = getDimgrid(constructor)
-    # print(help(constructor))
     if hasattr(constructor, 'patchDim'):
         dimgrid = constructor.patchDim
 
@@ -41,7 +30,7 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None):
 
     typeName = "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ",double>"
 
-    includes = ["dune/python/iga/reader.hh"]
+    includes = ["dune/python/iga/grid.hh"]
     from dune.generator.generator import SimpleGenerator
     from dune.common.hashit import hashIt
     generator = SimpleGenerator("HierarchicalGrid", "Dune::Python::IGA")
@@ -53,8 +42,6 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None):
     gridModule = generator.load(
         includes=includes, typeName=typeName, moduleName=moduleName,**kwargs
     )
-    # print(help(gridModule))
-    # print(help(gridModule.LeafGrid))
 
     if type(constructor) is dict:
         readGrid = gridModule.reader(constructor)

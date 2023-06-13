@@ -253,15 +253,18 @@ namespace Dune::IGA {
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<codim, dim, const GridImp>& e) {
-    return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<codim, dim, const GridImp>::mydimension>::cube();
+    return Dune::ReferenceElements<typename GridImp::ctype,
+                                   NURBSGridEntity<codim, dim, const GridImp>::mydimension>::cube();
   }
 
   template <std::integral auto codim, std::integral auto dim, typename GridImp>
   auto referenceElement(const NURBSGridEntity<0, dim, const GridImp>& e) {
     if (e.getTrimFlag() == ElementTrimFlag::trimmed)
-      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, const GridImp>::mydimension>::none();
+      return Dune::ReferenceElements<typename GridImp::ctype,
+                                     NURBSGridEntity<0, dim, const GridImp>::mydimension>::none();
     else
-      return Dune::ReferenceElements<typename GridImp::ctype, NURBSGridEntity<0, dim, const GridImp>::mydimension>::cube();
+      return Dune::ReferenceElements<typename GridImp::ctype,
+                                     NURBSGridEntity<0, dim, const GridImp>::mydimension>::cube();
   }
 
 }  // namespace Dune::IGA

@@ -48,7 +48,7 @@ namespace Dune::IGA {
                const typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType controlPoints,
                const std::array<int, dim> degree)
         : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {
-//      silenceGrid();
+      //      silenceGrid();
     }
 
     explicit NURBSPatch(const NURBSPatchData<dim, dimworld, ScalarType>& patchData,
@@ -56,7 +56,7 @@ namespace Dune::IGA {
         : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, ScalarType>>(patchData)},
           patchGeometry_{std::make_shared<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
           trimData_(std::move(trimData)) {
-//      silenceGrid();
+      //      silenceGrid();
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -374,8 +374,8 @@ namespace Dune::IGA {
 
       auto geo = (codim == 0 && trimData_) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
-                                                       : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
-                                                           patchData_, fixedOrFreeDirection, currentKnotSpan);
+                                           : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
+                                               patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
     }
 

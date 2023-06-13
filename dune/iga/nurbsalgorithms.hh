@@ -99,7 +99,8 @@ namespace Dune::IGA {
   template <std::integral auto dim, ControlPointConcept ValueType>
   auto extractWeights(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
-    return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(), viewOverWeights);
+    return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(),
+                                                                              viewOverWeights);
   }
 
   template <std::integral auto dim, ControlPointConcept ValueType>
@@ -628,8 +629,8 @@ namespace Dune::IGA {
     std::ranges::fill_n(U.begin(), 3, 0.0);
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
 
-    typename NURBSPatchData<2UL, 3UL, ScalarType>::ControlPointNetType surfaceCP(2 * narcs + 1,
-                                                                                 generatrix.controlPoints.strideSizes()[0]);
+    typename NURBSPatchData<2UL, 3UL, ScalarType>::ControlPointNetType surfaceCP(
+        2 * narcs + 1, generatrix.controlPoints.strideSizes()[0]);
     using std::cos;
     using std::sin;
     const ScalarType wm = cos(dtheta / 2.0);

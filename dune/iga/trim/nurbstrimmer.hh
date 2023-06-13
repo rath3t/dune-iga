@@ -660,7 +660,7 @@ namespace Dune::IGA::Trim {
       if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {domain.left(), start, true};
       if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {domain.right(), end, true};
       Dune::FieldVector<double, 1> uGuess{findGoodStartingPoint(curve, intersectionPoint, 10)};
-      auto [u, Ru, fu, gap] = Dune::IGA::closestPointProjectionByTrustRegion(curve, intersectionPoint,uGuess);
+      auto [u, Ru, fu, gap] = Dune::IGA::closestPointProjectionByTrustRegion(curve, intersectionPoint, uGuess);
 
       if (gap > gapTolerance) return {u[0], intersectionPoint, false};
       return {u[0], curve(u[0]), true};

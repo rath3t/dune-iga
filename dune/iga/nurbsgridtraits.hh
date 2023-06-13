@@ -26,11 +26,12 @@ struct NurbsGridTraits {
   /** \brief The type of the intersection at the levels of the grid. */
   using LevelIntersection = Dune::Intersection<const GridImp, LeafIntersectionImp<const GridImp>>;
   /** \brief The type of the intersection iterator at the leafs of the grid. */
-  using LeafIntersectionIterator
-      = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>, LeafIntersectionImp<const GridImp>>;
+  using LeafIntersectionIterator = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>,
+                                                              LeafIntersectionImp<const GridImp>>;
   /** \brief The type of the intersection iterator at the levels of the grid. */
   using LevelIntersectionIterator
-      = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>, LeafIntersectionImp<const GridImp>>;
+      = Dune::IntersectionIterator<const GridImp, LeafIntersectionIteratorImp<const GridImp>,
+                                   LeafIntersectionImp<const GridImp>>;
 
   /** \brief The type of the  hierarchic iterator. */
   using HierarchicIterator = Dune::EntityIterator<0, const GridImp, HierarchicIteratorImp<const GridImp>>;
@@ -42,7 +43,6 @@ struct NurbsGridTraits {
   template <int cd>
   struct Codim {
    public:
-
     //! IMPORTANT: Codim<codim>::Geometry == Geometry<dim-codim,dimw>
     /** \brief The type of the geometry associated with the entity.*/
     using Geometry = Dune::Geometry<dim - cd, dimw, const GridImp, GeometryImp>;

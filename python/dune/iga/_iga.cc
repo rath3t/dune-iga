@@ -5,15 +5,15 @@
 //#include "dune/python/iga/reader.hh"
 //#include "dune/iga/nurbsbasis.hh"
 #include "dune/python/iga/gridenums.hh"
-PYBIND11_MODULE( _iga, m )
-{
-  pybind11::enum_< Dune::Python::IGA::Reader > reader( m, "reader" );
-  reader.value( "json", Dune::Python::IGA::Reader::json );
+PYBIND11_MODULE(_iga, m) {
+  pybind11::enum_<Dune::Python::IGA::Reader> reader(m, "reader");
+  reader.value("json", Dune::Python::IGA::Reader::json);
 
-//  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<1,1,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
-//  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<1,2,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
-//  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<2,2,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
-//  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<2,3,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
-//  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<3,3,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
-
+  //  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<1,1,double>::GridView & gridView,int i=0 ) { return
+  //  gridView.impl().preBasis(i);}); m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<1,2,double>::GridView &
+  //  gridView,int i=0 ) { return gridView.impl().preBasis(i);}); m.def("preBasis",[](const typename
+  //  Dune::IGA::NURBSGrid<2,2,double>::GridView & gridView,int i=0 ) { return gridView.impl().preBasis(i);});
+  //  m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<2,3,double>::GridView & gridView,int i=0 ) { return
+  //  gridView.impl().preBasis(i);}); m.def("preBasis",[](const typename Dune::IGA::NURBSGrid<3,3,double>::GridView &
+  //  gridView,int i=0 ) { return gridView.impl().preBasis(i);});
 }

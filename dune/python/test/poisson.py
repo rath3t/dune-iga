@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 import numpy as np
 import math
 from scipy.sparse import lil_matrix
@@ -126,7 +128,7 @@ gridSize = 4
 # create a grid of the unit square
 reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
 
-refineMents=6
+refineMents=4
 gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
 print("refineMents")
 gridView.hierarchicalGrid.globalRefine(refineMents)

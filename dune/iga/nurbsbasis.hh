@@ -485,16 +485,16 @@ namespace Dune::Functions {
     // Type used for function values
     using R = ScalarType;
 
-//    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
+    //    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
-    explicit NurbsPreBasis(const GridView& gridView, const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
+    explicit NurbsPreBasis(const GridView& gridView,
+                           const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
         : gridView_{gridView} {
-
       if (patchData)
-        patchData_=patchData.value();
+        patchData_ = patchData.value();
       else
-        patchData_=gridView_.grid().patchData();
-      cachedSize_=computeOriginalSize();
+        patchData_ = gridView_.grid().patchData();
+      cachedSize_ = computeOriginalSize();
       for (int i = 0; i < dim; ++i)
         std::ranges::unique_copy(patchData_.knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -734,7 +734,8 @@ namespace Dune::Functions {
        public:
         static const std::size_t requiredMultiIndexSize = 1;
 
-        explicit NurbsPreBasisFactory(const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
+        explicit NurbsPreBasisFactory(const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData
+                                      = std::nullopt)
             : patchData_(patchData) {}
 
         template <class GridView>
@@ -760,7 +761,7 @@ namespace Dune::Functions {
     }
 
     auto nurbs() {
-      return [](const auto& gridView){return NurbsPreBasis<std::remove_cvref_t<decltype(gridView)>>(gridView); };
+      return [](const auto& gridView) { return NurbsPreBasis<std::remove_cvref_t<decltype(gridView)>>(gridView); };
     }
 
   }  // end namespace BasisFactory

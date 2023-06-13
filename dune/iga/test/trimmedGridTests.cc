@@ -8,10 +8,10 @@
 #include "dune/iga/gridcapabilities.hh"
 #include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igadatacollector.hh"
+#include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/nurbspatchgeometry.h"
 #include "dune/iga/trim/nurbstrimmer.hh"
-#include "dune/iga/nurbsbasis.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -234,43 +234,43 @@ auto testExampleSuite() {
     for (auto i : std::views::iota(0, testRuns)) {
       if (i != 0) _grid->globalRefine(1);
 
-//      t.check(_grid->reportTrimError(), "Trim Error: " + name);
-//
-//      if constexpr (worldDim == 2)
-//        geometryChecker2.checkGeometry(_grid->leafGridView());
-//      else
-//        geometryChecker3.checkGeometry(_grid->leafGridView());
-//
-//      Dune::checkIndexSet(*_grid, _grid->leafGridView(), std::cout);
-//      gridcheck(*_grid);
+      t.check(_grid->reportTrimError(), "Trim Error: " + name);
+
+      if constexpr (worldDim == 2)
+        geometryChecker2.checkGeometry(_grid->leafGridView());
+      else
+        geometryChecker3.checkGeometry(_grid->leafGridView());
+
+      Dune::checkIndexSet(*_grid, _grid->leafGridView(), std::cout);
+      gridcheck(*_grid);
     }
   };
 
-//  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
-//  testLoop(grid, 4, "surface-hole");
-//
-//  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra");
-//  testLoop(grid, 4, "plate_quarter");
-//
-//  grid = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
-//  testLoop(grid, 4, "pipe_trim");
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  testLoop(grid, 4, "surface-hole");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra");
+  testLoop(grid, 4, "plate_quarter");
+
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
+  testLoop(grid, 4, "pipe_trim");
 
   auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
-  testLoop(grid, 6, "Element_trim_Xb");
+  testLoop(grid, 6, "Element_trim_Xb");  // this test fails with a 6
 
-//  grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
-//  testLoop(grid, 4, "nurbs_1");
-//
-//  grid          = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
-//  const auto gv = grid->leafGridView();
-//  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
-//
-//  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
-//  writer2.write("TestFileTest");
-//  testLoop(grid, 2, "surface-multihole");
-//
-//  auto grid3 = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
-//  testLoop.template operator()<3>(grid3, 1, "shell-hole");
+  grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
+  testLoop(grid, 4, "nurbs_1");
+
+  grid          = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
+  const auto gv = grid->leafGridView();
+  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
+
+  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+  writer2.write("TestFileTest");
+  testLoop(grid, 2, "surface-multihole");
+
+  auto grid3 = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
+  testLoop.template operator()<3>(grid3, 1, "shell-hole");
 
   return t;
 }
@@ -495,20 +495,20 @@ int main(int argc, char** argv) try {
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
 
   /// Test General stuff
-//  t.subTest(testPatchGeometryCurve());
-//  t.subTest(testPatchGeometrySurface());
-//  t.subTest(testIbraReader());
-//  t.subTest(testDataCollectorAndVtkWriter());
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
+  t.subTest(testIbraReader());
+  t.subTest(testDataCollectorAndVtkWriter());
 
   /// 1. Test Trimming Functionality
   t.subTest(testExampleSuite());
-//  t.subTest(testMapsInTrimmedPatch());
-//
-//  /// 2. Test Integration Points
-//  t.subTest(testIntegrationPoints());
-//
-//  /// 3. Test Basis
-//  t.subTest(testNurbsBasis());
+  t.subTest(testMapsInTrimmedPatch());
+
+  /// 2. Test Integration Points
+  t.subTest(testIntegrationPoints());
+
+  /// 3. Test Basis
+  t.subTest(testNurbsBasis());
 
   t.report();
 

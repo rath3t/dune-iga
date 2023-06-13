@@ -27,53 +27,44 @@ namespace Dune::Capabilities {
     static const bool v = false;
   };
 
-template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
-struct hasEntityIterator< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim >
-: public hasEntity< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim >
-{};
+  template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
+  struct hasEntityIterator<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim>
+      : public hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {};
 
-template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
-struct canCommunicate< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim >
-{
-static const bool v = false;
-};
+  template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
+  struct canCommunicate<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {
+    static const bool v = false;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct isLevelwiseConforming< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-static const bool v = true;
-};
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct isLevelwiseConforming<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = true;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct isLeafwiseConforming< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-  static const bool v = true;
-};
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct isLeafwiseConforming<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = true;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct hasBackupRestoreFacilities< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-  static const bool v = false;
-};
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct hasBackupRestoreFacilities<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = false;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct threadSafe< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-  static const bool v = false;
-};
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct threadSafe<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = false;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct viewThreadSafe< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-  static const bool v = false;
-};
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct viewThreadSafe<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = false;
+  };
 
-template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
-struct isCartesian< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
-{
-  static const bool v = false;
-};
-
+  template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
+  struct isCartesian<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
+    static const bool v = false;
+  };
 
 }  // namespace Dune::Capabilities
 

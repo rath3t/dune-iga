@@ -164,7 +164,7 @@ namespace Dune::IGA {
     bool equals(const NURBSintersection& r) const { return *this == r; }
 
    private:
-    const GridView * gridView_;
+    const GridView* gridView_;
     int innerDirectIndex_;
     int innerLocalIndex_;
     int outerDirectIndex_;

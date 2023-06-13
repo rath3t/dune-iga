@@ -1,5 +1,7 @@
-from dune.functions import Power,Lagrange,DG,Composite,Tree
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
+from dune.functions import Power,Lagrange,DG,Composite,Tree
 
 class Nurbs(Tree):
     def __init__(self, dimRange=1):
@@ -60,6 +62,3 @@ def defaultGlobalBasis(gridView, tree):
 
 
     return load(includes, typeName).GlobalBasis(gridView)
-
-
-    # return load( includes=includes, typeName=element_type).GlobalBasis(gridView)

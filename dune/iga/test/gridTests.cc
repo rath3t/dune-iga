@@ -988,16 +988,16 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t;
-//  t.subTest(test3DGrid());
-//  t.subTest(testNURBSGridCurve());
-//  t.subTest(testPlate());
-//  testNurbsGridCylinder();
-//  t.subTest(testTorusGeometry());
+  //  t.subTest(test3DGrid());
+  //  t.subTest(testNURBSGridCurve());
+  //  t.subTest(testPlate());
+  //  testNurbsGridCylinder();
+  //  t.subTest(testTorusGeometry());
 
   t.subTest(testNurbsBasis());
 
-//  gridCheck();
-//  t.subTest(testBsplineBasisFunctions());
+  //  gridCheck();
+  //  t.subTest(testBsplineBasisFunctions());
 
   t.report();
 
