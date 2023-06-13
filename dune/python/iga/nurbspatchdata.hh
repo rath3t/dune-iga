@@ -53,16 +53,6 @@ namespace Dune::Python {
     cls.def("get",
             [](MultiDimensionNet& self, const std::array<int, netDim>& multIndex) { return self.get(multIndex); });
     cls.def_property_readonly_static("netDim", [](pybind11::object /* self */) { return MultiDimensionNet::netDim; });
-    //  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<ValueType>> values) {
-    //            return new MultiDimensionNet(dimSize,values);
-    //          })
-    //  );
-    //
-    //  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const
-    //  std::vector<std::vector<std::vector<ValueType>>>& values) {
-    //            return new MultiDimensionNet(dimSize,values);
-    //          })
-    //  );
   }
 
   template <class NURBSPatchData, class... options>

@@ -4,14 +4,8 @@ set(CXX_MAX_STANDARD 20)
 
 add_subdirectory(dune)
 
-dune_python_configure_bindings(
-  PATH
-  "."
-  CMAKE_METADATA_FLAGS
-  DUNE_OPTS_FILE
-  HAVE_ALBERTA
-  HAVE_DUNE_ALUGRID
-  CXX_MAX_STANDARD)
+dune_python_configure_bindings(PATH "." CMAKE_METADATA_FLAGS DUNE_OPTS_FILE
+                               HAVE_DUNE_ALUGRID CXX_MAX_STANDARD)
 if(POLICY CMP0087)
   cmake_policy(SET CMP0087 NEW)
 endif()

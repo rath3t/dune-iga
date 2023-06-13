@@ -475,17 +475,12 @@ namespace Dune::Functions {
     using Node = NurbsNode<GV>;
 
     //! Type of created tree node index set. \deprecated
-    //    using IndexSet = Dune::Functions::Impl::DefaultNodeIndexSet<NurbsPreBasis>;
     static constexpr size_type maxMultiIndexSize    = 1;
     static constexpr size_type minMultiIndexSize    = 1;
     static constexpr size_type multiIndexBufferSize = 1;
 
-    //    using SizePrefix = Dune::ReservedVector<size_type, 1>;
-
     // Type used for function values
     using R = ScalarType;
-
-    //    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
     explicit NurbsPreBasis(const GridView& gridView,
                            const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
@@ -676,8 +671,8 @@ namespace Dune::Functions {
       return result;
     }
 
-    std::array<std::vector<double>, dim> uniqueKnotVector_;
     GridView gridView_;
+    std::array<std::vector<double>, dim> uniqueKnotVector_;
 
     /** \brief Order of the B-spline for each space dimension */
     Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;

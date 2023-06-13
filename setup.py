@@ -1,6 +1,5 @@
-# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
-# this file is modified from dumux https://git.iws.uni-stuttgart.de/dumux-repositories/dumux/-/blob/master/setup.py
 
 try:
     from dune.packagemetadata import metaData
@@ -23,5 +22,4 @@ duneVersion = "2.9.0"
 metadata = metaData(duneVersion)[1]
 metadata["version"] = duneigaVersion
 
-# refactor since ikarus pypi package already exists
 setup(**metadata)

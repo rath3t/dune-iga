@@ -47,16 +47,13 @@ namespace Dune::IGA {
     NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
                const typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType controlPoints,
                const std::array<int, dim> degree)
-        : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {
-      //      silenceGrid();
-    }
+        : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {}
 
     explicit NURBSPatch(const NURBSPatchData<dim, dimworld, ScalarType>& patchData,
                         std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
         : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, ScalarType>>(patchData)},
           patchGeometry_{std::make_shared<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
           trimData_(std::move(trimData)) {
-      //      silenceGrid();
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });

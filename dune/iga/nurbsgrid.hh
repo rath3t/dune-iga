@@ -107,7 +107,6 @@ namespace Dune::IGA {
                    == nurbsPatchData.controlPoints.strideSizes()[2]
                && "The size of the controlpoints and the knotvector strideSizes do not match in the third direction");
       // FIXME check sanity of knotvector and degree
-      //      silenceGrid();
       createEntities();
     }
 
@@ -245,13 +244,3 @@ namespace Dune::IGA {
   };
 
 }  // namespace Dune::IGA
-
-// This header is here for the sole purpose that Python is aware of this reader.
-//  If we include in <python/dune/iga/_grids.py in the includes  "includes = ["dune/iga/nurbsgrid.hh"]",
-//  we end up with the situations that dune-py generates the includes like:
-//  Dune::Python::IncludeFiles{"dune/iga/nurbsgrid.hh","dune/python/grid/hierarchical.hh","dune/python/iga/reader.hh"}
-//  Thus, the reader comes after hierarchical.hh but inside their should the template argument deduction for the correct
-//  reader happen The sorting happens in
-//  https://gitlab.dune-project.org/core/dune-common/-/blob/releases/2.9/python/dune/generator/generator.py?ref_type=heads#L166
-//  but maybe this is changed later
-//#include <dune/python/iga/reader.hh>

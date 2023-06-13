@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
+# The top part of this code is taken from https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/dune/python/test/poisson.py
+# Thus, see also their license https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/COPYING
 import numpy as np
 import math
 from scipy.sparse import lil_matrix
@@ -7,17 +9,20 @@ import scipy as sp
 import dune.geometry
 import dune.grid
 from dune.iga import reader as readeriga
-from dune.iga.basis import defaultGlobalBasis,Power,Lagrange,Nurbs
+from dune.iga.basis import defaultGlobalBasis, Power, Lagrange, Nurbs
 from dune.iga import IGAGrid
 from dune.grid import gridFunction
 from dune.common import FieldVector
 import os
-os.environ['ALUGRID_VERBOSITY_LEVEL'] = '0'
+
+os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
+
 # f(x) = 1
-f = lambda x:  1
+f = lambda x: 1
 
 # g(x) = 0
-g = lambda x:  0
+g = lambda x: 0
+
 
 # boundary of the unit square
 def isDirichlet(x):
@@ -26,11 +31,10 @@ def isDirichlet(x):
 
 # TODO: This assembler loop is very inefficient in terms of run time and should be improved using Python vectorization.
 # See discussion at https://gitlab.dune-project.org/staging/dune-functions/-/merge_requests/295 for hints and code pointers.
-def localAssembler(element,localBasis):
-
+def localAssembler(element, localBasis):
     n = len(localBasis)
 
-    localA = np.zeros((n,n))
+    localA = np.zeros((n, n))
     localB = np.zeros(n)
 
     # choose a high enough quadrature order
@@ -39,7 +43,6 @@ def localAssembler(element,localBasis):
     # create a quadrature rule and integrate
     quadRule = dune.geometry.quadratureRule(element.type, quadOrder)
     for pt in quadRule:
-
         pos = pt.position
 
         # evaluate the local basis functions (this is an array!)
@@ -55,35 +58,39 @@ def localAssembler(element,localBasis):
         integrationElement = element.geometry.integrationElement(pos)
 
         # transform the reference Jacobians to global geometry
-        phiGradient = [ np.dot(jacobianInverseTransposed, np.array(g)[0]) for g in phiRefGradient ]
+        phiGradient = [
+            np.dot(jacobianInverseTransposed, np.array(g)[0]) for g in phiRefGradient
+        ]
 
         posGlobal = element.geometry.toGlobal(pos)
 
-        for i in range( n ):
-            for j in range( n ):
+        for i in range(n):
+            for j in range(n):
                 # compute grad(phi_i) * grad(phi_j)
-                localA[i,j] += pt.weight * integrationElement * np.dot( phiGradient[i], phiGradient[j] )
+                localA[i, j] += (
+                    pt.weight
+                    * integrationElement
+                    * np.dot(phiGradient[i], phiGradient[j])
+                )
 
             localB[i] += pt.weight * integrationElement * phi[i] * f(posGlobal)
 
     return localA, localB
 
 
-
 def globalAssembler(basis):
-
     N = len(basis)
 
-    A = lil_matrix( (N,N) )
-    b = np.zeros( N )
+    A = lil_matrix((N, N))
+    b = np.zeros(N)
 
     # mark all Dirichlet DOFs
-    dichichletDOFs = np.zeros( N, dtype=bool )
-    dichichletDOFs[:math.floor(math.sqrt(N))] = True
+    dichichletDOFs = np.zeros(N, dtype=bool)
+    dichichletDOFs[: math.floor(math.sqrt(N))] = True
     # basis.interpolate(dichichletDOFs,isDirichlet)
 
     # interpolate the boundary values
-    gCoeffs = np.zeros( N )
+    gCoeffs = np.zeros(N)
     # basis.interpolate(gCoeffs,g)
 
     # extract grid and localView
@@ -91,7 +98,6 @@ def globalAssembler(basis):
     grid = basis.gridView
 
     for element in grid.elements:
-
         # assign the localView to the current element
         localView.bind(element)
 
@@ -100,16 +106,15 @@ def globalAssembler(basis):
 
         localN = len(localBasis)
 
-        localA, localb = localAssembler(element,localBasis)
+        localA, localb = localAssembler(element, localBasis)
 
         # copy the local entries into the global matrix using the
         # index mapping given by the localView
         for i in range(localN):
-
             gi = localView.index(i)[0]
 
             if dichichletDOFs[gi]:
-                A[gi,gi] = 1.0
+                A[gi, gi] = 1.0
                 b[gi] = gCoeffs[gi]
             else:
                 b[gi] += localb[i]
@@ -117,31 +122,28 @@ def globalAssembler(basis):
                     gj = localView.index(j)[0]
                     A[gi, gj] += localA[i, j]
 
-    return A,b
+    return A, b
 
 
 ############################### START ########################################
 
-# number of grid elements (in one direction)
-gridSize = 4
-
-# create a grid of the unit square
+# create a trimmed grid from file
 reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
 
-refineMents=4
-gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
+refineMents = 4
+gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 print("refineMents")
 gridView.hierarchicalGrid.globalRefine(refineMents)
-basis = defaultGlobalBasis(gridView, Nurbs() )
+basis = defaultGlobalBasis(gridView, Nurbs())
 
 # compute A and b
-A,b = globalAssembler(basis)
+A, b = globalAssembler(basis)
 
 # convert A to Compressed Sparse Column format
-Acscc = A.tocsc()
+Acsc = A.tocsc()
 
 # solve!
-x  = sp.sparse.linalg.spsolve(Acscc, b)
+x = sp.sparse.linalg.spsolve(Acsc, b)
 
 vtkWriter = gridView.trimmedVtkWriter()
 discreteFunction = basis.asFunction(x)

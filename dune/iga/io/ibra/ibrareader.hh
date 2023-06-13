@@ -116,6 +116,7 @@ namespace Dune::IGA {
       for (int i = 0; i < gridDim; ++i)
         if (elevateDegree[i] > 0) _patchData = degreeElevate(_patchData, i, elevateDegree[i]);
 
+      // Optional Post Refinement of knots
       for (int i = 0; i < gridDim; ++i) {
         if (postKnotRefine[i] > 0) {
           auto additionalKnots = generateRefinedKnots(knotSpans, i, postKnotRefine[i]);
