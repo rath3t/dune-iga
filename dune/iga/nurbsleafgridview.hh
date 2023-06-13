@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgridentity.hh"
 #include "dune/iga/nurbsgridindexsets.hh"
 #include "dune/iga/nurbsgridleafiterator.hh"
@@ -133,11 +132,6 @@ namespace Dune::IGA {
     const auto &getPatchData(int patchID = 0) const { return *(grid_->leafPatches_->at(patchID).getPatchData()); }
     const auto &getPatch(int patchID = 0) const { return grid_->leafPatches_->at(patchID); }
 
-    auto preBasis(int i=0)const {
-      assert(grid_->leafPatches_->size() == 1 && "The basis is only defined for single patch gridview");
-      return Dune::Functions::BasisFactory::nurbs<dimension>(this->getPatchData(i));
-    }
-
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>
     using LeafIteratorImpl = NURBSGridLeafIterator<cd, ptype, const GridImpl>;
 
@@ -206,8 +200,7 @@ namespace Dune::IGA {
     }
 
     friend GridImpl;
-    friend const auto &elements<GridImpl>(const NURBSLeafGridView<const GridImpl> &gridLeafView);
-    friend auto &elements<GridImpl>(NURBSLeafGridView<const GridImpl> &gridLeafView);
+
     template <typename GridImp1>
     friend class NURBSintersection;
     //    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> leafPatches_;

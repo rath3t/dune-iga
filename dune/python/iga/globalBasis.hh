@@ -19,49 +19,7 @@ namespace Dune::Python::IGA
 {
 
 template <class NURBSGrid, class... options>
-void registerIGAGlobalBasis(pybind11::module handle, pybind11::class_<NURBSGrid, options...> cls) {
-  using pybind11::operator""_a;
-
-
+void registerGlobalBasis(pybind11::module handle, pybind11::class_<NURBSGrid, options...> cls) {
   Dune::Python::registerGlobalBasis(handle,cls);
-
-//static constexpr std::integral auto dimension      = NURBSGrid::dimension;
-//static constexpr std::integral auto dimensionworld = NURBSGrid::dimensionworld;
-//using ctype                                        = typename NURBSGrid::ctype;
-
-//  module.def( "reader", [] ( const pybind11::dict &args_ ) { return Dune::Python::IGA::reader< NURBSGrid >( args_ ); } );
-//
-//    Dune::Python::registerHierarchicalGrid (module, cls);
-//
-//  auto clsLeafView = insertClass< typename NURBSGrid::LeafGridView >( module, "LeafGrid", GenerateTypeName( cls, "LeafGridView" ) );
-//  if( clsLeafView.second )
-//  registerGridView( module, clsLeafView.first );
-//
-//  clsLeafView.first.def("preBasis",[](const typename NURBSGrid::LeafGridView& self){return self.impl().preBasis();});
-//
-//
-//using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
-//  using NURBSPatchDataType    = typename NURBSGrid::NURBSPatchDataType;
-//
-//  cls.def(pybind11::init([](const std::array<std::vector<double>, dimension>& knotSpans, const ControlPointNetType& controlPoints,
-//                            const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
-//
-//  cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
-//  cls.def("globalRefineInDirection",[]( NURBSGrid& self,const int dir, const int refinementLevel, bool omitTrim = false){self.globalRefineInDirection(dir,refinementLevel,omitTrim);});
-//  cls.def("patchData",[](const NURBSGrid& self,int i = 0){return self.patchData(i);});
-
-
-
-
-//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<ValueType>> values) {
-//            return new MultiDimensionNet(dimSize,values);
-//          })
-//  );
-//
-//  cls.def(pybind11::init([](std::array<int, netDim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values) {
-//            return new MultiDimensionNet(dimSize,values);
-//          })
-//  );
-
 }
 }

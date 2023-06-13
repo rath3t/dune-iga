@@ -132,9 +132,9 @@ def preBasisTypeName(tree, gridViewTypeName):
 from dune.generator.generator import SimpleGenerator
 from dune.common.hashit import hashIt
 # from dune.functions import load
-def testData(gridView, tree):
+def defaultGlobalBasis(gridView, tree):
 
-    generator = SimpleGenerator("IGAGlobalBasis", "Dune::Python::IGA")
+    generator = SimpleGenerator("GlobalBasis", "Dune::Python::IGA")
 
     headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
 
@@ -157,18 +157,5 @@ def testData(gridView, tree):
 
     return module.IGAGlobalBasis(gridView)
 
-
-    generator = SimpleGenerator("MultiDimensionNet", "Dune::Python")
-
-    element_type = f"Dune::IGA::MultiDimensionNet<>"
-
-    includes = []
-    includes += ["dune/python/iga/nurbspatchdata.hh"]
-    moduleName = "NurbsPatchData_" + hashIt(element_type)
-    module = generator.load(
-        includes=includes, typeName=element_type, moduleName=moduleName
-    )
-
-    return module.MultiDimensionNet(gridView)
 
     # return load( includes=includes, typeName=element_type).GlobalBasis(gridView)

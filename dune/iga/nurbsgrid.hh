@@ -255,4 +255,4 @@ namespace Dune::IGA {
 // Dune::Python::IncludeFiles{"dune/iga/nurbsgrid.hh","dune/python/grid/hierarchical.hh","dune/python/iga/reader.hh"}
 // Thus, the reader comes after hierarchical.hh but inside their should the template argument deduction for the correct reader happen
 // The sorting happens in https://gitlab.dune-project.org/core/dune-common/-/blob/releases/2.9/python/dune/generator/generator.py?ref_type=heads#L166 but maybe this is changed later
-#include <dune/python/iga/reader.hh>
+//#include <dune/python/iga/reader.hh>

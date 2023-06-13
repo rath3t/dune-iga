@@ -354,7 +354,7 @@ namespace Dune::Functions {
       // Set up the LocalCoefficients object
       std::array<unsigned int, dim> sizes;
       for (size_t i = 0; i < dim; i++)
-        sizes[i] = size(i);
+        sizes[i] = oneDimensionalSize(i);
       localCoefficients_.init(sizes);
       isBound     = true;
       elementIdx_ = elementIdx;
@@ -382,7 +382,7 @@ namespace Dune::Functions {
     [[nodiscard]] unsigned size() const {
       std::size_t r = 1;
       for (int i = 0; i < dim; i++)
-        r *= size(i);
+        r *= oneDimensionalSize(i);
       return r;
     }
 
@@ -391,7 +391,7 @@ namespace Dune::Functions {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(dim); }
 
     /** \brief Number of degrees of freedom for one coordinate direction */
-    [[nodiscard]] unsigned int size(int i) const { return preBasis_.patchData_.degree[i] + 1; }
+    [[nodiscard]] unsigned int oneDimensionalSize(int i) const { return preBasis_.patchData_.degree[i] + 1; }
 
     const NurbsPreBasis<GV, R>& preBasis_;
 
@@ -485,15 +485,15 @@ namespace Dune::Functions {
     // Type used for function values
     using R = ScalarType;
 
-    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
+//    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
-    NurbsPreBasis(const GridView& gridView, const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
+    explicit NurbsPreBasis(const GridView& gridView, const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
         : gridView_{gridView}, cachedSize_(computeOriginalSize()) {
 
       if (patchData)
-        patchData_=patchData;
+        patchData_=patchData.value();
       else
-        patchData_=gridView_->grid().patchData();
+        patchData_=gridView_.grid().patchData();
       for (int i = 0; i < dim; ++i)
         std::ranges::unique_copy(patchData_.knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -733,7 +733,7 @@ namespace Dune::Functions {
        public:
         static const std::size_t requiredMultiIndexSize = 1;
 
-        explicit NurbsPreBasisFactory(const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData)
+        explicit NurbsPreBasisFactory(const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
             : patchData_(patchData) {}
 
         template <class GridView>
@@ -742,7 +742,7 @@ namespace Dune::Functions {
         }
 
        private:
-        const Dune::IGA::NURBSPatchData<dim, dimworld>& patchData_;
+        std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>> patchData_;
       };
 
     }  // namespace Imp
@@ -756,6 +756,10 @@ namespace Dune::Functions {
     template <std::integral auto dim, std::integral auto dimworld>
     auto nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data) {
       return Imp::NurbsPreBasisFactory<dim, dimworld>(data);
+    }
+
+    auto nurbs() {
+      return [](const auto& gridView){return NurbsPreBasis<std::remove_cvref_t<decltype(gridView)>>(gridView); };
     }
 
   }  // end namespace BasisFactory

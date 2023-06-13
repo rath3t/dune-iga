@@ -74,12 +74,6 @@ struct isCartesian< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> >
   static const bool v = false;
 };
 
-template <std::integral auto dim,std::integral auto codim, std::integral auto dimworld, typename ScalarType>
-struct canCommunicate< Dune::IGA::NURBSGrid<dim, dimworld, ScalarType> , codim >
-{
-static const bool v = false;
-};
-
 
 }  // namespace Dune::Capabilities
 

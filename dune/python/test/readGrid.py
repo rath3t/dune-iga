@@ -19,12 +19,23 @@ from dune.grid import structuredGrid
 #from dune.functions import Power,Lagrange,defaultGlobalBasis
 #import dune.functions
 from dune.iga import reader as readeriga
-#from dune.iga.basis import testData,Power,Lagrange
+from dune.iga.basis import defaultGlobalBasis,Power,Lagrange,Nurbs
 from dune.common import FieldVector
 if __name__ == "__main__":
     reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
     gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
+    print(help(gridView))
     fv = FieldVector(10*[0.1])
+
+    # nurbsBasis= gridView.preBasis()
+    globalBasis = defaultGlobalBasis(
+        gridView, Power(Nurbs(), 2)
+     )
+    print(f"Length {len(globalBasis)}")
+    assert len(net)==len(globalBasis)*2
+
+    vtkWriter = gridView.trimmedVtkWriter()
+
 
     lowerLeft = []
     upperRight = []
@@ -70,13 +81,13 @@ if __name__ == "__main__":
     #     gridView, (1,2)
     # )
 
-    # nurbsBasis= nurbsPatchData.asBasis()
-        # globalBasis = dune.functions.defaultGlobalBasis(
-        #     grid, dune.functions.Power(nurbsBasis, 2)
-        # )
-        #
-        # assert len(net)==len(globalBasis)*2
+    nurbsBasis= nurbsPatchData.asBasis()
+    globalBasis = defaultGlobalBasis(
+            gridView, Power(nurbsBasis, 2)
+        )
 
+    assert len(net)==len(globalBasis)*2
+    print("YEEEES")
 
     if True:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
