@@ -28,7 +28,7 @@ namespace Dune::IGA {
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
-  static std::unique_ptr<Grid> read(const std::string& fileName, const bool trim = true,
+  static std::shared_ptr<Grid> read(const std::string& fileName, const bool trim = true,
                                     std::array<int, 2> elevateDegree = {0, 0},
                                     std::array<int, 2> preKnotRefine = {0, 0}, std::array<int, 2> postKnotRefine= {0, 0}) {
     std::ifstream ibraInputFile;
@@ -37,7 +37,7 @@ namespace Dune::IGA {
   }
 
   template <typename InputStringType> requires (not std::convertible_to<std::string,InputStringType> and not std::convertible_to<InputStringType,const char*>)
-    static std::unique_ptr<Grid> read( InputStringType& ibraInputFile, const bool trim = true,
+    static std::shared_ptr<Grid> read( InputStringType& ibraInputFile, const bool trim = true,
                                       std::array<int, 2> elevateDegree = {0, 0},
                                       std::array<int, 2> preKnotRefine = {0, 0}, std::array<int, 2> postKnotRefine= {0, 0} ) {
       using json = nlohmann::json;
@@ -125,9 +125,9 @@ namespace Dune::IGA {
       auto trimData = constructGlobalBoundaries(brep);
 
       if (trim)
-        return std::make_unique<Grid>(_patchData, trimData);
+        return std::make_shared<Grid>(_patchData, trimData);
       else
-        return std::make_unique<Grid>(_patchData);
+        return std::make_shared<Grid>(_patchData);
     }
 
    private:

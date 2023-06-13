@@ -42,8 +42,8 @@ inline static std::shared_ptr<Grid> reader(const pybind11::dict &dict) {
   std::array<int, 2> elevateDegree = {0, 0};
   std::array<int, 2> preKnotRefine = {0, 0};
   std::array<int, 2> postKnotRefine = {0, 0};
-  if (dict.contains("reader"))
-    reader = dict["reader"].cast<Dune::Python::IGA::Reader>();
+//  if (dict.contains("reader"))
+//    reader = dict["reader"].cast<Dune::Python::IGA::Reader>();
 
   switch (reader) {
     case IGA::Reader::json:
@@ -52,14 +52,14 @@ inline static std::shared_ptr<Grid> reader(const pybind11::dict &dict) {
         file_path = dict["file_path"].cast<std::string>();
       else
         DUNE_THROW(Dune::IOError, "No field in dict with name file_path. Unable to read grid");
-      if (dict.contains("trim"))
-        trim = dict["trim"].cast<bool>();
-      if (dict.contains("elevate_degree"))
-        elevateDegree = dict["elevate_degree"].cast<std::array<int, 2>>();
-      if (dict.contains("pre_knot_refine"))
-        preKnotRefine = dict["pre_knot_refine"].cast<std::array<int, 2>>();
-      if (dict.contains("post_knot_refine"))
-        postKnotRefine = dict["post_knot_refine"].cast<std::array<int, 2>>();
+//      if (dict.contains("trim"))
+//        trim = dict["trim"].cast<bool>();
+//      if (dict.contains("elevate_degree"))
+//        elevateDegree = dict["elevate_degree"].cast<std::array<int, 2>>();
+//      if (dict.contains("pre_knot_refine"))
+//        preKnotRefine = dict["pre_knot_refine"].cast<std::array<int, 2>>();
+//      if (dict.contains("post_knot_refine"))
+//        postKnotRefine = dict["post_knot_refine"].cast<std::array<int, 2>>();
 
       static constexpr std::integral auto dim = Grid::dimension;
       static constexpr std::integral auto dimworld = Grid::dimensionworld;
@@ -80,13 +80,14 @@ inline static void registerGridViewImpl ( pybind11::handle scope, pybind11::clas
 
   using pybind11::operator""_a;
 
-  pybind11::options opts;
-  opts.disable_function_signatures();
+//  pybind11::options opts;
+//  opts.disable_function_signatures();
 
-  detail::registerGridViewConstructorFromGrid( cls, PriorityTag< 42 >() );
+  detail::registerGridViewConstructorFromGrid( cls, PriorityTag< 42 >()  );
 
   cls.attr( "dimGrid" ) = pybind11::int_( static_cast< int >( GridView::dimension ) );
   cls.attr( "dimWorld" ) = pybind11::int_( static_cast< int >( GridView::dimensionworld ) );
+  cls.def("HierarchicalGrid",[](GridView& self) ->auto& { return self.grid(); },pybind11::keep_alive< 0, 1 >());
 
 //  registerGridEntities< GridView >( cls );
 //  registerGridIntersection< GridView >( cls );
@@ -225,8 +226,8 @@ inline static void registerGridViewImpl ( pybind11::handle scope, pybind11::clas
 //          associated hierarchical grid
 //        )doc" );
 //
-  cls.def_property_readonly_static( "dimension", [] ( pybind11::object ) { return int(GridView::dimension); } );
-  cls.def_property_readonly_static( "dimensionworld", [] ( pybind11::object ) { return int(GridView::dimensionworld); } );
+  cls.def_property_readonly_static( "dimension", [] ( const pybind11::object& ) { return int(GridView::dimension); } );
+  cls.def_property_readonly_static( "dimensionworld", [] ( const pybind11::object& ) { return int(GridView::dimensionworld); } );
 //
 //  cls.def( "size", [] ( const GridView &self, int codim ) {
 //             if( (codim < 0) || (codim > GridView::dimension) )
@@ -381,8 +382,8 @@ inline static void registerGridViewImpl ( pybind11::handle scope, pybind11::clas
 //        vgfClass.first.def("name",[](VirtualizedGF &self) { return self.name(); });
 //      }
 //#endif
-  auto addAttr = pybind11::module::import( "dune.grid.grid_generator" ).attr("addAttr");
-  addAttr(scope, cls);
+//  auto addAttr = pybind11::module::import( "dune.grid.grid_generator" ).attr("addAttr");
+//  addAttr(scope, cls);
 }
 
 
@@ -394,8 +395,8 @@ void registerHierarchicalGridImpl(pybind11::module module, pybind11::class_<Grid
 
   using pybind11::operator""_a;
 
-  pybind11::options opts;
-  opts.disable_function_signatures();
+//  pybind11::options opts;
+//  opts.disable_function_signatures();
 
   auto clsLeafView = insertClass< typename Grid::LeafGridView >( module, "LeafGrid", GenerateTypeName( cls, "LeafGridView" ) );
   if( clsLeafView.second )
@@ -410,9 +411,9 @@ void registerHierarchicalGridImpl(pybind11::module module, pybind11::class_<Grid
 //
 //  registerHierarchicalGridIdSets( cls );
 
-  cls.def_property_readonly( "leafView", pybind11::cpp_function( [] ( const Grid &self ) {
+  cls.def_property_readonly( "leafView",  [] ( const Grid &self ) {
                                return self.leafGridView();
-                             }, pybind11::keep_alive< 0, 1 >() ),
+                             }, pybind11::keep_alive< 0, 1 >() ,
                              R"doc(
           Obtain leaf view of the grid
 
@@ -517,24 +518,24 @@ void registerHierarchicalGridImpl(pybind11::module module, pybind11::class_<Grid
 //          - The grid implementation defines the rule by which elements are split.
 //        )doc" );
 
-  cls.def( "globalRefine", [] ( Grid &self, int level ) {
-             const auto &range = detail::gridModificationListenersRange(self);
-             for( const auto &listener : range )
-               listener->preModification( self );
-             self.globalRefine( level );
-             for( const auto &listener : range )
-               listener->postModification( self );
-           }, "iterations"_a = 1,
-           R"doc(
-          Refine each leaf element of the grid.
-
-          Args:
-              iterations:   Number of global refinement iterations to perform (defaults to 1)
-
-          Note:
-          - This is a collective operation.
-          - The grid implementation defines the rule by which elements are split.
-        )doc" );
+//  cls.def( "globalRefine", [] ( Grid &self, int level ) {
+//             const auto &range = detail::gridModificationListenersRange(self);
+//             for( const auto &listener : range )
+//               listener->preModification( self );
+//             self.globalRefine( level );
+//             for( const auto &listener : range )
+//               listener->postModification( self );
+//           }, "iterations"_a = 1,
+//           R"doc(
+//          Refine each leaf element of the grid.
+//
+//          Args:
+//              iterations:   Number of global refinement iterations to perform (defaults to 1)
+//
+//          Note:
+//          - This is a collective operation.
+//          - The grid implementation defines the rule by which elements are split.
+//        )doc" );
 
 //  cls.def( "loadBalance", [] ( Grid &self ) {
 //             const auto &range = detail::gridModificationListenersRange(self);
@@ -553,8 +554,8 @@ void registerHierarchicalGridImpl(pybind11::module module, pybind11::class_<Grid
 //        )doc" );
 //
 //  cls.def_property_readonly( "maxLevel", [] ( const Grid &self ) -> int { return self.maxLevel(); } );
-  cls.def_property_readonly_static( "dimension", [] ( pybind11::object ) { return int(Grid::dimension); } );
-  cls.def_property_readonly_static( "dimensionworld", [] ( pybind11::object ) { return int(Grid::dimensionworld); } );
+  cls.def_property_readonly_static( "dimension", [] ( const pybind11::object& ) { return int(Grid::dimension); } );
+  cls.def_property_readonly_static( "dimensionworld", [] ( const pybind11::object& ) { return int(Grid::dimensionworld); } );
 //  // evaluate this information at grid creation time since this changes for
 //  // ALUGrid conform when used as simplex grid.
 //  const int refineStepsForHalf = DGFGridInfo< Grid >::refineStepsForHalf();
@@ -598,8 +599,8 @@ void registerHierarchicalGridImpl(pybind11::module module, pybind11::class_<Grid
 //                collective communication must call the corresponding method.
 //        )doc" );
 
-  auto addHAttr = pybind11::module::import( "dune.grid.grid_generator" ).attr("addHAttr");
-  addHAttr(module);
+//  auto addHAttr = pybind11::module::import( "dune.grid.grid_generator" ).attr("addHAttr");
+//  addHAttr(module);
 
 }
 
@@ -611,7 +612,7 @@ static constexpr std::integral auto dimension      = NURBSGrid::dimension;
 static constexpr std::integral auto dimensionworld = NURBSGrid::dimensionworld;
 using ctype                                        = typename NURBSGrid::ctype;
 
-  module.def( "reader", [] ( const pybind11::dict &args_ ) { return Dune::Python::IGA::reader< NURBSGrid >( args_ ); } );
+  module.def( "reader", [] ( const pybind11::dict &args_ ) { return Dune::Python::IGA::reader< NURBSGrid >( args_  ); } );
 
     registerHierarchicalGridImpl (module, cls);
 
@@ -625,10 +626,10 @@ using ctype                                        = typename NURBSGrid::ctype;
 using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
   using NURBSPatchDataType    = typename NURBSGrid::NURBSPatchDataType;
 
-  cls.def(pybind11::init([](const std::array<std::vector<double>, dimension>& knotSpans, const ControlPointNetType& controlPoints,
-                            const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
-
-  cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
+//  cls.def(pybind11::init([](const std::array<std::vector<double>, dimension>& knotSpans, const ControlPointNetType& controlPoints,
+//                            const std::array<int, dimension>& order){return new NURBSGrid(knotSpans,controlPoints,order);}));
+//
+//  cls.def(pybind11::init([](const NURBSPatchDataType& nurbsPatchData){return new NURBSGrid(nurbsPatchData);}));
   cls.def("globalRefineInDirection",[]( NURBSGrid& self,const int dir, const int refinementLevel, bool omitTrim = false){self.globalRefineInDirection(dir,refinementLevel,omitTrim);});
   cls.def("patchData",[](const NURBSGrid& self,int i = 0){return self.patchData(i);});
 

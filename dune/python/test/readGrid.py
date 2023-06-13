@@ -36,9 +36,9 @@ if __name__ == "__main__":
 
     grid = structuredGrid(lowerLeft, upperRight, elements)
 
-    basisLagrange12 = testData(
-        grid, Power(Lagrange(order=1),2)
-    )
+    # basisLagrange12 = testData(
+    #     grid, Power(Lagrange(order=1),2)
+    # )
 
     #
     # basisLagrange12 = dune.functions.defaultGlobalBasis(

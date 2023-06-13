@@ -83,7 +83,7 @@ namespace Dune::IGA {
 
     [[nodiscard]] bool isConforming() const { return true; }
 
-    NURBSLeafGridView(const GridImpl &grid, int p_level) : grid_{&grid}, level_{p_level} {
+    NURBSLeafGridView(GridImpl &grid, int p_level) : grid_{&grid}, level_{p_level} {
       //      indexSet_ = std::make_unique<NURBSGridLeafIndexSet<GridImpl>>(*this);
     }
 
@@ -211,7 +211,7 @@ namespace Dune::IGA {
     template <typename GridImp1>
     friend class NURBSintersection;
     //    std::shared_ptr<std::vector<NURBSPatch<dimension, dimensionworld, ctype>>> leafPatches_;
-    const GridImpl *grid_;
+    GridImpl *grid_;
     int level_{};
   };
 
