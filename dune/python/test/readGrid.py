@@ -14,7 +14,7 @@ print(sys.path)
 #DUNE_LOG_LEVEL
 #DUNE_FORCE_BUILD
 #DUNE_SAVE_BUILD
-from dune.iga import IGAGrid
+from dune.iga import IGAGrid,ControlPointNet,ControlPoint,NurbsPatchData
 from dune.grid import structuredGrid
 #from dune.functions import Power,Lagrange,defaultGlobalBasis
 #import dune.functions
@@ -63,9 +63,12 @@ if __name__ == "__main__":
     nurbsPatchData=NurbsPatchData(((0,0,1,1),(0,0,1,1)),net,(1,1))
 
     gridView=IGAGrid(nurbsPatchData)
-    basisLagrange12 = testData(
-        gridView, (1,2)
-    )
+    assert gridView.size(0)==1
+    assert gridView.size(1)==4
+    assert gridView.size(2)==4
+    # basisLagrange12 = testData(
+    #     gridView, (1,2)
+    # )
 
     # nurbsBasis= nurbsPatchData.asBasis()
         # globalBasis = dune.functions.defaultGlobalBasis(
@@ -77,7 +80,7 @@ if __name__ == "__main__":
 
     if True:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
-        gridView = IgaGrid(reader, dimgrid=2,dimworld=2)
+        gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
 
         assert gridView.size(0)==1
         assert gridView.size(1)==4
@@ -99,7 +102,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             elevate_degree= (1,1)    )
-        gridView2 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView2 = IGAGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView2.size(0)==1
         assert gridView2.size(1)==4
@@ -109,7 +112,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             pre_knot_refine= (1,1)    )
-        gridView3 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView3 = IGAGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView3.size(0)==4
         assert gridView3.size(2)==9
@@ -118,7 +121,7 @@ if __name__ == "__main__":
             file_path="../../iga/test/auxiliaryFiles/element.ibra",
             reader= readeriga.json,
             post_knot_refine= (1,1)    )
-        gridView4 = IgaGrid(inputParameter, dimgrid=2,dimworld=2)
+        gridView4 = IGAGrid(inputParameter, dimgrid=2,dimworld=2)
         # degree elevation shouldn't change anything
         assert gridView4.size(0)==4
         assert gridView4.size(2)==9
