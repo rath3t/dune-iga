@@ -699,7 +699,7 @@ namespace Dune::Functions {
     using Element       = typename GV::template Codim<0>::Entity;
     using FiniteElement = NurbsLocalFiniteElement<GV, double>;
 
-    NurbsNode(const NurbsPreBasis<GV>* preBasis) : preBasis_(preBasis), finiteElement_(*preBasis) {}
+    explicit NurbsNode(const NurbsPreBasis<GV>* preBasis) : preBasis_(preBasis), finiteElement_(*preBasis) {}
 
     //! Return current element, throw if unbound
     const Element& element() const { return element_; }

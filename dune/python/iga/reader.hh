@@ -102,10 +102,10 @@ using ctype                                        = typename NURBSGrid::ctype;
   auto clsLeafViewWriter = insertClass< TrimmedWriterType >( module, "TrimmedVtkWriter", GenerateTypeName( clsLeafView.first, "TrimmedVtkWriter" ) );
   if( clsLeafViewWriter.second )
     Dune::Vtk::registerVtkWriter< TrimmedWriterType >( module, clsLeafViewWriter.first );
-  //Maybe ad here insert class SaveGard?
+
   clsLeafView.first.def("trimmedVtkWriter",[](const LeafGridView& self){
-    Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(self);
-    return new Dune::VtkUnstructuredGridWriter(dataCollector, Vtk::FormatTypes::ASCII);});
+    auto dataCollector= std::make_shared<Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>(self);
+    return new Dune::VtkUnstructuredGridWriter(dataCollector, Vtk::FormatTypes::ASCII);} );
 #endif
 
 using ControlPointNetType    = typename NURBSGrid::ControlPointNetType;
