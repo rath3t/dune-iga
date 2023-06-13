@@ -1,24 +1,21 @@
 # SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-
-
 import sys
 import setpath
 import math
 
-from mpi4py import MPI
 setpath.set_path()
 print(sys.path)
 
-# from dune.iga import gridReader
+import os
+# enable DUNE_SAVE_BUILD to test various output options
+os.environ['DUNE_LOG_LEVEL'] = 'debug'
+os.environ['DUNE_SAVE_BUILD'] = 'console'
+os.environ['ALUGRID_VERBOSITY_LEVEL'] = '0'
 
-#DUNE_LOG_LEVEL
-#DUNE_FORCE_BUILD
-#DUNE_SAVE_BUILD
 from dune.iga import IGAGrid,ControlPointNet,ControlPoint,NurbsPatchData
 from dune.grid import structuredGrid
-#from dune.functions import Power,Lagrange,defaultGlobalBasis
-#import dune.functions
+
 from dune.iga import reader as readeriga
 from dune.iga.basis import defaultGlobalBasis,Power,Lagrange,Nurbs
 from dune.common import FieldVector
@@ -28,23 +25,27 @@ if __name__ == "__main__":
     gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
     gridView.hierarchicalGrid.globalRefine(refineMents)
     #print(help(gridView))
-    fv = FieldVector(10*[0.1])
+    # fv = FieldVector(10*[0.1])
+    fv = FieldVector(2*[0.1])
 
     # nurbsBasis= gridView.preBasis()
-    globalBasis = defaultGlobalBasis(
-        gridView, Power(Nurbs(), 2)
-     )
+    globalBasis = defaultGlobalBasis(gridView, Power(Nurbs(), 2) )
 
     # assert 2*(4**refineMents)==len(globalBasis)*2
 
-    #vtkWriter = gridView.trimmedVtkWriter()
+    vtkWriter = gridView.trimmedVtkWriter()
 
     gf1 = gridView.function(lambda e,x: math.sin(math.pi*(e.geometry.toGlobal(x)[0]+e.geometry.toGlobal(x)[1])))
 
-    gridView.writeVTK("test",pointdata=[gf1],name="sinFunc")
-    print(help(arg))
-    vtkWriter.addCellData()
-    vtkWriter.write("TestGrid")
+    gridView.writeVTK("test",pointdata=[gf1])
+    # print(help(arg))
+    from dune.grid import gridFunction
+    @gridFunction(gridView)
+    def g(x):
+        return [math.sin(2*math.pi*x[0]*x[1]), x[0]*x[1]]*5
+
+    vtkWriter.addPointData(g, name="g")
+    vtkWriter.write(name="TestGrid")
 
     # basisLagrange12 = testData(
     #     grid, Power(Lagrange(order=1),2)

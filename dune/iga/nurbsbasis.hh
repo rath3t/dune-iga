@@ -488,12 +488,13 @@ namespace Dune::Functions {
 //    explicit NurbsPreBasis(const GridView& gridView) : NurbsPreBasis(gridView, gridView.impl().getPatchData()) {}
 
     explicit NurbsPreBasis(const GridView& gridView, const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData=std::nullopt)
-        : gridView_{gridView}, cachedSize_(computeOriginalSize()) {
+        : gridView_{gridView} {
 
       if (patchData)
         patchData_=patchData.value();
       else
         patchData_=gridView_.grid().patchData();
+      cachedSize_=computeOriginalSize();
       for (int i = 0; i < dim; ++i)
         std::ranges::unique_copy(patchData_.knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -676,6 +677,7 @@ namespace Dune::Functions {
     }
 
     std::array<std::vector<double>, dim> uniqueKnotVector_;
+    GridView gridView_;
 
     /** \brief Order of the B-spline for each space dimension */
     Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;
@@ -683,7 +685,6 @@ namespace Dune::Functions {
     /** \brief Number of grid elements in the different coordinate directions */
     std::array<unsigned, dim> elements_;
 
-    GridView gridView_;
     unsigned int cachedSize_ = std::numeric_limits<unsigned int>::signaling_NaN();
     std::map<DirectIndex, std::vector<size_type>> originalIndices_;
     std::map<DirectIndex, RealIndex> indexMap_;
