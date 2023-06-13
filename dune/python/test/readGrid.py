@@ -4,6 +4,7 @@
 
 import sys
 import setpath
+import math
 
 from mpi4py import MPI
 setpath.set_path()
@@ -23,29 +24,27 @@ from dune.iga.basis import defaultGlobalBasis,Power,Lagrange,Nurbs
 from dune.common import FieldVector
 if __name__ == "__main__":
     reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
+    refineMents=5
     gridView = IGAGrid(reader, dimgrid=2,dimworld=2)
-    print(help(gridView))
+    gridView.hierarchicalGrid.globalRefine(refineMents)
+    #print(help(gridView))
     fv = FieldVector(10*[0.1])
 
     # nurbsBasis= gridView.preBasis()
     globalBasis = defaultGlobalBasis(
         gridView, Power(Nurbs(), 2)
      )
-    print(f"Length {len(globalBasis)}")
-    assert len(net)==len(globalBasis)*2
 
-    vtkWriter = gridView.trimmedVtkWriter()
+    # assert 2*(4**refineMents)==len(globalBasis)*2
 
+    #vtkWriter = gridView.trimmedVtkWriter()
 
-    lowerLeft = []
-    upperRight = []
-    elements = []
-    for i in range(2):
-        lowerLeft.append(-1)
-        upperRight.append(1)
-        elements.append(3)
+    gf1 = gridView.function(lambda e,x: math.sin(math.pi*(e.geometry.toGlobal(x)[0]+e.geometry.toGlobal(x)[1])))
 
-    grid = structuredGrid(lowerLeft, upperRight, elements)
+    gridView.writeVTK("test",pointdata=[gf1],name="sinFunc")
+    print(help(arg))
+    vtkWriter.addCellData()
+    vtkWriter.write("TestGrid")
 
     # basisLagrange12 = testData(
     #     grid, Power(Lagrange(order=1),2)

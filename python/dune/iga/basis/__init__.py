@@ -134,28 +134,28 @@ from dune.common.hashit import hashIt
 # from dune.functions import load
 def defaultGlobalBasis(gridView, tree):
 
-    generator = SimpleGenerator("GlobalBasis", "Dune::Python::IGA")
+    generator = SimpleGenerator("GlobalBasis", "Dune::Python")
 
     headers = ["powerbasis", "compositebasis", "lagrangebasis", "subspacebasis", "defaultglobalbasis"]
 
     includes =  []
-    includes += ["dune/python/iga/globalBasis.hh"]
+    # includes += ["dune/python/iga/globalBasis.hh"]
     includes += ["dune/functions/functionspacebases/" + h + ".hh" for h in headers]
     # includes += ["dune/iga/nurbsbasis.hh"]
-    # includes += ["dune/iga/nurbsgrid.hh"]
-    # includes += ["dune/iga/functionspacebases/nurbsbasis.hh"]
-    # includes +=  ["dune/python/functions/globalbasis.hh"]
+    includes += gridView._includes
+    includes += ["dune/iga/nurbsbasis.hh"]
+    includes +=  ["dune/python/functions/globalbasis.hh"]
     # print(preBasisTypeName(tree, gridView.cppTypeName))
     print(includes)
     element_type  = "Dune::Functions::DefaultGlobalBasis< " + preBasisTypeName(tree, gridView.cppTypeName) + " >"
     print(element_type)
-    moduleName = "igaGlobalBasis_" + hashIt(element_type)
+    moduleName = "globalBasis_" + hashIt(element_type)
 
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName
     )
 
-    return module.IGAGlobalBasis(gridView)
+    return module.GlobalBasis(gridView)
 
 
     # return load( includes=includes, typeName=element_type).GlobalBasis(gridView)
