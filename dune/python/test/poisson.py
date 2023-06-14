@@ -10,7 +10,7 @@ import dune.geometry
 import dune.grid
 from dune.iga import reader as readeriga
 from dune.iga.basis import defaultGlobalBasis, Power, Lagrange, Nurbs
-from dune.iga import IGAGrid
+from dune.iga import IGAGrid, boundaryPatch
 from dune.grid import gridFunction
 from dune.common import FieldVector
 import os
@@ -131,6 +131,11 @@ reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
 
 gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 gridView.hierarchicalGrid.globalRefine(2)
+
+neumannVertices = np.zeros(gridView.size(2), dtype=bool)
+
+boundaryPatch = boundaryPatch(gridView, neumannVertices)
+
 basis = defaultGlobalBasis(gridView, Nurbs())
 
 # compute A and b

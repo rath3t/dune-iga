@@ -5,4 +5,5 @@ build-cmake
 .idea/
 *cmake-build*
 dune/python/test/setpath.py
+*.vtu
 # need to add other file formats
