@@ -42,3 +42,4 @@ jobs:
         run: |
           cmake --build build --target format
           cmake --build build --target check-format
+          cmake --build build --target check-pythonformat

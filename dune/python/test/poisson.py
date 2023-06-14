@@ -130,10 +130,9 @@ def globalAssembler(basis):
 # create a trimmed grid from file
 reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
 
-refineMents = 4
 gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 print("refineMents")
-gridView.hierarchicalGrid.globalRefine(refineMents)
+gridView.hierarchicalGrid.globalRefine(2)
 basis = defaultGlobalBasis(gridView, Nurbs())
 
 # compute A and b
@@ -150,3 +149,29 @@ discreteFunction = basis.asFunction(x)
 
 vtkWriter.addPointData(discreteFunction, name="g")
 vtkWriter.write(name="Poisson")
+
+xTest = [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.60278885,
+    0.70725846,
+    2.04974976,
+    2.00540431,
+    1.86744155,
+    1.45648652,
+    1.31236311,
+    2.04982725,
+    2.01589274,
+    1.91911023,
+    1.81531395,
+    1.79925452,
+    2.04866857,
+    2.01931155,
+    1.9486634,
+    1.88186179,
+    1.85137355,
+]
+
+assert np.linalg.norm(x - xTest) < 1e-7

@@ -73,8 +73,7 @@ if __name__ == "__main__":
     assert gridView.size(2) == 4
 
     globalBasis = defaultGlobalBasis(gridView, Power(Nurbs(), 2))
-
-    assert len(net) == len(globalBasis) * 2
+    assert len(net) * 2 == len(globalBasis)
 
     if True:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")

@@ -65,6 +65,7 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None):
     gridView = gridModule.LeafGrid(readGrid)
     return gridView
 
+
 grid_registry = {
     "IGA": IGAGrid,
 }
