@@ -30,7 +30,7 @@ namespace Dune::IGA {
    public:
     using GridImpl = NURBSGrid<dim, dimworld, ScalarType>;
     using Types    = typename GridImpl::Traits::LeafIndexSet::Types;
-    friend class NURBSLeafGridView<GridImpl>;
+    friend class NURBSLeafGridView<const GridImpl>;
     template <int codim, int dim1, typename GridImpl1>
     friend class NURBSGridEntity;
 
@@ -47,16 +47,13 @@ namespace Dune::IGA {
     NURBSPatch(const std::array<std::vector<double>, dim>& knotSpans,
                const typename NURBSPatchData<dim, dimworld, ScalarType>::ControlPointNetType controlPoints,
                const std::array<int, dim> degree)
-        : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {
-      silenceGrid();
-    }
+        : NURBSPatch(NURBSPatchData<dim, dimworld, ScalarType>(knotSpans, controlPoints, degree)) {}
 
     explicit NURBSPatch(const NURBSPatchData<dim, dimworld, ScalarType>& patchData,
                         std::optional<std::shared_ptr<TrimData>> trimData = std::nullopt)
         : patchData_{std::make_shared<NURBSPatchData<dim, dimworld, ScalarType>>(patchData)},
           patchGeometry_{std::make_shared<NURBSPatchGeometry<dim, dimworld>>(patchData_)},
           trimData_(std::move(trimData)) {
-      silenceGrid();
       for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
         std::ranges::unique_copy(patchData_->knotSpans[i], std::back_inserter(uniqueKnotVector_[i]),
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -83,9 +80,9 @@ namespace Dune::IGA {
       assert((codim <= dim) and (codim <= 3) and (codim >= 0));
 
       if (codim == 0)
-        return elementNet_->directSize();
+        return elementNet_->size();
       else if (codim == dim)
-        return vertexNet_->directSize();
+        return vertexNet_->size();
       else if (dim - codim == 1)  // edge case
       {
         int edgeSize = 0;
@@ -372,10 +369,10 @@ namespace Dune::IGA {
 
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
 
-      auto geo = (codim == 0 && trimData_.has_value()) ? NURBSGeometry<dim - codim, dimworld, GridImpl>(
+      auto geo = (codim == 0 && trimData_) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
-                                                       : NURBSGeometry<dim - codim, dimworld, GridImpl>(
-                                                           patchData_, fixedOrFreeDirection, currentKnotSpan);
+                                           : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
+                                               patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
     }
 

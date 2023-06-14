@@ -542,14 +542,14 @@ auto testNurbsBasis() {
   {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
-    auto basis2 = makeBasis(gridView, nurbs<dim>(gridView.impl().getPatchData()));
+    auto basis2 = makeBasis(gridView, nurbs());
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
   {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
-    auto basis2 = makeBasis(gridView, power<2>(gridView.impl().getPreBasis()));
+    auto basis2 = makeBasis(gridView, power<2>(nurbs()));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
   return test;
@@ -943,7 +943,7 @@ auto testPlate() {
     checkJacobians(elegeo);
 
   checkIterators(gridView);
-  auto basis     = Dune::Functions::BasisFactory::makeBasis(gridView, gridView.impl().getPreBasis());
+  auto basis     = Dune::Functions::BasisFactory::makeBasis(gridView, Dune::Functions::BasisFactory::nurbs());
   auto localView = basis.localView();
   std::vector<Dune::FieldVector<double, 1>> N;
   std::vector<Dune::FieldVector<double, 1>> ddNi02;

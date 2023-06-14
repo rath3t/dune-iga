@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+[build-system]
+requires = ['cmake>=3.13', 'dune-alugrid<=2.9.0', 'dune-functions<=2.9.0', 'dune-grid<=2.9.0', 'geomdl', 'ninja', 'numpy', 'pip', 'requests', 'scikit-build', 'scipy', 'setuptools', 'wheel', 'mpi4py']
+build-backend = 'setuptools.build_meta'

@@ -14,11 +14,13 @@ namespace Dune::IGA {
    * @tparam dimworld Dimension of the control point coordinates , i.e. where the patch lives in
    * @tparam NurbsGridLinearAlgebraTraits Traits where FixedVectorType is derived
    */
-  template <std::size_t dim, std::size_t dimworld, typename ScalarType = double>
+  template <std::size_t dim, std::size_t dimworld_, typename ScalarType = double>
   struct NURBSPatchData {
-    using GlobalCoordinateType = Dune::FieldVector<ScalarType, dimworld>;
-    using ControlPointType     = ControlPoint<GlobalCoordinateType>;
-    using ControlPointNetType  = MultiDimensionNet<dim, ControlPointType>;
+    static constexpr int patchDim = dim;
+    static constexpr int dimworld = dimworld_;
+    using GlobalCoordinateType    = Dune::FieldVector<ScalarType, dimworld>;
+    using ControlPointType        = ControlPoint<GlobalCoordinateType>;
+    using ControlPointNetType     = MultiDimensionNet<dim, ControlPointType>;
 
     NURBSPatchData() = default;
     NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,

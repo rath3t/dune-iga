@@ -28,6 +28,12 @@ namespace Dune::IGA {
       w += cp.w;
       return *this;
     }
+
+    ControlPoint& operator*=(const typename VectorType::value_type& v) {
+      p *= v;
+      w *= v;
+      return *this;
+    }
   };
 
   template <Vector VectorType>
@@ -43,6 +49,16 @@ namespace Dune::IGA {
   template <Vector VectorType>
   ControlPoint<VectorType> operator+(const ControlPoint<VectorType>& cpL, const ControlPoint<VectorType>& cpR) {
     return {.p = cpL.p + cpR.p, .w = cpL.w + cpR.w};
+  }
+
+  template <Vector VectorType>
+  ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL) {
+    return {.p = -cpL.p, .w = -cpL.w};
+  }
+
+  template <Vector VectorType>
+  ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL, const ControlPoint<VectorType>& cpR) {
+    return {.p = cpL.p - cpR.p, .w = cpL.w - cpR.w};
   }
 
 }  // namespace Dune::IGA

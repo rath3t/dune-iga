@@ -32,7 +32,7 @@ namespace Dune::IGA {
     NURBSintersection() = default;
 
     NURBSintersection(int innerLocalIndex, int outerLocalIndex, int innerDirectIndex, int outerDirectIndex,
-                      const NURBSLeafGridView<GridImp>& gridView)
+                      const GridView& gridView)
         : gridView_{&gridView},
           innerDirectIndex_{innerDirectIndex},
           outerDirectIndex_{outerDirectIndex},
@@ -52,12 +52,12 @@ namespace Dune::IGA {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     /** \brief Returns the element entity from which this intersection is constructed */
-    Entity inside() const { return gridView_->template getEntity<0>(innerDirectIndex_); }
+    Entity inside() const { return gridView_->impl().template getEntity<0>(innerDirectIndex_); }
 
     /** \brief Returns the element entity which intersects with the inside() element */
     Entity outside() const {
       assert(neighbor() && "Outer Element does not exist.");
-      return gridView_->template getEntity<0>(outerDirectIndex_);
+      return gridView_->impl().template getEntity<0>(outerDirectIndex_);
     }
 
     /** \brief Returns the index of the inside element */
@@ -157,14 +157,14 @@ namespace Dune::IGA {
     [[nodiscard]] std::size_t boundarySegmentIndex() const {
       assert(boundary());
       auto geomEntity = inside().template subEntity<1>(innerLocalIndex_);
-      return gridView_->getPatch(0).patchBoundaryIndex(geomEntity.impl().getIndex());
+      return gridView_->impl().getPatch(0).patchBoundaryIndex(geomEntity.impl().getIndex());
     }
 
     auto operator<=>(const NURBSintersection&) const = default;
     bool equals(const NURBSintersection& r) const { return *this == r; }
 
    private:
-    const NURBSLeafGridView<GridImp>* gridView_;
+    const GridView* gridView_;
     int innerDirectIndex_;
     int innerLocalIndex_;
     int outerDirectIndex_;

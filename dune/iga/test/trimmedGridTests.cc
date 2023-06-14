@@ -8,6 +8,7 @@
 #include "dune/iga/gridcapabilities.hh"
 #include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igadatacollector.hh"
+#include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/nurbspatchgeometry.h"
 #include "dune/iga/trim/nurbstrimmer.hh"
@@ -255,7 +256,7 @@ auto testExampleSuite() {
   testLoop(grid, 4, "pipe_trim");
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
-  testLoop(grid, 4, "Element_trim_Xb");
+  testLoop(grid, 4, "Element_trim_Xb");  // this test fails with a 6
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
   testLoop(grid, 4, "nurbs_1");

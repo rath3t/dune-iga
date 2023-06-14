@@ -11,7 +11,6 @@
 
 #include "dune/iga/geometry/geohelper.hh"
 #include <dune/alugrid/grid.hh>
-#include <dune/grid/uggrid.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -43,13 +42,6 @@ namespace Dune::IGA {
     Boundary boundary;
   };
 
-  std::once_flag onceFlag;
-  void silenceGrid() {
-    std::call_once(onceFlag, [] {
-      char s[] = "ALUGRID_VERBOSITY_LEVEL=0";
-      putenv(s);
-    });
-  }
   /** \brief representation of the trimmed element in the parameter space */
   template <int dim, typename Grid>
   requires(dim == Grid::dimension) class TrimmedElementRepresentation {
@@ -84,14 +76,11 @@ namespace Dune::IGA {
           scaling{scalingAndOffset.first},
           offset{scalingAndOffset.second},
           targetArea{calculateTargetArea(200)} {
-      silenceGrid();
       reconstructTrimmedElement();
     }
     /// brief: Constructs an untrimmed elementRepresentation gets lazily constructed when called upon the GridView
     explicit TrimmedElementRepresentation(std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
-        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
-      silenceGrid();
-    }
+        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {}
 
     // Accessors
     GridView gridView() const {
@@ -247,12 +236,12 @@ namespace Dune::IGA {
       gridFactory.insertVertex({0, 1});
       gridFactory.insertVertex({1, 1});
 
-      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
-        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
-      else {
-        gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
-        gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
-      }
+      //      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
+      //        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
+      //      else {
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
+      gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
+      //      }
 
       grid = gridFactory.createGrid();
     }
