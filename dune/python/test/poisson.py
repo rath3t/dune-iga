@@ -131,7 +131,6 @@ def globalAssembler(basis):
 reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
 
 gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
-print("refineMents")
 gridView.hierarchicalGrid.globalRefine(2)
 basis = defaultGlobalBasis(gridView, Nurbs())
 
