@@ -84,10 +84,9 @@ def globalAssembler(basis):
     A = lil_matrix((N, N))
     b = np.zeros(N)
 
-    # mark all Dirichlet DOFs
+    # mark all Dirichlet DOFs (first sqrt(N) are fixed)
     dichichletDOFs = np.zeros(N, dtype=bool)
     dichichletDOFs[: math.floor(math.sqrt(N))] = True
-    # basis.interpolate(dichichletDOFs,isDirichlet)
 
     # interpolate the boundary values
     gCoeffs = np.zeros(N)
