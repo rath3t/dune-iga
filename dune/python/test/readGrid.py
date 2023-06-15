@@ -5,7 +5,6 @@ import setpath
 import math
 
 setpath.set_path()
-print(sys.path)
 
 import os
 

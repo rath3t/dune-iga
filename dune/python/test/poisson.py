@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 # The top part of this code is taken from https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/dune/python/test/poisson.py
 # Thus, see also their license https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/COPYING
+import setpath
+
+setpath.set_path()
 import numpy as np
 import math
 from scipy.sparse import lil_matrix

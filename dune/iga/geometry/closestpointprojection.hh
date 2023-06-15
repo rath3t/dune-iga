@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <utility>
-
-#include "dune/iga/nurbspatchgeometry.h"
+#include "dune/iga/geometry/geohelper.hh"
+#include <dune/common/fmatrix.hh>
+#include <dune/common/fvector.hh>
 #include <dune/common/transpose.hh>
 
 namespace Dune::IGA {

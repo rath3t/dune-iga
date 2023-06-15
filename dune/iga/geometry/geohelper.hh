@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <ranges>
+
 #include <dune/common/fvector.hh>
 
 namespace Dune::IGA::Utilities {
