@@ -398,7 +398,7 @@ namespace Dune::IGA {
         if (a != p) kind += ph - oldr;
         for (int j = lbz; j <= rbz; ++j, ++cind)  // Load ctrl pts into Qw
           newCurve(cind) = ebpts[j];
-        if (b < m) {  // Set up for next pass thru loop
+        if (b < m) {  // Set up for next pass through loop
           std::ranges::copy(nextbpts | std::views::take(r), bpts.begin());
           for (int j = r; j <= p; ++j)
             bpts[j] = oldCurve(b - p + j);

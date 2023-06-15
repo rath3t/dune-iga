@@ -14,7 +14,14 @@ os.environ["DUNE_LOG_LEVEL"] = "debug"
 os.environ["DUNE_SAVE_BUILD"] = "console"
 os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
 
-from dune.iga import IGAGrid, ControlPointNet, ControlPoint, NurbsPatchData
+from dune.iga import (
+    IGAGrid,
+    ControlPointNet,
+    ControlPoint,
+    NurbsPatchData,
+    makeCircularArc,
+    makeSurfaceOfRevolution,
+)
 from dune.grid import structuredGrid
 
 from dune.iga import reader as readeriga
@@ -71,9 +78,35 @@ if __name__ == "__main__":
     assert gridView.size(0) == 1
     assert gridView.size(1) == 4
     assert gridView.size(2) == 4
-
     globalBasis = defaultGlobalBasis(gridView, Power(Nurbs(), 2))
     assert len(net) * 2 == len(globalBasis)
+    newnurbsPatchData = nurbsPatchData.degreeElevate(0, 3)
+    # degree elevate changes nothing
+    gridView = IGAGrid(newnurbsPatchData)
+    assert gridView.size(0) == 1
+    assert gridView.size(1) == 4
+    assert gridView.size(2) == 4
+    newnurbsPatchData = nurbsPatchData.knotRefinement((0.5,), 0)
+    newnurbsPatchData = newnurbsPatchData.knotRefinement((0.5,), 1)
+    gridView = IGAGrid(newnurbsPatchData)
+    assert gridView.size(0) == 4
+    assert gridView.size(2) == 9
+
+    r = 1.0
+    R = 2.0
+    circleData = makeCircularArc(r)
+    nurbsPatchDataArc = makeSurfaceOfRevolution(circleData, (R, 0, 0), (0, 1, 0), 360.0)
+    gridView = IGAGrid(nurbsPatchDataArc)
+    vtkWriter = gridView.vtkWriter(subsampling=4)
+    vtkWriter.write(name="Torus")
+
+    try:
+        nurbsPatchDataArc = makeSurfaceOfRevolution(
+            newnurbsPatchData, (R, 0, 0), (0, 1, 0), 360.0
+        )
+        raise Exception(f"makeSurfaceOfRevolution should have raised an Value error")
+    except ValueError:
+        pass
 
     if True:
         reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")

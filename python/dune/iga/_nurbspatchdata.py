@@ -41,8 +41,7 @@ def NurbsPatchData(knotSpans, controlPointNet, degree):
 
     worldDim = len(controlPointNet.get((0, 0)).coords)
     dim = controlPointNet.netDim
-    # scalarType=print(typestr(controlPointNet.get((0,0)).weight))
-    element_type = f"Dune::IGA::NURBSPatchData<{worldDim},{dim},double>"
+    element_type = f"Dune::IGA::NURBSPatchData<{dim},{worldDim},double>"
 
     includes = []
     includes += ["dune/python/iga/nurbspatchdata.hh"]
@@ -52,3 +51,17 @@ def NurbsPatchData(knotSpans, controlPointNet, degree):
     )
 
     return module.NurbsPatchData(knotSpans, controlPointNet, degree)
+
+
+def NurbsPatchDataDefault(dim, worldDim):
+    generator = SimpleGenerator("NurbsPatchData", "Dune::Python")
+
+    element_type = f"Dune::IGA::NURBSPatchData<{dim},{worldDim},double>"
+    includes = []
+    includes += ["dune/python/iga/nurbspatchdata.hh"]
+    moduleName = "NurbsPatchData_" + hashIt(element_type)
+    module = generator.load(
+        includes=includes, typeName=element_type, moduleName=moduleName
+    )
+
+    return module.NurbsPatchData()

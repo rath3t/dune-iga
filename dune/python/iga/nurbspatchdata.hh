@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dune/iga/controlpoint.hh"
+#include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbspatchdata.hh"
 #include <dune/python/functions/globalbasis.hh>
@@ -79,6 +80,13 @@ namespace Dune::Python {
     cls.def_property_readonly_static("dimworld", [](pybind11::object /* self */) { return dimworld; });
 
     cls.def("asBasis", [](NURBSPatchData& self) { return Dune::Functions::BasisFactory::nurbs(self); });
+    cls.def("degreeElevate", [](NURBSPatchData& self, const int refinementDirection, const int elevationFactor) {
+      return Dune::IGA::degreeElevate(self, refinementDirection, elevationFactor);
+    });
+    cls.def("knotRefinement",
+            [](NURBSPatchData& self, const std::vector<double>& newKnots, const int refinementDirection) {
+              return Dune::IGA::knotRefinement(self, newKnots, refinementDirection);
+            });
   }
 
 }  // namespace Dune::Python

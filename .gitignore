@@ -6,4 +6,5 @@ build-cmake
 *cmake-build*
 dune/python/test/setpath.py
 *.vtu
+*.pyc
 # need to add other file formats

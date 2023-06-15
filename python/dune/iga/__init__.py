@@ -4,7 +4,8 @@ from ._iga import *
 from ._nurbspatchdata import *
 from ._igagrids import *
 from .basis import *
-from .boundarypatch import *
+from ._boundarypatch import *
+from ._nurbsAlgorithms import *
 
 registry = dict()
 registry["grid"] = grid_registry
