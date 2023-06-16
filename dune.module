@@ -3,7 +3,7 @@
 
 #Name of the module
 Module: dune-iga
-Version: 0.1.0
+Version: 0.1.5
 Maintainer: mueller@ibb.uni-stuttgart.de
 
 Depends: dune-grid dune-functions dune-alugrid

@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(
   dune-iga
-  VERSION 0.1.0
+  VERSION 0.1.5
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
