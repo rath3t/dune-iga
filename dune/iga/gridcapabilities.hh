@@ -17,16 +17,6 @@ namespace Dune::Capabilities {
     static const bool v = true;
   };
 
-  template <typename ScalarType>
-  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, ScalarType>, 1> {
-    static const bool v = false;
-  };
-
-  template <typename ScalarType>
-  struct hasEntity<Dune::IGA::NURBSGrid<2, 2, ScalarType>, 2> {
-    static const bool v = false;
-  };
-
   template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
   struct hasEntityIterator<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim>
       : public hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {};

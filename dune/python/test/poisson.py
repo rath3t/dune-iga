@@ -20,7 +20,6 @@ import os
 import setpath
 
 setpath.set_path()
-print(sys.path)
 
 os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
 
