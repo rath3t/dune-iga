@@ -95,10 +95,10 @@ namespace Dune::Python::IGA {
                                                             GenerateTypeName(clsLeafView.first, "TrimmedVtkWriter"));
     if (clsLeafViewWriter.second) Dune::Vtk::registerVtkWriter<TrimmedWriterType>(module, clsLeafViewWriter.first);
 
-    clsLeafView.first.def("trimmedVtkWriter", [](const LeafGridView& self) {
-      auto dataCollector = std::make_shared<Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>(self);
+    clsLeafView.first.def("trimmedVtkWriter", [](const LeafGridView& self, int subSample=0) {
+      auto dataCollector = std::make_shared<Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>(self,subSample);
       return new Dune::VtkUnstructuredGridWriter(dataCollector, Vtk::FormatTypes::ASCII);
-    });
+    },pybind11::arg("subSample")=0);
 #endif
 
     using ControlPointNetType = typename NURBSGrid::ControlPointNetType;
