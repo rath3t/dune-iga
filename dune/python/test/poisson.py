@@ -17,9 +17,6 @@ from dune.iga import IGAGrid, boundaryPatch
 from dune.grid import gridFunction
 from dune.common import FieldVector
 import os
-import setpath
-
-setpath.set_path()
 
 os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
 

@@ -24,7 +24,20 @@ def ControlPoint(coords, weight=1):
 def ControlPointNet(controlPoints):
     generator = SimpleGenerator("MultiDimensionNet", "Dune::Python")
 
-    element_type = f"Dune::IGA::MultiDimensionNet<{len(controlPoints)},{controlPoints[0][0].cppTypeName}>"
+    try:
+        controlPointType= controlPoints[0][0][0].cppTypeName
+        netDim=3
+    except:
+        try:
+            controlPointType= controlPoints[0][0].cppTypeName
+            netDim=2
+        except:
+            try:
+                controlPointType= controlPoints[0].cppTypeName
+                netDim=1
+            except:
+                raise Exception("Controlpoint type not deducable from list")
+    element_type = f"Dune::IGA::MultiDimensionNet<{netDim},{controlPointType}>"
 
     includes = []
     includes += ["dune/python/iga/nurbspatchdata.hh"]
@@ -39,7 +52,7 @@ def ControlPointNet(controlPoints):
 def NurbsPatchData(knotSpans, controlPointNet, degree):
     generator = SimpleGenerator("NurbsPatchData", "Dune::Python")
 
-    worldDim = len(controlPointNet.get((0, 0)).coords)
+    worldDim = len(controlPointNet.directGet( 0).coords)
     dim = controlPointNet.netDim
     element_type = f"Dune::IGA::NURBSPatchData<{dim},{worldDim},double>"
 
@@ -50,6 +63,11 @@ def NurbsPatchData(knotSpans, controlPointNet, degree):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
 
+    if isinstance(knotSpans,tuple):
+        if isinstance(knotSpans[0],float) or  isinstance(knotSpans[0], int):
+            knotSpans= list([list(knotSpans),])
+    if isinstance(degree,int):
+        degree=(degree,)
     return module.NurbsPatchData(knotSpans, controlPointNet, degree)
 
 

@@ -47,6 +47,11 @@ namespace Dune::IGA {
       *this                           = MultiDimensionNet{dimsize, vals};
     }
 
+    explicit MultiDimensionNet(const std::vector<ValueType>& vals) {
+      std::array<int, 1> dimsize = {static_cast<int>(vals.size())};
+      *this                      = MultiDimensionNet{dimsize, vals};
+    }
+
     /** \brief constructor for a net of a certain strideSizes with values unknown.
      *
      *  \param[in] dimSize array of the strideSizes of each dimension

@@ -79,7 +79,8 @@ namespace Dune::Python::IGA {
     static constexpr std::integral auto dimensionworld = NURBSGrid::dimensionworld;
     using ctype                                        = typename NURBSGrid::ctype;
 
-    module.def("reader", [](const pybind11::dict& args_) { return Dune::Python::IGA::reader<NURBSGrid>(args_); });
+    if constexpr (dimension == 2)
+      module.def("reader", [](const pybind11::dict& args_) { return Dune::Python::IGA::reader<NURBSGrid>(args_); });
 
     Dune::Python::registerHierarchicalGrid(module, cls);
     using LeafGridView = typename NURBSGrid::LeafGridView;
@@ -87,18 +88,24 @@ namespace Dune::Python::IGA {
     if (clsLeafView.second) registerGridView(module, clsLeafView.first);
 
 #if HAVE_DUNE_VTK
-    pybind11::module::import("dune.vtk");
+    if constexpr (dimension == 2) {
+      pybind11::module::import("dune.vtk");
 
-    using TrimmedWriterType
-        = Dune::VtkUnstructuredGridWriter<LeafGridView, Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>;
-    auto clsLeafViewWriter = insertClass<TrimmedWriterType>(module, "TrimmedVtkWriter",
-                                                            GenerateTypeName(clsLeafView.first, "TrimmedVtkWriter"));
-    if (clsLeafViewWriter.second) Dune::Vtk::registerVtkWriter<TrimmedWriterType>(module, clsLeafViewWriter.first);
+      using TrimmedWriterType
+          = Dune::VtkUnstructuredGridWriter<LeafGridView, Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>;
+      auto clsLeafViewWriter = insertClass<TrimmedWriterType>(module, "TrimmedVtkWriter",
+                                                              GenerateTypeName(clsLeafView.first, "TrimmedVtkWriter"));
+      if (clsLeafViewWriter.second) Dune::Vtk::registerVtkWriter<TrimmedWriterType>(module, clsLeafViewWriter.first);
 
-    clsLeafView.first.def("trimmedVtkWriter", [](const LeafGridView& self, int subSample=0) {
-      auto dataCollector = std::make_shared<Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>(self,subSample);
-      return new Dune::VtkUnstructuredGridWriter(dataCollector, Vtk::FormatTypes::ASCII);
-    },pybind11::arg("subSample")=0);
+      clsLeafView.first.def(
+          "trimmedVtkWriter",
+          [](const LeafGridView& self, int subSample = 0) {
+            auto dataCollector
+                = std::make_shared<Dune::Vtk::DiscontinuousIgaDataCollector<LeafGridView>>(self, subSample);
+            return new Dune::VtkUnstructuredGridWriter(dataCollector, Vtk::FormatTypes::ASCII);
+          },
+          pybind11::arg("subSample") = 0);
+    }
 #endif
 
     using ControlPointNetType = typename NURBSGrid::ControlPointNetType;

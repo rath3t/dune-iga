@@ -146,7 +146,12 @@ namespace Dune::IGA {
       return N / N.two_norm();
     }
 
-    [[nodiscard]] GlobalCoordinate centerUnitOuterNormal() const { return unitOuterNormal(0.5); }
+    [[nodiscard]] GlobalCoordinate centerUnitOuterNormal() const {
+      if constexpr (mydimension == 0)
+        return unitOuterNormal({});
+      else
+        return unitOuterNormal(0.5);
+    }
 
     /** \brief Same as outerNormal() but with the length of the integration element */
     [[nodiscard]] GlobalCoordinate integrationOuterNormal(const LocalCoordinate& xi) const {

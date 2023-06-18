@@ -29,6 +29,13 @@ from dune.common import FieldVector
 from dune.grid import gridFunction
 
 if __name__ == "__main__":
+    # one dimensional test
+    cp = ControlPoint((0, 0, 0), 1)
+    cp2 = ControlPoint((0, 0, 3), 1)
+    netC = (((cp, cp2)))
+    net = ControlPointNet(netC)
+    nurbsPatchData = NurbsPatchData(((0, 0, 1, 1)), net, (1))
+    gridView = IGAGrid(nurbsPatchData)
     reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim.ibra")
     refinements = 5
     gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
@@ -71,7 +78,7 @@ if __name__ == "__main__":
     assert net.get((1, 0)).coords[0] == 1
     assert net.get((1, 0)).coords[1] == 4
 
-    nurbsPatchData = NurbsPatchData(((0, 0, 1, 1), (0, 0, 1, 1)), net, (1, 1))
+    nurbsPatchData = NurbsPatchData(((0.0, 0, 1, 1), (0, 0, 1, 1)), net, (1, 1))
 
     gridView = IGAGrid(nurbsPatchData)
     assert gridView.size(0) == 1

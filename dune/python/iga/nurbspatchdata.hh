@@ -45,15 +45,25 @@ namespace Dune::Python {
     constexpr std::size_t netDim = MultiDimensionNet::netDim;
 
     cls.def(pybind11::init());
-    cls.def(pybind11::init(
-        [](const std::vector<std::vector<ValueType>>& values) { return new MultiDimensionNet(values); }));
+    if constexpr (netDim == 2)
+      cls.def(pybind11::init(
+          [](const std::vector<std::vector<ValueType>>& values) { return new MultiDimensionNet(values); }));
+    else if constexpr (netDim == 1)
+      cls.def(pybind11::init([](const std::vector<ValueType>& values) { return new MultiDimensionNet(values); }));
+    else if constexpr (netDim == 3)
+      cls.def(pybind11::init([](const std::vector<std::vector<std::vector<ValueType>>>& values) {
+        return new MultiDimensionNet(values);
+      }));
 
     cls.def("__len__", &MultiDimensionNet::size);
     cls.def("strideSizes", &MultiDimensionNet::strideSizes);
     cls.def("set", &MultiDimensionNet::set);
+    cls.def("directGet", [](MultiDimensionNet& self, int directIndex) { return self.directGet(directIndex); });
     cls.def("get",
             [](MultiDimensionNet& self, const std::array<int, netDim>& multIndex) { return self.get(multIndex); });
     cls.def_property_readonly_static("netDim", [](pybind11::object /* self */) { return MultiDimensionNet::netDim; });
+    cls.def_property_readonly_static("valueType",
+                                     [](pybind11::object /* self */) { return Dune::className<ValueType>(); });
   }
 
   template <class NURBSPatchData, class... options>
