@@ -265,7 +265,6 @@ namespace Dune::IGA {
       for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
         bezalfs[i][j] = bezalfs[ph - i][p - j];
 
-    double ua = oldData.knotSpans[refinementDirection][0];
     ControlPointNetType newCPv(oldData.controlPoints.strideSizes());
 
     auto oldCPs = oldData.controlPoints;
@@ -279,6 +278,7 @@ namespace Dune::IGA {
     newData.degree = oldData.degree;
     newData.degree[refinementDirection] += t;
     const auto& U = oldData.knotSpans[refinementDirection];
+    double ua     = U[0];
     std::vector<ScalarType> Uh;
     for (int j = 0, i = 0; i < U.size(); ++i)  // insert knot t times for each unique knot
       if (j < U.size()) {
@@ -330,6 +330,7 @@ namespace Dune::IGA {
 
     for (auto [oldCurve, newCurve] :
          std::ranges::iota_view(0, totalCurvesInPatch) | std::views::transform(newAndOldCurve)) {
+      ua       = U[0];
       int kind = ph + 1;
       int r    = -1;
       int a    = p;

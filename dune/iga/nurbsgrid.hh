@@ -130,6 +130,20 @@ namespace Dune::IGA {
       updateStateAfterRefinement(omitTrim);
     }
 
+    void degreeElevateInDirection(const int dir, const int elevationFactor, bool omitTrim = false) {
+      if (elevationFactor == 0) return;
+      currentPatchRepresentation_ = degreeElevate(currentPatchRepresentation_, dir, elevationFactor);
+      updateStateAfterRefinement(omitTrim);
+    }
+
+    void globalDegreeElevate(const int elevationFactor, bool omitTrim = false) {
+      if (elevationFactor == 0) return;
+      oldPatchRepresentation_.push_back(currentPatchRepresentation_);
+      for (int refDirection = 0; refDirection < dim; ++refDirection)
+        currentPatchRepresentation_ = degreeElevate(currentPatchRepresentation_, refDirection, elevationFactor);
+      updateStateAfterRefinement(omitTrim);
+    }
+
     void globalMultiRefine(const int global, const int uDir, const int vDir) {
       this->globalRefine(global, uDir > 0 or vDir > 0);
       this->globalRefineInDirection(0, uDir, vDir > 0);
@@ -139,6 +153,7 @@ namespace Dune::IGA {
     int size(int codim) const { return leafPatches_.get()->front().size(codim); }
 
     const auto& patchData(int i = 0) const { return currentPatchRepresentation_; }
+    const auto& lowerOrderPatchData(int i = 0) const { return oldPatchRepresentation_.at(i); }
 
     bool reportTrimError() const {
       for (const auto& patch : *leafPatches_)
@@ -212,6 +227,7 @@ namespace Dune::IGA {
     typename Traits::CollectiveCommunication ccobj;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> coarsestPatchRepresentation_;
     NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType> currentPatchRepresentation_;
+    std::vector<NURBSPatchData<(size_t)dim, (size_t)dimworld, ScalarType>> oldPatchRepresentation_;
     std::shared_ptr<std::vector<NURBSPatch<dim, dimworld, ScalarType>>> leafPatches_;
     std::shared_ptr<GridView> leafGridView_;
     std::unique_ptr<NURBSGridLeafIndexSet<const NURBSGrid>> indexSet_;
