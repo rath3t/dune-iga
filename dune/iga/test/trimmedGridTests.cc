@@ -256,7 +256,7 @@ auto testExampleSuite() {
   testLoop(grid, 4, "pipe_trim");
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
-  testLoop(grid, 4, "Element_trim_Xb");  // this test fails with a 6
+  testLoop(grid, 6, "Element_trim_Xb");
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
   testLoop(grid, 4, "nurbs_1");
