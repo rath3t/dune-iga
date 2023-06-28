@@ -130,6 +130,7 @@ namespace Dune::IGA {
     }
 
     const auto &getPatchData(int patchID = 0) const { return *(grid_->leafPatches_->at(patchID).getPatchData()); }
+    const auto &lowerOrderPatchData(int patchID = 0) const { return grid_->lowerOrderPatchData(patchID); }
     const auto &getPatch(int patchID = 0) const { return grid_->leafPatches_->at(patchID); }
 
     template <int cd, Dune::PartitionIteratorType ptype = Dune::All_Partition>

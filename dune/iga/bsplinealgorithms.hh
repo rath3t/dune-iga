@@ -142,9 +142,6 @@ namespace Dune::IGA {
       const int order = p + 1;
       const int sp    = spIndex ? spIndex.value() : findSpanCorrected(p, u, knots);
       using namespace std::ranges;
-      auto lDiff = transform_view(reverse_view(std::views::counted(begin(knots) + sp + 1 - p, p)),
-                                  [&u](auto& kn) { return u - kn; });
-      auto rDiff = transform_view(std::views::counted(begin(knots) + sp + 1, p), [&u](auto& kn) { return kn - u; });
 
       DynamicMatrixType dN(derivativeOrder + 1, order);
 
@@ -153,24 +150,19 @@ namespace Dune::IGA {
       DynamicMatrixType ndu(order, order);
 
       ndu[0][0] = 1.0;
-      {
-        int j = 0;
-        for (auto lDp = lDiff.begin(); lDp != lDiff.end(); lDp += j + 2, ++j) {
-          ScalarType saved{};
-          for (int r = 0; auto&& rD : rDiff | std::views::take(j + 1)) {
-            const auto& lD = (*lDp);
-            /* Lower triangle */
-            ndu[j + 1][r]  = rD + lD;
-            ScalarType tmp = ndu[r][j] / ndu[j + 1][r];
-            /* Upper triangle */
-            ndu[r++][j + 1] = saved + rD * tmp;
-            saved           = lD * tmp;
-            --lDp;
-          }
-          ndu[j + 1][j + 1] = saved;
+      for (int j = 1; j <= p; j++) {
+        left[j]      = u - knots[sp + 1 - j];
+        right[j]     = knots[sp + j] - u;
+        double saved = 0.0;
+        for (int r = 0; r < j; r++) { /* Lower triangle */
+          ndu[j][r]   = right[r + 1] + left[j - r];
+          double temp = ndu[r][j - 1] / ndu[j][r];
+          ndu[r][j]   = saved + right[r + 1] * temp;
+          saved       = left[j - r] * temp;
         }
+        ndu[j][j] = saved;
       }
-      for (int j = p; j >= 0; --j)
+      for (int j = 0; j <= p; ++j)
         dN[0][j] = ndu[j][p];
 
       // Compute the derivatives
@@ -189,7 +181,7 @@ namespace Dune::IGA {
 
           auto& nduRowpk1 = ndu[pk + 1];
           auto& dNcur     = dN[k][r];
-
+          dNcur           = 0.0;
           if (r >= k) {
             a2Row[0] = a1Row[0] / nduRowpk1[rk];
             dNcur    = a2Row[0] * ndu[rk][pk];
@@ -213,9 +205,9 @@ namespace Dune::IGA {
       /* Multiply through by the correct factors */
       /* (Eq. [2.9])                             */
       for (int r = p, k = 1; k <= derivativeOrder; ++k) {
-        for (int j = p; j >= 0; --j)
+        for (int j = 0; j <= p; ++j)
           dN[k][j] *= r;
-        r *= p - k;
+        r *= (p - k);
       }
       return dN;
     }

@@ -74,9 +74,11 @@ namespace Dune::IGA {
     domainFraction /= domainFractionFactor;
     int i;
     auto [oldEnergy, R, H] = energyGradAndHess(u);
+    energyVal              = oldEnergy;
     for (i = 0; i < maxiter; ++i) {
       Dune::FieldVector<ctype, dim> du;
       H.solve(du, -R);
+      Rnorm = R.two_norm();
 
       // if the increment is too large, we tend to overshoot, thus, we limit it to a fraction of the total domain
       ctype duNorm = du.two_norm();
@@ -88,12 +90,12 @@ namespace Dune::IGA {
       u += du;
       if (Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(u, domain)) break;
 
-      int testSteps = 10;
+      int testSteps = 20;
       for (int j = 0; j < testSteps; ++j) {
         energyVal = energy(u);
-        if (energyVal > oldEnergy) {
+        if (energyVal > oldEnergy and duNorm > 1e-8) {  // we directly accept very small steps
           u                 = uold;
-          ctype scaleFactor = Dune::power(10.0, j + 1);
+          ctype scaleFactor = Dune::power(2.0, j + 1);
           // If our new step didn't move in an energy-decreasing direction, we have to modify
           if (isPositiveDef) {
             // If our model m(du)= oldEnergy+ dot(R,du) + 0.5*(du^T*H*du) has a positive curvature du^T*Hessian*du, we
@@ -124,19 +126,20 @@ namespace Dune::IGA {
     // If this does also not help we return the point at the boundary with smaller energy(distance)
     for (int j = 0; j < dim; ++j)
       u[j] = clampToDomain(u[j], domain[j]);
-    auto uRestart = u;
-    if (Rnorm > tol and not start) {
-      for (int j = 0; j < dim; ++j)
-        if (abs(domain[j].left() - uRestart[j]) < tol)
-          uRestart[j] = domain[j].right();
-        else if (abs(domain[j].right() - uRestart[j]) < tol)
-          uRestart[j] = domain[j].left();
-
-      auto [u2, Rnorm2, energyVal2, gap] = closestPointProjectionByTrustRegion(geo, point, uRestart);
-
-      return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm())
-                                    : std::make_tuple(u2, Rnorm2, energyVal2, (geo.global(u2) - point).two_norm());
-    }
+    //    auto uRestart = u;
+    //    if (Rnorm > tol and not start) {
+    //      for (int j = 0; j < dim; ++j)
+    //        if (abs(domain[j].left() - uRestart[j]) < tol)
+    //          uRestart[j] = domain[j].right();
+    //        else if (abs(domain[j].right() - uRestart[j]) < tol)
+    //          uRestart[j] = domain[j].left();
+    //
+    //      auto [u2, Rnorm2, energyVal2, gap] = closestPointProjectionByTrustRegion(geo, point, uRestart);
+    //
+    //      return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm())
+    //                                    : std::make_tuple(u2, Rnorm2, energyVal2, (geo.global(u2) -
+    //                                    point).two_norm());
+    //    }
     //    std::cout << "u " << u << " Rnorm " << Rnorm << " energyVal " << energyVal << "geo " << geo.global(u) <<
     //    std::endl;
     return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());

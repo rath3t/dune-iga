@@ -103,7 +103,7 @@ auto testPatchGeometryCurve() {
 }
 
 auto testPatchGeometrySurface() {
-  TestSuite t;
+  TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
 
   const auto dim                   = 2;
   const auto dimworld              = 3;
@@ -131,25 +131,25 @@ auto testPatchGeometrySurface() {
   NURBSPatchGeometry<dim, dimworld> geometry(std::make_shared<Dune::IGA::NURBSPatchData<dim, dimworld>>(patchData));
 
   auto p1 = geometry.global(FieldVector<double, 2>{0.5, 0.5});
-  t.check(Dune::FloatCmp::eq(p1, {1.0, 1.0, 0.75}));
+  t.check(Dune::FloatCmp::eq(p1, {1.0, 1.0, 0.75})) << "p1 check failed " << p1;
 
   auto p2 = geometry.global(FieldVector<double, 2>{0, 0});
-  t.check(Dune::FloatCmp::eq(p2, {0, 0, 1}));
+  t.check(Dune::FloatCmp::eq(p2, {0, 0, 1})) << "p2 check failed " << p2;
 
   auto p3 = geometry.global(FieldVector<double, 2>{0, 1});
-  t.check(Dune::FloatCmp::eq(p3, {2, 0, 2}));
+  t.check(Dune::FloatCmp::eq(p3, {2, 0, 2})) << "p3 check failed " << p3;
 
   // Check derivative
   auto jc1 = geometry.jacobianTransposed({0.5, 0.5});
-  t.check(Dune::FloatCmp::eq(jc1[0], {0.0, 2.0, 0.5}));
-  t.check(Dune::FloatCmp::eq(jc1[1], {2.0, 0.0, 0.5}));
+  t.check(Dune::FloatCmp::eq(jc1[0], {0.0, 2.0, 0.5})) << "jc1[0] check failed " << jc1[0];
+  t.check(Dune::FloatCmp::eq(jc1[1], {2.0, 0.0, 0.5})) << "jc1[1] check failed " << jc1[1];
 
   // Check local function
   auto u1 = geometry.local({1.0, 1.0, 0.75});
-  t.check(Dune::FloatCmp::eq(u1, {0.5, 0.5}));
+  t.check(Dune::FloatCmp::eq(u1, {0.5, 0.5})) << "u1 check failed " << u1;
 
   auto u2 = geometry.local({2, 0, 2});
-  t.check(Dune::FloatCmp::eq(u2, {0, 1}));
+  t.check(Dune::FloatCmp::eq(u2, {0, 1})) << "u2 check failed " << u2;
 
   // Check corners
   t.check(geometry.corners() == 4);
@@ -158,14 +158,18 @@ auto testPatchGeometrySurface() {
       {FieldVector<double, 3>{0, 0, 1}, FieldVector<double, 3>{0, 2, 1}, FieldVector<double, 3>{2, 0, 2},
        FieldVector<double, 3>{2, 2, 2}}};
   for (int i = 0; i < 4; ++i)
-    t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]));
+    t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]))
+        << "u2 check failed " << geometry.corner(i) << " Expected: " << expectedCorners[i];
 
   // Check domain
-  t.check(Dune::FloatCmp::eq(geometry.domain()[0].left(), 0.0));
-  t.check(Dune::FloatCmp::eq(geometry.domain()[0].right(), 1.0));
+  t.check(Dune::FloatCmp::eq(geometry.domain()[0].left(), 0.0))
+      << "Domaincheck failed check failed " << geometry.domain()[0].left();
+  t.check(Dune::FloatCmp::eq(geometry.domain()[0].right(), 1.0))
+      << "Domaincheck failed check failed " << geometry.domain()[0].right();
 
   // Check domain midpoint
-  t.check(Dune::FloatCmp::eq(geometry.domainMidPoint()[0], 0.5));
+  t.check(Dune::FloatCmp::eq(geometry.domainMidPoint()[0], 0.5))
+      << "Domaincheck failed check failed " << geometry.domainMidPoint()[0];
 
   return t;
 }
