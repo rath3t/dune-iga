@@ -214,16 +214,18 @@ auto testDataCollectorAndVtkWriter() {
   grid->globalRefine(3);
 
   const auto gv = grid->leafGridView();
-  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
+  for (auto i : std::views::iota(0u, 3u)) {
+    Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, i);
 
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
-  auto lambdaf = [](auto x) {
-    return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
-  };
-  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+    Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+    auto lambdaf = [](auto x) {
+      return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
+    };
+    auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
 
-  writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-  writer2.write("TestFile");
+    writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+    writer2.write("TestFile_s" + std::to_string(i));
+  }
 
   return t;
 }

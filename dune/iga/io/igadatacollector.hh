@@ -57,7 +57,7 @@ namespace Dune::Vtk {
         for (auto& [type, pointSet] : pointSets_)
           if (pointSet.size() == 0) pointSet.build(type);
 
-        std::uint64_t vIdx = 0;
+        std::size_t vIdx = 0;
         for (auto& subGridVertex : elementRepr->subVertices) {
           vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
         }
@@ -120,7 +120,7 @@ namespace Dune::Vtk {
 
         auto elementRepr = ele.impl().trimmedElementRepresentation();
 
-        std::uint64_t eIdx = 0;
+        std::size_t eIdx = 0;
         for (auto& subGridElement : elementRepr->subElements) {
           Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
 

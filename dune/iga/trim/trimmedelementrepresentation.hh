@@ -12,6 +12,7 @@
 #include "dune/iga/geometry/geohelper.hh"
 #include <dune/alugrid/grid.hh>
 #include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/virtualrefinement.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -91,15 +92,20 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] bool isTrimmed() const { return trimmed; }
+
     void refineAndConstructGrid(unsigned int refinement = 0) {
-      // Do nothing
+      if (refinement == 0)
+        return;
+      if (not trimmed) {
+        refineUntrimmed(refinement);
+      }
     }
 
     auto geometryType() {
       return subElements.front().type();
     }
 
-    std::int64_t vertexSubIndex(std::uint64_t eleIdx, std::uint8_t subIndex) {
+    std::size_t vertexSubIndex(std::uint64_t eleIdx, std::size_t subIndex) {
       if (trimmed)
         return indices[eleIdx * 3 + subIndex];
       else
@@ -351,5 +357,45 @@ namespace Dune::IGA {
 
       return result;
     }
+
+    void refineUntrimmed(int refinementSteps) {
+        assert(geometryType() == Dune::GeometryTypes::quadrilateral && not trimmed);
+
+        subVertices.clear();
+        subElements.clear();
+        indices.clear();
+
+        Dune::RefinementIntervals tag(refinementSteps + 1);
+        Dune::VirtualRefinement<dim, double>& refinement = Dune::buildRefinement<dim, double>(Dune::GeometryTypes::quadrilateral, Dune::GeometryTypes::quadrilateral);
+
+        auto eSubEnd = refinement.eEnd(tag);
+        auto eSubIt = refinement.eBegin(tag);
+
+        auto vSubEnd = refinement.vEnd(tag);
+        auto vSubIt = refinement.vBegin(tag);
+
+        subElements.reserve(refinement.nElements(tag));
+        subVertices.reserve(refinement.nVertices(tag));
+        indices.reserve(refinement.nElements(tag) * 3);
+
+        for (; vSubIt != vSubEnd; ++vSubIt)
+          subVertices.push_back(vSubIt.coords());
+
+        std::vector<Point> eleCoords;
+        eleCoords.reserve(4);
+
+        for (; eSubIt != eSubEnd; ++eSubIt) {
+          eleCoords.clear();
+          std::ranges::copy(eSubIt.vertexIndices(), std::back_inserter(indices));
+
+          for (auto idx : eSubIt.vertexIndices())
+            eleCoords.push_back(subVertices[idx]);
+
+          subElements.emplace_back(Dune::GeometryTypes::quadrilateral, eleCoords);
+        }
+
+
+    }
+
   };
 }  // namespace Dune::IGA
