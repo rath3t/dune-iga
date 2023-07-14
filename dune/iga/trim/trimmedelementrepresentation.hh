@@ -11,6 +11,7 @@
 
 #include "dune/iga/geometry/geohelper.hh"
 #include <dune/alugrid/grid.hh>
+#include <dune/geometry/multilineargeometry.hh>
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
@@ -43,18 +44,23 @@ namespace Dune::IGA {
   };
 
   /** \brief representation of the trimmed element in the parameter space */
-  template <int dim, typename Grid>
-  requires(dim == Grid::dimension) class TrimmedElementRepresentation {
+  template <int dim>
+  class TrimmedElementRepresentation {
    public:
-    using GridView = Grid::LeafGridView;
+    using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
     using Point    = Dune::FieldVector<double, dim>;
 
+    using Element = MultiLinearGeometry<double, dim, dim>;
+    std::vector<Element> subElements{};
+    std::vector<Point> subVertices{};
+    std::vector<unsigned int> indices{};
+
    private:
-    std::unique_ptr<Grid> grid{};
+
     std::vector<Boundary> outerBoundaries;
     std::optional<std::vector<std::vector<Boundary>>> innerBoundaries;
-    bool trimmed{};
     bool verbose{};
+    bool trimmed{};
     std::array<double, dim> scaling{};
     std::array<double, dim> offset{};
 
@@ -80,19 +86,24 @@ namespace Dune::IGA {
     }
     /// brief: Constructs an untrimmed elementRepresentation gets lazily constructed when called upon the GridView
     explicit TrimmedElementRepresentation(std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
-        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {}
-
-    // Accessors
-    GridView gridView() const {
-      assert(grid && "Grid for full element not yet constructed, use refineAndConstructGrid to lazily construct");
-
-      return grid->leafGridView();
+        : trimmed(false), scaling{scalingAndOffset.first}, offset{scalingAndOffset.second} {
+      constructFromCorners();
     }
+
     [[nodiscard]] bool isTrimmed() const { return trimmed; }
     void refineAndConstructGrid(unsigned int refinement = 0) {
-      if (not grid) constructFromCorners();
+      // Do nothing
+    }
 
-      if (refinement > 0) grid->globalRefine(refinement);
+    auto geometryType() {
+      return subElements.front().type();
+    }
+
+    std::int64_t vertexSubIndex(std::uint64_t eleIdx, std::uint8_t subIndex) {
+      if (trimmed)
+        return indices[eleIdx * 3 + subIndex];
+      else
+        return indices[eleIdx * 4 + subIndex];
     }
 
    private:
@@ -120,10 +131,14 @@ namespace Dune::IGA {
       if (innerBoundaries) prepareInnerBoundaries();
 
       splitBoundaries();
+      triangulate();
 
+      for (auto it = indices.begin(); it < indices.end(); it += 3)
+        subElements.emplace_back(Dune::GeometryTypes::triangle, std::vector<FieldVector<double, dim>>{subVertices[*it], subVertices[*(it + 1)], subVertices[*(it + 2)]});
+
+
+      /*
       Dune::GridFactory<Grid> gridFactory;
-      auto [indices, vertices] = triangulate();
-
       for (auto& vertex : vertices)
         gridFactory.insertVertex(vertex);
 
@@ -156,40 +171,20 @@ namespace Dune::IGA {
         std::cout << "Reconstructed Grid with " << gridViewRefined.size(0)
                   << " elements. Area of elements: " << calculateArea()
                   << ". Approx area of trimmed element: " << calculateTargetArea() << std::endl;
+      */
     }
 
-    void refineGridOnEdges(int refCount) {
-      GridView gridView       = grid->leafGridView();
-      auto boundariesToRefine = determineCurvedBoundaries(outerBoundaries);
-
-      for (int i = 0; i < refCount; ++i) {
-        for (const auto& ele : elements(grid->leafGridView())) {
-          bool mark = false;
-          if (ele.hasBoundaryIntersections())
-            for (auto& intersection : intersections(gridView, ele))
-              if (intersection.boundary())
-                if (boundariesToRefine[intersection.boundarySegmentIndex()]) mark = true;
-          if (mark) grid->mark(1, ele);
-        }
-
-        grid->preAdapt();
-        grid->adapt();
-        grid->postAdapt();
-      }
-    }
-
-    [[nodiscard]] auto triangulate() const -> std::pair<std::vector<unsigned int>, std::vector<Point>> {
+    [[nodiscard]] auto triangulate() {
       // Construct mesh with Earcut
       // C.f. https://github.com/mapbox/earcut.hpp
 
       // Create array of points
-      std::vector<Point> vertices;
-      vertices.reserve(outerBoundaries.size());
+      subVertices.reserve(outerBoundaries.size());
       for (auto& boundary : outerBoundaries)
-        vertices.push_back(toLocal(boundary.endPoints.front()));
+        subVertices.push_back(toLocal(boundary.endPoints.front()));
 
       std::vector<std::vector<Point>> polygonInput;
-      polygonInput.push_back(vertices);
+      polygonInput.push_back(subVertices);
 
       if (innerBoundaries)
         for (auto& innerLoop : innerBoundaries.value()) {
@@ -197,14 +192,13 @@ namespace Dune::IGA {
           std::vector<Point> holeInput;
           for (auto& boundary : innerLoop) {
             auto v = toLocal(boundary.endPoints.front());
-            vertices.push_back(v);
+            subVertices.push_back(v);
             holeInput.push_back(v);
           }
           polygonInput.push_back(holeInput);
         }
 
-      std::vector<unsigned int> indices = mapbox::earcut<unsigned int>(polygonInput);
-      return std::make_pair(indices, vertices);
+      indices = mapbox::earcut<unsigned int>(polygonInput);
     }
 
     // FIXME better name preparing for what?
@@ -229,21 +223,9 @@ namespace Dune::IGA {
     }
 
     void constructFromCorners() {
-      Dune::GridFactory<Grid> gridFactory;
-
-      gridFactory.insertVertex({0, 0});
-      gridFactory.insertVertex({1, 0});
-      gridFactory.insertVertex({0, 1});
-      gridFactory.insertVertex({1, 1});
-
-      //      if constexpr (std::is_same_v<Grid, Dune::UGGrid<2>>)
-      //        gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 2, 3});
-      //      else {
-      gridFactory.insertElement(Dune::GeometryTypes::triangle, {0, 1, 2});
-      gridFactory.insertElement(Dune::GeometryTypes::triangle, {1, 3, 2});
-      //      }
-
-      grid = gridFactory.createGrid();
+      subVertices = std::vector<FieldVector<double, dim>>{{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+      indices = {0, 1, 2, 3};
+      subElements.emplace_back(Dune::GeometryTypes::quadrilateral, subVertices);
     }
 
    public:
@@ -265,12 +247,8 @@ namespace Dune::IGA {
 
     /// \brief Calculates the area from the simplex elements in the current grid
     [[nodiscard]] double calculateArea() const {
-      if (not grid)
-        throw std::runtime_error("Grid for full element not yet constructed, use refinedGridView to lazily construct");
-
-      GridView gv = grid->leafGridView();
-      return std::accumulate(elements(gv).begin(), elements(gv).end(), 0.0,
-                             [](double rhs, const auto& element) { return rhs + element.geometry().volume(); });
+      return std::accumulate(subElements.begin(), subElements.end(), 0.0,
+                             [](double rhs, const auto& element) { return rhs + element.volume(); });
     }
 
    private:

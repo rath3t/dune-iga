@@ -44,21 +44,22 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr       = element.impl().trimmedElementRepresentation();
-        auto subGridView       = elementRepr->gridView();
-        auto verticesInSubGrid = subGridView.size(dim);
 
-        numCells_ += subGridView.size(0);
-        const auto& subGridIndexSet = subGridView.indexSet();
+        auto verticesInSubGrid = elementRepr->subVertices.size();
 
-        for (auto gt : subGridIndexSet.types(0))
-          pointSets_.try_emplace(gt, 1);
+        numCells_ += elementRepr->subElements.size();
+
+//        for (auto gt : subGridIndexSet.types(0))
+//          pointSets_.try_emplace(gt, 1);
+
+        pointSets_.try_emplace(elementRepr->geometryType(), 1);
 
         for (auto& [type, pointSet] : pointSets_)
           if (pointSet.size() == 0) pointSet.build(type);
 
-        for (auto subGridVertex : vertices(subGridView)) {
-          std::size_t idx = subGridIndexSet.index(subGridVertex);
-          vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, idx}), vertexCounter++);
+        std::uint64_t vIdx = 0;
+        for (auto& subGridVertex : elementRepr->subVertices) {
+          vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
         }
         numPoints_ += verticesInSubGrid;
       }
@@ -81,14 +82,12 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr = element.impl().trimmedElementRepresentation();
-        auto subGridView = elementRepr->gridView();
 
-        const auto& trimmedIndexSet = subGridView.indexSet();
-        for (auto subGridVertex : vertices(subGridView)) {
-          auto vecInLocal = subGridVertex.geometry().center();
-          auto v          = geometry.global(vecInLocal);
+        std::uint64_t vIdx = 0;
+        for (auto& subGridVertex : elementRepr->subVertices) {
+          auto v          = geometry.global(subGridVertex);
 
-          std::int64_t idx = 3 * vertexIndex_.at({elementId, trimmedIndexSet.index(subGridVertex)});
+          std::int64_t idx = 3 * vertexIndex_.at({elementId, vIdx++});
 
           for (std::size_t j = 0; j < v.size(); ++j)
             data[idx + j] = T(v[j]);
@@ -120,10 +119,9 @@ namespace Dune::Vtk {
         const std::size_t elementId = indexSet.index(ele);
 
         auto elementRepr = ele.impl().trimmedElementRepresentation();
-        auto subGridView = elementRepr->gridView();
 
-        const auto& subGridIndexSet = subGridView.indexSet();
-        for (auto subGridElement : elements(subGridView)) {
+        std::uint64_t eIdx = 0;
+        for (auto& subGridElement : elementRepr->subElements) {
           Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
 
           auto const& pointSet = pointSets_.at(subGridElement.type());
@@ -132,12 +130,13 @@ namespace Dune::Vtk {
             auto const& p        = pointSet[i];
             auto const& localKey = p.localKey();
             std::int64_t idx
-                = vertexIndex_.at({elementId, subGridIndexSet.subIndex(subGridElement, localKey.subEntity(), dim)});
+                = vertexIndex_.at({elementId, elementRepr->vertexSubIndex(eIdx, localKey.subEntity())});
 
             cells.connectivity.push_back(idx);
           }
           cells.types.push_back(cellType.type());
           cells.offsets.push_back(old_o += pointSet.size());
+          ++eIdx;
         }
       }
       return cells;
@@ -157,15 +156,13 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr = element.impl().trimmedElementRepresentation();
-        auto subGridView = elementRepr->gridView();
 
-        const auto& subGridIndexSet = subGridView.indexSet();
-        for (auto subGridVertex : vertices(subGridView)) {
-          auto vecInLocal  = subGridVertex.geometry().center();
-          std::int64_t idx = nComps * vertexIndex_.at({elementId, subGridIndexSet.index(subGridVertex)});
+        std::uint64_t vIdx = 0;
+        for (auto& subGridVertex : elementRepr->subVertices) {
+          std::int64_t idx = nComps * vertexIndex_.at({elementId, vIdx++});
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
-            data[idx + comp] = T(localFct.evaluate(comp, vecInLocal));
+            data[idx + comp] = T(localFct.evaluate(comp, subGridVertex));
         }
       }
 
@@ -187,11 +184,9 @@ namespace Dune::Vtk {
         const size_t elementId = indexSet.index(element);
 
         auto elementRepr            = element.impl().trimmedElementRepresentation();
-        auto subGridView            = elementRepr->gridView();
-        const auto& trimmedIndexSet = subGridView.indexSet();
 
-        for (auto subGridElement : elements(subGridView)) {
-          auto vecInLocal = subGridElement.geometry().center();
+        for (auto& subGridElement : elementRepr->subElements) {
+          auto vecInLocal = subGridElement.center();
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
             data.push_back(localFct.evaluate(comp, vecInLocal));

@@ -11,15 +11,14 @@ namespace Dune::IGA {
                               const QuadratureType::Enum qt = QuadratureType::GaussLegendre) {
     vector.clear();
 
-    auto gridView = elementRepr.gridView();
+    //auto gridView = elementRepr.gridView();
 
-    for (auto subElement : elements(gridView)) {
-      auto subElementGeo = subElement.geometry();
+    for (auto& subElement : elementRepr.subElements) {
 
       const auto& rule = Dune::QuadratureRules<double, dim>::rule(subElement.type(), order, qt);
       for (auto ip : rule) {
-        auto globalInSpan = subElementGeo.global(ip.position());
-        vector.emplace_back(globalInSpan, ip.weight() * subElementGeo.integrationElement(ip.position()));
+        auto globalInSpan = subElement.global(ip.position());
+        vector.emplace_back(globalInSpan, ip.weight() * subElement.integrationElement(ip.position()));
       }
     }
 
