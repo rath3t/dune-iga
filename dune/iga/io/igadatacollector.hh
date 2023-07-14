@@ -24,14 +24,20 @@ namespace Dune::Vtk {
     using Super::partition;
 
    public:
-    explicit DiscontinuousIgaDataCollector(GridView const& gridView, int subSample = 0) : Super(gridView) {
-      // FIXME this destroys the original trimmed element representation, if someone's wants to continue calculating
-      // with this grid?
+    DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed) : Super(gridView) {
       for (auto element : elements(gridView_)) {
-        element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSample);
+        if (element.impl().isTrimmed())
+          element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSampleTrimmed);
+        else
+          element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSampleFull);
       }
     }
-
+    // Does not subsample 
+    explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0) {};
+    
+    // Subsamples trimmed elements by creating a new grid
+    DiscontinuousIgaDataCollector(GridView const& gridView, int subsample) : DiscontinuousIgaDataCollector(gridView, subsample, subsample) {};
+    
     /// Construct the point sets
     void updateImpl() {
       pointSets_.clear();
@@ -45,12 +51,9 @@ namespace Dune::Vtk {
 
         auto elementRepr       = element.impl().trimmedElementRepresentation();
 
-        auto verticesInSubGrid = elementRepr->subVertices.size();
+        auto verticesInSubGrid = elementRepr->ppVertices.size();
 
-        numCells_ += elementRepr->subElements.size();
-
-//        for (auto gt : subGridIndexSet.types(0))
-//          pointSets_.try_emplace(gt, 1);
+        numCells_ += elementRepr->ppElements.size();
 
         pointSets_.try_emplace(elementRepr->geometryType(), 1);
 
@@ -58,7 +61,7 @@ namespace Dune::Vtk {
           if (pointSet.size() == 0) pointSet.build(type);
 
         std::size_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->subVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices) {
           vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
         }
         numPoints_ += verticesInSubGrid;
@@ -84,7 +87,7 @@ namespace Dune::Vtk {
         auto elementRepr = element.impl().trimmedElementRepresentation();
 
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->subVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices) {
           auto v          = geometry.global(subGridVertex);
 
           std::int64_t idx = 3 * vertexIndex_.at({elementId, vIdx++});
@@ -121,7 +124,7 @@ namespace Dune::Vtk {
         auto elementRepr = ele.impl().trimmedElementRepresentation();
 
         std::size_t eIdx = 0;
-        for (auto& subGridElement : elementRepr->subElements) {
+        for (auto& subGridElement : elementRepr->ppElements) {
           Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
 
           auto const& pointSet = pointSets_.at(subGridElement.type());
@@ -158,7 +161,7 @@ namespace Dune::Vtk {
         auto elementRepr = element.impl().trimmedElementRepresentation();
 
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->subVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices) {
           std::int64_t idx = nComps * vertexIndex_.at({elementId, vIdx++});
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
@@ -185,7 +188,7 @@ namespace Dune::Vtk {
 
         auto elementRepr            = element.impl().trimmedElementRepresentation();
 
-        for (auto& subGridElement : elementRepr->subElements) {
+        for (auto& subGridElement : elementRepr->ppElements) {
           auto vecInLocal = subGridElement.center();
 
           for (std::size_t comp = 0; comp < nComps; ++comp)

@@ -44,6 +44,7 @@ namespace Dune::IGA {
     Boundary boundary;
   };
 
+
   /** \brief representation of the trimmed element in the parameter space */
   template <int dim>
   class TrimmedElementRepresentation {
@@ -55,6 +56,10 @@ namespace Dune::IGA {
     std::vector<Element> subElements{};
     std::vector<Point> subVertices{};
     std::vector<unsigned int> indices{};
+
+    std::vector<Element> ppElements{};
+    std::vector<Point> ppVertices{};
+    std::vector<unsigned int> ppIndices{};
 
    private:
 
@@ -94,10 +99,19 @@ namespace Dune::IGA {
     [[nodiscard]] bool isTrimmed() const { return trimmed; }
 
     void refineAndConstructGrid(unsigned int refinement = 0) {
-      if (refinement == 0)
-        return;
+      if (refinement == 0) {
+        std::ranges::copy(subElements, std::back_inserter(ppElements));
+        std::ranges::copy(subVertices, std::back_inserter(ppVertices));
+        std::ranges::copy(indices, std::back_inserter(ppIndices));
+        return ;
+      }
       if (not trimmed) {
         refineUntrimmed(refinement);
+      } else {
+        // ATM Copy
+        std::ranges::copy(subElements, std::back_inserter(ppElements));
+        std::ranges::copy(subVertices, std::back_inserter(ppVertices));
+        std::ranges::copy(indices, std::back_inserter(ppIndices));
       }
     }
 
@@ -105,11 +119,12 @@ namespace Dune::IGA {
       return subElements.front().type();
     }
 
+    // For postprocessing
     std::size_t vertexSubIndex(std::uint64_t eleIdx, std::size_t subIndex) {
       if (trimmed)
-        return indices[eleIdx * 3 + subIndex];
+        return ppIndices[eleIdx * 3 + subIndex];
       else
-        return indices[eleIdx * 4 + subIndex];
+        return ppIndices[eleIdx * 4 + subIndex];
     }
 
    private:
@@ -361,9 +376,9 @@ namespace Dune::IGA {
     void refineUntrimmed(int refinementSteps) {
         assert(geometryType() == Dune::GeometryTypes::quadrilateral && not trimmed);
 
-        subVertices.clear();
-        subElements.clear();
-        indices.clear();
+        ppElements.clear();
+        ppVertices.clear();
+        ppIndices.clear();
 
         Dune::RefinementIntervals tag(refinementSteps + 1);
         Dune::VirtualRefinement<dim, double>& refinement = Dune::buildRefinement<dim, double>(Dune::GeometryTypes::quadrilateral, Dune::GeometryTypes::quadrilateral);
@@ -374,24 +389,24 @@ namespace Dune::IGA {
         auto vSubEnd = refinement.vEnd(tag);
         auto vSubIt = refinement.vBegin(tag);
 
-        subElements.reserve(refinement.nElements(tag));
-        subVertices.reserve(refinement.nVertices(tag));
-        indices.reserve(refinement.nElements(tag) * 3);
+        ppElements.reserve(refinement.nElements(tag));
+        ppVertices.reserve(refinement.nVertices(tag));
+        ppIndices.reserve(refinement.nElements(tag) * 4);
 
         for (; vSubIt != vSubEnd; ++vSubIt)
-          subVertices.push_back(vSubIt.coords());
+          ppVertices.push_back(vSubIt.coords());
 
         std::vector<Point> eleCoords;
         eleCoords.reserve(4);
 
         for (; eSubIt != eSubEnd; ++eSubIt) {
           eleCoords.clear();
-          std::ranges::copy(eSubIt.vertexIndices(), std::back_inserter(indices));
+          std::ranges::copy(eSubIt.vertexIndices(), std::back_inserter(ppIndices));
 
           for (auto idx : eSubIt.vertexIndices())
-            eleCoords.push_back(subVertices[idx]);
+            eleCoords.push_back(ppVertices[idx]);
 
-          subElements.emplace_back(Dune::GeometryTypes::quadrilateral, eleCoords);
+          ppElements.emplace_back(Dune::GeometryTypes::quadrilateral, eleCoords);
         }
 
 
