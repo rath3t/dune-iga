@@ -29,10 +29,13 @@
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-// #define TEST_ALL
+
 
 using namespace Dune;
 using namespace Dune::IGA;
+
+// DEFINITIONS
+std::string OUTPUT_FOLDER = "output";
 
 auto testPatchGeometryCurve() {
   TestSuite t;
@@ -210,21 +213,35 @@ auto testIbraReader() {
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
-  grid->globalRefine(3);
+  auto lambdaf = [](auto x) {
+    return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
+  };
+  std::vector<std::string> geometries{"element_trim_xb", "surface-multihole"};
 
-  const auto gv = grid->leafGridView();
-  for (auto i : std::views::iota(0u, 3u)) {
-    Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, i);
+  for (auto& fileName : geometries) {
+    std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
 
-    Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
-    auto lambdaf = [](auto x) {
-      return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
-    };
-    auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+    for (auto r : std::views::iota(0, 4)) {
+      if (r > 0)
+        grid->globalRefine(1);
 
-    writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-    writer2.write("TestFile_s" + std::to_string(i));
+      const auto gv = grid->leafGridView();
+      auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+
+      for (auto s : std::views::iota(0, 3)) {
+        Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, s);
+        Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+
+        writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+        auto vtkFileName = OUTPUT_FOLDER + "/" + fileName + "_r" + std::to_string(r) + "_s" + std::to_string(s);
+        writer2.write(vtkFileName);
+
+        // Check if the file exists
+        vtkFileName += ".vtu";
+        t.check(std::filesystem::exists(vtkFileName) and std::filesystem::file_size(vtkFileName) > 0);
+      }
+    }
+
   }
 
   return t;
@@ -492,6 +509,16 @@ auto testNurbsBasis() {
   return t;
 }
 
+void createOutputFolder() {
+  namespace fs = std::filesystem;
+  if (fs::exists(OUTPUT_FOLDER) and fs::is_directory(OUTPUT_FOLDER))
+    return;
+  else {
+    if (not fs::create_directory(OUTPUT_FOLDER))
+      DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
+  }
+}
+
 #include <cfenv>
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -499,6 +526,7 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
+  createOutputFolder();
 
   /// Test General stuff
   t.subTest(testPatchGeometryCurve());

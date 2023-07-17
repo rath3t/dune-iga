@@ -10,7 +10,8 @@
 #include <mapbox/earcut.hpp>
 
 #include "dune/iga/geometry/geohelper.hh"
-#include <dune/alugrid/grid.hh>
+// #include <dune/alugrid/grid.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/virtualrefinement.hh>
 
@@ -49,7 +50,8 @@ namespace Dune::IGA {
   template <int dim>
   class TrimmedElementRepresentation {
    public:
-    using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
+    //using Grid = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
+    using Grid = Dune::UGGrid<dim>;
     using Point    = Dune::FieldVector<double, dim>;
 
     using Element = MultiLinearGeometry<double, dim, dim>;
@@ -65,7 +67,6 @@ namespace Dune::IGA {
 
     std::vector<Boundary> outerBoundaries;
     std::optional<std::vector<std::vector<Boundary>>> innerBoundaries;
-    bool verbose{};
     bool trimmed{};
     std::array<double, dim> scaling{};
     std::array<double, dim> offset{};
@@ -105,14 +106,10 @@ namespace Dune::IGA {
         std::ranges::copy(indices, std::back_inserter(ppIndices));
         return ;
       }
-      if (not trimmed) {
+      if (not trimmed)
         refineUntrimmed(refinement);
-      } else {
-        // ATM Copy
-        std::ranges::copy(subElements, std::back_inserter(ppElements));
-        std::ranges::copy(subVertices, std::back_inserter(ppVertices));
-        std::ranges::copy(indices, std::back_inserter(ppIndices));
-      }
+      else
+        createRefinedGrid(refinement);
     }
 
     auto geometryType() {
@@ -151,75 +148,45 @@ namespace Dune::IGA {
     void reconstructTrimmedElement() {
       if (innerBoundaries) prepareInnerBoundaries();
 
-      splitBoundaries();
-      triangulate();
+      auto boundaries = splitBoundaries();
+      std::tie(indices, subVertices) = triangulate(boundaries);
 
       for (auto it = indices.begin(); it < indices.end(); it += 3)
         subElements.emplace_back(Dune::GeometryTypes::triangle, std::vector<FieldVector<double, dim>>{subVertices[*it], subVertices[*(it + 1)], subVertices[*(it + 2)]});
-
-
-      /*
-      Dune::GridFactory<Grid> gridFactory;
-      for (auto& vertex : vertices)
-        gridFactory.insertVertex(vertex);
-
-      // The element indices are stored as a flat vector, 3 indices always make 1 triangle
-      for (auto it = indices.begin(); it < indices.end(); it += 3)
-        gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
-
-      auto toLocalLambda = [&](const auto& cp) { return toLocal(cp); };
-      // TODO Without search
-      for (auto& boundary : outerBoundaries)
-        gridFactory.insertBoundarySegment(getVerticesIndices(vertices, boundary),
-                                          std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
-
-      if (innerBoundaries)
-        for (auto& innerLoop : innerBoundaries.value())
-          for (auto& boundary : innerLoop)
-            gridFactory.insertBoundarySegment(getVerticesIndices(vertices, boundary),
-                                              std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
-
-      // Create Grid
-      grid = gridFactory.createGrid();
-
-      if (preGlobalRefine > 0) grid->globalRefine(preGlobalRefine);
-
-      refineGridOnEdges(edgeRefinements);
-
-      GridView gridViewRefined = grid->leafGridView();
-
-      if (verbose)
-        std::cout << "Reconstructed Grid with " << gridViewRefined.size(0)
-                  << " elements. Area of elements: " << calculateArea()
-                  << ". Approx area of trimmed element: " << calculateTargetArea() << std::endl;
-      */
     }
 
-    [[nodiscard]] auto triangulate() {
+    [[nodiscard]] auto triangulate(auto& boundaries) -> std::pair<std::vector<unsigned int>, std::vector<Point>>{
       // Construct mesh with Earcut
       // C.f. https://github.com/mapbox/earcut.hpp
 
+
+      auto [splitOuter, splitInner] = boundaries;
+
       // Create array of points
-      subVertices.reserve(outerBoundaries.size());
-      for (auto& boundary : outerBoundaries)
-        subVertices.push_back(toLocal(boundary.endPoints.front()));
+      auto vertices = std::vector<Point>();
+
+      vertices.reserve(splitOuter.size());
+      for (auto& boundary : splitOuter)
+        vertices.push_back(toLocal(boundary.endPoints.front()));
 
       std::vector<std::vector<Point>> polygonInput;
-      polygonInput.push_back(subVertices);
+      polygonInput.push_back(vertices);
 
-      if (innerBoundaries)
-        for (auto& innerLoop : innerBoundaries.value()) {
+      if (splitInner)
+        for (auto& innerLoop : splitInner.value()) {
           assert(innerLoop.size() > 1);
           std::vector<Point> holeInput;
           for (auto& boundary : innerLoop) {
             auto v = toLocal(boundary.endPoints.front());
-            subVertices.push_back(v);
+            vertices.push_back(v);
             holeInput.push_back(v);
           }
           polygonInput.push_back(holeInput);
         }
 
-      indices = mapbox::earcut<unsigned int>(polygonInput);
+      auto ind = mapbox::earcut<unsigned int>(polygonInput);
+
+      return {ind, vertices};
     }
 
     // FIXME better name preparing for what?
@@ -276,9 +243,8 @@ namespace Dune::IGA {
     static constexpr double tolerance = double(16) * std::numeric_limits<double>::epsilon();
     static bool approxSamePoint(const Point& a, const Point& b) { return Dune::FloatCmp::eq(a, b, tolerance); };
 
-    void splitBoundaries() {
-      splitOuterBoundaries();
-      splitInnerBoundaryLoops();
+    auto splitBoundaries() {
+      return std::make_pair(splitOuterBoundaries(), splitInnerBoundaryLoops());
     }
 
     using DomainType = Utilities::Domain<double>;
@@ -289,7 +255,7 @@ namespace Dune::IGA {
     };
 
     template <bool checkArea = true>
-    void splitBoundariesImpl(auto& boundaries, int subSample) {
+    auto splitBoundariesImpl(auto& boundaries, int subSample) {
       auto refineMap = determineCurvedBoundaries(boundaries);
 
       // Get all domains
@@ -336,14 +302,20 @@ namespace Dune::IGA {
       std::ranges::transform(domains, std::back_inserter(newBoundaries), [&](const auto& domain_info) -> Boundary {
         return {boundaries[domain_info.localIndex].nurbsGeometry, domain_info.domain};
       });
-      boundaries = std::move(newBoundaries);
+      return newBoundaries;
     }
-    void splitOuterBoundaries() { splitBoundariesImpl(outerBoundaries, maxPreSamplesOuterBoundaries); }
+    auto splitOuterBoundaries() {
+      return splitBoundariesImpl(outerBoundaries, maxPreSamplesOuterBoundaries);
+    }
 
-    void splitInnerBoundaryLoops() {
-      if (innerBoundaries)
-        std::ranges::for_each(innerBoundaries.value(),
-                              [&](auto& boundaries) { splitBoundariesImpl<false>(boundaries, innerLoopPreSample); });
+    decltype(innerBoundaries) splitInnerBoundaryLoops() {
+      if (innerBoundaries) {
+        typename decltype(innerBoundaries)::value_type newInnerBoundaries;
+        std::ranges::transform(innerBoundaries.value(), std::back_inserter(newInnerBoundaries), [&](auto& boundaries) {
+          return splitBoundariesImpl<false>(boundaries, innerLoopPreSample); });
+        return std::make_optional<std::vector<std::vector<Boundary>>>(newInnerBoundaries);
+      } else
+        return std::nullopt;
     }
 
     [[nodiscard]] auto getVerticesIndices(std::vector<Point>& vertices, Boundary& boundary) const
@@ -408,7 +380,67 @@ namespace Dune::IGA {
 
           ppElements.emplace_back(Dune::GeometryTypes::quadrilateral, eleCoords);
         }
+    }
 
+    void createRefinedGrid(int refinementSteps) {
+        assert(geometryType() == Dune::GeometryTypes::triangle && trimmed);
+
+        ppElements.clear();
+        ppVertices.clear();
+        ppIndices.clear();
+
+        int maxSampleBackup = 1;
+        int innerSamplesBackup = 1;
+        std::swap(maxSampleBackup, maxPreSamplesOuterBoundaries);
+        std::swap(innerSamplesBackup, innerLoopPreSample);
+
+        auto boundaries = splitBoundaries();
+        auto [ind, vert] = triangulate(boundaries);
+
+        Dune::GridFactory<Grid> gridFactory;
+        for (auto& vertex : vert)
+          gridFactory.insertVertex(vertex);
+
+        // The element indices are stored as a flat vector, 3 indices always make 1 triangle
+        for (auto it = ind.begin(); it < ind.end(); it += 3)
+          gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>(it, std::next(it, 3)));
+
+        auto toLocalLambda = [&](const auto& cp) { return toLocal(cp); };
+        // TODO Without search
+        for (auto& boundary : boundaries.first)
+          gridFactory.insertBoundarySegment(getVerticesIndices(vert, boundary),
+                                            std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
+
+        if (boundaries.second)
+          for (auto& innerLoop : boundaries.second.value())
+            for (auto& boundary : innerLoop)
+            gridFactory.insertBoundarySegment(getVerticesIndices(vert, boundary),
+                                              std::make_shared<GridBoundarySegment<dim>>(boundary, toLocalLambda));
+
+        // Create Grid
+        auto grid = gridFactory.createGrid();
+        grid->globalRefine(refinementSteps - 1);
+
+        auto gridView = grid->leafGridView();
+        auto& indexSet = gridView.indexSet();
+
+        // Collect vertices and indices and elements
+        auto eleInd = std::vector<unsigned int>();
+
+        for (auto& v : vertices(gridView))
+          ppVertices.push_back(v.geometry().center());
+
+        for (auto& ele : elements(gridView)) {
+          eleInd.clear();
+          for (auto i : std::views::iota(0u, ele.subEntities(dim)))
+            eleInd.push_back(indexSet.template index<dim>(ele.template subEntity<dim>(i)));
+
+          ppElements.emplace_back(Dune::GeometryTypes::triangle, std::vector<FieldVector<double, dim>>{ppVertices[eleInd[0]], ppVertices[eleInd[1]], ppVertices[eleInd[2]]});
+          std::ranges::copy(eleInd, std::back_inserter(ppIndices));
+        }
+
+        std::swap(maxSampleBackup, maxPreSamplesOuterBoundaries);
+        std::swap(innerSamplesBackup, innerLoopPreSample);
 
     }
 
