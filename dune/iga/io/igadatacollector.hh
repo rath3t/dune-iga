@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "igarefinedgeometries.hh"
+
 #include <dune/geometry/referenceelements.hh>
 #include <dune/grid/common/partitionset.hh>
 #include <dune/grid/common/rangegenerators.hh>
@@ -12,7 +14,7 @@
 #include <dune/vtk/utility/lagrangepoints.hh>
 
 namespace Dune::Vtk {
-  /// Implementation of \ref Discontinuous DataCollector for Iga cells with trimming information
+  /// Implementation of \ref Discontinuous DataCollector for Iga cells with or without trimming information
   template <class GridView>
   requires(GridView::dimension == 2) class DiscontinuousIgaDataCollector
       : public UnstructuredDataCollectorInterface<GridView, DiscontinuousIgaDataCollector<GridView>, Partitions::All> {
@@ -24,14 +26,7 @@ namespace Dune::Vtk {
     using Super::partition;
 
    public:
-    DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed) : Super(gridView) {
-      for (auto element : elements(gridView_)) {
-        if (element.impl().isTrimmed())
-          element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSampleTrimmed);
-        else
-          element.impl().trimmedElementRepresentation()->refineAndConstructGrid(subSampleFull);
-      }
-    }
+    DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed) : Super(gridView), geometries_(gridView, subSampleFull, subSampleTrimmed)  {}
     // Does not subsample 
     explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0) {};
     
@@ -49,21 +44,19 @@ namespace Dune::Vtk {
       for (auto element : elements(gridView_)) {
         const size_t elementId = indexSet.index(element);
 
-        auto elementRepr       = element.impl().trimmedElementRepresentation();
+        auto verticesInSubGrid = geometries_.nVertices(elementId);
 
-        auto verticesInSubGrid = elementRepr->ppVertices_.size();
+        numCells_ += geometries_.nElements(elementId);
 
-        numCells_ += elementRepr->ppElements_.size();
-
-        pointSets_.try_emplace(elementRepr->geometryType(), 1);
+        pointSets_.try_emplace(geometries_.geometryType(elementId), 1);
 
         for (auto& [type, pointSet] : pointSets_)
           if (pointSet.size() == 0) pointSet.build(type);
 
         std::size_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices_) {
+        for (auto& subGridVertex : geometries_.getVertices(elementId))
           vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
-        }
+
         numPoints_ += verticesInSubGrid;
       }
     }
@@ -84,10 +77,8 @@ namespace Dune::Vtk {
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
 
-        auto elementRepr = element.impl().trimmedElementRepresentation();
-
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices_) {
+        for (auto& subGridVertex : geometries_.getVertices(elementId)) {
           auto v          = geometry.global(subGridVertex);
 
           std::int64_t idx = 3 * vertexIndex_.at({elementId, vIdx++});
@@ -121,10 +112,8 @@ namespace Dune::Vtk {
       for (auto const& ele : elements(gridView_, partition)) {
         const std::size_t elementId = indexSet.index(ele);
 
-        auto elementRepr = ele.impl().trimmedElementRepresentation();
-
         std::size_t eIdx = 0;
-        for (auto& subGridElement : elementRepr->ppElements_) {
+        for (auto& subGridElement : geometries_.getElements(elementId)) {
           Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
 
           auto const& pointSet = pointSets_.at(subGridElement.type());
@@ -133,7 +122,7 @@ namespace Dune::Vtk {
             auto const& p        = pointSet[i];
             auto const& localKey = p.localKey();
             std::int64_t idx
-                = vertexIndex_.at({elementId, elementRepr->vertexSubIndex(eIdx, localKey.subEntity())});
+                = vertexIndex_.at({elementId, geometries_.vertexSubIndex(elementId, eIdx, localKey.subEntity())});
 
             cells.connectivity.push_back(idx);
           }
@@ -158,10 +147,8 @@ namespace Dune::Vtk {
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
 
-        auto elementRepr = element.impl().trimmedElementRepresentation();
-
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices_) {
+        for (auto& subGridVertex : geometries_.getVertices(elementId)) {
           std::int64_t idx = nComps * vertexIndex_.at({elementId, vIdx++});
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
@@ -186,9 +173,7 @@ namespace Dune::Vtk {
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
 
-        auto elementRepr            = element.impl().trimmedElementRepresentation();
-
-        for (auto& subGridElement : elementRepr->ppElements_) {
+        for (auto& subGridElement : geometries_.getElements(elementId)) {
           auto vecInLocal = subGridElement.center();
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
@@ -208,6 +193,7 @@ namespace Dune::Vtk {
     std::map<GeometryType, PointSet> pointSets_;
     std::vector<std::int64_t> indexMap_;
     std::map<std::array<std::size_t, 2>, std::int64_t> vertexIndex_;
+    IGA::IGARefinedGeometries<GridView> geometries_;
   };
 
 }  // namespace Dune::Vtk

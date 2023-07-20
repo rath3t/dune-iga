@@ -369,7 +369,7 @@ namespace Dune::IGA {
 
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
 
-      auto geo = (codim == 0 && trimData_) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
+      auto geo = (codim == 0 && trimData_ && isTrimmed(realIndex)) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                      patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
                                            : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                                                patchData_, fixedOrFreeDirection, currentKnotSpan);
@@ -622,8 +622,14 @@ namespace Dune::IGA {
       int nurbsIdx = getDirectIndex<0>(realIndex);
       return getTrimFlagForDirectIndex(nurbsIdx);
     }
+    [[nodiscard]] bool isTrimmed(RealIndex realIndex) const {
+      return getTrimFlag(realIndex) == ElementTrimFlag::trimmed;
+    }
+
     [[nodiscard]] auto getTrimmedElementRepresentation(RealIndex realIndex) const
         -> std::shared_ptr<TrimmedElementRepresentationType> {
+      assert(isTrimmed(realIndex) && "You can only obtain trimmedElementRepresentations for trimmed Elements");
+
       auto directIndex = getDirectIndex<0>(realIndex);
       return trimInfoMap.at(directIndex).repr;
     }
@@ -641,20 +647,6 @@ namespace Dune::IGA {
 
       n_fullElement = n_ele;
 
-      if constexpr (dim == 2) {
-        auto paraGrid               = parameterSpaceGrid();
-        auto parameterSpaceGridView = paraGrid->leafGridView();
-
-        const auto& indexSet = parameterSpaceGridView.indexSet();
-        for (const auto& element : elements(parameterSpaceGridView)) {
-          auto geo = element.geometry();
-
-          DirectIndex directIndex = indexSet.index(element);
-          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = directIndex,
-                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                               scalingAndOffset(directIndex))});
-        }
-      }
     }
 
     template <unsigned int codim>
@@ -698,22 +690,16 @@ namespace Dune::IGA {
         if (errorFlag) trimErrorFlag_ = true;
 
         if (trimFlag == ElementTrimFlag::trimmed) {
+          elementIndexMap.push_back(directIndex);
           ++n_trimmedElement;
           trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
                                                            .repr = std::make_unique<TrimmedElementRepresentationType>(
                                                                boundaries.value(), scalingAndOffset(directIndex))});
         } else if (trimFlag == ElementTrimFlag::full) {
+          elementIndexMap.push_back(directIndex);
           ++n_fullElement;
-          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
-                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
-                                                               scalingAndOffset(directIndex))});
         }
       }
-
-      // Construct elementIndexMap
-      elementIndexMap.reserve(n_trimmedElement + n_fullElement);
-      for (auto& [directIndex, _] : trimInfoMap)
-        elementIndexMap.push_back(directIndex);
 
       constructSubEntityMaps<2>();
       constructSubEntityMaps<1>();

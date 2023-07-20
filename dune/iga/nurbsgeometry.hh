@@ -87,7 +87,7 @@ namespace Dune::IGA {
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
       if constexpr (mydimension == 2)
-        if (trimRepr_ and trimRepr_->isTrimmed()) {
+        if (trimRepr_) {
           Dune::QuadratureRule<double, mydimension> rule;
           fillQuadratureRuleImpl(rule, *trimRepr_.get(), (*std::ranges::max_element(patchData_->degree)));
           ctype vol = 0.0;
@@ -338,7 +338,7 @@ namespace Dune::IGA {
 
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const {
-      if (trimRepr_ and trimRepr_->isTrimmed())
+      if (trimRepr_)
         return GeometryTypes::none(mydimension);
       else
         return GeometryTypes::cube(mydimension);

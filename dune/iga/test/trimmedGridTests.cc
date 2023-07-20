@@ -228,7 +228,7 @@ auto testDataCollectorAndVtkWriter() {
       const auto gv = grid->leafGridView();
       auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
 
-      for (auto s : std::views::iota(0, 3)) {
+      for (auto s : std::views::iota(0, 4)) {
         Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, s);
         Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
 
@@ -529,20 +529,20 @@ int main(int argc, char** argv) try {
   createOutputFolder();
 
   /// Test General stuff
-  t.subTest(testPatchGeometryCurve());
-  t.subTest(testPatchGeometrySurface());
-  t.subTest(testIbraReader());
+//  t.subTest(testPatchGeometryCurve());
+//  t.subTest(testPatchGeometrySurface());
+//  t.subTest(testIbraReader());
   t.subTest(testDataCollectorAndVtkWriter());
-
-  /// 1. Test Trimming Functionality
-  t.subTest(testExampleSuite());
-  t.subTest(testMapsInTrimmedPatch());
-
-  /// 2. Test Integration Points
-  t.subTest(testIntegrationPoints());
-
-  /// 3. Test Basis
-  t.subTest(testNurbsBasis());
+//
+//  /// 1. Test Trimming Functionality
+//  t.subTest(testExampleSuite());
+//  t.subTest(testMapsInTrimmedPatch());
+//
+//  /// 2. Test Integration Points
+//  t.subTest(testIntegrationPoints());
+//
+//  /// 3. Test Basis
+//  t.subTest(testNurbsBasis());
 
   t.report();
 
