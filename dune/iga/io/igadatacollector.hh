@@ -51,9 +51,9 @@ namespace Dune::Vtk {
 
         auto elementRepr       = element.impl().trimmedElementRepresentation();
 
-        auto verticesInSubGrid = elementRepr->ppVertices.size();
+        auto verticesInSubGrid = elementRepr->ppVertices_.size();
 
-        numCells_ += elementRepr->ppElements.size();
+        numCells_ += elementRepr->ppElements_.size();
 
         pointSets_.try_emplace(elementRepr->geometryType(), 1);
 
@@ -61,7 +61,7 @@ namespace Dune::Vtk {
           if (pointSet.size() == 0) pointSet.build(type);
 
         std::size_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices_) {
           vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
         }
         numPoints_ += verticesInSubGrid;
@@ -87,7 +87,7 @@ namespace Dune::Vtk {
         auto elementRepr = element.impl().trimmedElementRepresentation();
 
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices_) {
           auto v          = geometry.global(subGridVertex);
 
           std::int64_t idx = 3 * vertexIndex_.at({elementId, vIdx++});
@@ -124,7 +124,7 @@ namespace Dune::Vtk {
         auto elementRepr = ele.impl().trimmedElementRepresentation();
 
         std::size_t eIdx = 0;
-        for (auto& subGridElement : elementRepr->ppElements) {
+        for (auto& subGridElement : elementRepr->ppElements_) {
           Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
 
           auto const& pointSet = pointSets_.at(subGridElement.type());
@@ -161,7 +161,7 @@ namespace Dune::Vtk {
         auto elementRepr = element.impl().trimmedElementRepresentation();
 
         std::uint64_t vIdx = 0;
-        for (auto& subGridVertex : elementRepr->ppVertices) {
+        for (auto& subGridVertex : elementRepr->ppVertices_) {
           std::int64_t idx = nComps * vertexIndex_.at({elementId, vIdx++});
 
           for (std::size_t comp = 0; comp < nComps; ++comp)
@@ -188,7 +188,7 @@ namespace Dune::Vtk {
 
         auto elementRepr            = element.impl().trimmedElementRepresentation();
 
-        for (auto& subGridElement : elementRepr->ppElements) {
+        for (auto& subGridElement : elementRepr->ppElements_) {
           auto vecInLocal = subGridElement.center();
 
           for (std::size_t comp = 0; comp < nComps; ++comp)

@@ -13,7 +13,7 @@ namespace Dune::IGA {
 
     //auto gridView = elementRepr.gridView();
 
-    for (auto& subElement : elementRepr.subElements) {
+    for (auto& subElement : elementRepr.elements_) {
 
       const auto& rule = Dune::QuadratureRules<double, dim>::rule(subElement.type(), order, qt);
       for (auto ip : rule) {
