@@ -188,9 +188,9 @@ namespace Dune::IGA {
    private:
     template <int codim>
     typename Codim<codim>::Entity &getEntity(unsigned int directIndex) const {
-      if constexpr (codim == 0)  // elements
+      if constexpr (codim == 0)                   // elements
         return (std::get<0>(*grid_->entityVector.get()).at(directIndex));
-      else if constexpr (codim == dimension)  // vertices
+      else if constexpr (codim == dimension)      // vertices
         return (std::get<dimension>(*grid_->entityVector.get()).at(directIndex));
       else if constexpr (dimension - codim == 1)  // edges
         return (std::get<dimension - 1>(*grid_->entityVector.get()).at(directIndex));

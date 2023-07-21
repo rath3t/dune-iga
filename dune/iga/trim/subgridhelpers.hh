@@ -3,9 +3,7 @@
 
 #pragma once
 
-
 #include <mapbox/earcut.hpp>
-
 
 namespace Dune::IGA {
   template <int dim>
@@ -15,7 +13,7 @@ namespace Dune::IGA {
 
     TransformToSpan() = default;
     explicit TransformToSpan(std::pair<std::array<double, dim>, std::array<double, dim>>& input)
-        : scaling_(input.first), offset_(input.second) {};
+        : scaling_(input.first), offset_(input.second){};
 
     // TODO Concept
     template <typename VecType>
@@ -35,7 +33,8 @@ namespace Dune::IGA {
     }
   };
 
-  [[nodiscard]] double calculateBoundaryLoopLength(const std::vector<Boundary>& loop, const TransformToSpan<2>& transformer, unsigned int div = 200) {
+  [[nodiscard]] double calculateBoundaryLoopLength(const std::vector<Boundary>& loop,
+                                                   const TransformToSpan<2>& transformer, unsigned int div = 200) {
     Clipper2Lib::PathD polygon;
     polygon.reserve(div * loop.size());
 
@@ -63,12 +62,13 @@ namespace Dune::IGA {
     return result;
   }
 
-  auto splitBoundariesImpl(const std::vector<Boundary>& boundaries, int maxSubSample, double tolerance, const TransformToSpan<2>& transformer) {
+  auto splitBoundariesImpl(const std::vector<Boundary>& boundaries, int maxSubSample, double tolerance,
+                           const TransformToSpan<2>& transformer) {
     bool checkTarget = false;
 
     double targetLength = 0.0;
     if (tolerance not_eq 0.0) {
-      checkTarget = true;
+      checkTarget  = true;
       targetLength = calculateBoundaryLoopLength(boundaries, transformer);
     }
     auto refineMap = determineCurvedBoundaries(boundaries);
@@ -108,24 +108,23 @@ namespace Dune::IGA {
           return std::fabs(Clipper2Lib::Length(path, true));
         };
         auto actLength = computeCurrentLength(domains);
-        if (std::fabs(actLength - targetLength) / targetLength < tolerance)
-          break;
+        if (std::fabs(actLength - targetLength) / targetLength < tolerance) break;
       }
     }
 
     // Create split outerBoundaries from DomainInformation
     std::vector<Boundary> newBoundaries;
-    std::ranges::transform(domains, std::back_inserter(newBoundaries), [&boundaries](const auto& domain_info) -> Boundary {
-      return {boundaries[domain_info.localIndex].nurbsGeometry, domain_info.domain};
-    });
+    std::ranges::transform(domains, std::back_inserter(newBoundaries),
+                           [&boundaries](const auto& domain_info) -> Boundary {
+                             return {boundaries[domain_info.localIndex].nurbsGeometry, domain_info.domain};
+                           });
     return newBoundaries;
   }
 
-
-
   template <int dim>
   struct GridBoundarySegment : Dune::BoundarySegment<dim, dim, double> {
-    explicit GridBoundarySegment(Boundary& _boundary, const auto& _transformer) : boundary(_boundary), transformer(_transformer) {}
+    explicit GridBoundarySegment(Boundary& _boundary, const auto& _transformer)
+        : boundary(_boundary), transformer(_transformer) {}
 
     Dune::FieldVector<double, dim> operator()(const Dune::FieldVector<double, 1>& localI) const override {
       // u has to be mapped on the domain of 0 to 1
@@ -136,8 +135,7 @@ namespace Dune::IGA {
     TransformToSpan<dim> transformer;
     Boundary boundary;
   };
-}
-
+}  // namespace Dune::IGA
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {

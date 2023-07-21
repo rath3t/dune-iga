@@ -10,14 +10,12 @@ namespace Dune::IGA {
 
   template <class GridView>
   class IGARefinedGeometries {
-
    public:
     static constexpr int dim = GridView::dimension;
 
     using Element = MultiLinearGeometry<double, dim, dim>;
-    using Point    = Dune::FieldVector<double, dim>;
-    using Index = std::uint64_t;
-
+    using Point   = Dune::FieldVector<double, dim>;
+    using Index   = std::uint64_t;
 
    private:
     struct ElementData {
@@ -28,7 +26,6 @@ namespace Dune::IGA {
 
     std::unordered_map<Index, ElementData> trimmedElementData_;
     ElementData cubeData{};
-
 
    public:
     IGARefinedGeometries(const GridView& gridView, const int subSampleFull, const int subSampleTrimmed) {
@@ -43,11 +40,8 @@ namespace Dune::IGA {
         if (element.impl().isTrimmed()) {
           auto [ele, vert, ind] = element.impl().elementSubGrid()->createRefinedGrid(subSampleTrimmed);
 
-          trimmedElementData_.emplace(
-              indexSet.index(element), ElementData{ele, vert, ind}
-          );
+          trimmedElementData_.emplace(indexSet.index(element), ElementData{ele, vert, ind});
         }
-
     }
 
     [[nodiscard]] const std::vector<Element>& getElements(Index eIndex) const {
@@ -99,17 +93,17 @@ namespace Dune::IGA {
         return GeometryTypes::cube(dim);
     }
 
-
    private:
     void createCubeRefinement(const int subSample) {
-      Dune::RefinementIntervals tag{subSample +1};
-      Dune::VirtualRefinement<dim, double>& refinement = Dune::buildRefinement<dim, double>(Dune::GeometryTypes::cube(dim), Dune::GeometryTypes::cube(dim));
+      Dune::RefinementIntervals tag{subSample + 1};
+      Dune::VirtualRefinement<dim, double>& refinement
+          = Dune::buildRefinement<dim, double>(Dune::GeometryTypes::cube(dim), Dune::GeometryTypes::cube(dim));
 
       auto eSubEnd = refinement.eEnd(tag);
-      auto eSubIt = refinement.eBegin(tag);
+      auto eSubIt  = refinement.eBegin(tag);
 
       auto vSubEnd = refinement.vEnd(tag);
-      auto vSubIt = refinement.vBegin(tag);
+      auto vSubIt  = refinement.vBegin(tag);
 
       cubeData.elements.reserve(refinement.nElements(tag));
       cubeData.vertices.reserve(refinement.nVertices(tag));
@@ -126,18 +120,13 @@ namespace Dune::IGA {
         std::ranges::copy(eSubIt.vertexIndices(), std::back_inserter(cubeData.indices));
 
         for (auto idx : eSubIt.vertexIndices())
-          eleCoords.push_back( cubeData.vertices[idx]);
+          eleCoords.push_back(cubeData.vertices[idx]);
 
         cubeData.elements.emplace_back(Dune::GeometryTypes::cube(dim), eleCoords);
       }
-
     }
 
-    [[nodiscard]] bool isTrimmed(Index eIndex) const {
-      return trimmedElementData_.contains(eIndex);
-    }
-
-
+    [[nodiscard]] bool isTrimmed(Index eIndex) const { return trimmedElementData_.contains(eIndex); }
   };
 
-}
+}  // namespace Dune::IGA

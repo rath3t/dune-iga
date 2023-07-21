@@ -8,7 +8,7 @@
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
 
-//#include "dune/iga/geometry/closestpointprojection.hh"
+// #include "dune/iga/geometry/closestpointprojection.hh"
 #include "dune/iga/nurbspatchgeometry.h"
 #include <dune/grid/yaspgrid.hh>
 

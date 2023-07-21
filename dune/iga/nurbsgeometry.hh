@@ -50,8 +50,7 @@ namespace Dune::IGA {
      */
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, ctype>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
-                  const std::array<int, griddim>& thisSpanIndices,
-                  const std::shared_ptr<SubGridType> subGrid = nullptr)
+                  const std::array<int, griddim>& thisSpanIndices, const std::shared_ptr<SubGridType> subGrid = nullptr)
         : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, subgrid_(subGrid) {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
@@ -103,9 +102,7 @@ namespace Dune::IGA {
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
-    [[nodiscard]] double spanVolume() const requires(mydimension == 2) {
-      return std::accumulate(scaling_.begin(), scaling_.end(), 1.0, std::multiplies<>());
-    }
+
 
     /** \brief Return the number of corners of the element */
     [[nodiscard]] int corners() const { return 1 << mydimension; }
@@ -207,19 +204,23 @@ namespace Dune::IGA {
       return transpose(jacobianInverseTransposed(local));
     }
 
-    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto N = normal(local);
       return N / N.two_norm();
     }
 
-    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto J = jacobianTransposed(local);
       return cross(J[0], J[1]);
     }
 
-    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
+    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const
+      requires(mydimension == 2)
+    {
       auto metricDet = metric(local).determinant();
       auto secondF   = secondFundamentalForm(local).determinant();
       return secondF / metricDet;
@@ -232,7 +233,9 @@ namespace Dune::IGA {
       return metric;
     }
 
-    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
+    auto secondFundamentalForm(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       const auto secDerivatives = secondDerivativeOfPosition(local);
       const auto unitnormal     = unitNormal(local);
       FieldMatrix<ctype, mydimension, mydimension> b;
@@ -249,7 +252,7 @@ namespace Dune::IGA {
       const auto basisFunctionDerivatives           = nurbs_.basisFunctionDerivatives(localInSpan, 2);
       for (int dir = 0; dir < mydimension; ++dir) {
         std::array<unsigned int, griddim> ithVec{};
-        ithVec[subDirs[dir]] = 2;  // second derivative in dir direction
+        ithVec[subDirs[dir]] = 2;                               // second derivative in dir direction
         result[dir]          = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet_);
         result[dir] *= Dune::power(scaling_[subDirs[dir]], 2);  // transform back to 0..1
       }

@@ -111,9 +111,7 @@ namespace Dune::IGA {
       }
     }
 
-    auto elementSubGrid() const {
-      return NURBSGridView_->impl().getPatch(patchID_).getElementSubGrid(directIndex_);
-    }
+    auto elementSubGrid() const { return NURBSGridView_->impl().getPatch(patchID_).getElementSubGrid(directIndex_); }
 
     void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector, const std::optional<int>& p_order = std::nullopt,
                             const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
@@ -244,7 +242,9 @@ namespace Dune::IGA {
     // Helpers
     int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
 
-    int getRealIndexForOuterIndex(int outerIndex) requires(dim == 2) {
+    int getRealIndexForOuterIndex(int outerIndex)
+      requires(dim == 2)
+    {
       if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
       return NURBSGridView_->impl().getPatch(patchID_).template getRealIndexOr<0>(outerIndex, Impl::noNeighbor);
     }

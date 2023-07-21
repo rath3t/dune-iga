@@ -29,8 +29,6 @@
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-
-
 using namespace Dune;
 using namespace Dune::IGA;
 
@@ -222,11 +220,10 @@ auto testDataCollectorAndVtkWriter() {
     std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
 
     for (auto r : std::views::iota(0, 4)) {
-      if (r > 0)
-        grid->globalRefine(1);
+      if (r > 0) grid->globalRefine(1);
 
       const auto gv = grid->leafGridView();
-      auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+      auto lambaGV  = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
 
       for (auto s : std::views::iota(0, 4)) {
         Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, s);
@@ -241,7 +238,6 @@ auto testDataCollectorAndVtkWriter() {
         t.check(std::filesystem::exists(vtkFileName) and std::filesystem::file_size(vtkFileName) > 0);
       }
     }
-
   }
 
   return t;
@@ -514,8 +510,7 @@ void createOutputFolder() {
   if (fs::exists(OUTPUT_FOLDER) and fs::is_directory(OUTPUT_FOLDER))
     return;
   else {
-    if (not fs::create_directory(OUTPUT_FOLDER))
-      DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
+    if (not fs::create_directory(OUTPUT_FOLDER)) DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
   }
 }
 

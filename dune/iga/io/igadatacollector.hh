@@ -16,7 +16,8 @@
 namespace Dune::Vtk {
   /// Implementation of \ref Discontinuous DataCollector for Iga cells with or without trimming information
   template <class GridView>
-  requires(GridView::dimension == 2) class DiscontinuousIgaDataCollector
+    requires(GridView::dimension == 2)
+  class DiscontinuousIgaDataCollector
       : public UnstructuredDataCollectorInterface<GridView, DiscontinuousIgaDataCollector<GridView>, Partitions::All> {
     using Self  = DiscontinuousIgaDataCollector;
     using Super = UnstructuredDataCollectorInterface<GridView, Self, Partitions::All>;
@@ -26,13 +27,15 @@ namespace Dune::Vtk {
     using Super::partition;
 
    public:
-    DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed) : Super(gridView), geometries_(gridView, subSampleFull, subSampleTrimmed)  {}
-    // Does not subsample 
-    explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0) {};
-    
+    DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed)
+        : Super(gridView), geometries_(gridView, subSampleFull, subSampleTrimmed) {}
+    // Does not subsample
+    explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0){};
+
     // Subsamples trimmed elements by creating a new grid
-    DiscontinuousIgaDataCollector(GridView const& gridView, int subsample) : DiscontinuousIgaDataCollector(gridView, subsample, subsample) {};
-    
+    DiscontinuousIgaDataCollector(GridView const& gridView, int subsample)
+        : DiscontinuousIgaDataCollector(gridView, subsample, subsample){};
+
     /// Construct the point sets
     void updateImpl() {
       pointSets_.clear();
@@ -79,7 +82,7 @@ namespace Dune::Vtk {
 
         std::uint64_t vIdx = 0;
         for (auto& subGridVertex : geometries_.getVertices(elementId)) {
-          auto v          = geometry.global(subGridVertex);
+          auto v = geometry.global(subGridVertex);
 
           std::int64_t idx = 3 * vertexIndex_.at({elementId, vIdx++});
 
