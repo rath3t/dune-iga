@@ -4,7 +4,7 @@
 #pragma once
 #include "dune/iga/geometry/closestpointprojection.hh"
 #include "dune/iga/nurbsalgorithms.hh"
-#include "dune/iga/trim/trimmedelementrepresentation.hh"
+#include "dune/iga/trim/subgrid.hh"
 #include "dune/iga/utils/fillquadraturerule.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
@@ -34,7 +34,7 @@ namespace Dune::IGA {
 
     using ControlPointType = typename NURBSPatchData<griddim, dimworld, ctype>::ControlPointType;
 
-    using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
+    using SubGridType = GridImpl::Traits::SubGridType;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -51,8 +51,8 @@ namespace Dune::IGA {
     NURBSGeometry(std::shared_ptr<NURBSPatchData<griddim, dimworld, ctype>> patchData,
                   const std::array<Impl::FixedOrFree, griddim>& fixedOrVaryingDirections,
                   const std::array<int, griddim>& thisSpanIndices,
-                  const std::shared_ptr<TrimmedElementRepresentationType> trimRepr = nullptr)
-        : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, trimRepr_(trimRepr) {
+                  const std::shared_ptr<SubGridType> subGrid = nullptr)
+        : patchData_(patchData), fixedOrVaryingDirections_{fixedOrVaryingDirections}, subgrid_(subGrid) {
       for (int i = 0; i < griddim; ++i) {
         if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
           scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
@@ -87,9 +87,9 @@ namespace Dune::IGA {
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume() const {
       if constexpr (mydimension == 2)
-        if (trimRepr_) {
+        if (subgrid_) {
           Dune::QuadratureRule<double, mydimension> rule;
-          fillQuadratureRuleImpl(rule, *trimRepr_.get(), (*std::ranges::max_element(patchData_->degree)));
+          fillQuadratureRuleImpl(rule, *subgrid_.get(), (*std::ranges::max_element(patchData_->degree)));
           ctype vol = 0.0;
           for (auto& gp : rule)
             vol += integrationElement(gp.position()) * gp.weight();
@@ -338,7 +338,7 @@ namespace Dune::IGA {
 
     /** \brief Type of the element: a hypercube of the correct dimension */
     [[nodiscard]] GeometryType type() const {
-      if (trimRepr_)
+      if (subgrid_)
         return GeometryTypes::none(mydimension);
       else
         return GeometryTypes::cube(mydimension);
@@ -397,7 +397,7 @@ namespace Dune::IGA {
     std::array<ctype, griddim> offset_;
     std::array<ctype, griddim> scaling_;
     MultiDimensionNet<griddim, typename ControlPointType::VectorType> cpCoordinateNet_;
-    std::shared_ptr<TrimmedElementRepresentationType> trimRepr_;
+    std::shared_ptr<SubGridType> subgrid_;
   };
 
   template <std::integral auto mydim, std::integral auto dimworld, class GridImpl>

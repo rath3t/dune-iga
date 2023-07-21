@@ -99,5 +99,5 @@ struct NurbsGridTraits {
   typedef CCType Communication;
 
 
-  using TrimmedElementRepresentationType = Dune::IGA::TrimmedElementRepresentation<2>;
+  using SubGridType = Dune::IGA::TrimmedSubGrid<2>;
 };

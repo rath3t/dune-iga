@@ -216,7 +216,7 @@ auto testDataCollectorAndVtkWriter() {
   auto lambdaf = [](auto x) {
     return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
   };
-  std::vector<std::string> geometries{"element_trim_xb", "surface-multihole"};
+  std::vector<std::string> geometries{"element_trim_xb", "surface-hole"};
 
   for (auto& fileName : geometries) {
     std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
@@ -382,7 +382,7 @@ void checkSumWeights(const auto& gridView, auto& t) {
     if (not ele.impl().isTrimmed()) continue;
 
     auto untrimmedArea = 1;
-    auto trimmedArea   = ele.impl().trimmedElementRepresentation()->calculateArea();
+    auto trimmedArea   = ele.impl().elementSubGrid()->calculateArea();
     auto ratio         = trimmedArea / untrimmedArea;
 
     ele.impl().fillQuadratureRule(rule);
@@ -529,20 +529,20 @@ int main(int argc, char** argv) try {
   createOutputFolder();
 
   /// Test General stuff
-//  t.subTest(testPatchGeometryCurve());
-//  t.subTest(testPatchGeometrySurface());
-//  t.subTest(testIbraReader());
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
+  t.subTest(testIbraReader());
   t.subTest(testDataCollectorAndVtkWriter());
-//
-//  /// 1. Test Trimming Functionality
-//  t.subTest(testExampleSuite());
-//  t.subTest(testMapsInTrimmedPatch());
-//
-//  /// 2. Test Integration Points
-//  t.subTest(testIntegrationPoints());
-//
-//  /// 3. Test Basis
-//  t.subTest(testNurbsBasis());
+
+  /// 1. Test Trimming Functionality
+  t.subTest(testExampleSuite());
+  t.subTest(testMapsInTrimmedPatch());
+
+  /// 2. Test Integration Points
+  t.subTest(testIntegrationPoints());
+
+  /// 3. Test Basis
+  t.subTest(testNurbsBasis());
 
   t.report();
 

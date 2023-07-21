@@ -5,15 +5,13 @@
 #include <dune/geometry/quadraturerules.hh>
 
 namespace Dune::IGA {
-  template <typename TrimmedElementRepresentationType, int dim>
+  template <typename SubGridType, int dim>
   void fillQuadratureRuleImpl(Dune::QuadratureRule<double, dim>& vector,
-                              const TrimmedElementRepresentationType& elementRepr, int order,
+                              const SubGridType& subGrid, int order,
                               const QuadratureType::Enum qt = QuadratureType::GaussLegendre) {
     vector.clear();
 
-    //auto gridView = elementRepr.gridView();
-
-    for (auto& subElement : elementRepr.elements_) {
+    for (auto& subElement : subGrid.elements_) {
 
       const auto& rule = Dune::QuadratureRules<double, dim>::rule(subElement.type(), order, qt);
       for (auto ip : rule) {

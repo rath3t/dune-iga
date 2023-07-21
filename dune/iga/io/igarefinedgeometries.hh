@@ -41,7 +41,7 @@ namespace Dune::IGA {
 
       for (auto& element : elements(gridView))
         if (element.impl().isTrimmed()) {
-          auto [ele, vert, ind] = element.impl().trimmedElementRepresentation()->createRefinedGrid(subSampleTrimmed);
+          auto [ele, vert, ind] = element.impl().elementSubGrid()->createRefinedGrid(subSampleTrimmed);
 
           trimmedElementData_.emplace(
               indexSet.index(element), ElementData{ele, vert, ind}

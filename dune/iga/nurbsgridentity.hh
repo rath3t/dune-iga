@@ -111,8 +111,8 @@ namespace Dune::IGA {
       }
     }
 
-    auto trimmedElementRepresentation() const {
-      return NURBSGridView_->impl().getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+    auto elementSubGrid() const {
+      return NURBSGridView_->impl().getPatch(patchID_).getElementSubGrid(directIndex_);
     }
 
     void fillQuadratureRule(Dune::QuadratureRule<double, dim>& vector, const std::optional<int>& p_order = std::nullopt,
@@ -122,7 +122,7 @@ namespace Dune::IGA {
                                    * (*std::ranges::max_element(NURBSGridView_->impl().getPatchData(patchID_).degree)));
       if constexpr (dim == 2)
         if (isTrimmed()) {
-          auto elementRepr = NURBSGridView_->impl().getPatch(patchID_).getTrimmedElementRepresentation(directIndex_);
+          auto elementRepr = NURBSGridView_->impl().getPatch(patchID_).getElementSubGrid(directIndex_);
           fillQuadratureRuleImpl(vector, *elementRepr, order, qt);
           return;
         }

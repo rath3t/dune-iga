@@ -9,7 +9,7 @@
 #include "dune/iga/nurbsgeometry.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
-#include "dune/iga/trim/trimmedelementrepresentation.hh"
+#include "dune/iga/trim/subgrid.hh"
 #include "dune/iga/utils/concepts.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/yaspgrid.hh>
@@ -37,7 +37,7 @@ namespace Dune::IGA {
     using DirectIndex = unsigned int;
     using RealIndex   = unsigned int;
 
-    using TrimmedElementRepresentationType = GridImpl::Traits::TrimmedElementRepresentationType;
+    using SubGridType = GridImpl::Traits::SubGridType;
 
     /** \brief Constructor of NURBS from knots, control points, weights and degree
      *  \param knotSpans vector of knotSpans for each dimension
@@ -370,7 +370,7 @@ namespace Dune::IGA {
       auto [currentKnotSpan, fixedOrFreeDirection] = spanAndDirectionFromDirectIndex<codim>(directIndex);
 
       auto geo = (codim == 0 && trimData_ && isTrimmed(realIndex)) ? NURBSGeometry<dim - codim, dimworld, const GridImpl>(
-                     patchData_, fixedOrFreeDirection, currentKnotSpan, trimInfoMap.at(directIndex).repr)
+                     patchData_, fixedOrFreeDirection, currentKnotSpan, subGridInfoMap.at(directIndex).subgrid)
                                            : NURBSGeometry<dim - codim, dimworld, const GridImpl>(
                                                patchData_, fixedOrFreeDirection, currentKnotSpan);
       return typename GridImpl::template Codim<codim>::Geometry(geo);
@@ -626,12 +626,12 @@ namespace Dune::IGA {
       return getTrimFlag(realIndex) == ElementTrimFlag::trimmed;
     }
 
-    [[nodiscard]] auto getTrimmedElementRepresentation(RealIndex realIndex) const
-        -> std::shared_ptr<TrimmedElementRepresentationType> {
+    [[nodiscard]] auto getElementSubGrid(RealIndex realIndex) const
+        -> std::shared_ptr<SubGridType> {
       assert(isTrimmed(realIndex) && "You can only obtain trimmedElementRepresentations for trimmed Elements");
 
       auto directIndex = getDirectIndex<0>(realIndex);
-      return trimInfoMap.at(directIndex).repr;
+      return subGridInfoMap.at(directIndex).subgrid;
     }
 
     void prepareForNoTrim() {
@@ -692,8 +692,8 @@ namespace Dune::IGA {
         if (trimFlag == ElementTrimFlag::trimmed) {
           elementIndexMap.push_back(directIndex);
           ++n_trimmedElement;
-          trimInfoMap.emplace(directIndex, ElementTrimInfo{.realIndex = realIndex,
-                                                           .repr = std::make_unique<TrimmedElementRepresentationType>(
+          subGridInfoMap.emplace(directIndex, ElementSubGridInfo{.realIndex = realIndex,
+                                                           .subgrid   = std::make_unique<SubGridType>(
                                                                boundaries.value(), scalingAndOffset(directIndex))});
         } else if (trimFlag == ElementTrimFlag::full) {
           elementIndexMap.push_back(directIndex);
@@ -709,12 +709,12 @@ namespace Dune::IGA {
       int n_entities_original = originalSize(codim);
       std::set<DirectIndex> indicesOfEntityInTrim;
 
-      for (auto& [eleDirectIdx, trimInfo] : trimInfoMap) {
+      for (auto realIndex : std::views::iota(0u, n_fullElement + n_trimmedElement)) {
         for (int i = 0; i < 4; ++i) {
           if constexpr (codim == 2)
-            indicesOfEntityInTrim.insert(getGlobalVertexIndexFromElementIndex(trimInfo.realIndex, i, true));
+            indicesOfEntityInTrim.insert(getGlobalVertexIndexFromElementIndex(realIndex, i, true));
           else
-            indicesOfEntityInTrim.insert(getGlobalEdgeIndexFromElementIndex(trimInfo.realIndex, i, true));
+            indicesOfEntityInTrim.insert(getGlobalEdgeIndexFromElementIndex(realIndex, i, true));
         }
       }
 
@@ -783,12 +783,12 @@ namespace Dune::IGA {
     unsigned int n_fullElement{std::numeric_limits<unsigned int>::signaling_NaN()};
     unsigned int n_trimmedElement{0};
 
-    struct ElementTrimInfo {
+    struct ElementSubGridInfo {
       RealIndex realIndex{};
-      std::shared_ptr<TrimmedElementRepresentationType> repr;
+      std::shared_ptr<SubGridType> subgrid;
     };
 
-    std::map<DirectIndex, ElementTrimInfo> trimInfoMap;
+    std::map<DirectIndex, ElementSubGridInfo> subGridInfoMap;
 
     template <unsigned int codim>
     requires(dim == 2) auto& getEntityMap() const {
