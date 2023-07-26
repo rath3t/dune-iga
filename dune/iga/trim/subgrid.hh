@@ -76,7 +76,7 @@ namespace Dune::IGA {
 
       vertices.reserve(splitOuter.size());
       for (auto& boundary : splitOuter)
-        vertices.push_back(transformer.toLocal(boundary.endPoints.front()));
+        vertices.push_back(transformer.transform(boundary.endPoints.front()));
 
       std::vector<std::vector<Point>> polygonInput;
       polygonInput.push_back(vertices);
@@ -86,7 +86,7 @@ namespace Dune::IGA {
           assert(innerLoop.size() > 1);
           std::vector<Point> holeInput;
           for (auto& boundary : innerLoop) {
-            auto v = transformer.toLocal(boundary.endPoints.front());
+            auto v = transformer.transform(boundary.endPoints.front());
             vertices.push_back(v);
             holeInput.push_back(v);
           }

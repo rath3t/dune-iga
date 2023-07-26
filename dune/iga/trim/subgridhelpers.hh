@@ -15,9 +15,8 @@ namespace Dune::IGA {
     explicit TransformToSpan(std::pair<std::array<double, dim>, std::array<double, dim>>& input)
         : scaling_(input.first), offset_(input.second){};
 
-    // TODO Concept
     template <typename VecType>
-    [[nodiscard]] auto toLocal(const VecType& cp) const -> VecType {
+    [[nodiscard]] auto transform(const VecType& cp) const -> VecType {
       VecType local;
       for (int i = 0; i < dim; ++i) {
         local[i] = (cp[i] - offset_[i]) / scaling_[i];
@@ -26,9 +25,9 @@ namespace Dune::IGA {
       return local;
     }
 
-    [[nodiscard]] auto toLocal(const Clipper2Lib::PointD& p) const -> Clipper2Lib::PointD {
+    [[nodiscard]] auto transform(const Clipper2Lib::PointD& p) const -> Clipper2Lib::PointD {
       std::array<double, 2> cp{p.x, p.y};
-      auto cpLoc = toLocal(cp);
+      auto cpLoc = transform(cp);
       return {cpLoc[0], cpLoc[1]};
     }
   };
@@ -41,7 +40,7 @@ namespace Dune::IGA {
     for (auto& boundary : loop) {
       auto path = boundary.path(div);
       for (Clipper2Lib::PointD point : path)
-        polygon.emplace_back(transformer.toLocal(point));
+        polygon.emplace_back(transformer.transform(point));
     }
     return std::fabs(Clipper2Lib::Length(polygon));
   }
@@ -102,7 +101,7 @@ namespace Dune::IGA {
         auto computeCurrentLength = [&](const std::vector<DomainInformation>& domainInfos) -> double {
           Clipper2Lib::PathD path;
           for (const auto& domainInfo : domainInfos) {
-            auto u = transformer.toLocal(boundaries[domainInfo.localIndex].nurbsGeometry(domainInfo.domain.left()));
+            auto u = transformer.transform(boundaries[domainInfo.localIndex].nurbsGeometry(domainInfo.domain.left()));
             path.emplace_back(u[0], u[1]);
           }
           return std::fabs(Clipper2Lib::Length(path, true));
@@ -121,7 +120,7 @@ namespace Dune::IGA {
     return newBoundaries;
   }
 
-  template <int dim>
+  template <int dim, typename Transformer = TransformToSpan<dim>>
   struct GridBoundarySegment : Dune::BoundarySegment<dim, dim, double> {
     explicit GridBoundarySegment(Boundary& _boundary, const auto& _transformer)
         : boundary(_boundary), transformer(_transformer) {}
@@ -130,9 +129,9 @@ namespace Dune::IGA {
       // u has to be mapped on the domain of 0 to 1
       const auto local = std::clamp(localI[0], 0.0, 1.0);
       double u         = Utilities::mapToRange(local, Utilities::Domain<double>{}, boundary.domain);
-      return transformer.toLocal(boundary.nurbsGeometry(u));
+      return transformer.transform(boundary.nurbsGeometry(u));
     }
-    TransformToSpan<dim> transformer;
+    Transformer transformer;
     Boundary boundary;
   };
 }  // namespace Dune::IGA
