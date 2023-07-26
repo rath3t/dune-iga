@@ -5,6 +5,8 @@
 
 #include <mapbox/earcut.hpp>
 
+#include <dune/grid/common/boundarysegment.hh>
+
 namespace Dune::IGA {
   template <int dim>
   struct TransformToSpan {
