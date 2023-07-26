@@ -12,6 +12,7 @@
 
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
+#include <dune/iga/trim/subgridhelpers.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 
 #include <dune/grid/uggrid.hh>
@@ -178,6 +179,15 @@ namespace Dune::IGA {
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
 
 
+    struct Transformer {
+      PatchGeometry* patchGeometry;
+
+      template <typename VecType>
+      [[nodiscard]] auto transform(const VecType& cp) const -> VecType {
+        return patchGeometry->global(cp);
+      }
+    };
+
     static std::unique_ptr<Grid> read(const std::string& fileName, int refine) {
       std::ifstream ibraInputFile;
       ibraInputFile.open(fileName);
@@ -192,18 +202,32 @@ namespace Dune::IGA {
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData patchData{knotSpans, controlNet, _surface.degree};
       PatchGeometry patchGeometry{std::make_shared<PatchData>(patchData)};
+      Transformer transformer{&patchGeometry};
 
       auto gridFactory = Dune::GridFactory<Grid>();
 
       std::vector<Boundary> outerBoundaries;
       for (auto& trim : brep.loops[0].trims) {
         outerBoundaries.emplace_back(trim);
-        gridFactory.insertVertex(patchGeometry.global(outerBoundaries.back().endPoints.front()));
+        gridFactory.insertVertex(transformer.transform(outerBoundaries.back().endPoints.front()));
       }
       if (outerBoundaries.size() != 4)
         DUNE_THROW(Dune::NotImplemented, "Only untrimmed surfaces implemented atm");
 
       gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, std::vector<unsigned int>{0, 1, 3, 2});
+//
+//      gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>{0, 1, 3});
+//      gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>{1, 3, 2});
+
+      auto determineOuterBoundaryIndices = [nBoundaries = (unsigned int)outerBoundaries.size()](unsigned int bIndex) {
+        return std::vector<unsigned int>{bIndex, (bIndex + 1) % nBoundaries};
+      };
+
+      unsigned int bIndex = 0;
+      for (auto& boundary : outerBoundaries)
+        gridFactory.insertBoundarySegment(determineOuterBoundaryIndices(bIndex++),
+                                          std::make_shared<GridBoundarySegment<gridDim, Transformer>>(boundary, transformer));
+
 
       auto grid = gridFactory.createGrid();
       grid->globalRefine(refine);

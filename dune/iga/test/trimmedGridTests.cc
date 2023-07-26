@@ -511,7 +511,7 @@ auto testIbraFEReader() {
 
   using Grid = Dune::UGGrid<2>;
 
-  for (auto i : std::views::iota(0, 3)) {
+  for (auto i : std::views::iota(0, 6)) {
     auto grid = IbraFEReader<Grid>::read("auxiliaryFiles/round.ibra", i);
     VTKWriter vtkWriter(grid->leafGridView());
 
