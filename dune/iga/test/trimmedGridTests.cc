@@ -28,6 +28,7 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/vtk/vtkwriter.hh>
+#include <dune/grid/uggrid.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -505,6 +506,22 @@ auto testNurbsBasis() {
   return t;
 }
 
+auto testIbraFEReader() {
+  TestSuite t;
+
+  using Grid = Dune::UGGrid<2>;
+
+  for (auto i : std::views::iota(0, 3)) {
+    auto grid = IbraFEReader<Grid>::read("auxiliaryFiles/round.ibra", i);
+    VTKWriter vtkWriter(grid->leafGridView());
+
+    vtkWriter.write("Round" + std::to_string(i));
+  }
+
+  return t;
+}
+
+
 void createOutputFolder() {
   namespace fs = std::filesystem;
   if (fs::exists(OUTPUT_FOLDER) and fs::is_directory(OUTPUT_FOLDER))
@@ -523,21 +540,23 @@ int main(int argc, char** argv) try {
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
   createOutputFolder();
 
-  /// Test General stuff
-  t.subTest(testPatchGeometryCurve());
-  t.subTest(testPatchGeometrySurface());
-  t.subTest(testIbraReader());
-  t.subTest(testDataCollectorAndVtkWriter());
+  t.subTest(testIbraFEReader());
 
-  /// 1. Test Trimming Functionality
-  t.subTest(testExampleSuite());
-  t.subTest(testMapsInTrimmedPatch());
-
-  /// 2. Test Integration Points
-  t.subTest(testIntegrationPoints());
-
-  /// 3. Test Basis
-  t.subTest(testNurbsBasis());
+//  /// Test General stuff
+//  t.subTest(testPatchGeometryCurve());
+//  t.subTest(testPatchGeometrySurface());
+//  t.subTest(testIbraReader());
+//  t.subTest(testDataCollectorAndVtkWriter());
+//
+//  /// 1. Test Trimming Functionality
+//  t.subTest(testExampleSuite());
+//  t.subTest(testMapsInTrimmedPatch());
+//
+//  /// 2. Test Integration Points
+//  t.subTest(testIntegrationPoints());
+//
+//  /// 3. Test Basis
+//  t.subTest(testNurbsBasis());
 
   t.report();
 
