@@ -68,8 +68,7 @@ namespace Dune::IGA {
     }
 
     template <unsigned int codim, std::integral T = int>
-      requires(codim == 0 || codim == dim)
-    [[nodiscard]] std::array<unsigned int, dim> originalGridSize() const {
+    requires(codim == 0 || codim == dim) [[nodiscard]] std::array<unsigned int, dim> originalGridSize() const {
       if constexpr (codim == 0)
         return elementNet_->template sizeAsT<T>();
       else
@@ -145,9 +144,7 @@ namespace Dune::IGA {
       __builtin_unreachable();
     }
 
-    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const
-      requires(dim == 2)
-    {
+    [[nodiscard]] int patchBoundaryIndex(const RealIndex intersectionRealIndex) const requires(dim == 2) {
       auto realIndexOfBoundaryIntersections = boundarySegmentList();
 
       auto it = std::ranges::find(realIndexOfBoundaryIntersections, intersectionRealIndex);
@@ -438,7 +435,7 @@ namespace Dune::IGA {
             else
               codim1Sizes[i] *= (i == k) ? uniqueSpanSize_[k] : uniqueSpanSize_[k] + 1;  // edges
       } else
-        codim1Sizes[0] = uniqueSpanSize_[0] + 1;                                         // vertices
+        codim1Sizes[0] = uniqueSpanSize_[0] + 1;  // vertices
 
       return codim1Sizes;
     }
@@ -598,14 +595,12 @@ namespace Dune::IGA {
       return idx;
     }
     template <unsigned int codim>
-      requires(dim == 2)
-    [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
+    requires(dim == 2) [[nodiscard]] auto getDirectIndex(RealIndex idx) const -> DirectIndex {
       return getEntityMap<codim>()[idx];
     }
 
     template <unsigned int codim>
-      requires(dim == 2)
-    [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
+    requires(dim == 2) [[nodiscard]] auto getRealIndex(DirectIndex idx) const -> RealIndex {
       constexpr auto orVal = std::numeric_limits<DirectIndex>::max();
       auto res             = getRealIndexOr<codim>(idx, orVal);
       if (res != orVal)
@@ -614,10 +609,8 @@ namespace Dune::IGA {
         throw std::runtime_error("No corresponding realIndex");
     }
     template <unsigned int codim>
-      requires(dim == 2)
-    [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept
-      requires(std::same_as<decltype(idx), decltype(orValue)>)
-    {
+    requires(dim == 2) [[nodiscard]] auto getRealIndexOr(auto idx, auto orValue) const noexcept
+        requires(std::same_as<decltype(idx), decltype(orValue)>) {
       auto& map = this->getEntityMap<codim>();
       auto it   = std::ranges::find(map, idx);
       return it != map.end() ? std::ranges::distance(map.begin(), it) : orValue;
@@ -656,8 +649,7 @@ namespace Dune::IGA {
     }
 
     template <unsigned int codim>
-      requires(dim == 2)
-    void fill1to1Maps() {
+    requires(dim == 2) void fill1to1Maps() {
       int n_entity = originalSize(codim);
       auto& map    = getEntityMap<codim>();
 
@@ -670,9 +662,7 @@ namespace Dune::IGA {
     void computeElementTrimInfo() { prepareForNoTrim(); }
 
     // Trim Info gets computed for dim == 2 && dimworld == 2
-    void computeElementTrimInfo()
-      requires(dim == 2)
-    {
+    void computeElementTrimInfo() requires(dim == 2) {
       if (!trimData_.has_value()) {
         prepareForNoTrim();
         return;
@@ -715,8 +705,7 @@ namespace Dune::IGA {
       constructSubEntityMaps<1>();
     }
     template <unsigned int codim>
-      requires(codim == 2 || codim == 1) && (dim == 2)
-    void constructSubEntityMaps() {
+    requires(codim == 2 || codim == 1) && (dim == 2) void constructSubEntityMaps() {
       int n_entities_original = originalSize(codim);
       std::set<DirectIndex> indicesOfEntityInTrim;
 
@@ -742,9 +731,7 @@ namespace Dune::IGA {
     }
 
     // TODO Cache this
-    [[nodiscard]] std::set<RealIndex> boundarySegmentList() const
-      requires(dim == 2)
-    {
+    [[nodiscard]] std::set<RealIndex> boundarySegmentList() const requires(dim == 2) {
       // This is the same functionality as in entity<0> where the intersection are made, maybe cache this and use it
       // when the elements are created as well
       constexpr int noNeighbor = -1;
@@ -773,9 +760,8 @@ namespace Dune::IGA {
       return realIndexOfBoundaryIntersections;
     }
 
-   private:
-    template <typename GridImpl>
-    friend class NURBSGridLeafIndexSet;
+   private : template <typename GridImpl>
+             friend class NURBSGridLeafIndexSet;
     template <typename GridImpl>
     friend class NURBSintersection;
     std::shared_ptr<NURBSPatchData<dim, dimworld, ScalarType>> patchData_;
@@ -805,8 +791,7 @@ namespace Dune::IGA {
     std::map<DirectIndex, ElementSubGridInfo> subGridInfoMap;
 
     template <unsigned int codim>
-      requires(dim == 2)
-    auto& getEntityMap() const {
+    requires(dim == 2) auto& getEntityMap() const {
       if constexpr (codim == 0)
         return elementIndexMap;
       else if constexpr (codim == 1)
@@ -815,8 +800,7 @@ namespace Dune::IGA {
         return vertexIndexMap;
     }
     template <unsigned int codim>
-      requires(dim == 2)
-    auto& getEntityMap() {
+    requires(dim == 2) auto& getEntityMap() {
       if constexpr (codim == 0)
         return elementIndexMap;
       else if constexpr (codim == 1)

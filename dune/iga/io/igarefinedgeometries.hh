@@ -66,10 +66,13 @@ namespace Dune::IGA {
     }
 
     [[nodiscard]] Index vertexSubIndex(Index eIndex, Index subEleIndex, Index subEntityIndex) const {
+      // As in a trimmed element only triangles are present, the index offset is 3, for untrimmed elements, the subgrid
+      // + is made up of quadrilaterals, therefore the offset is 4
+      int offset = isTrimmed(eIndex) ? 3 : 4;
       if (isTrimmed(eIndex))
-        return trimmedElementData_.at(eIndex).indices[subEleIndex * 3 + subEntityIndex];
+        return trimmedElementData_.at(eIndex).indices[subEleIndex * offset + subEntityIndex];
       else
-        return cubeData.indices.at(subEleIndex * 4 + subEntityIndex);
+        return cubeData.indices.at(subEleIndex * offset + subEntityIndex);
     }
 
     [[nodiscard]] std::size_t nElements(Index eIndex) const {

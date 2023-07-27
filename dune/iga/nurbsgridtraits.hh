@@ -98,6 +98,5 @@ struct NurbsGridTraits {
   typedef CCType CollectiveCommunication;
   typedef CCType Communication;
 
-
   using SubGridType = Dune::IGA::TrimmedSubGrid<2>;
 };

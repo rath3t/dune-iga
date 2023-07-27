@@ -242,9 +242,7 @@ namespace Dune::IGA {
     // Helpers
     int getRealIndexForOuterIndex(int outerIndex) { return outerIndex; }
 
-    int getRealIndexForOuterIndex(int outerIndex)
-      requires(dim == 2)
-    {
+    int getRealIndexForOuterIndex(int outerIndex) requires(dim == 2) {
       if (outerIndex == Impl::noNeighbor) return Impl::noNeighbor;
       return NURBSGridView_->impl().getPatch(patchID_).template getRealIndexOr<0>(outerIndex, Impl::noNeighbor);
     }
