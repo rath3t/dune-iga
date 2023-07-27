@@ -8,7 +8,6 @@
 #include "subgridhelpers.hh"
 
 #include <clipper2/clipper.core.h>
-#include <mapbox/earcut.hpp>
 
 #include "dune/iga/geometry/geohelper.hh"
 #include <dune/geometry/multilineargeometry.hh>
@@ -57,43 +56,12 @@ namespace Dune::IGA {
    private:
     void constructSubGrid() {
       auto boundaries               = splitBoundaries();
-      std::tie(indices_, vertices_) = triangulate(boundaries);
+      std::tie(indices_, vertices_) = triangulate<dim>(boundaries, transformer);
 
       for (auto it = indices_.begin(); it < indices_.end(); it += 3)
         elements_.emplace_back(
             Dune::GeometryTypes::triangle,
             std::vector<FieldVector<double, dim>>{vertices_[*it], vertices_[*(it + 1)], vertices_[*(it + 2)]});
-    }
-
-    [[nodiscard]] auto triangulate(auto& boundaries) const -> std::pair<std::vector<Index>, std::vector<Point>> {
-      // Construct mesh with Earcut
-      // C.f. https://github.com/mapbox/earcut.hpp
-
-      auto [splitOuter, splitInner] = boundaries;
-
-      // Create array of points
-      auto vertices = std::vector<Point>();
-
-      vertices.reserve(splitOuter.size());
-      for (auto& boundary : splitOuter)
-        vertices.push_back(transformer.transform(boundary.endPoints.front()));
-
-      std::vector<std::vector<Point>> polygonInput;
-      polygonInput.push_back(vertices);
-
-      if (splitInner)
-        for (auto& innerLoop : splitInner.value()) {
-          assert(innerLoop.size() > 1);
-          std::vector<Point> holeInput;
-          for (auto& boundary : innerLoop) {
-            auto v = transformer.transform(boundary.endPoints.front());
-            vertices.push_back(v);
-            holeInput.push_back(v);
-          }
-          polygonInput.push_back(holeInput);
-        }
-
-      return {mapbox::earcut<Index>(polygonInput), vertices};
     }
 
     /// \brief This is necessary for loops with only one or 2 boundaries
@@ -157,7 +125,7 @@ namespace Dune::IGA {
       int refineSteps = refinementSteps - splitSteps;
 
       auto boundaries = std::make_pair(splitOuterBoundaries(splitSteps, 0.0), splitInnerBoundaryLoops(splitSteps, 0.0));
-      auto [ind, vert] = triangulate(boundaries);
+      auto [ind, vert] = triangulate<dim>(boundaries, transformer);
 
       Dune::GridFactory<Dune::UGGrid<dim>> gridFactory;
       for (auto& vertex : vert)

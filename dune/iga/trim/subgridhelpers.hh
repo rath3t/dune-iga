@@ -19,7 +19,7 @@ namespace Dune::IGA {
 
     template <typename VecType>
     [[nodiscard]] auto transform(const VecType& cp) const -> VecType {
-      VecType local;
+      VecType local{};
       for (int i = 0; i < dim; ++i) {
         local[i] = (cp[i] - offset_[i]) / scaling_[i];
         local[i] = std::clamp(local[i], 0.0, 1.0);
@@ -120,6 +120,40 @@ namespace Dune::IGA {
                              return {boundaries[domain_info.localIndex].nurbsGeometry, domain_info.domain};
                            });
     return newBoundaries;
+  }
+
+  template <int dim, typename Transformer = TransformToSpan<dim>, typename Index = std::uint64_t,
+            typename Point = Dune::FieldVector<double, dim>>
+  auto triangulate(auto& boundaries, const Transformer& transformer)
+      -> std::pair<std::vector<Index>, std::vector<Point>> {
+    // Construct mesh with Earcut
+    // C.f. https://github.com/mapbox/earcut.hpp
+
+    auto [splitOuter, splitInner] = boundaries;
+
+    // Create array of points
+    auto vertices = std::vector<Point>();
+
+    vertices.reserve(splitOuter.size());
+    for (auto& boundary : splitOuter)
+      vertices.push_back(transformer.transform(boundary.endPoints.front()));
+
+    std::vector<std::vector<Point>> polygonInput;
+    polygonInput.push_back(vertices);
+
+    if (splitInner)
+      for (auto& innerLoop : splitInner.value()) {
+        assert(innerLoop.size() > 1);
+        std::vector<Point> holeInput;
+        for (auto& boundary : innerLoop) {
+          auto v = transformer.transform(boundary.endPoints.front());
+          vertices.push_back(v);
+          holeInput.push_back(v);
+        }
+        polygonInput.push_back(holeInput);
+      }
+
+    return {mapbox::earcut<Index>(polygonInput), vertices};
   }
 
   template <int dim, typename Transformer = TransformToSpan<dim>>
