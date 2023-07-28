@@ -15,12 +15,27 @@
 #include <dune/iga/trim/subgridhelpers.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 
-#include <dune/grid/uggrid.hh>
 
 namespace Dune::IGA {
 
   template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
+
+  template <int worldDim>
+  static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
+    auto data = std::make_shared<TrimData>();
+    std::vector<Boundary> boundaries;
+    std::vector<Ibra::BrepLoop> loops = brep.loops;
+    for (Ibra::BrepLoop& loop : loops) {
+      boundaries.clear();
+      for (Ibra::BrepTrim& trim : loop.trims) {
+        boundaries.emplace_back(trim);
+      }
+      data->addLoop(boundaries);
+    }
+
+    return data;
+  }
 
   template <typename InputStringType, int worldDim>
     requires(not std::convertible_to<
@@ -147,97 +162,7 @@ namespace Dune::IGA {
       else
         return std::make_shared<Grid>(_patchData);
     }
-
-   private:
-    static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
-      auto data = std::make_shared<TrimData>();
-      std::vector<Boundary> boundaries;
-      std::vector<Ibra::BrepLoop> loops = brep.loops;
-      for (Ibra::BrepLoop& loop : loops) {
-        boundaries.clear();
-        for (Ibra::BrepTrim& trim : loop.trims) {
-          boundaries.emplace_back(trim);
-        }
-        data->addLoop(boundaries);
-      }
-
-      return data;
-    }
   };
-
-  // At the moment only gridDim und worldDim == 2 or 3 supported
-  template <typename Grid>
-  class IbraFEReader {
-   public:
-    static const int gridDim = Grid::dimension;
-    static const int worldDim = Grid::dimensionworld;
-    using ctype = Grid::ctype;
-    using ControlPoint        = Dune::IGA::NURBSPatchData<gridDim, worldDim>::ControlPointType;
-    using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
-    using PatchGeometry       = NURBSPatchGeometry<gridDim, worldDim>;
-
-    using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
-
-
-    struct Transformer {
-      PatchGeometry* patchGeometry;
-
-      template <typename VecType>
-      [[nodiscard]] auto transform(const VecType& cp) const -> VecType {
-        return patchGeometry->global(cp);
-      }
-    };
-
-    static std::unique_ptr<Grid> read(const std::string& fileName, int refine) {
-      std::ifstream ibraInputFile;
-      ibraInputFile.open(fileName);
-
-      auto brep = getBrep<decltype(ibraInputFile), 2>(ibraInputFile);
-
-      Ibra::Surface<worldDim> _surface                           = brep.surfaces[0];
-      const std::array<std::vector<double>, gridDim> knotSpans   = _surface.compileKnotVectors();
-      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.transformControlPoints();
-      std::array<int, gridDim> dimsize                           = _surface.n_controlPoints;
-
-      auto controlNet = ControlPointNetType(dimsize, controlPoints);
-      PatchData patchData{knotSpans, controlNet, _surface.degree};
-      PatchGeometry patchGeometry{std::make_shared<PatchData>(patchData)};
-      Transformer transformer{&patchGeometry};
-
-      auto gridFactory = Dune::GridFactory<Grid>();
-
-      std::vector<Boundary> outerBoundaries;
-      for (auto& trim : brep.loops[0].trims) {
-        outerBoundaries.emplace_back(trim);
-        gridFactory.insertVertex(transformer.transform(outerBoundaries.back().endPoints.front()));
-      }
-      if (outerBoundaries.size() != 4)
-        DUNE_THROW(Dune::NotImplemented, "Only untrimmed surfaces implemented atm");
-
-      gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, std::vector<unsigned int>{0, 1, 3, 2});
-//
-//      gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>{0, 1, 3});
-//      gridFactory.insertElement(Dune::GeometryTypes::triangle, std::vector<unsigned int>{1, 3, 2});
-
-      auto determineOuterBoundaryIndices = [nBoundaries = (unsigned int)outerBoundaries.size()](unsigned int bIndex) {
-        return std::vector<unsigned int>{bIndex, (bIndex + 1) % nBoundaries};
-      };
-
-      unsigned int bIndex = 0;
-      for (auto& boundary : outerBoundaries)
-        gridFactory.insertBoundarySegment(determineOuterBoundaryIndices(bIndex++),
-                                          std::make_shared<GridBoundarySegment<gridDim, Transformer>>(boundary, transformer));
-
-
-      auto grid = gridFactory.createGrid();
-      grid->globalRefine(refine);
-
-      return grid;
-    }
-  };
-
-
-
 
 
 }  // namespace Dune::IGA

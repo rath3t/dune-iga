@@ -29,6 +29,7 @@
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/vtk/vtkwriter.hh>
 #include <dune/grid/uggrid.hh>
+#include <dune/iga/io/ibra/ibrafereader.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -512,7 +513,7 @@ auto testIbraFEReader() {
   using Grid = Dune::UGGrid<2>;
 
   for (auto i : std::views::iota(0, 6)) {
-    auto grid = IbraFEReader<Grid>::read("auxiliaryFiles/round.ibra", i);
+    auto grid = IbraFEReader<Grid>::read("auxiliaryFiles/pipe_trim.ibra", i);
     VTKWriter vtkWriter(grid->leafGridView());
 
     vtkWriter.write("Round" + std::to_string(i));
