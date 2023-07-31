@@ -5,6 +5,7 @@
 
 #include <clipper2/clipper.core.h>
 #include <ranges>
+#include <utility>
 
 #include "dune/iga/io/ibra/ibrageometry.hh"
 #include "dune/iga/nurbspatchgeometry.h"
@@ -30,8 +31,8 @@ namespace Dune::IGA {
 
     Boundary() = default;
 
-    Boundary(Geometry& _nurbsGeometry, const Utilities::Domain<double>& _domain)
-        : nurbsGeometry(_nurbsGeometry),
+    Boundary(Geometry _nurbsGeometry, const Utilities::Domain<double>& _domain)
+        : nurbsGeometry(std::move(_nurbsGeometry)),
           domain(_domain),
           endPoints({nurbsGeometry(domain.left()), nurbsGeometry(domain.right())}) {
       assert(domain.right() > domain.left());

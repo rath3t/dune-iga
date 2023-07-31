@@ -13,11 +13,87 @@
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
+#include <dune/iga/trim/subgridhelpers.hh>
 
 namespace Dune::IGA {
 
   template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
+
+  template <int worldDim>
+  static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
+    auto data = std::make_shared<TrimData>();
+    std::vector<Boundary> boundaries;
+    std::vector<Ibra::BrepLoop> loops = brep.loops;
+    for (Ibra::BrepLoop& loop : loops) {
+      boundaries.clear();
+      for (Ibra::BrepTrim& trim : loop.trims) {
+        boundaries.emplace_back(trim);
+      }
+      data->addLoop(boundaries);
+    }
+
+    return data;
+  }
+
+  template <typename InputStringType, int worldDim>
+  requires(not std::convertible_to<
+               std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>) static Ibra::
+      Brep<worldDim> getBrep(InputStringType& ibraInputFile) {
+    using json = nlohmann::json;
+
+    // Result
+    std::vector<Ibra::Surface<worldDim>> surfaces;
+    std::vector<Ibra::Curve2D> curves2D;
+
+    std::vector<Ibra::BrepRepresentation> brepRepresentations;
+    std::vector<Ibra::BrepLoopRepresentation> brepLoopRepresentations;
+    std::vector<Ibra::BrepTrimRepresentation> brepTrimRepresentations;
+
+    json ibraJson;
+    try {
+      ibraJson = json::parse(ibraInputFile);
+
+      for (auto& j : ibraJson) {
+        auto geo = j.get<Ibra::IbraBase>();
+
+        switch (geo.type) {
+          case Ibra::Type::NurbsSurfaceGeometry3D:
+            surfaces.push_back(j.get<Ibra::Surface<worldDim>>());
+            break;
+          case Ibra::Type::NurbsCurveGeometry2D:
+            curves2D.push_back(j.get<Ibra::Curve2D>());
+            break;
+          case Ibra::Type::BrepType:
+            brepRepresentations.push_back(j.get<Ibra::BrepRepresentation>());
+            break;
+          case Ibra::Type::BrepLoopType:
+            brepLoopRepresentations.push_back(j.get<Ibra::BrepLoopRepresentation>());
+            break;
+          case Ibra::Type::BrepTrimType:
+            brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
+            break;
+          default:
+            // Do nothing -- keep the compiler happy
+            break;
+        }
+      }
+    } catch (json::parse_error& ex) {
+      DUNE_THROW(Dune::IOError, "Error in reading input stream: "
+                                    << ", parse error at byte " << ex.byte << " What: " << ex.what());
+    }
+
+    // Make Connections
+    auto brepRepresentation = brepRepresentations[0];
+
+    Ibra::Brep brep{brepRepresentation, curves2D, surfaces, brepLoopRepresentations, brepTrimRepresentations};
+    // Each surface in a brep is one Patch, as for now only one brep is supported in NURBSGrid
+    assert(brep.surfaces.size() == 1);
+
+    std::cout << "IbraReader successfully read in 1 patch with " << brep.trims.size() << " edges." << std::endl;
+
+    return brep;
+  }
 
   // At the moment only gridDim und worldDim == 2 or 3 supported
   template <int gridDim, int worldDim, typename ScalarType = double>
@@ -43,59 +119,7 @@ namespace Dune::IGA {
         shared_ptr<Grid> read(InputStringType& ibraInputFile, const bool trim = true,
                               std::array<int, 2> elevateDegree = {0, 0}, std::array<int, 2> preKnotRefine = {0, 0},
                               std::array<int, 2> postKnotRefine = {0, 0}) {
-      using json = nlohmann::json;
-
-      // Result
-      std::vector<Ibra::Surface<worldDim>> surfaces;
-      std::vector<Ibra::Curve2D> curves2D;
-
-      std::vector<Ibra::BrepRepresentation> brepRepresentations;
-      std::vector<Ibra::BrepLoopRepresentation> brepLoopRepresentations;
-      std::vector<Ibra::BrepTrimRepresentation> brepTrimRepresentations;
-
-      json ibraJson;
-      try {
-        ibraJson = json::parse(ibraInputFile);
-
-        for (auto& j : ibraJson) {
-          auto geo = j.get<Ibra::IbraBase>();
-
-          switch (geo.type) {
-            case Ibra::Type::NurbsSurfaceGeometry3D:
-              surfaces.push_back(j.get<Ibra::Surface<worldDim>>());
-              break;
-            case Ibra::Type::NurbsCurveGeometry2D:
-              curves2D.push_back(j.get<Ibra::Curve2D>());
-              break;
-            case Ibra::Type::BrepType:
-              brepRepresentations.push_back(j.get<Ibra::BrepRepresentation>());
-              break;
-            case Ibra::Type::BrepLoopType:
-              brepLoopRepresentations.push_back(j.get<Ibra::BrepLoopRepresentation>());
-              break;
-            case Ibra::Type::BrepTrimType:
-              brepTrimRepresentations.push_back(j.get<Ibra::BrepTrimRepresentation>());
-              break;
-            default:
-              // Do nothing -- keep the compiler happy
-              break;
-          }
-        }
-      } catch (json::parse_error& ex) {
-        DUNE_THROW(Dune::IOError, "Error in reading input stream: "
-                                      << ", parse error at byte " << ex.byte << " What: " << ex.what());
-      }
-
-      // Make Connections
-      auto brepRepresentation = brepRepresentations[0];
-
-      Ibra::Brep brep{brepRepresentation, curves2D, surfaces, brepLoopRepresentations, brepTrimRepresentations};
-      // Each surface in a brep is one Patch, as for now only one brep is supported in NURBSGrid
-      assert(brep.surfaces.size() == 1);
-
-      std::cout << "IbraReader successfully read in 1 patch with " << brep.trims.size() << " edges." << std::endl;
-
-      // Reader has done its job, now NURBSGrid can be constructed
+      auto brep = getBrep<decltype(ibraInputFile), worldDim>(ibraInputFile);
 
       Ibra::Surface<worldDim> _surface                           = brep.surfaces[0];
       const std::array<std::vector<double>, gridDim> knotSpans   = _surface.compileKnotVectors();
@@ -132,22 +156,6 @@ namespace Dune::IGA {
         return std::make_shared<Grid>(_patchData, trimData);
       else
         return std::make_shared<Grid>(_patchData);
-    }
-
-   private:
-    static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
-      auto data = std::make_shared<TrimData>();
-      std::vector<Boundary> boundaries;
-      std::vector<Ibra::BrepLoop> loops = brep.loops;
-      for (Ibra::BrepLoop& loop : loops) {
-        boundaries.clear();
-        for (Ibra::BrepTrim& trim : loop.trims) {
-          boundaries.emplace_back(trim);
-        }
-        data->addLoop(boundaries);
-      }
-
-      return data;
     }
   };
 

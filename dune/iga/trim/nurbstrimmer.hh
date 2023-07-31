@@ -8,7 +8,7 @@
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
 
-//#include "dune/iga/geometry/closestpointprojection.hh"
+// #include "dune/iga/geometry/closestpointprojection.hh"
 #include "dune/iga/nurbspatchgeometry.h"
 #include <dune/grid/yaspgrid.hh>
 
@@ -609,7 +609,7 @@ namespace Dune::IGA::Trim {
 
     static inline int getEdgeOrientation(const int edge) { return (edge == 0 || edge == 2) ? 0 : 1; }
 
-    static inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }  // FIXME why?
+    static inline int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
 
     template <std::integral T>
     static inline bool intCmpEq(T i1, T i2, T tol = 0) {

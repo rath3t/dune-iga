@@ -17,6 +17,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/foamgrid/foamgrid.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
@@ -27,12 +28,16 @@
 #include <dune/grid/test/checkindexset.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/gridcheck.hh>
+#include <dune/grid/uggrid.hh>
+#include <dune/iga/io/ibra/ibrafereader.hh>
+#include <dune/vtk/datacollectors/lagrangedatacollector.hh>
 #include <dune/vtk/vtkwriter.hh>
-
-// #define TEST_ALL
 
 using namespace Dune;
 using namespace Dune::IGA;
+
+// DEFINITIONS
+std::string OUTPUT_FOLDER = "output";
 
 auto testPatchGeometryCurve() {
   TestSuite t;
@@ -210,20 +215,34 @@ auto testIbraReader() {
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
-  grid->globalRefine(3);
-
-  const auto gv = grid->leafGridView();
-  Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
-
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
   auto lambdaf = [](auto x) {
     return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
   };
-  auto lambaGV = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+  std::vector<std::string> geometries{"element_trim_xb", "surface-hole"};
 
-  writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
-  writer2.write("TestFile");
+  for (auto& fileName : geometries) {
+    std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
+
+    for (auto r : std::views::iota(0, 4)) {
+      if (r > 0) grid->globalRefine(1);
+
+      const auto gv = grid->leafGridView();
+      auto lambaGV  = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
+
+      for (auto s : std::views::iota(0, 4)) {
+        Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, s);
+        Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+
+        writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
+        auto vtkFileName = OUTPUT_FOLDER + "/" + fileName + "_r" + std::to_string(r) + "_s" + std::to_string(s);
+        writer2.write(vtkFileName);
+
+        // Check if the file exists
+        vtkFileName += ".vtu";
+        t.check(std::filesystem::exists(vtkFileName) and std::filesystem::file_size(vtkFileName) > 0);
+      }
+    }
+  }
 
   return t;
 }
@@ -363,7 +382,7 @@ void checkSumWeights(const auto& gridView, auto& t) {
     if (not ele.impl().isTrimmed()) continue;
 
     auto untrimmedArea = 1;
-    auto trimmedArea   = ele.impl().trimmedElementRepresentation()->calculateArea();
+    auto trimmedArea   = ele.impl().elementSubGrid()->calculateArea();
     auto ratio         = trimmedArea / untrimmedArea;
 
     ele.impl().fillQuadratureRule(rule);
@@ -490,6 +509,35 @@ auto testNurbsBasis() {
   return t;
 }
 
+auto testIbraFEReader() {
+  TestSuite t;
+
+  using Grid = Dune::UGGrid<2>;
+
+  for (auto i : std::views::iota(0, 5)) {
+    auto [refGrid, grid] = IbraFEReader<Grid>::read("auxiliaryFiles/surface-hole.ibra", i, true);
+
+    Vtk::LagrangeDataCollector dataCollector{grid.leafGridView(), 3};
+    VtkUnstructuredGridWriter vtkWriter{dataCollector, Vtk::FormatTypes::ASCII};
+    vtkWriter.write(OUTPUT_FOLDER + "/" + "Round" + std::to_string(i));
+
+    VTKWriter writer2{grid.leafGridView()};
+    writer2.write(OUTPUT_FOLDER + "/" + "Round_" + std::to_string(i));
+
+  }
+
+  return t;
+}
+
+void createOutputFolder() {
+  namespace fs = std::filesystem;
+  if (fs::exists(OUTPUT_FOLDER) and fs::is_directory(OUTPUT_FOLDER))
+    return;
+  else {
+    if (not fs::create_directory(OUTPUT_FOLDER)) DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
+  }
+}
+
 #include <cfenv>
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -497,22 +545,25 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
+  createOutputFolder();
 
-  /// Test General stuff
-  t.subTest(testPatchGeometryCurve());
-  t.subTest(testPatchGeometrySurface());
-  t.subTest(testIbraReader());
-  t.subTest(testDataCollectorAndVtkWriter());
+  t.subTest(testIbraFEReader());
 
-  /// 1. Test Trimming Functionality
-  t.subTest(testExampleSuite());
-  t.subTest(testMapsInTrimmedPatch());
-
-  /// 2. Test Integration Points
-  t.subTest(testIntegrationPoints());
-
-  /// 3. Test Basis
-  t.subTest(testNurbsBasis());
+//  /// Test General stuff
+//  t.subTest(testPatchGeometryCurve());
+//  t.subTest(testPatchGeometrySurface());
+//  t.subTest(testIbraReader());
+//  t.subTest(testDataCollectorAndVtkWriter());
+//
+//  /// 1. Test Trimming Functionality
+//  t.subTest(testExampleSuite());
+//  t.subTest(testMapsInTrimmedPatch());
+//
+//  /// 2. Test Integration Points
+//  t.subTest(testIntegrationPoints());
+//
+//  /// 3. Test Basis
+//  t.subTest(testNurbsBasis());
 
   t.report();
 
