@@ -3,13 +3,16 @@
 //
 
 #pragma once
+#include "ibrageometry.hh"
+#include "ibrareader.hh"
+
 #include <unordered_set>
 
-#include "ibrareader.hh"
-#include "ibrageometry.hh"
-#include "dune/iga/trim/nurbstrimboundary.hh"
 #include "dune/iga/io/igarefinedgeometries.hh"
-
+#include "dune/iga/trim/nurbstrimboundary.hh"
+#include <dune/curvedgrid/curvedgrid.hh>
+#include <dune/curvedgrid/gridfunctions/analyticgridfunction.hh>
+#include <dune/vtk/datacollectors/lagrangedatacollector.hh>
 
 namespace Dune::IGA {
 
@@ -17,16 +20,15 @@ namespace Dune::IGA {
   template <typename Grid>
   class IbraFEReader {
    public:
-    static const int gridDim = Grid::dimension;
+    static const int gridDim  = Grid::dimension;
     static const int worldDim = Grid::dimensionworld;
-    using ctype = Grid::ctype;
+    using ctype               = Grid::ctype;
     using ControlPoint        = Dune::IGA::NURBSPatchData<gridDim, worldDim>::ControlPointType;
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
     using PatchGeometry       = Dune::IGA::NURBSPatchGeometry<gridDim, worldDim>;
     using IGAGrid             = Dune::IGA::NURBSGrid<gridDim, worldDim, ctype>;
 
     using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
-
 
     struct Transformer {
       PatchGeometry* patchGeometry;
@@ -35,7 +37,6 @@ namespace Dune::IGA {
       auto operator()(const VecType& cp) const -> VecType {
         return patchGeometry->global(cp);
       }
-
     };
 
     struct Comparator {
@@ -46,7 +47,27 @@ namespace Dune::IGA {
       };
     };
 
-    static std::unique_ptr<Grid> read(const std::string& fileName, int refine) {
+    class IGAProjection {
+      using Domain   = FieldVector<ctype, worldDim>;
+      using Jacobian = FieldMatrix<ctype, worldDim, worldDim>;
+
+      PatchGeometry patchGeometry_;
+
+     public:
+      IGAProjection(PatchGeometry& patchGeometry) : patchGeometry_(patchGeometry) {}
+
+      /// \brief project the coordinate from parameter space to
+      Domain operator()(const Domain& x) const { return patchGeometry_.global(x); }
+
+      /// \brief derivative of the projection
+      friend auto derivative(const IGAProjection& igaProjection) {
+        return [patchGeometry = igaProjection.patchGeometry_](const Domain& x) {
+          return patchGeometry.jacobianTransposed(x);
+        };
+      }
+    };
+
+    static auto read(const std::string& fileName, int refine, bool trim = true) {
       std::ifstream ibraInputFile;
       ibraInputFile.open(fileName);
 
@@ -64,19 +85,19 @@ namespace Dune::IGA {
 
       // Create IGA Grid
       auto trimData = constructGlobalBoundaries(brep);
-      auto igaGrid = std::make_shared<IGAGrid>(patchData, trimData);
+      auto igaGrid  = trim ? std::make_shared<IGAGrid>(patchData, trimData) : std::make_shared<IGAGrid>(patchData);
       igaGrid->globalRefine(refine);
       auto igaGridView = igaGrid->leafGridView();
 
       // Gather vertices & elements
       std::set<Dune::FieldVector<ctype, gridDim>, Comparator> vertices;
 
-      const auto& indexSet        = igaGridView.indexSet();
-      auto geometries = IGARefinedGeometries(igaGridView, 0, 0);
+      const auto& indexSet = igaGridView.indexSet();
+      auto geometries      = IGARefinedGeometries(igaGridView, 0, 0);
 
       for (auto& element : elements(igaGridView)) {
         const size_t elementId = indexSet.index(element);
-        auto geometry = element.geometry();
+        auto geometry          = element.geometry();
 
         for (auto& subGridVertex : geometries.getVertices(elementId))
           vertices.insert(geometry.impl().localToSpan(subGridVertex));
@@ -85,30 +106,28 @@ namespace Dune::IGA {
       auto gridFactory = Dune::GridFactory<Grid>();
       // Add vertices
       for (auto& vertex : vertices)
-        gridFactory.insertVertex(transformer(vertex));
+        gridFactory.insertVertex(vertex);
 
       // Reconstruct elements with global Vertex Indices
 
       for (auto& element : elements(igaGridView)) {
-        auto geometry = element.geometry();
+        auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
-        auto gt = geometries.geometryType(elementId);
-        unsigned int nSubI =  gt == GeometryTypes::simplex(2) ? 3: 4;
+        auto gt                = geometries.geometryType(elementId);
+        unsigned int nSubI     = gt == GeometryTypes::simplex(2) ? 3 : 4;
 
         auto& eleVertices = geometries.getVertices(elementId);
 
-
         for (auto subEleIdx : std::views::iota(0u, geometries.nElements(elementId))) {
-
           std::vector<unsigned int> elementVertices;
 
           for (auto subEntityIndex : std::views::iota(0u, nSubI)) {
-            auto localVertexIdx = geometries.vertexSubIndex(elementId, subEleIdx, subEntityIndex);
+            auto localVertexIdx                       = geometries.vertexSubIndex(elementId, subEleIdx, subEntityIndex);
             Dune::FieldVector<double, gridDim> vertex = geometry.impl().localToSpan(eleVertices[localVertexIdx]);
 
             // Find Idx
             auto it = vertices.find(vertex);
-            assert (it != vertices.end());
+            assert(it != vertices.end());
 
             elementVertices.push_back(std::distance(vertices.begin(), it));
           }
@@ -116,7 +135,16 @@ namespace Dune::IGA {
         }
       }
 
-      return gridFactory.createGrid();
+      auto gridFunction = analyticGridFunction<Grid>(IGAProjection(patchGeometry));
+
+      // Wrap the reference curvedGrid to build a curved curvedGrid
+      auto refGrid = gridFactory.createGrid();
+
+      // pass in refGrid by reference, curvedGrid is not owner of refGrid
+      CurvedGrid curvedGrid{*refGrid, gridFunction};
+
+      // The moment the refGrid goes out of scope, the curvedGrid is invalidated
+      return std::make_pair<decltype(refGrid), decltype(curvedGrid)>(std::move(refGrid), std::move(curvedGrid));
     }
   };
-}
+}  // namespace Dune::IGA

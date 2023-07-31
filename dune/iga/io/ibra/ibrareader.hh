@@ -12,9 +12,8 @@
 
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
-#include <dune/iga/trim/subgridhelpers.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
-
+#include <dune/iga/trim/subgridhelpers.hh>
 
 namespace Dune::IGA {
 
@@ -38,9 +37,9 @@ namespace Dune::IGA {
   }
 
   template <typename InputStringType, int worldDim>
-    requires(not std::convertible_to<
-                 std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>)
-  static Ibra::Brep<worldDim> getBrep(InputStringType& ibraInputFile) {
+  requires(not std::convertible_to<
+               std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>) static Ibra::
+      Brep<worldDim> getBrep(InputStringType& ibraInputFile) {
     using json = nlohmann::json;
 
     // Result
@@ -96,7 +95,6 @@ namespace Dune::IGA {
     return brep;
   }
 
-
   // At the moment only gridDim und worldDim == 2 or 3 supported
   template <int gridDim, int worldDim, typename ScalarType = double>
   requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim) class IbraReader {
@@ -115,15 +113,12 @@ namespace Dune::IGA {
       return read(ibraInputFile, trim, elevateDegree, preKnotRefine, postKnotRefine);
     }
 
-
-
     template <typename InputStringType>
-      requires(not std::convertible_to<
-                   std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>)
-    static std::shared_ptr<Grid> read(InputStringType& ibraInputFile, const bool trim = true,
+    requires(not std::convertible_to<
+                 std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>) static std::
+        shared_ptr<Grid> read(InputStringType& ibraInputFile, const bool trim = true,
                               std::array<int, 2> elevateDegree = {0, 0}, std::array<int, 2> preKnotRefine = {0, 0},
                               std::array<int, 2> postKnotRefine = {0, 0}) {
-
       auto brep = getBrep<decltype(ibraInputFile), worldDim>(ibraInputFile);
 
       Ibra::Surface<worldDim> _surface                           = brep.surfaces[0];
@@ -163,7 +158,6 @@ namespace Dune::IGA {
         return std::make_shared<Grid>(_patchData);
     }
   };
-
 
 }  // namespace Dune::IGA
 

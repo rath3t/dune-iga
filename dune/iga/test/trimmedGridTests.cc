@@ -17,6 +17,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/foamgrid/foamgrid.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
@@ -27,9 +28,10 @@
 #include <dune/grid/test/checkindexset.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/gridcheck.hh>
-#include <dune/vtk/vtkwriter.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/iga/io/ibra/ibrafereader.hh>
+#include <dune/vtk/datacollectors/lagrangedatacollector.hh>
+#include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -512,16 +514,16 @@ auto testIbraFEReader() {
 
   using Grid = Dune::UGGrid<2>;
 
-  for (auto i : std::views::iota(0, 6)) {
-    auto grid = IbraFEReader<Grid>::read("auxiliaryFiles/pipe_trim.ibra", i);
-    VTKWriter vtkWriter(grid->leafGridView());
+  for (auto i : std::views::iota(0, 5)) {
+    auto [refGrid, grid] = IbraFEReader<Grid>::read("auxiliaryFiles/round.ibra", i, false);
 
-    vtkWriter.write("Round" + std::to_string(i));
+    Vtk::LagrangeDataCollector dataCollector{grid.leafGridView(), 3};
+    VtkUnstructuredGridWriter vtkWriter{dataCollector, Vtk::FormatTypes::ASCII};
+    vtkWriter.write(OUTPUT_FOLDER + "/" + "Round" + std::to_string(i));
   }
 
   return t;
 }
-
 
 void createOutputFolder() {
   namespace fs = std::filesystem;
@@ -543,21 +545,21 @@ int main(int argc, char** argv) try {
 
   t.subTest(testIbraFEReader());
 
-//  /// Test General stuff
-//  t.subTest(testPatchGeometryCurve());
-//  t.subTest(testPatchGeometrySurface());
-//  t.subTest(testIbraReader());
-//  t.subTest(testDataCollectorAndVtkWriter());
-//
-//  /// 1. Test Trimming Functionality
-//  t.subTest(testExampleSuite());
-//  t.subTest(testMapsInTrimmedPatch());
-//
-//  /// 2. Test Integration Points
-//  t.subTest(testIntegrationPoints());
-//
-//  /// 3. Test Basis
-//  t.subTest(testNurbsBasis());
+  /// Test General stuff
+  t.subTest(testPatchGeometryCurve());
+  t.subTest(testPatchGeometrySurface());
+  t.subTest(testIbraReader());
+  t.subTest(testDataCollectorAndVtkWriter());
+
+  /// 1. Test Trimming Functionality
+  t.subTest(testExampleSuite());
+  t.subTest(testMapsInTrimmedPatch());
+
+  /// 2. Test Integration Points
+  t.subTest(testIntegrationPoints());
+
+  /// 3. Test Basis
+  t.subTest(testNurbsBasis());
 
   t.report();
 
