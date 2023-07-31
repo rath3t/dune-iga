@@ -1,6 +1,3 @@
-//
-// Created by Henri on 28.07.2023.
-//
 
 #pragma once
 #include "ibrageometry.hh"

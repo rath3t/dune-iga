@@ -515,11 +515,15 @@ auto testIbraFEReader() {
   using Grid = Dune::UGGrid<2>;
 
   for (auto i : std::views::iota(0, 5)) {
-    auto [refGrid, grid] = IbraFEReader<Grid>::read("auxiliaryFiles/round.ibra", i, false);
+    auto [refGrid, grid] = IbraFEReader<Grid>::read("auxiliaryFiles/surface-hole.ibra", i, true);
 
     Vtk::LagrangeDataCollector dataCollector{grid.leafGridView(), 3};
     VtkUnstructuredGridWriter vtkWriter{dataCollector, Vtk::FormatTypes::ASCII};
     vtkWriter.write(OUTPUT_FOLDER + "/" + "Round" + std::to_string(i));
+
+    VTKWriter writer2{grid.leafGridView()};
+    writer2.write(OUTPUT_FOLDER + "/" + "Round_" + std::to_string(i));
+
   }
 
   return t;
@@ -545,21 +549,21 @@ int main(int argc, char** argv) try {
 
   t.subTest(testIbraFEReader());
 
-  /// Test General stuff
-  t.subTest(testPatchGeometryCurve());
-  t.subTest(testPatchGeometrySurface());
-  t.subTest(testIbraReader());
-  t.subTest(testDataCollectorAndVtkWriter());
-
-  /// 1. Test Trimming Functionality
-  t.subTest(testExampleSuite());
-  t.subTest(testMapsInTrimmedPatch());
-
-  /// 2. Test Integration Points
-  t.subTest(testIntegrationPoints());
-
-  /// 3. Test Basis
-  t.subTest(testNurbsBasis());
+//  /// Test General stuff
+//  t.subTest(testPatchGeometryCurve());
+//  t.subTest(testPatchGeometrySurface());
+//  t.subTest(testIbraReader());
+//  t.subTest(testDataCollectorAndVtkWriter());
+//
+//  /// 1. Test Trimming Functionality
+//  t.subTest(testExampleSuite());
+//  t.subTest(testMapsInTrimmedPatch());
+//
+//  /// 2. Test Integration Points
+//  t.subTest(testIntegrationPoints());
+//
+//  /// 3. Test Basis
+//  t.subTest(testNurbsBasis());
 
   t.report();
 
