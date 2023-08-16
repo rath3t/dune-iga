@@ -98,7 +98,5 @@ struct NurbsGridTraits {
   typedef CCType CollectiveCommunication;
   typedef CCType Communication;
 
-  // using TrimmedElementGridType = Dune::UGGrid<2>;
-  using TrimmedElementGridType           = Dune::ALUGrid<2, 2, Dune::simplex, Dune::nonconforming, Dune::ALUGridNoComm>;
-  using TrimmedElementRepresentationType = Dune::IGA::TrimmedElementRepresentation<2, TrimmedElementGridType>;
+  using SubGridType = Dune::IGA::TrimmedSubGrid<2>;
 };
