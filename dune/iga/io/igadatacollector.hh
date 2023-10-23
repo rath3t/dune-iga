@@ -31,7 +31,7 @@ namespace Dune::Vtk {
     // Does not subsample
     explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0){};
 
-    // Subsamples trimmed elements by creating a new grid
+    // Sub-samples trimmed elements by creating a new grid
     DiscontinuousIgaDataCollector(GridView const& gridView, int subsample)
         : DiscontinuousIgaDataCollector(gridView, subsample, subsample){};
 
@@ -39,11 +39,11 @@ namespace Dune::Vtk {
     void updateImpl() {
       pointSets_.clear();
 
-      auto const& indexSet        = gridView_.indexSet();
+      auto const& indexSet        = this->gridView().indexSet();
       std::uint64_t vertexCounter = 0;
       numCells_                   = 0;
       numPoints_                  = 0;
-      for (auto element : elements(gridView_)) {
+      for (auto element : elements(this->gridView())) {
         const size_t elementId = indexSet.index(element);
 
         auto verticesInSubGrid = geometries_.nVertices(elementId);
@@ -73,8 +73,8 @@ namespace Dune::Vtk {
     template <class T>
     [[nodiscard]] std::vector<T> pointsImpl() const {
       std::vector<T> data(this->numPoints() * 3);
-      auto const& indexSet = gridView_.indexSet();
-      for (auto element : elements(gridView_, partition)) {
+      auto const& indexSet = this->gridView().indexSet();
+      for (auto element : elements(this->gridView(), partition)) {
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
 
@@ -106,9 +106,9 @@ namespace Dune::Vtk {
       cells.offsets.reserve(this->numCells());
       cells.types.reserve(this->numCells());
 
-      auto const& indexSet = gridView_.indexSet();
+      auto const& indexSet = this->gridView().indexSet();
 
-      for (std::int64_t old_o = 0; auto const& ele : elements(gridView_, partition)) {
+      for (std::int64_t old_o = 0; auto const& ele : elements(this->gridView(), partition)) {
         const std::size_t elementId = indexSet.index(ele);
 
         for (std::size_t eIdx = 0; auto& subGridElement : geometries_.getElements(elementId)) {
@@ -139,8 +139,8 @@ namespace Dune::Vtk {
       std::vector<T> data(this->numPoints() * nComps);
 
       auto localFct        = localFunction(fct);
-      auto const& indexSet = gridView_.indexSet();
-      for (auto element : elements(gridView_, partition)) {
+      auto const& indexSet = this->gridView().indexSet();
+      for (auto element : elements(this->gridView(), partition)) {
         localFct.bind(element);
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
@@ -163,9 +163,9 @@ namespace Dune::Vtk {
       data.reserve(this->numCells_ * nComps);
 
       auto localFct        = localFunction(fct);
-      auto const& indexSet = gridView_.indexSet();
+      auto const& indexSet = this->gridView().indexSet();
 
-      for (auto element : elements(gridView_, partition)) {
+      for (auto element : elements(this->gridView(), partition)) {
         localFct.bind(element);
         auto geometry          = element.geometry();
         const size_t elementId = indexSet.index(element);
@@ -181,7 +181,10 @@ namespace Dune::Vtk {
     }
 
    protected:
+#if DUNE_VERSION_LT(DUNE_VTK, 2, 10)
     using Super::gridView_;
+    const auto& gridView() const { return gridView_; }
+#endif
 
     std::uint64_t numPoints_ = 0;
     std::uint64_t numCells_  = 0;
