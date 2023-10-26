@@ -16,7 +16,7 @@ namespace Dune::IGA {
   /** \brief Collect several types associated to OneDGrid LeafGridViews */
   template <class GridImp>
   struct NurbsLeafGridViewTraits {
-    using Grid        = GridImp;
+    using Grid        = std::remove_const_t<GridImp>;
     using IndexSet    = typename GridImp::Traits::LeafIndexSet;
     using GridViewImp = NURBSLeafGridView<const GridImp>;
 

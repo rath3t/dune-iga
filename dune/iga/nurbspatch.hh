@@ -515,6 +515,8 @@ namespace Dune::IGA {
             default:  // edges 0,4,6
               break;
           }
+        default:  // dim==1
+          break;
       }
       if (returnOriginal) return dIndex;
       return getRealIndex<1>(dIndex);

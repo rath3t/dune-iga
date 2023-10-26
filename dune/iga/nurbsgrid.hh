@@ -168,7 +168,7 @@ namespace Dune::IGA {
     const GridView& leafGridView() const { return *leafGridView_; }
     const GridView& levelGridView([[maybe_unused]] int level) const { return *leafGridView_; }
     int getMark(const ElementEntity& element) const { return 0; }
-    bool mark(int refCount, const ElementEntity& element) { return false; }
+    bool mark(int refCount, const ElementEntity& element) const { return false; }
 
     template <typename Seed>
     typename Codim<Seed::codimension>::Entity entity(const Seed& seed) const {

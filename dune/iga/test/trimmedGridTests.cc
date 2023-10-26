@@ -227,7 +227,7 @@ auto testDataCollectorAndVtkWriter() {
 
       for (auto s : std::views::iota(0, 4)) {
         Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv, s);
-        Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+        Dune::Vtk::UnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
 
         writer2.addPointData(lambaGV, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2));
         auto vtkFileName = OUTPUT_FOLDER + "/" + fileName + "_r" + std::to_string(r) + "_s" + std::to_string(s);
@@ -284,7 +284,7 @@ auto testExampleSuite() {
   const auto gv = grid->leafGridView();
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
 
-  Dune::VtkUnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
+  Dune::Vtk::UnstructuredGridWriter writer2(dataCollector1, Vtk::FormatTypes::ASCII);
   writer2.write("TestFileTest");
   testLoop(grid, 2, "surface-multihole");
 
