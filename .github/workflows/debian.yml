@@ -15,20 +15,22 @@ jobs:
       fail-fast: false
       matrix:
         config:
-#          - {
-#            name: "Clang-Debug",
-#            config: Debug,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
-#          - {
-#            name: "Clang-Release",
-#            config: Release,
-#            compilerC: clang-12,
-#            compilerCxx: clang++-12,
-#            lib: "-stdlib=libc++",
-#           }
+          - {
+           name: "Clang-Debug",
+           config: Debug,
+           compilerC: clang-16,
+           compilerCxx: clang++-16,
+           lib: "-stdlib=libc++",
+           testRegex: "cpp"
+          }
+          - {
+           name: "Clang-Release",
+           config: Release,
+           compilerC: clang-16,
+           compilerCxx: clang++-16,
+           lib: "-stdlib=libc++",
+           testRegex: "cpp"
+          }
           - {
             name: "GCC-Debug",
             config: Debug,
