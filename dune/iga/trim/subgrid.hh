@@ -64,7 +64,7 @@ namespace Dune::IGA {
             std::vector<FieldVector<double, dim>>{vertices_[*it], vertices_[*(it + 1)], vertices_[*(it + 2)]});
     }
 
-    /// \brief This is necessary for loops with only one or 2 boundaries
+    /// \brief This is necessary for loops with only one or 2 boundaries (e.g. circles)
     void checkAndDivideSmallLoops() {
       auto partsForSize = [](std::size_t size) -> int { return size == 1 ? 4 : 2; };
 
@@ -74,8 +74,8 @@ namespace Dune::IGA {
           auto geometry = boundary.nurbsGeometry;
           auto uVec     = Utilities::linspace(boundary.domain, parts + 1);
 
-          for (auto i : std::views::iota(0u, (unsigned int)parts))
-            newLoop.emplace_back(geometry, Utilities::Domain<double>{uVec[i], uVec[++i]});
+          for (auto i : std::views::iota(0u, static_cast<unsigned int>(parts)))
+            newLoop.emplace_back(geometry, Utilities::Domain<double>{uVec[i], uVec[i + 1]});
         }
         loop = newLoop;
       };
