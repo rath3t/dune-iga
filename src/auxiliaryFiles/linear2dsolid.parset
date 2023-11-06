@@ -13,4 +13,4 @@ E      = 100
 nu     = 0.2
 
 [PostProcessParameters]
-subsample = 2
+subsample = 0

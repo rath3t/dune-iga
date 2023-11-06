@@ -19,6 +19,7 @@
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/utils/igahelpers.hh"
 #include <dune/common/parametertreeparser.hh>
+#include <dune/iga/nurbsbasis.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
@@ -72,7 +73,7 @@ int main(int argc, char **argv) {
   spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, gridView.impl().getPreBasis());
+  auto basis = Ikarus::makeBasis(gridView, nurbs());
 
   // Clamp the left boundary
   Ikarus::DirichletValues dirichletValues(basis.flat());
@@ -114,7 +115,7 @@ int main(int argc, char **argv) {
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.flat().size());
 
   /// Create a non-linear operator
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(residualFunction, KFunction),
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(residualFunction, KFunction),
                                             Ikarus::parameter(D_Glob, lambdaLoad));
 
   const auto &K    = nonLinOp.derivative();

@@ -22,7 +22,6 @@
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
-  std::cout << "ALUGRID_VERBOSITY_LEVEL: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   Ikarus::init(argc, argv);
 
   constexpr int gridDim  = 2;
