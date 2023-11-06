@@ -178,7 +178,7 @@ auto testPatchGeometrySurface() {
 auto testIbraReader() {
   TestSuite t;
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
 
   // Check n_ele = 1, n_vert = 4
   t.check(grid->size(0) == 1);
@@ -202,8 +202,19 @@ auto testIbraReader() {
     t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
 
   // Test Instantiation
-  std::shared_ptr<NURBSGrid<2, 3>> grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra");
+  auto grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra", false);
   grid3D->globalRefine(2);
+
+  // Test File not available (error should be cached)
+
+  bool error_thrown = false;
+  try {
+    IbraReader<2, 2>::read("fileNotAvailable.ibra");
+  } catch (Dune::IOError& e) {
+    error_thrown = true;
+  }
+
+  t.check(error_thrown);
 
   return t;
 }
@@ -217,7 +228,7 @@ auto testDataCollectorAndVtkWriter() {
   std::vector<std::string> geometries{"element_trim_xb", "surface-hole"};
 
   for (auto& fileName : geometries) {
-    std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
+    auto grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
 
     for (auto r : std::views::iota(0, 4)) {
       if (r > 0) grid->globalRefine(1);
@@ -334,7 +345,7 @@ auto testMapsInTrimmedPatch() {
   }
 
   // Load next example Grid
-  std::shared_ptr<NURBSGrid<2, 2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
+  auto grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
   grid2->globalRefine(1);
   auto& patch_2_1 = grid2->getPatch();
 
@@ -396,7 +407,7 @@ auto testIntegrationPoints() {
   /// 1. test case A = 10 * 10, r = 3
   auto targetArea = 10 * 10 - (std::numbers::pi * std::pow(3, 2));
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
   grid->globalRefine(1);
 
   double area = calculateArea(grid->leafGridView(), std::nullopt);
@@ -422,7 +433,7 @@ auto testIntegrationPoints() {
   targetArea = 20 * 2 - (std::numbers::pi * std::pow(0.3, 2));
 
   std::cout << "Grid 2 \n";
-  std::shared_ptr<NURBSGrid<2, 2>> grid2 = IbraReader<2, 2>::read("auxiliaryFiles/infty_pwh.ibra");
+  auto grid2 = IbraReader<2, 2>::read("auxiliaryFiles/infty_pwh.ibra");
   grid2->globalRefine(1);
 
   area = calculateArea(grid2->leafGridView());
@@ -454,7 +465,7 @@ auto testNurbsBasis() {
     }
   };
 
-  std::shared_ptr<NURBSGrid<2, 2>> grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
   runBasisChecks(grid, 4);
 
   grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra", true, {1, 1});
