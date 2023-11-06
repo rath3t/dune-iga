@@ -204,7 +204,7 @@ auto testIbraReader() {
   // Test Instantiation
   auto grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra", false);
   grid3D->globalRefine(2);
-  
+
   // Test File not available (error should be cached)
 
   bool error_thrown = false;
