@@ -3,7 +3,6 @@
 
 #include <config.h>
 
-
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
@@ -14,13 +13,12 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-
-#include <dune/iga/nurbsbasis.hh>
 #include "dune/iga/io/ibra/ibraReader.hh"
 #include "dune/iga/io/igadatacollector.hh"
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/utils/igahelpers.hh"
 #include <dune/common/parametertreeparser.hh>
+#include <dune/iga/nurbsbasis.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
