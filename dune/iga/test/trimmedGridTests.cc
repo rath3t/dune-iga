@@ -202,8 +202,19 @@ auto testIbraReader() {
     t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
 
   // Test Instantiation
-  auto grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra");
+  auto grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra", false);
   grid3D->globalRefine(2);
+  
+  // Test File not available (error should be cached)
+
+  bool error_thrown = false;
+  try {
+    IbraReader<2, 2>::read("fileNotAvailable.ibra");
+  } catch (Dune::IOError& e) {
+    error_thrown = true;
+  }
+
+  t.check(error_thrown);
 
   return t;
 }
