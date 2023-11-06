@@ -3,8 +3,6 @@
 
 #include <config.h>
 
-#include "linearElastic.hh"
-
 #include <ikarus/assembler/simpleAssemblers.hh>
 #include <ikarus/finiteElements/feRequirements.hh>
 #include <ikarus/finiteElements/mechanics/linearElastic.hh>
@@ -20,6 +18,7 @@
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/utils/igahelpers.hh"
 #include <dune/common/parametertreeparser.hh>
+#include <dune/iga/nurbsbasis.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
@@ -59,7 +58,7 @@ int main(int argc, char **argv) {
   GridView gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<gridDim>(gridView.impl().getPreBasis(), FlatInterleaved()));
+  auto basis = Ikarus::makeBasis(gridView, power<gridDim>(nurbs(), FlatInterleaved()));
 
   // Clamp the left boundary
   Ikarus::DirichletValues dirichletValues(basis.flat());
@@ -71,7 +70,7 @@ int main(int argc, char **argv) {
   });
 
   /// Declare a vector "fes" of linear elastic 2D planar solid elements
-  using LinearElasticType = Ikarus::LinearElasticTrimmed<decltype(basis)>;
+  using LinearElasticType = Ikarus::LinearElastic<decltype(basis)>;
   std::vector<LinearElasticType> fes;
 
   /// function for volume load- here: returns zero
@@ -129,7 +128,7 @@ int main(int argc, char **argv) {
 
   Eigen::VectorXd D_Glob = Eigen::VectorXd::Zero(basis.flat().size());
 
-  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::linearAlgebraFunctions(residualFunction, KFunction),
+  auto nonLinOp = Ikarus::NonLinearOperator(Ikarus::functions(residualFunction, KFunction),
                                             Ikarus::parameter(D_Glob, lambdaLoad));
 
   const auto &K    = nonLinOp.derivative();
