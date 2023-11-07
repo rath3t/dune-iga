@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
 
   grid->globalRefine(globalRefine);
-  GridView gridView = grid->leafGridView();
+  GridView gridView     = grid->leafGridView();
   const auto &patchData = grid->getPatch().getPatchData();
   spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 

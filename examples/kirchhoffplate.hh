@@ -25,7 +25,7 @@
 
 namespace Ikarus {
 
-  template <typename Basis,  bool useEigenRef = false>
+  template <typename Basis, bool useEigenRef = false>
   class KirchhoffPlate : public Ikarus::ScalarFieldFE<typename Basis::FlatBasis> {
    public:
     using FlatBasis              = typename Basis::FlatBasis;
@@ -62,7 +62,6 @@ namespace Ikarus {
       D *= factor;
       return D;
     }
-
 
    public:
     double calculateScalar(const FERequirementType& par) const {
