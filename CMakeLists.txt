@@ -39,7 +39,7 @@ dune_project()
 if(ikarus_FOUND
    AND Eigen3_FOUND
    AND autodiff_FOUND)
-  add_subdirectory(src)
+  add_subdirectory(examples)
 endif()
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
