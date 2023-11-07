@@ -23,7 +23,6 @@
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
-  std::cout << "ALUGRID_VERBOSITY_LEVEL0: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   Ikarus::init(argc, argv);
 
   constexpr int gridDim  = 2;
@@ -31,7 +30,7 @@ int main(int argc, char **argv) {
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
-  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+  Dune::ParameterTreeParser::readINITree("auxiliaryFiles/kirchhoffplate.parset", parameterSet);
 
   const Dune::ParameterTree &gridParameters        = parameterSet.sub("GridParameters");
   const Dune::ParameterTree &materialParameters    = parameterSet.sub("MaterialParameters");
@@ -52,23 +51,19 @@ int main(int argc, char **argv) {
   double lambdaLoad = 1 * std::pow(thk, 3);
 
   const int subsample = postProcessParameters.get<int>("subsample");
-  std::cout << "ALUGRID_VERBOSITY_LEVEL1: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   // Log the Parameters
   spdlog::info(
-      "Filename: {} \n The following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v "
+      "Filename: {} \nThe following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v "
       "{}",
       gridFileName, E, nu, globalRefine, u_refine, v_refine);
-  std::cout << "ALUGRID_VERBOSITY_LEVEL2: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   using Grid     = Dune::IGA::NURBSGrid<gridDim, worldDim>;
   using GridView = Dune::IGA::NURBSGrid<gridDim, worldDim>::LeafGridView;
-  std::cout << "ALUGRID_VERBOSITY_LEVEL2: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
+
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
 
-  std::cout << "ALUGRID_VERBOSITY_LEVEL4: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   grid->globalRefine(globalRefine);
   GridView gridView = grid->leafGridView();
-  std::cout << "ALUGRID_VERBOSITY_LEVEL5: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
   const auto &patchData = grid->getPatch().getPatchData();
   spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 

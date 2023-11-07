@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 
   /// Read Parameter
   Dune::ParameterTree parameterSet;
-  Dune::ParameterTreeParser::readINITree(argv[1], parameterSet);
+  Dune::ParameterTreeParser::readINITree("auxiliaryFiles/linear2dsolid.parset", parameterSet);
 
   const Dune::ParameterTree &gridParameters        = parameterSet.sub("GridParameters");
   const Dune::ParameterTree &materialParameters    = parameterSet.sub("MaterialParameters");
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
   std::shared_ptr<Grid> grid = Dune::IGA::IbraReader<gridDim, worldDim>::read(
       "auxiliaryFiles/" + gridFileName, trimGrid, {u_degreeElevate, v_degreeElevate});
   grid->globalRefine(globalRefine);
-  std::cout << "ALUGRID_VERBOSITY_LEVEL: " << getenv("ALUGRID_VERBOSITY_LEVEL") << std::endl;
+
   GridView gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     totalForce += f;
   std::cout << "Total Force: " << totalForce << std::endl;
 
-  vtkWriter.write(gridFileName + "-ex1");
+  vtkWriter.write(gridFileName);
 
   return 0;
 }
