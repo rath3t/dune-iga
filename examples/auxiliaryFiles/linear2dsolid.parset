@@ -4,8 +4,8 @@ trim=1
 globalRefine=3
 u_refine = 0
 v_refine = 0
-u_degreeElevate=2
-v_degreeElevate=2
+u_degreeElevate=1
+v_degreeElevate=1
 
 
 [MaterialParameters]
@@ -13,4 +13,4 @@ E      = 100
 nu     = 0.2
 
 [PostProcessParameters]
-subsample = 3
+subsample = 0

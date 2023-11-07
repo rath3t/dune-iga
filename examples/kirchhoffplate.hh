@@ -25,7 +25,7 @@
 
 namespace Ikarus {
 
-  template <typename Basis>
+  template <typename Basis, bool useEigenRef = false>
   class KirchhoffPlate : public Ikarus::ScalarFieldFE<typename Basis::FlatBasis> {
    public:
     using FlatBasis              = typename Basis::FlatBasis;
@@ -34,6 +34,8 @@ namespace Ikarus {
     using ResultRequirementsType = ResultRequirements<FERequirementType>;
     using LocalView              = typename FlatBasis::LocalView;
     using GridView               = typename FlatBasis::GridView;
+
+    using Traits = TraitsFromLocalView<LocalView, useEigenRef>;
 
     KirchhoffPlate(const Basis& basis, const typename LocalView::Element& element, double p_Emodul, double p_nu,
                    double p_thickness)
@@ -60,8 +62,6 @@ namespace Ikarus {
       D *= factor;
       return D;
     }
-
-    using Traits = TraitsFromLocalView<LocalView>;
 
    public:
     double calculateScalar(const FERequirementType& par) const {
@@ -143,7 +143,7 @@ namespace Ikarus {
     }
 
     // FIXME Derivatives do nbot support clamping
-    void calculateVector(const FERequirementType& par, typename Traits::VectorType& g) const {
+    void calculateVector(const FERequirementType& par, typename Traits::template VectorType<> g) const {
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto D       = constitutiveMatrix(Emodul, nu, thickness);
       using namespace Dune::DerivativeDirections;
@@ -153,7 +153,7 @@ namespace Ikarus {
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
 
-      g.template setZero(this->localView().size());
+      g.setZero(this->localView().size());
       for (const auto& gp : rule) {
         const auto Jinv         = toEigen(geo.jacobianInverseTransposed(gp.position())).transpose().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -221,13 +221,13 @@ namespace Ikarus {
       ddNddX.row(2) *= 2.0;
     }
 
-    void calculateMatrix(const FERequirementType& par, typename Traits::MatrixType& h) const {
+    void calculateMatrix(const FERequirementType& par, typename Traits::template MatrixType<> h) const {
       using namespace Dune::DerivativeDirections;
       const auto& lambda = par.getParameter(Ikarus::FEParameter::loadfactor);
       const auto D       = constitutiveMatrix(Emodul, nu, thickness);
       auto& fe           = this->localView().tree().finiteElement();
 
-      h.template setZero(this->localView().size(), this->localView().size());
+      h.setZero(this->localView().size(), this->localView().size());
 
       for (const auto& gp : rule) {
         const double intElement
