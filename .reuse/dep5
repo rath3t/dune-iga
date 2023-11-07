@@ -10,6 +10,6 @@ Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 License: LGPL-3.0-or-later
 
 
-Files: src/auxiliaryFiles/*
+Files: examples/auxiliaryFiles/*
 Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 License: LGPL-3.0-or-later
