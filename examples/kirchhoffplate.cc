@@ -14,12 +14,12 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/controlVTKWriter.hh>
 
-#include "dune/iga/io/ibra/ibrareader.hh"
-#include "dune/iga/io/igadatacollector.hh"
-#include "dune/iga/nurbsgrid.hh"
-#include "dune/iga/utils/igahelpers.hh"
 #include <dune/common/parametertreeparser.hh>
+#include <dune/iga/io/ibra/ibrareader.hh>
+#include <dune/iga/io/igadatacollector.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/nurbsgrid.hh>
+#include <dune/iga/utils/igahelpers.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 int main(int argc, char **argv) {
@@ -51,11 +51,7 @@ int main(int argc, char **argv) {
   double lambdaLoad = 1 * std::pow(thk, 3);
 
   const int subsample = postProcessParameters.get<int>("subsample");
-  // Log the Parameters
-  spdlog::info(
-      "Filename: {} \nThe following parameters were used: \nMaterial: E {}, nu {} \nRefinements: global {}, u {}, v "
-      "{}",
-      gridFileName, E, nu, globalRefine, u_refine, v_refine);
+
   using Grid     = Dune::IGA::NURBSGrid<gridDim, worldDim>;
   using GridView = Dune::IGA::NURBSGrid<gridDim, worldDim>::LeafGridView;
 
@@ -65,7 +61,6 @@ int main(int argc, char **argv) {
   grid->globalRefine(globalRefine);
   GridView gridView     = grid->leafGridView();
   const auto &patchData = grid->getPatch().getPatchData();
-  spdlog::info("Degree: u {}, v {}", patchData->degree[0], patchData->degree[1]);
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, nurbs());
@@ -117,7 +112,7 @@ int main(int argc, char **argv) {
   const auto &Fext = nonLinOp.value();
 
   /// solve the linear system
-  auto linSolver = Ikarus::ILinearSolver<double>(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
+  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
 
   linSolver.compute(K);
   linSolver.solve(D_Glob, -Fext);
@@ -130,16 +125,12 @@ int main(int argc, char **argv) {
       = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 1>>(basis.flat(), Fext);
 
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector(gridView, subsample);
-  Dune::VtkUnstructuredGridWriter vtkWriter(dataCollector, Dune::Vtk::FormatTypes::ASCII);
+  Dune::Vtk::UnstructuredGridWriter<GridView, decltype(dataCollector)> vtkWriter(dataCollector,
+                                                                                 Dune::Vtk::FormatTypes::ASCII);
 
   vtkWriter.addPointData(dispGlobalFunc, Dune::VTK::FieldInfo("displacement", Dune::VTK::FieldInfo::Type::scalar, 1));
   vtkWriter.addPointData(forceGlobalFunc,
                          Dune::VTK::FieldInfo("external force", Dune::VTK::FieldInfo::Type::scalar, 1));
-
-  double totalForce = 0.0;
-  for (auto &f : Fext)
-    totalForce += f;
-  std::cout << "Total Force: " << totalForce << std::endl;
 
   vtkWriter.write(gridFileName);
 

@@ -153,7 +153,7 @@ namespace Ikarus {
       const auto& localBasis = fe.localBasis();
       const auto geo         = this->localView().element().geometry();
 
-      g.template setZero(this->localView().size());
+      g.setZero(this->localView().size());
       for (const auto& gp : rule) {
         const auto Jinv         = toEigen(geo.jacobianInverseTransposed(gp.position())).transpose().eval();
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
@@ -227,7 +227,7 @@ namespace Ikarus {
       const auto D       = constitutiveMatrix(Emodul, nu, thickness);
       auto& fe           = this->localView().tree().finiteElement();
 
-      h.template setZero(this->localView().size(), this->localView().size());
+      h.setZero(this->localView().size(), this->localView().size());
 
       for (const auto& gp : rule) {
         const double intElement
