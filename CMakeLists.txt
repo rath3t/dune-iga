@@ -10,6 +10,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" ON)
+option(ADD_SANDBOX_TARGET "Add sandbox target" ON)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv"
        ON)
 add_definitions(-DBUILD_SHARED_LIBS=1)
@@ -36,11 +37,10 @@ include(DuneMacros)
 # start a dune project with information from dune.module
 dune_project()
 
-if(ikarus_FOUND
-   AND Eigen3_FOUND
-   AND autodiff_FOUND)
-  add_subdirectory(examples)
+if(ADD_SANDBOX_TARGET)
+  add_subdirectory(sandbox)
 endif()
+
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
 endif()
