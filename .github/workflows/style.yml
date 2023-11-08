@@ -16,7 +16,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
-  build:
+  format-check:
     runs-on: ubuntu-22.04
 
     steps:
@@ -43,3 +43,35 @@ jobs:
           cmake --build build --target format
           cmake --build build --target check-format
           cmake --build build --target check-pythonformat
+
+  REUSE:
+    name: REUSE Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1
+
+  codespell:
+    name: Check for spelling errors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: codespell-project/actions-codespell@master
+        with:
+          check_filenames: true
+          skip: ./docs/literature.bib,./codespellignore
+          ignore_words_file: codespellignore
+
+  lint-filenames:
+    name: Lint filenames
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Validating lowercase file names
+        uses: scheduleonce/lint-filenames@v2.0.0
+        with:
+          path: '{./dune/**,./python/**}'
+          pattern: '^[a-z0-9_\-]+(\.hh|\.cpp|\.inl|\.py|\.py\.in|\.cc|\.ibra|)$|CMakeLists\.txt'
+          # match all lowercase names with extensions .hh/.cpp/.inl/.py/.py.in/.cc/.ibra and ignore CMakeLists.txt

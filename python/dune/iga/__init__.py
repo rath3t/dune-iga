@@ -5,7 +5,7 @@ from ._nurbspatchdata import *
 from ._igagrids import *
 from .basis import *
 from ._boundarypatch import *
-from ._nurbsAlgorithms import *
+from ._nurbsalgorithms import *
 
 registry = dict()
 registry["grid"] = grid_registry

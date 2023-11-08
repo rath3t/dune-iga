@@ -4,26 +4,21 @@
 name: CodeCoverage
 on:
   push:
-    branches:
-      - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
 
   pull_request:
+    types: [opened]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
 
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
-  GCC-Debug-CodeCov:
+  Clang-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
@@ -35,16 +30,16 @@ jobs:
         run: |
           mkdir cmake-build-debug
           cd cmake-build-debug
-          cmake ../  -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DENABLE_TEST_COVERAGE=1 
+          cmake ../  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -GNinja -DENABLE_TEST_COVERAGE=1
           cmake --build . --parallel 2 --target _iga
-          cmake --build . --parallel 2 --target build_tests
+          cmake --build . --parallel 2 --target build_cpp_tests
 
       - name: Tests
         working-directory: ./cmake-build-debug
         run: |
-          ctest --output-on-failure --parallel 2 -C Debug
+          ctest --output-on-failure --parallel 2 -C Debug -L cpp
           cd ..
-          gcov -abcfu $(find ./cmake-build-debug -type f -name "*.gcno" | sed  's/gcno//g')
+          llvm-cov-16 gcov $(find ./cmake-build-debug -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g') 
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2

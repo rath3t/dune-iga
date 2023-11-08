@@ -36,7 +36,7 @@ if __name__ == "__main__":
     net = ControlPointNet(netC)
     nurbsPatchData = NurbsPatchData(((0, 0, 1, 1)), net, (1))
     gridView = IGAGrid(nurbsPatchData)
-    reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim.ibra")
+    reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element_trim.ibra")
     refinements = 5
     gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
     gridView.hierarchicalGrid.globalRefine(refinements)
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         pass
 
     if True:
-        reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element.ibra")
+        reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element.ibra")
         gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 
         assert gridView.size(0) == 1
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
         # read and refine
         inputParameter = dict(
-            file_path="../../iga/test/auxiliaryFiles/element.ibra",
+            file_path="../../iga/test/auxiliaryfiles/element.ibra",
             reader=readeriga.json,
             elevate_degree=(1, 1),
         )
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         assert gridView2.size(2) == 4
 
         inputParameter = dict(
-            file_path="../../iga/test/auxiliaryFiles/element.ibra",
+            file_path="../../iga/test/auxiliaryfiles/element.ibra",
             reader=readeriga.json,
             pre_knot_refine=(1, 1),
         )
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         assert gridView3.size(2) == 9
 
         inputParameter = dict(
-            file_path="../../iga/test/auxiliaryFiles/element.ibra",
+            file_path="../../iga/test/auxiliaryfiles/element.ibra",
             reader=readeriga.json,
             post_knot_refine=(1, 1),
         )

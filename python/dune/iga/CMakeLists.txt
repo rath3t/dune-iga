@@ -3,7 +3,7 @@
 add_subdirectory(basis)
 
 add_python_targets(iga __init__ _igagrids _nurbspatchdata _boundarypatch
-                   _nurbsAlgorithms)
+                   _nurbsalgorithms)
 
 dune_add_pybind11_module(NAME _iga)
 set_property(

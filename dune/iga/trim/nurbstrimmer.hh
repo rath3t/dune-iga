@@ -9,7 +9,7 @@
 #include <clipper2/clipper.h>
 
 // #include "dune/iga/geometry/closestpointprojection.hh"
-#include "dune/iga/nurbspatchgeometry.h"
+#include "dune/iga/nurbspatchgeometry.hh"
 #include <dune/grid/yaspgrid.hh>
 
 namespace Dune::IGA {

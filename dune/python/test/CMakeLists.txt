@@ -7,7 +7,7 @@ dune_python_add_test(
   NAME
   pytest1
   SCRIPT
-  readGrid.py
+  readgrid.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS

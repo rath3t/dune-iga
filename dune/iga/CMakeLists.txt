@@ -20,7 +20,7 @@ install(
         nurbslocalgeometry.hh
         nurbspatch.hh
         nurbspatchdata.hh
-        nurbspatchgeometry.h
+        nurbspatchgeometry.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga)
 
 add_subdirectory(test)
