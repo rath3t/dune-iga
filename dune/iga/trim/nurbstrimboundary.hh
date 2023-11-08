@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "dune/iga/io/ibra/ibrageometry.hh"
-#include "dune/iga/nurbspatchgeometry.h"
+#include "dune/iga/nurbspatchgeometry.hh"
 
 namespace Dune::IGA {
 

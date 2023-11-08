@@ -10,7 +10,7 @@
 #include "dune/iga/io/igadatacollector.hh"
 #include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbsgrid.hh"
-#include "dune/iga/nurbspatchgeometry.h"
+#include "dune/iga/nurbspatchgeometry.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
@@ -178,7 +178,7 @@ auto testPatchGeometrySurface() {
 auto testIbraReader() {
   TestSuite t;
 
-  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryfiles/element.ibra");
 
   // Check n_ele = 1, n_vert = 4
   t.check(grid->size(0) == 1);
@@ -202,7 +202,7 @@ auto testIbraReader() {
     t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
 
   // Test Instantiation
-  auto grid3D = IbraReader<2, 3>::read("auxiliaryFiles/shell.ibra", false);
+  auto grid3D = IbraReader<2, 3>::read("auxiliaryfiles/shell.ibra", false);
   grid3D->globalRefine(2);
 
   // Test File not available (error should be cached)
@@ -228,7 +228,7 @@ auto testDataCollectorAndVtkWriter() {
   std::vector<std::string> geometries{"element_trim_xb", "surface-hole"};
 
   for (auto& fileName : geometries) {
-    auto grid = IbraReader<2, 2>::read("auxiliaryFiles/" + fileName + ".ibra");
+    auto grid = IbraReader<2, 2>::read("auxiliaryfiles/" + fileName + ".ibra");
 
     for (auto r : std::views::iota(0, 4)) {
       if (r > 0) grid->globalRefine(1);
@@ -276,22 +276,22 @@ auto testExampleSuite() {
     }
   };
 
-  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra");
   testLoop(grid, 4, "surface-hole");
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra");
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra");
   testLoop(grid, 4, "plate_quarter");
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/pipe_trim.ibra");
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/pipe_trim.ibra");
   testLoop(grid, 4, "pipe_trim");
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra");
   testLoop(grid, 6, "Element_trim_Xb");
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/nurbs_1.ibra");
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/nurbs_1.ibra");
   testLoop(grid, 4, "nurbs_1");
 
-  grid          = IbraReader<2, 2>::read("auxiliaryFiles/surface-multihole.ibra");
+  grid          = IbraReader<2, 2>::read("auxiliaryfiles/surface-multihole.ibra");
   const auto gv = grid->leafGridView();
   Dune::Vtk::DiscontinuousIgaDataCollector dataCollector1(gv);
 
@@ -299,7 +299,7 @@ auto testExampleSuite() {
   writer2.write("TestFileTest");
   testLoop(grid, 2, "surface-multihole");
 
-  auto grid3 = IbraReader<2, 3>::read("auxiliaryFiles/shell-hole.ibra");
+  auto grid3 = IbraReader<2, 3>::read("auxiliaryfiles/shell-hole.ibra");
   testLoop.template operator()<3>(grid3, 1, "shell-hole");
 
   return t;
@@ -323,7 +323,7 @@ auto testMapsInTrimmedPatch() {
   };
 
   // O refinement, 1 trimmed
-  auto grid   = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  auto grid   = IbraReader<2, 2>::read("auxiliaryfiles/element_trim.ibra");
   auto& patch = grid->getPatch();
 
   t.check(patch.getDirectIndex<0>(0) == 0);
@@ -345,7 +345,7 @@ auto testMapsInTrimmedPatch() {
   }
 
   // Load next example Grid
-  auto grid2 = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
+  auto grid2 = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra");
   grid2->globalRefine(1);
   auto& patch_2_1 = grid2->getPatch();
 
@@ -407,7 +407,7 @@ auto testIntegrationPoints() {
   /// 1. test case A = 10 * 10, r = 3
   auto targetArea = 10 * 10 - (std::numbers::pi * std::pow(3, 2));
 
-  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra");
   grid->globalRefine(1);
 
   double area = calculateArea(grid->leafGridView(), std::nullopt);
@@ -433,7 +433,7 @@ auto testIntegrationPoints() {
   targetArea = 20 * 2 - (std::numbers::pi * std::pow(0.3, 2));
 
   std::cout << "Grid 2 \n";
-  auto grid2 = IbraReader<2, 2>::read("auxiliaryFiles/infty_pwh.ibra");
+  auto grid2 = IbraReader<2, 2>::read("auxiliaryfiles/infty_pwh.ibra");
   grid2->globalRefine(1);
 
   area = calculateArea(grid2->leafGridView());
@@ -465,52 +465,52 @@ auto testNurbsBasis() {
     }
   };
 
-  auto grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra");
+  auto grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra");
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra", true, {1, 1});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra", true, {1, 1});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra", true, {2, 2});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra", true, {2, 2});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim_xb.ibra", true, {3, 3});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim_xb.ibra", true, {3, 3});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra");
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim.ibra");
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", true, {1, 1});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim.ibra", true, {1, 1});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/element_trim.ibra", true, {2, 2});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/element_trim.ibra", true, {2, 2});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true);
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra", true);
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {1, 1});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra", true, {1, 1});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {2, 2});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra", true, {2, 2});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/surface-hole.ibra", true, {3, 3});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/surface-hole.ibra", true, {3, 3});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true);
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra", true);
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {1, 1});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra", true, {1, 1});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {2, 2});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra", true, {2, 2});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {3, 3});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra", true, {3, 3});
   runBasisChecks(grid, 4);
 
-  grid = IbraReader<2, 2>::read("auxiliaryFiles/plate_quarter.ibra", true, {4, 4});
+  grid = IbraReader<2, 2>::read("auxiliaryfiles/plate_quarter.ibra", true, {4, 4});
   runBasisChecks(grid, 4);
 
   return t;
