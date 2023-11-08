@@ -130,7 +130,7 @@ def globalAssembler(basis):
 ############################### START ########################################
 
 # create a trimmed grid from file
-reader = (readeriga.json, "../../iga/test/auxiliaryFiles/element_trim_xb.ibra")
+reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element_trim_xb.ibra")
 
 gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 gridView.hierarchicalGrid.globalRefine(2)

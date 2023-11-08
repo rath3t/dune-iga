@@ -4,20 +4,15 @@
 name: CodeCoverage
 on:
   push:
-    branches:
-      - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
 
   pull_request:
+    types: [opened]
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/ghpages.yml'
-      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
 
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
