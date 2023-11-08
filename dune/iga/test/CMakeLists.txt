@@ -32,5 +32,5 @@ foreach(_test ${TESTS})
 endforeach()
 
 # Copy the example grid used for testing into the build dir
-file(COPY auxiliaryFiles/
-     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/auxiliaryFiles)
+file(COPY auxiliaryfiles/
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/auxiliaryfiles)

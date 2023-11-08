@@ -16,7 +16,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
-  build:
+  format-check:
     runs-on: ubuntu-22.04
 
     steps:
