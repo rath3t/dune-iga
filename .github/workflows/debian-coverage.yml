@@ -32,12 +32,12 @@ jobs:
           cd cmake-build-debug
           cmake ../  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -GNinja -DENABLE_TEST_COVERAGE=1
           cmake --build . --parallel 2 --target _iga
-          cmake --build . --parallel 2 --target build_tests
+          cmake --build . --parallel 2 --target build_cpp_tests
 
       - name: Tests
         working-directory: ./cmake-build-debug
         run: |
-          ctest --output-on-failure --parallel 2 -C Debug
+          ctest --output-on-failure --parallel 2 -C Debug -L cpp
           cd ..
           llvm-cov-16 gcov $(find ./cmake-build-debug -not -path "*dune-env/*" -type f -name "*.gcno" | sed  's/gcno//g') 
 
