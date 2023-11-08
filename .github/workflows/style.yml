@@ -72,6 +72,6 @@ jobs:
       - name: Validating lowercase file names
         uses: scheduleonce/lint-filenames@v2.0.0
         with:
-          path: '{./ikarus/**,./python/**}'
+          path: '{./dune/**,./python/**}'
           pattern: '^[a-z0-9_\-]+(\.hh|\.cpp|\.inl|\.py|\.py\.in|\.cc|)$|CMakeLists\.txt'
           # match all lowercase names with extensions .hh/.cpp/.inl/.py/.py.in/.cc and ignore CMakeLists.txt
