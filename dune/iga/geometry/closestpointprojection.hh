@@ -10,7 +10,7 @@
 
 namespace Dune::IGA {
   template <template <std::integral auto, std::integral auto, typename> typename Geo, std::integral auto dim,
-            std::integral auto dimworld, typename GeoArgs>
+            std::integral auto dimworld, typename GeoArgs>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
   auto closestPointProjectionByTrustRegion(
       const Geo<dim, dimworld, GeoArgs>& geo, auto& point,
       const std::optional<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, static_cast<size_t>(dim)>>&

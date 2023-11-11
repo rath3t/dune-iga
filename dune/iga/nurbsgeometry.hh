@@ -28,9 +28,11 @@ namespace Dune::IGA {
     using LocalCoordinate           = Dune::FieldVector<ctype, mydimension>;
     using GlobalCoordinate          = Dune::FieldVector<ctype, coorddimension>;
     using JacobianTransposed        = Dune::FieldMatrix<ctype, mydimension, coorddimension>;
+    using Hessian                   = Dune::FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension>;
     using Jacobian                  = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
     using JacobianInverseTransposed = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
     using JacobianInverse           = Dune::FieldMatrix<ctype, mydimension, coorddimension>;
+    using Volume                    = ctype;
 
     using ControlPointType = typename NURBSPatchData<griddim, dimworld, ctype>::ControlPointType;
 
@@ -84,12 +86,12 @@ namespace Dune::IGA {
     }
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
-    [[nodiscard]] double volume() const {
+    [[nodiscard]] Volume volume() const {
       if constexpr (mydimension == 2)
         if (subgrid_) {
           Dune::QuadratureRule<double, mydimension> rule;
           fillQuadratureRuleImpl(rule, *subgrid_.get(), (*std::ranges::max_element(patchData_->degree)));
-          ctype vol = 0.0;
+          Volume vol = 0.0;
           for (auto& gp : rule)
             vol += integrationElement(gp.position()) * gp.weight();
           return vol;
@@ -284,9 +286,9 @@ namespace Dune::IGA {
     }
     auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& uL) const {
       const auto u = localToSpan(uL);
-      FieldVector<ctype, dimworld> pos;
+      GlobalCoordinate pos;
 
-      FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension> H;
+      Hessian H;
       std::array<unsigned int, mydimension> subDirs = getDirectionsOfSubEntityInParameterSpace();
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
@@ -373,9 +375,9 @@ namespace Dune::IGA {
 
     [[nodiscard]] std::array<int, griddim> degree() const { return patchData_->degree; }
 
-    [[nodiscard]] Dune::FieldVector<ctype, mydimension> domainMidPoint() const {
+    [[nodiscard]] LocalCoordinate domainMidPoint() const {
       auto dom = domain();
-      Dune::FieldVector<ctype, mydimension> result{};
+      LocalCoordinate result{};
       for (int i = 0; i < mydimension; ++i)
         result[i] = dom[i].center();
 

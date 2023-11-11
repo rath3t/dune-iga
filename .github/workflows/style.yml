@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: actions/cache@v2
         with:
@@ -62,6 +62,16 @@ jobs:
           check_filenames: true
           skip: ./docs/literature.bib,./codespellignore
           ignore_words_file: codespellignore
+
+  lint-markdown:
+    name: Check for markdown errors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: articulate/actions-markdownlint@v1
+        with:
+          config: doc/markdownlint-config.yaml
+          files: '**/*.md'
 
   lint-filenames:
     name: Lint filenames

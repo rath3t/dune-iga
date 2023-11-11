@@ -9,6 +9,10 @@ Files: dune/iga/test/auxiliaryfiles/*
 Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 License: LGPL-3.0-or-later
 
+Files: dune/python/test/*
+Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+License: LGPL-3.0-or-later
+
 
 Files: examples/auxiliaryfiles/*
 Copyright: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de

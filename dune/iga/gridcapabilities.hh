@@ -7,6 +7,7 @@
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/test/gridcheck.hh>
 
+#ifndef DOXYGEN
 namespace Dune::IGA {
   template <int dim, int dimworld, typename ScalarType>
   class NURBSGrid;
@@ -66,3 +67,5 @@ template <std::integral auto dim, std::integral auto dimworld, typename ScalarTy
 struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
   static const bool v = true;
 };
+
+#endif

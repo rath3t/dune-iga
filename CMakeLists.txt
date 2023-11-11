@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" ON)
 option(ADD_SANDBOX_TARGET "Add sandbox target" ON)
+option(BUILD_DOC "Build documentation" ON)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv"
        ON)
 add_definitions(-DBUILD_SHARED_LIBS=1)
@@ -46,6 +47,10 @@ if(DUNE_ENABLE_PYTHONBINDINGS)
 endif()
 add_subdirectory(dune)
 add_subdirectory(cmake)
+
+if(BUILD_DOC)
+  add_subdirectory(doc)
+endif()
 
 # finalize the dune project, e.g. generating config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)

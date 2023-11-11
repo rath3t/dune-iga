@@ -8,7 +8,7 @@ namespace Dune::IGA {
   /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back to
    * an implementation by hand otherwise
    */
-  template <Vector VectorType>
+  template <Concept::Vector VectorType>
   requires(VectorType::dimension == 3) inline VectorType cross(const VectorType& a, const VectorType& b) {
     if constexpr (requires { a.cross(b); })
       return a.cross(b);

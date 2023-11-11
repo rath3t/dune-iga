@@ -172,6 +172,7 @@ namespace Dune::IGA {
   };
 }  // namespace Dune::IGA
 
+#ifndef DOXYGEN
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {
 
@@ -185,3 +186,4 @@ namespace mapbox::util {
     inline static auto get(const Dune::FieldVector<T, 2>& t) { return t[1]; };
   };
 }  // namespace mapbox::util
+#endif

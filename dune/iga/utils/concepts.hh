@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include <concepts>
+#include <dune/grid/concepts/geometry.hh>
+#include <dune/iga/geometry/geohelper.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGA::Concept {
 
   template <typename VectorType>
   concept Vector = requires(VectorType v, double a, int index) {
@@ -17,22 +18,15 @@ namespace Dune::IGA {
     { v /= a } -> std::same_as<VectorType&>;
   };
 
-  template <typename MatrixType>
-  concept Matrix = requires(MatrixType A, double a) {
-    typename MatrixType::value_type;
-    { A += A } -> std::same_as<MatrixType&>;
-    { A -= A } -> std::same_as<MatrixType&>;
-    { A *= a } -> std::same_as<MatrixType&>;
-    { A /= a } -> std::same_as<MatrixType&>;
-  };
-
+  /// \concept ControlPoint
+  /// \tparam ControlPointType
   template <typename ControlPointType>
-  concept ControlPointConcept = Vector<typename ControlPointType::VectorType> && requires(ControlPointType cp) {
+  concept ControlPoint = Vector<typename ControlPointType::VectorType> && requires(ControlPointType cp) {
     typename ControlPointType::VectorType;
     typename ControlPointType::VectorType::value_type;
     { cp.p } -> std::same_as<typename ControlPointType::VectorType&>;
     { cp.w } -> std::same_as<typename ControlPointType::VectorType::value_type&>;
-  };  // namespace Dune::IGA
+  };
 
   template <typename L, typename R>
   concept MultiplyAble = requires(L x, R y) {
@@ -64,12 +58,19 @@ namespace Dune::IGA {
     x / y;
   };
 
-  template <typename V>
-  concept StdVectorLikeContainer = requires(V v, int a) {
-    typename V::value_type;
-    { v.resize(a) } -> std::same_as<void>;
-    { v.back() } -> std::same_as<typename V::value_type&>;
-    { v.front() } -> std::same_as<typename V::value_type&>;
+  /** \concept This concepts extends the geometry of DUNE grid entities
+   *
+   * @tparam G
+   */
+  template <typename G>
+  concept NurbsGeometry = Dune::Concept::Geometry<G> && requires(const G g, typename G::GlobalCoordinate global,
+                                                                 typename G::LocalCoordinate local) {
+    {
+      g.zeroFirstAndSecondDerivativeOfPosition(local)
+      } -> std::convertible_to<
+          std::tuple<typename G::GlobalCoordinate, typename G::JacobianTransposed, typename G::Hessian>>;
+    { g.domainMidPoint() } -> std::convertible_to<typename G::LocalCoordinate>;
+    { g.domain() } -> std::convertible_to<std::array<Utilities::Domain<double>, G::mydimension>>;
   };
 
-}  // namespace Dune::IGA
+}  // namespace Dune::IGA::Concept

@@ -47,7 +47,19 @@ namespace Dune::IGA {
   template <int dim, int dimworld, typename ScalarType>
   struct NurbsGridFamily;
 
-  /** \brief NURBS grid manager */
+  //************************************************************************
+  /*!
+   * \brief [<em> provides \ref Dune::Grid </em>]
+   * \brief Provides a Grid with NURBS Geometry
+   *
+   * YaspGrid stands for yet another structured parallel grid.
+   * It implements the dune grid interface for structured grids
+   * with arbitrary overlap (including zero),
+   *
+   * \tparam dim The dimension of the grid
+   * \tparam dimworld The dimension of the grid's embedding space
+   * \tparam ScalarType the field type (use float, double, complex, etc)
+   */
   template <int dim, int dimworld, typename ScalarType = double>
   class NURBSGrid : public Dune::Grid<dim, dimworld, ScalarType, NurbsGridFamily<dim, dimworld, ScalarType>> {
    public:
@@ -112,7 +124,10 @@ namespace Dune::IGA {
 
     bool loadBalance() { return false; }
 
-    void globalRefine(int refinementLevel) { globalRefine(refinementLevel, false); }
+    //! refine the grid refCount times.
+    void globalRefine(int refCount) { globalRefine(refCount, false); }
+
+    //! refine the grid refCount times but do not update trimming information
     void globalRefine(int refinementLevel, bool omitTrim) {
       if (refinementLevel == 0) return;
       for (int refDirection = 0; refDirection < dim; ++refDirection) {
