@@ -205,16 +205,9 @@ auto testIbraReader() {
   auto grid3D = IbraReader<2, 3>::read("auxiliaryfiles/shell.ibra", false);
   grid3D->globalRefine(2);
 
-  // Test File not available (error should be cached)
+  // Test File not available (error should be caught)
 
-  bool error_thrown = false;
-  try {
-    IbraReader<2, 2>::read("fileNotAvailable.ibra");
-  } catch (Dune::IOError& e) {
-    error_thrown = true;
-  }
-
-  t.check(error_thrown);
+  t.checkThrow<Dune::IOError>([]() { IbraReader<2, 2>::read("fileNotAvailable.ibra"); });
 
   return t;
 }
