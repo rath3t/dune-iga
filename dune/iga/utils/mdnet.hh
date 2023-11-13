@@ -95,8 +95,7 @@ namespace Dune::IGA {
      *
      *  \param[in] values netdim vectors of values
      */
-    template <typename V>
-    requires StdVectorLikeContainer<V>
+    template <std::ranges::sized_range V>
     explicit MultiDimensionNet(const std::array<V, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
@@ -275,7 +274,7 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator*=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::multiplies{});
@@ -283,14 +282,14 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator/=(const rValueType& div) {
       std::ranges::transform(values_, values_.begin(), [&div](auto& val) { return val / div; });
       return *this;
     }
 
     template <typename rValueType>
-    requires DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(),
@@ -299,14 +298,14 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator*=(const rValueType& fac) {
       std::ranges::transform(values_, values_.begin(), [&fac](const auto& val) { return val * fac; });
       return *this;
     }
 
     template <typename rValueType>
-    requires AddAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::AddAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator+=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::plus{});
@@ -314,7 +313,7 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires SubstractAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::SubstractAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
     &operator-=(const MultiDimensionNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::minus{});
@@ -467,7 +466,7 @@ namespace Dune::IGA {
   }  // namespace Impl
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires MultiplyAble<lValueType, rValueType>
+  requires Concept::MultiplyAble<lValueType, rValueType>
   auto dot(const MultiDimensionNet<netdim, lValueType>& lnet, const MultiDimensionNet<netdim, rValueType>& rnet) {
     using ResultType = decltype(lnet.directGetAll()[0] * rnet.directGetAll()[0]);
     assert(lnet.strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
@@ -476,7 +475,7 @@ namespace Dune::IGA {
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires MultiplyAble<lValueType, rValueType>
+  requires Concept::MultiplyAble<lValueType, rValueType>
   auto operator-(const MultiDimensionNet<netdim, lValueType>& lnet, const MultiDimensionNet<netdim, rValueType>& rnet) {
     assert(lnet.strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
     MultiDimensionNet<netdim, lValueType> res = lnet;
@@ -485,7 +484,7 @@ namespace Dune::IGA {
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
   operator/(const MultiDimensionNet<netdim, lValueType>& lnet, const rValueType& div) {
     MultiDimensionNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), res.directGetAll().begin(), [&div](auto& val) { return val / div; });
@@ -493,7 +492,7 @@ namespace Dune::IGA {
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
   operator*(const MultiDimensionNet<netdim, lValueType>& lnet, const rValueType& fac) {
     MultiDimensionNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), res.directGetAll().begin(), [&fac](auto& val) { return val * fac; });
@@ -501,7 +500,7 @@ namespace Dune::IGA {
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
   operator*(const rValueType& fac, const MultiDimensionNet<netdim, lValueType>& lnet) { return lnet * fac; }
 
   /** \brief class holds a n-dim net */

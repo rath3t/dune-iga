@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2022 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2"  --user root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add Doxygen Theme
+        run: |
+          git clone https://github.com/jothepro/doxygen-awesome-css.git
+          cd doxygen-awesome-css
+          make install
+      - name: Create Doxygen Doc
+        run: |
+          pip install dune-common
+          mkdir build-cmake
+          cd build-cmake 
+          cmake ../ -DBUILD_DOC=1 -DDUNE_ENABLE_PYTHONBINDINGS=0
+          cmake --build . --target doc
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.PERSONAL_TOKEN_TO_IGA_DOC }}
+          external_repository: rath3t/dune-iga-doc
+          publish_dir: ./build-cmake/doc/doxygen/html
+          #https://github.com/peaceiris/actions-gh-pages/issues/682

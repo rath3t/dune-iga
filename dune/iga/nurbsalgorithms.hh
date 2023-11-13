@@ -38,7 +38,7 @@ namespace Dune::IGA {
       }
     }
 
-    template <Vector VectorType>
+    template <Concept::Vector VectorType>
     int binom(const VectorType& n, const VectorType& k) {
       return std::inner_product(n.begin(), n.end(), k.begin(), 1, std::multiplies{},
                                 [](auto& ni, auto& ki) { return Dune::binomial(ni, ki); });
@@ -78,7 +78,7 @@ namespace Dune::IGA {
    * @return subNet with the strideSizes degree+1 per direction
    */
   template <std::integral auto dim, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
       std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
       const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
@@ -89,26 +89,33 @@ namespace Dune::IGA {
 
   /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
   template <std::floating_point ScalarType, std::integral auto dim, std::integral auto dim2, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
       const Dune::FieldVector<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
       const std::array<int, dim2>& degree, const MultiDimensionNet<dim2, NetValueType>& net) requires(dim == dim2) {
     auto subNetStart = findSpanCorrected(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
 
-  template <std::integral auto dim, ControlPointConcept ValueType>
+  template <std::integral auto dim, Concept::ControlPoint ValueType>
   auto extractWeights(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
     return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(),
                                                                               viewOverWeights);
   }
 
-  template <std::integral auto dim, ControlPointConcept ValueType>
+  template <std::integral auto dim, Concept::ControlPoint ValueType>
   auto extractControlCoordinates(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
 
+  /** \brief A `dim` dimensional NURBS function
+   *
+   * /note This class explicitly does not relay on some controlpoints, but only on the weights
+   * @tparam dim The dimension of the domain of the function
+   * @tparam ScalarType_ The type for the functions values and arguments
+   *
+   */
   template <int dim, typename ScalarType_ = double>
   class Nurbs {
    public:
@@ -117,6 +124,12 @@ namespace Dune::IGA {
     using DynamicVectorType = Dune::DynamicVector<ScalarType>;
     using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
 
+    /**
+     *
+     * @tparam dimworld
+     * @param data
+     * @param spIndex
+     */
     template <std::integral auto dimworld>
     explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data,
                    const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
@@ -504,7 +517,7 @@ namespace Dune::IGA {
   }
 
   namespace Impl {
-    template <Vector VectorType>
+    template <Concept::Vector VectorType>
     auto projectPointOntoLine(const VectorType basepoint, const VectorType revolutionaxis, const VectorType point) {
       const VectorType e1 = basepoint + revolutionaxis - basepoint;
       const VectorType e2 = point - basepoint;
@@ -516,8 +529,8 @@ namespace Dune::IGA {
       return p;
     }
 
-    template <Vector VectorType>
-    auto Intersect3DLines(const VectorType basepoint1, const VectorType direction1, const VectorType basepoint2,
+    template <Concept::Vector VectorType>
+    auto intersect3DLines(const VectorType basepoint1, const VectorType direction1, const VectorType basepoint2,
                           const VectorType direction2) {
       using ScalarType                     = typename VectorType::value_type;
       const ScalarType tol                 = 1e-8;
@@ -542,12 +555,21 @@ namespace Dune::IGA {
     }
   }  // namespace Impl
 
-  // Piegl and Tiller Algo A7.1
+  ///
+  /// \tparam ScalarType the field type (use float, double, complex, etc)
+  /// \param radius Radius of the arc
+  /// \param startAngle starting angle of the arc
+  /// \param endAngle end angle of the arc
+  /// \param origin center of the circle
+  /// \param X first base vector of plane where the arc should reside
+  /// \param Y second base vector of plane where the arc should reside
+  /// \return NURBSPatchData representing the arc
   template <typename ScalarType = double>
-  auto makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0, ScalarType endAngle = 360.0,
-                       const Dune::FieldVector<ScalarType, 3>& origin = {0, 0, 0},
-                       const Dune::FieldVector<ScalarType, 3>& X      = {1, 0, 0},
-                       const Dune::FieldVector<ScalarType, 3>& Y      = {0, 1, 0}) {
+  NURBSPatchData<1, 3, ScalarType> makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,
+                                                   ScalarType endAngle                            = 360.0,
+                                                   const Dune::FieldVector<ScalarType, 3>& origin = {0, 0, 0},
+                                                   const Dune::FieldVector<ScalarType, 3>& X      = {1, 0, 0},
+                                                   const Dune::FieldVector<ScalarType, 3>& Y      = {0, 1, 0}) {
     using GlobalCoordinateType = typename NURBSPatchData<1, 3, ScalarType>::GlobalCoordinateType;
     const auto pi              = std::numbers::pi_v<ScalarType>;
 
@@ -568,7 +590,7 @@ namespace Dune::IGA {
       const GlobalCoordinateType P2    = origin + radius * cos(angle) * X + radius * sin(angle) * Y;
       circleCPs.directGet(index + 2).p = P2;
       const GlobalCoordinateType T2    = -sin(angle) * X + cos(angle) * Y;
-      const GlobalCoordinateType P1    = Impl::Intersect3DLines(PO, TO, P2, T2);
+      const GlobalCoordinateType P1    = Impl::intersect3DLines(PO, TO, P2, T2);
       circleCPs.directGet(index + 1)   = {.p = P1, .w = w1};
       index += 2;
       if (i < narcs - 1) {
@@ -657,7 +679,7 @@ namespace Dune::IGA {
         surfaceCP(index + 2, j)       = {.p = P2, .w = genCP.directGet(j).w};
 
         const GlobalCoordinateType T2 = -sines[i] * X + cosines[i] * Y;
-        surfaceCP(index + 1, j).p     = Impl::Intersect3DLines(PO.p, TO, P2, T2);
+        surfaceCP(index + 1, j).p     = Impl::intersect3DLines(PO.p, TO, P2, T2);
         surfaceCP(index + 1, j).w     = wm * genCP.directGet(j).w;
         index += 2;
         if (i < narcs - 1) {

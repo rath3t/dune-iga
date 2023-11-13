@@ -14,16 +14,18 @@ namespace Dune::IGA {
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType = double>
   class NURBSPatchGeometry {
    public:
-    static constexpr std::integral auto patchDim       = dim;
+    static constexpr std::integral auto mydimension = dim;
+
     static constexpr std::integral auto coorddimension = dimworld;
 
     using ctype                     = ScalarType;
-    using LocalCoordinate           = Dune::FieldVector<ScalarType, patchDim>;
+    using LocalCoordinate           = Dune::FieldVector<ScalarType, mydimension>;
     using GlobalCoordinate          = Dune::FieldVector<ScalarType, coorddimension>;
-    using JacobianTransposed        = Dune::FieldMatrix<ScalarType, patchDim, coorddimension>;
-    using JacobianInverseTransposed = Dune::FieldMatrix<ScalarType, coorddimension, patchDim>;
+    using JacobianTransposed        = Dune::FieldMatrix<ScalarType, mydimension, coorddimension>;
+    using JacobianInverseTransposed = Dune::FieldMatrix<ScalarType, coorddimension, mydimension>;
+    using Volume                    = ctype;
 
-    using ControlPointType = typename NURBSPatchData<patchDim, dimworld, ScalarType>::ControlPointType;
+    using ControlPointType = typename NURBSPatchData<mydimension, dimworld, ScalarType>::ControlPointType;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -32,7 +34,7 @@ namespace Dune::IGA {
    public:
     NURBSPatchGeometry() = default;
 
-    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<patchDim, dimworld, ScalarType>> patchData)
+    explicit NURBSPatchGeometry(std::shared_ptr<NURBSPatchData<mydimension, dimworld, ScalarType>> patchData)
         : patchData_(patchData), nurbs_{*patchData} {}
 
     /** \brief Map the center of the element to the geometry */
@@ -43,21 +45,23 @@ namespace Dune::IGA {
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume(int scaleOrder = 1) const {
-      const auto rule = Dune::QuadratureRules<ctype, patchDim>::rule(
-          this->type(), scaleOrder * patchDim * (*std::ranges::max_element(patchData_->degree)));
+      const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
+          this->type(), scaleOrder * mydimension * (*std::ranges::max_element(patchData_->degree)));
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
 
+    [[nodiscard]] bool affine() const { return false; }
+
     /** \brief Return the number of corners of the element */
-    [[nodiscard]] int corners() const { return 1 << patchDim; }
+    [[nodiscard]] int corners() const { return 1 << mydimension; }
 
     /** \brief Return world coordinates of the k-th corner of the element */
     [[nodiscard]] GlobalCoordinate corner(int k) const {
       LocalCoordinate localcorner;
-      for (size_t i = 0; i < patchDim; i++) {
+      for (size_t i = 0; i < mydimension; i++) {
         localcorner[i] = (k & (1 << i)) ? 1 : 0;
       }
       return global(localcorner);
@@ -80,22 +84,22 @@ namespace Dune::IGA {
       JacobianTransposed J;
       FieldMatrix<ctype, dim*(dim + 1) / 2, coorddimension> H;
       std::array<unsigned int, dim> subDirs;
-      for (int subI = 0, i = 0; i < patchDim; ++i)
+      for (int subI = 0, i = 0; i < mydimension; ++i)
         subDirs[subI++] = i;
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
       auto cpCoordinateNet                = netOfSpan(u, patchData_->knotSpans, patchData_->degree,
                                                       extractControlCoordinates(patchData_->controlPoints));
-      std::array<unsigned int, patchDim> ithVecZero{};
+      std::array<unsigned int, mydimension> ithVecZero{};
       pos = Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), cpCoordinateNet);
 
-      for (int dir = 0; dir < patchDim; ++dir) {
-        std::array<unsigned int, patchDim> ithVec{};
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, mydimension> ithVec{};
         ithVec[subDirs[dir]] = 1;
         J[dir]               = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
       }
       for (int dir = 0; dir < dim; ++dir) {
-        std::array<unsigned int, patchDim> ithVec{};
+        std::array<unsigned int, mydimension> ithVec{};
         ithVec[subDirs[dir]] = 2;  // second derivative in dir direction
         H[dir]               = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
       }
@@ -130,14 +134,14 @@ namespace Dune::IGA {
         LocalCoordinate dx{};
         do {  // from multilinearGeometry
           const GlobalCoordinate dglobal = (*this).global(x) - global;
-          MatrixHelper::template xTRightInvA<patchDim, coorddimension>(jacobianTransposed(x), dglobal, dx);
+          MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
           const bool invertible
-              = MatrixHelper::template xTRightInvA<patchDim, coorddimension>(jacobianTransposed(x), dglobal, dx);
+              = MatrixHelper::template xTRightInvA<mydimension, coorddimension>(jacobianTransposed(x), dglobal, dx);
 
           if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
           x -= dx;
           // if local is outside the maximum knot vector span bound, thus we clamp it to it and hope for convergence
-          for (int i = 0; i < patchDim; ++i) {
+          for (int i = 0; i < mydimension; ++i) {
             if (Dune::FloatCmp::gt(x[i], patchData_->knotSpans[i].back())) x[i] = patchData_->knotSpans[i].back();
             if (Dune::FloatCmp::lt(x[i], patchData_->knotSpans[i].front())) x[i] = patchData_->knotSpans[i].front();
           }
@@ -163,8 +167,8 @@ namespace Dune::IGA {
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 1);
 
-      for (int dir = 0; dir < patchDim; ++dir) {
-        std::array<unsigned int, patchDim> ithVec{};
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, mydimension> ithVec{};
         ithVec[dir] = 1;
         result[dir] = dot(basisFunctionDerivatives.get(ithVec), cpCoordinateNet);
       }
@@ -173,37 +177,37 @@ namespace Dune::IGA {
 
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
       auto j = jacobianTransposed(local);
-      return MatrixHelper::template sqrtDetAAT<patchDim, coorddimension>(j);
+      return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(j);
     }
 
     /** \brief Type of the element: a hypercube of the correct dimension */
-    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(patchDim); }
+    [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     // The following are functions are not part of the Geometry Interface
-    [[nodiscard]] std::array<Utilities::Domain<double>, patchDim> domain() const {
-      std::array<Utilities::Domain<double>, patchDim> result{};
-      for (int i = 0; i < patchDim; ++i)
+    [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const {
+      std::array<Utilities::Domain<double>, mydimension> result{};
+      for (int i = 0; i < mydimension; ++i)
         result[i] = {patchData_->knotSpans[i].front(), patchData_->knotSpans[i].back()};
 
       return result;
     }
 
-    [[nodiscard]] std::array<int, patchDim> degree() const { return patchData_->degree; }
+    [[nodiscard]] std::array<int, mydimension> degree() const { return patchData_->degree; }
 
-    [[nodiscard]] Dune::FieldVector<ctype, patchDim> domainMidPoint() const {
+    [[nodiscard]] Dune::FieldVector<ctype, mydimension> domainMidPoint() const {
       auto dom = domain();
-      Dune::FieldVector<ctype, patchDim> result{};
-      for (int i = 0; i < patchDim; ++i)
+      Dune::FieldVector<ctype, mydimension> result{};
+      for (int i = 0; i < mydimension; ++i)
         result[i] = dom[i].center();
 
       return result;
     }
 
    public:
-    std::shared_ptr<NURBSPatchData<patchDim, dimworld, ScalarType>> patchData_;
+    std::shared_ptr<NURBSPatchData<mydimension, dimworld, ScalarType>> patchData_;
 
    private:
-    Dune::IGA::Nurbs<patchDim, ScalarType> nurbs_;
+    Dune::IGA::Nurbs<mydimension, ScalarType> nurbs_;
   };
 
 }  // namespace Dune::IGA

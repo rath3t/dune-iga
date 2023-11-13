@@ -14,7 +14,7 @@
 #include <dune/vtk/utility/lagrangepoints.hh>
 
 namespace Dune::Vtk {
-  /// Implementation of \ref Discontinuous DataCollector for Iga cells with or without trimming information
+  /// Implementation of Discontinuous DataCollector for Iga cells with or without trimming information
   template <class GridView>
   requires(GridView::dimension == 2) class DiscontinuousIgaDataCollector
       : public UnstructuredDataCollectorInterface<GridView, DiscontinuousIgaDataCollector<GridView>, Partitions::All> {

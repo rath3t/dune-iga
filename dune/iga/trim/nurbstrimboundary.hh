@@ -18,8 +18,8 @@ namespace Dune::IGA {
     static constexpr int dim      = 1;
 
     using Geometry            = NURBSPatchGeometry<dim, worldDim>;
-    using ControlPoint        = Geometry::ControlPointType;
-    using ControlPointNetType = Dune::IGA::MultiDimensionNet<dim, ControlPoint>;
+    using ControlPointType    = typename Geometry::ControlPointType;
+    using ControlPointNetType = Dune::IGA::MultiDimensionNet<dim, ControlPointType>;
     using PatchData           = Dune::IGA::NURBSPatchData<dim, worldDim>;
 
     using Point = Dune::FieldVector<double, worldDim>;
@@ -62,8 +62,8 @@ namespace Dune::IGA {
     /** \brief creates a line geometry from a to b */
     static Geometry lineGeometryFromPoints(const Point& a, const Point b) {
       std::vector<Point> _controlPoints{a, b};
-      std::array<ControlPoint, worldDim> _cp{ControlPoint{.p{_controlPoints.front()}, .w = 1},
-                                             {.p{_controlPoints.back()}, .w = 1}};
+      std::array<ControlPointType, worldDim> _cp{ControlPointType{.p{_controlPoints.front()}, .w = 1},
+                                                 {.p{_controlPoints.back()}, .w = 1}};
       std::array<int, 1> dimSize{2};
 
       // Construct patch Data

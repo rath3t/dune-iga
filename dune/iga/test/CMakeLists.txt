@@ -31,6 +31,18 @@ foreach(_test ${TESTS})
   endif()
 endforeach()
 
+dune_add_test(SOURCES concepttests.cpp COMPILE_ONLY LABELS cpp)
+
+target_link_libraries(
+  concepttests PRIVATE PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json
+                       earcut_hpp::earcut_hpp)
+
+target_compile_options(
+  concepttests
+  PUBLIC -Wno-unused-variable -Wno-unused-parameter
+         -Wno-unused-but-set-variable -Wno-deprecated-copy
+         -ftemplate-backtrace-limit=0)
+
 # Copy the example grid used for testing into the build dir
 file(COPY auxiliaryfiles/
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/auxiliaryfiles)

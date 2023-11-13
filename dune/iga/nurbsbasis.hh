@@ -334,7 +334,7 @@ namespace Dune::Functions {
      *
      * Elements are the non-empty knot spans, here we do the renumbering
      *
-     * \param ijk Integer coordinates in the tensor product patch
+     * \param elementIdx Integer coordinates in the tensor product patch
      */
 
     // TODO save correct element info
@@ -722,7 +722,7 @@ namespace Dune::Functions {
 
   namespace BasisFactory {
 
-    namespace Imp {
+    namespace Impl {
 
       template <std::integral auto dim, std::integral auto dimworld>
       class NurbsPreBasisFactory {
@@ -742,7 +742,7 @@ namespace Dune::Functions {
         std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>> patchData_;
       };
 
-    }  // namespace Imp
+    }  // namespace Impl
 
     /**
      * \brief Create a pre-basis factory that can create a B-spline pre-basis
@@ -752,7 +752,7 @@ namespace Dune::Functions {
      */
     template <std::integral auto dim, std::integral auto dimworld>
     auto nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data) {
-      return Imp::NurbsPreBasisFactory<dim, dimworld>(data);
+      return Impl::NurbsPreBasisFactory<dim, dimworld>(data);
     }
 
     auto nurbs() {

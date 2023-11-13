@@ -17,9 +17,9 @@
 #  include <dune/vtk/writers/vtkunstructuredgridwriter.hh>
 #endif
 
-#define PYBIND11_DETAILED_ERROR_MESSAGES
-
 namespace Dune::Python {
+
+#ifndef DOXYGEN
   // we have to ahead of
   // https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233
   // thus we use requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value) to be sure this overload
@@ -36,6 +36,7 @@ namespace Dune::Python {
       : public std::integral_constant<bool, false> {};
 
 }  // namespace Dune::Python
+#endif
 namespace Dune::Python::IGA {
   template <class Grid>
   requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, Grid>::value) inline static std::shared_ptr<
