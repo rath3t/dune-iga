@@ -52,7 +52,15 @@ namespace Dune::IGA {
     typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry HostGridLocalGeometryType;
 
     typedef typename std::conditional<coorddim==DimensionWorld, HostGridGeometryType, HostGridLocalGeometryType>::type HostGridGeometry;
-
+    auto getDirectionsOfSubEntityInParameterSpace() const {
+      std::array<unsigned int, mydimension> subDirs;
+      for (int subI = 0, i = 0; i < griddim; ++i) {
+        if constexpr (mydimension != griddim)
+          if (fixedOrFree[i] == Impl::FixedOrFree2::fixed) continue;
+        subDirs[subI++] = i;
+      }
+      return subDirs;
+    }
 
     //! type of the LocalView of the patch geometry
     using ElementGeometryLocalView= typename NURBSPatchGeometry<GridImp::dimension,coorddimension,ctype>::LocalView;
@@ -73,24 +81,26 @@ namespace Dune::IGA {
       std::cout<<std::endl;
 
       const ctype tolerance = std::sqrt( std::numeric_limits< ctype >::epsilon() );
-      LocalCoordinateInPatch average=0;
+      LocalCoordinateInPatch average(0.0);
       for (int i = 0; i < hostGeometry.corners(); ++i)
         average+=hostGeometry.corner(i);
       average/=hostGeometry.corners();
 
       for (int i = 0; i < griddim; ++i)
-        if(abs(average[i]-cornersVector[0])<tolerance)
-          fixedOrFree=Impl::FixedOrFree2::fixed;
+        if(abs(average[i]-cornersVector[0][i])<tolerance)
+          fixedOrFree[i]=Impl::FixedOrFree2::fixed;
         else
-          fixedOrFree=Impl::FixedOrFree2::free;
+          fixedOrFree[i]=Impl::FixedOrFree2::free;
       //
       // }
       // hostGeometry_.corner(0);
       const auto& thisSpanIndices =geometryLocalView_.spanIndices();
+      const auto& patchData =geometryLocalView_.patchData();
+
       for (int i = 0; i < griddim; ++i) {
-        if (thisSpanIndices[i] + 1 < patchData_->knotSpans[i].size())
-          scaling_[i] = patchData_->knotSpans[i][thisSpanIndices[i] + 1] - patchData_->knotSpans[i][thisSpanIndices[i]];
-        offset_[i] = patchData_->knotSpans[i][thisSpanIndices[i]];
+        if (thisSpanIndices[i] + 1 < patchData.knotSpans[i].size())
+          scaling_[i] = patchData.knotSpans[i][thisSpanIndices[i] + 1] - patchData.knotSpans[i][thisSpanIndices[i]];
+        offset_[i] = patchData.knotSpans[i][thisSpanIndices[i]];
       }
     }
 
@@ -197,8 +207,22 @@ decltype(auto) localToSpan(const LocalCoordinate& local) const {
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const {
-      // return geometryLocalView_.jacobianInverseTransposed(local);
+      JacobianTransposed result;
+      std::array<unsigned int, mydimension> subDirs = getDirectionsOfSubEntityInParameterSpace();
+
+      const auto localInSpan              = localToSpan(local);
+      const auto basisFunctionDerivatives = geometryLocalView_.nurbs().basisFunctionDerivatives(localInSpan, 1);
+
+      for (int dir = 0; dir < mydimension; ++dir) {
+        std::array<unsigned int, griddim> ithVec{};
+        ithVec[subDirs[dir]] = 1;
+        result[dir]          = dot(basisFunctionDerivatives.get(ithVec), geometryLocalView_.controlPointCoordinates());
+        result[dir] *= scaling_[subDirs[dir]];  // transform back to 0..1 domain
+      }
+      return result;
     }
+      // return geometryLocalView_.jacobianInverseTransposed(local);
+
 
   private:
     auto getDirectionsOfSubEntityInParameterSpace() const {

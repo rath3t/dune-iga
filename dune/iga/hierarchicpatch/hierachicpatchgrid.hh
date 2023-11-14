@@ -16,6 +16,7 @@
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
 #include <dune/subgrid/subgrid.hh>
+#include <dune/grid/yaspgrid.hh>
 
 // The components of the PatchGrid interface
 #include "hierachicpatchgridgeometry.hh"

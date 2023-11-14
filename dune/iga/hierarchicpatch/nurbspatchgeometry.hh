@@ -186,8 +186,10 @@ namespace Dune::IGA {
       [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
       [[nodiscard]] bool affine() const { return false; }
-      [[nodiscard]] std::array<int, dim>&  spanIndices() const { return spanIndices_; }
-      [[nodiscard]] std::array<int, dim>&  patchData() const { return spanIndices_; }
+      [[nodiscard]] const std::array<int, dim>&  spanIndices() const { return spanIndices_; }
+      [[nodiscard]] const auto&  patchData() const { return patchGeometry_->patchData_; }
+      [[nodiscard]] const auto&  nurbs() const { return nurbsLocalView_; }
+      [[nodiscard]] const auto&  controlPointCoordinates() const { return localControlPointNet; }
     private:
       ControlPointCoordinateNetType localControlPointNet;
       typename Nurbs::LocalView nurbsLocalView_;
@@ -367,7 +369,7 @@ namespace Dune::IGA {
                                        extractControlCoordinates(patchData_.controlPoints));
       auto nurbsLocalView = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
-      return std::make_pair(nurbsLocalView,cpCoordinateNet,subNetStart);
+      return std::make_tuple(nurbsLocalView,cpCoordinateNet,subNetStart);
     }
     [[nodiscard]] static FieldVector<ctype, dimworld> global(const LocalCoordinate& u,const NurbsLocalView& nurbsLocalView,
       const ControlPointCoordinateNetType& localControlPointNet)  {
