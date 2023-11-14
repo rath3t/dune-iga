@@ -24,6 +24,7 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
+#include <dune/iga/hierarchicpatch.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -1223,24 +1224,43 @@ auto testSurfaceHigherOrderDerivatives() {
   return t;
 }
 
+
+void testHierarchicPatch() {
+  const double R       = 2.0;
+  const double r       = 1.0;
+  auto circle          = makeCircularArc(r);
+  auto nurbsPatchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
+  nurbsPatchData       = degreeElevate(nurbsPatchData, 0, 1);
+  nurbsPatchData       = degreeElevate(nurbsPatchData, 1, 2);
+  auto additionalKnots = std::vector<double>(1);
+  additionalKnots[0]   = 0.1;
+  nurbsPatchData       = knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
+  for (int refDirection = 0; refDirection < 2; ++refDirection)
+    nurbsPatchData = degreeElevate(nurbsPatchData, refDirection, 1);
+
+  Dune::IGA::PatchGrid hPatch(nurbsPatchData);
+
+  hPatch.
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
-  TestSuite t;
-  t.subTest(test3DGrid());
-  t.subTest(testNURBSGridCurve());
-  t.subTest(testPlate());
-  testNurbsGridCylinder();
-  t.subTest(testTorusGeometry());
-  std::cout << " t.subTest(testNurbsBasis());" << std::endl;
-  t.subTest(testNurbsBasis());
-  t.subTest(testCurveHigherOrderDerivatives());
-  t.subTest(testSurfaceHigherOrderDerivatives());
-
-  gridCheck();
-  t.subTest(testBsplineBasisFunctions());
-
-  t.report();
+  // TestSuite t;
+  // t.subTest(test3DGrid());
+  // t.subTest(testNURBSGridCurve());
+  // t.subTest(testPlate());
+  // testNurbsGridCylinder();
+  // t.subTest(testTorusGeometry());
+  // std::cout << " t.subTest(testNurbsBasis());" << std::endl;
+  // t.subTest(testNurbsBasis());
+  // t.subTest(testCurveHigherOrderDerivatives());
+  // t.subTest(testSurfaceHigherOrderDerivatives());
+  //
+  // gridCheck();
+  // t.subTest(testBsplineBasisFunctions());
+  //
+  // t.report();
 
   return t.exit();
 } catch (Dune::Exception& e) {

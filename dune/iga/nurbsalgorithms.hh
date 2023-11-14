@@ -78,7 +78,8 @@ namespace Dune::IGA {
    * @return subNet with the strideSizes degree+1 per direction
    */
   template <std::integral auto dim, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)
+  auto netOfSpan(
       std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
       const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
@@ -131,23 +132,48 @@ namespace Dune::IGA {
      * @param spIndex
      */
     template <std::integral auto dimworld>
-    explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data,
-                   const std::optional<std::array<int, dim>>& spIndex = std::nullopt)
+    explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data)
         : knots_{data.knotSpans},
           degree_{data.degree},
-          weights_{extractWeights(data.controlPoints)},
-          spIndex_{spIndex} {}
+          weights_{extractWeights(data.controlPoints)} {}
+
+    auto localView() const {
+      return LocalView(*this);
+    }
+
+    struct LocalView {
+      explicit LocalView(const Nurbs& nurbs):nurbs_{nurbs}{}
+      void bind(const std::array<int, dim>& spIndex) {
+        spIndex_=spIndex;
+      }
+
+      auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder) {
+        assert(spIndex_ && "Bind the local view first!");
+        return nurbs_->basisFunctionDerivatives(u,derivativeOrder,spIndex_);
+      }
+
+      auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
+        return nurbs_->basisFunctions(u, spIndex_);
+      }
+
+      std::optional<std::array<int, dim>> spIndex_;
+      const Nurbs* nurbs_;
+    };
 
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
           const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    auto operator()(const Dune::FieldVector<ScalarType, dim>& u) {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex_).directGetAll();
+    // auto operator()(const Dune::FieldVector<ScalarType, dim>& u) {
+    //   return basisFunctions(u, knots_, degree_, weights_).directGetAll();
+    // }
+
+    auto basisFunction(const Dune::FieldVector<ScalarType, dim>& u) const {
+      return basisFunctions(u, knots_, degree_, weights_);
     }
 
-    auto basisFunctionNet(const Dune::FieldVector<ScalarType, dim>& u) const {
-      return basisFunctions(u, knots_, degree_, weights_, spIndex_);
+    auto basisFunction(const Dune::FieldVector<ScalarType, dim>& u,const std::array<int, dim>& spIndex) const {
+      return basisFunctions(u, knots_, degree_, weights_,spIndex);
     }
 
     static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
@@ -241,16 +267,19 @@ namespace Dune::IGA {
       return R;
     }
 
+    auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder);
+    }
+
     auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder,
-                                  const bool triangleDerivatives = false) const {
-      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, triangleDerivatives, spIndex_);
+                              const std::array<int, dim>& spIndex) const {
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, false,spIndex);
     }
 
    private:
     std::array<std::vector<ScalarType>, dim> knots_;
     std::array<int, dim> degree_;
     MultiDimensionNet<dim, ScalarType> weights_;
-    std::optional<std::array<int, dim>> spIndex_;
   };
 
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType_>

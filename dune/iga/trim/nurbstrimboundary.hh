@@ -56,7 +56,7 @@ namespace Dune::IGA {
       std::array<std::vector<double>, dim> knotSpans{_curve.compileKnotVectors()};
       auto controlNet{ControlPointNetType(dimSize, _cp)};
 
-      return Geometry(std::make_shared<PatchData>(knotSpans, controlNet, std::array<int, 1>{_curve.degree}));
+      return Geometry(PatchData(knotSpans, controlNet, std::array<int, 1>{_curve.degree}));
     }
 
     /** \brief creates a line geometry from a to b */
@@ -70,7 +70,7 @@ namespace Dune::IGA {
       std::array<std::vector<double>, dim> knotSpans{std::vector<double>{0.0, 0.0, 1.0, 1.0}};
       auto controlNet{ControlPointNetType(dimSize, _cp)};
 
-      return Geometry(std::make_shared<PatchData>(knotSpans, controlNet, std::array<int, 1>{1}));
+      return Geometry(PatchData(knotSpans, controlNet, std::array<int, 1>{1}));
     }
 
    public:
