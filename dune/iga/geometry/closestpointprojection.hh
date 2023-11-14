@@ -9,20 +9,18 @@
 #include <dune/common/transpose.hh>
 
 namespace Dune::IGA {
-  template <template <std::integral auto, std::integral auto, typename> typename Geo, std::integral auto dim,
-            std::integral auto dimworld, typename GeoArgs>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
+  template <typename Geo>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
   auto closestPointProjectionByTrustRegion(
-      const Geo<dim, dimworld, GeoArgs>& geo, auto& point,
-      const std::optional<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, static_cast<size_t>(dim)>>&
+      const Geo& geo, auto& point,
+      const std::optional<typename Geo::LocalCoordinate>&
           start
       = std::nullopt)
-      -> std::tuple<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, dim>,
-                    typename Geo<dim, dimworld, GeoArgs>::ctype, typename Geo<dim, dimworld, GeoArgs>::ctype,
-                    typename Geo<dim, dimworld, GeoArgs>::ctype>
-  requires(dim == 1 or dim == 2) {
-    using Geometry = Geo<dim, dimworld, GeoArgs>;
-    using ctype    = typename Geometry::ctype;
-
+      -> std::tuple<typename Geo::LocalCoordinate,
+                    typename Geo::ctype, typename Geo::ctype,
+                    typename Geo::ctype>
+  requires(Geo::mydimension == 1 or Geo::mydimension == 2) {
+    using ctype    = typename Geo::ctype;
+static constexpr int dim = Geo::mydimension;
     auto energy = [&](const auto& uL) {
       auto pointOnCurve = geo.global(uL);
       auto dist         = pointOnCurve - point;

@@ -7,17 +7,17 @@
 #include <iostream>
 
 #include "dune/iga/gridcapabilities.hh"
-#include "dune/iga/nurbsbasis.hh"
-#include "dune/iga/nurbsgrid.hh"
-#include "dune/iga/nurbspatch.hh"
+// #include "dune/iga/nurbsbasis.hh"
+// #include "dune/iga/nurbsgrid.hh"
+// #include "dune/iga/nurbspatch.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
-#include <dune/functions/functionspacebases/powerbasis.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
+// #include <dune/functions/functionspacebases/flatmultiindex.hh>
+// #include <dune/functions/functionspacebases/powerbasis.hh>
+// #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
@@ -53,10 +53,14 @@ void testHierarchicPatch() {
   std::cout<<coords<<std::endl;
 
   // Dune::YaspGrid<2,Dune::TensorProductCoordinates<double,2>> g;
+  // g.leafGridView().begin<0>()->geometry().impl().
   // Dune::TensorProductCoordinates<double,2> coords();
 
   Dune::IGA::PatchGrid patch(nurbsPatchData);
   patch.globalRefine(3);
+  auto gridView= patch.leafGridView();
+  Dune::GeometryChecker<decltype(patch)> geometryChecker;
+  geometryChecker.checkGeometry(gridView);
   // for (int i = 0; i < 3; ++i) {
   //   Dune::TensorProductCoordinates<double,2> coords2(patch.uniqueKnotSpans,std::array<int,2>());
   //   std::cout<<coords2<<std::endl;

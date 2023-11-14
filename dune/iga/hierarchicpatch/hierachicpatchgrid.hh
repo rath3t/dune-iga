@@ -331,7 +331,7 @@ namespace Dune::IGA
           auto additionalKnots  = generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
           newfinestPatchData = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
         }
-        patchGeometries.push_back(std::move(newfinestPatchData));
+        patchGeometries.emplace_back(std::move(newfinestPatchData));
 
       }
 

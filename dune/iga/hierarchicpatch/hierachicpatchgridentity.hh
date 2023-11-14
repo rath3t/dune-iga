@@ -172,7 +172,8 @@ namespace Dune::IGA {
     //! geometry of this entity
     Geometry geometry () const
     {
-      return Geometry( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level ()].localView());
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].localView());
+      return Geometry( geo);
     }
 
 
@@ -209,6 +210,7 @@ namespace Dune::IGA {
 
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - GridImp::dimension;
+    constexpr static int dimworld = GridImp::dimensionworld;
 
     // equivalent entity in the host grid
     typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Entity HostGridEntity;
@@ -278,45 +280,47 @@ namespace Dune::IGA {
       return *this;
     }
 
-    bool equals(const PatchGridEntity& other) const
+    [[nodiscard]] bool equals(const PatchGridEntity& other) const
     {
       return hostEntity_ == other.hostEntity_;
     }
 
     //! returns true if father entity exists
-    bool hasFather () const {
+    [[nodiscard]] bool hasFather () const {
       return hostEntity_.hasFather();
     }
 
     //! Create EntitySeed
-    EntitySeed seed () const
+    [[nodiscard]] EntitySeed seed () const
     {
       return EntitySeed(hostEntity_);
     }
 
     //! Level of this element
-    int level () const
+    [[nodiscard]] int level () const
     {
       return hostEntity_.level();
     }
 
 
     /** \brief The partition type for parallel computing */
-    PartitionType partitionType () const {
+    [[nodiscard]] PartitionType partitionType () const {
       return hostEntity_.partitionType();
     }
 
 
     //! Geometry of this entity
-    Geometry geometry () const
+    [[nodiscard]] Geometry geometry () const
     {
-      return Geometry( hostEntity_.geometry() );
+      static_assert(std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].localView()),typename NURBSPatchGeometry<dim,dimworld,ctype>::LocalView>);
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].localView());
+      return Geometry(geo);
     }
 
 
     /** \brief Return the number of subEntities of codimension codim.
      */
-    unsigned int subEntities (unsigned int codim) const
+    [[nodiscard]] unsigned int subEntities (unsigned int codim) const
     {
       return hostEntity_.subEntities(codim);
     }
@@ -326,13 +330,13 @@ namespace Dune::IGA {
      *  are numbered 0 ... subEntities(cc)-1
      */
     template<int cc>
-    typename GridImp::template Codim<cc>::Entity subEntity (int i) const {
+    [[nodiscard]] typename GridImp::template Codim<cc>::Entity subEntity (int i) const {
       return PatchGridEntity<cc,dim,GridImp>(patchGrid_, hostEntity_.template subEntity<cc>(i));
     }
 
 
     //! First level intersection
-    PatchGridLevelIntersectionIterator<GridImp> ilevelbegin () const {
+    [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin () const {
       return PatchGridLevelIntersectionIterator<GridImp>(
         patchGrid_,
         patchGrid_->getHostGrid().levelGridView(level()).ibegin(hostEntity_));
