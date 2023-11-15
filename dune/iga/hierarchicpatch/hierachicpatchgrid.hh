@@ -338,6 +338,7 @@ namespace Dune::IGA
       }
 
       hostgrid_->globalRefine(refCount);
+      setIndices();
     }
 
     /** \brief Mark entity for refinement

@@ -159,17 +159,29 @@ namespace Dune::IGA {
 
     //! return outer normal
     FieldVector<ctype, GridImp::dimensionworld> outerNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return hostIntersection_.outerNormal(local);
+      FieldMatrix<ctype,dimworld,dim> J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.outerNormal(local),res);
+      return res;
     }
 
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return hostIntersection_.integrationOuterNormal(local);
+      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.integrationOuterNormal(local),res);
+      res*=detJ;
+      return res;
     }
 
     //! return unit outer normal
     FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal (const FieldVector<ctype, GridImp::dimension-1>& local) const {
-      return hostIntersection_.unitOuterNormal(local);
+      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.unitOuterNormal(local),res);
+      res/=res.two_norm();
+      return res;
     }
 
 
@@ -203,6 +215,8 @@ namespace Dune::IGA {
     typedef typename GridImp::ctype ctype;
 
     typedef typename GridImp::HostGridType::LevelGridView::Intersection HostLevelIntersection;
+
+    using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
   public:
 
@@ -319,17 +333,29 @@ namespace Dune::IGA {
 
     //! return outer normal
     FieldVector<ctype, dimworld> outerNormal (const FieldVector<ctype, dim-1>& local) const {
-      return hostIntersection_.outerNormal(local);
+      FieldMatrix<ctype,dimworld,dim> J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.outerNormal(local),res);
+      return res;
     }
 
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, dimworld> integrationOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      return hostIntersection_.integrationOuterNormal(local);
+      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.integrationOuterNormal(local),res);
+      res*=detJ;
+      return res;
     }
 
     //! return unit outer normal
     FieldVector<ctype, dimworld> unitOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      return hostIntersection_.unitOuterNormal(local);
+      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      FieldVector<ctype, dimworld> res;
+      J.mv(hostIntersection_.unitOuterNormal(local),res);
+      res/=res.two_norm();
+      return res;
     }
 
   private:
