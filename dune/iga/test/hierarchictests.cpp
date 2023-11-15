@@ -26,10 +26,40 @@
 #include <dune/grid/test/gridcheck.hh>
 
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
-
+using namespace Dune;
 using namespace Dune::IGA;
+template <typename T, int worldDim, int Items>
+struct Compare {
+  constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
+                            const std::array<FieldVector<double, worldDim>, Items>& rhs) const {
+    return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
+  };
+};
+auto checkUniqueEdges(const auto& gridView) {
+  Dune::TestSuite t;
 
-void testHierarchicPatch() {
+  constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
+  constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
+  std::set<std::array<FieldVector<double, gridDimensionworld>, 2>, Compare<double, gridDimensionworld, 2>>
+      edgeVertexPairSet;
+  for (int eleIndex = 0; auto&& element : elements(gridView)) {
+    edgeVertexPairSet.clear();
+    for (int edgeIndex = 0; edgeIndex < element.subEntities(gridDimension - 1); ++edgeIndex) {
+      auto edge = element.template subEntity<gridDimension - 1>(edgeIndex);
+      std::array<FieldVector<double, gridDimensionworld>, 2> pair;
+      for (int c = 0; c < edge.geometry().corners(); ++c)
+        pair[c] = edge.geometry().corner(c);
+      bool inserted = edgeVertexPairSet.insert(pair).second;
+      t.require(inserted) << "Duplicate edge detected in Element " << eleIndex << " Edges: " << pair[0] << ", "
+                          << pair[1];
+    }
+    ++eleIndex;
+  }
+  return t;
+}
+
+auto testHierarchicPatch() {
+  TestSuite t;
   const double R       = 2.0;
   const double r       = 1.0;
   auto circle          = makeCircularArc(r);
@@ -53,7 +83,7 @@ void testHierarchicPatch() {
   std::cout<<coords<<std::endl;
 
   // Dune::YaspGrid<2,Dune::TensorProductCoordinates<double,2>> g;
-  // g.leafGridView().begin<0>()->geometry().impl().
+  // g.leafGridView().begin<0>()->geometry().impl().jacobian()
   // Dune::TensorProductCoordinates<double,2> coords();
 
   Dune::IGA::PatchGrid patch(nurbsPatchData);
@@ -61,18 +91,23 @@ void testHierarchicPatch() {
   auto gridView= patch.leafGridView();
   Dune::GeometryChecker<decltype(patch)> geometryChecker;
   geometryChecker.checkGeometry(gridView);
+
+  t.subTest(checkUniqueEdges(gridView));
+
+  gridcheck(patch);
   // for (int i = 0; i < 3; ++i) {
   //   Dune::TensorProductCoordinates<double,2> coords2(patch.uniqueKnotSpans,std::array<int,2>());
   //   std::cout<<coords2<<std::endl;
   // }
 
-
+return t;
 }
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
-  testHierarchicPatch();
+  TestSuite t;
+  t.subTest(testHierarchicPatch());
   // TestSuite t;
   // t.subTest(test3DGrid());
   // t.subTest(testNURBSGridCurve());
@@ -87,9 +122,9 @@ int main(int argc, char** argv) try {
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());
   //
-  // t.report();
+  t.report();
 
-  // return t.exit();
+  return t.exit();
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
   return 1;

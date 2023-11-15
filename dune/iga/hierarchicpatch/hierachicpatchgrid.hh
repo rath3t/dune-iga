@@ -38,11 +38,11 @@ namespace Dune::IGA
   template< class Grid >
   struct HostGridAccess;
 
-  template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
+  template<int dim, int dimworld,  bool trim_,typename ScalarType, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
   struct PatchGridFamily
   {
 
-  public:
+    static constexpr bool trim = trim_;
 
     typedef GridTraits<
         dim,
@@ -105,13 +105,14 @@ namespace Dune::IGA
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template<std::size_t dim, std::size_t dimworld,  bool trim=true,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
+  template<std::size_t dim, std::size_t dimworld,  bool trim_=false,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
   class PatchGrid
   : public GridDefaultImplementation<dim, dimworld,
-                                     ScalarType, PatchGridFamily<dim,dimworld,trim,ScalarType, HostGrid> >
+                                     ScalarType, PatchGridFamily<dim,dimworld,trim_,ScalarType, HostGrid> >
   {
     using ParameterSpaceUntrimmedGrid = HostGrid;
-    using SubGridParameterSpaceGridView = std::conditional_t<trim,SubGrid<dim,ParameterSpaceUntrimmedGrid>,ParameterSpaceUntrimmedGrid>;
+
+    using SubGridParameterSpaceGridView = std::conditional_t<trim_,SubGrid<dim,ParameterSpaceUntrimmedGrid>,ParameterSpaceUntrimmedGrid>;
 
     friend class PatchGridLevelIndexSet<const PatchGrid >;
     friend class PatchGridLeafIndexSet<const PatchGrid >;
@@ -134,7 +135,7 @@ namespace Dune::IGA
     friend struct HostGridAccess< PatchGrid >;
 
   public:
-
+    static constexpr bool trim= trim_;
     /** \todo Should not be public */
     typedef HostGrid HostGridType;
 
@@ -461,7 +462,7 @@ namespace Dune::IGA
 
   public:
     std::array<std::vector<ScalarType>,dim> uniqueCoarseKnotSpans;
-    std::vector<NURBSPatchGeometry<dim,dimworld,ScalarType>> patchGeometries;
+    std::vector<NURBSPatchGeometry<dim,dimworld,trim,ScalarType>> patchGeometries;
   protected:
 
     //! The host grid which contains the actual grid hierarchy structure

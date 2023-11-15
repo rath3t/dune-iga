@@ -172,7 +172,7 @@ namespace Dune::IGA {
     //! geometry of this entity
     Geometry geometry () const
     {
-      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].localView());
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<codim>());
       return Geometry( geo);
     }
 
@@ -207,7 +207,7 @@ namespace Dune::IGA {
     friend struct HostGridAccess< typename std::remove_const< GridImp >::type >;
 
   public:
-
+    static constexpr bool trim = GridImp::trim;
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - GridImp::dimension;
     constexpr static int dimworld = GridImp::dimensionworld;
@@ -312,8 +312,8 @@ namespace Dune::IGA {
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry () const
     {
-      static_assert(std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].localView()),typename NURBSPatchGeometry<dim,dimworld,ctype>::LocalView>);
-      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].localView());
+      static_assert(std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].template localView<0>()),typename NURBSPatchGeometry<dim,dimworld,trim,ctype>::template GeometryLocalView<0>>);
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<0>());
       return Geometry(geo);
     }
 
