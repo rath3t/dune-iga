@@ -25,12 +25,12 @@ namespace Dune::IGA {
     using JacobianInverseTransposed = Dune::FieldMatrix<ScalarType, coorddimension, mydimension>;
     using Jacobian                  = Dune::FieldMatrix<ctype, coorddimension, mydimension>;
 
-    using Volume                    = ctype;
+    using Volume = ctype;
 
-    using ControlPointType = typename NURBSPatchData<mydimension, dimworld, ScalarType>::ControlPointType;
+    using ControlPointType    = typename NURBSPatchData<mydimension, dimworld, ScalarType>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<mydimension, dimworld, ScalarType>::ControlPointNetType;
-    using Nurbs = Dune::IGA::Nurbs<mydimension, ScalarType>;
-    using NurbsLocalView = typename Nurbs::LocalView;
+    using Nurbs               = Dune::IGA::Nurbs<mydimension, ScalarType>;
+    using NurbsLocalView      = typename Nurbs::LocalView;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
@@ -40,28 +40,27 @@ namespace Dune::IGA {
     NURBSPatchGeometry() = default;
 
     struct LocalView {
-
-      explicit LocalView(const NURBSPatchGeometry& patchGeometry):patchGeometry_{patchGeometry}{}
+      explicit LocalView(const NURBSPatchGeometry& patchGeometry) : patchGeometry_{patchGeometry} {}
       [[nodiscard]] GlobalCoordinate center() const {
         LocalCoordinate localcenter(0.5);
         return global(localcenter);
       }
 
       void bind(const LocalCoordinate& u) {
-        std::tie(nurbsLocalView_,localControlPointNet)= patchGeometry_->calculateNurbsAndControlPointNet(u);
+        std::tie(nurbsLocalView_, localControlPointNet) = patchGeometry_->calculateNurbsAndControlPointNet(u);
       }
 
       /** \brief evaluates the geometric position
- *
- *  \param[in] u coordinates for each dimension in the [knotSpan.front(), knotSpan.back() ] domain
- */
+       *
+       *  \param[in] u coordinates for each dimension in the [knotSpan.front(), knotSpan.back() ] domain
+       */
       [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& u) const {
         assert(subNetStart && "Bind the local view first!");
-        return this->global(u, nurbsLocalView_,localControlPointNet);
+        return this->global(u, nurbsLocalView_, localControlPointNet);
       }
 
       [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
-        return patchGeometry_->jacobianTransposedImpl(u, nurbsLocalView_,localControlPointNet);
+        return patchGeometry_->jacobianTransposedImpl(u, nurbsLocalView_, localControlPointNet);
       }
 
       [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const {
@@ -82,12 +81,9 @@ namespace Dune::IGA {
         return vol;
       }
 
-      [[nodiscard]] GeometryType type () const {
-        return GeometryTypes::cube(mydimension);
-      }
+      [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
-
-    private:
+     private:
       std::optional<std::array<int, dim>> subNetStart;
       ControlPointNetType localControlPointNet;
       typename Nurbs::LocalView nurbsLocalView_;
@@ -102,7 +98,6 @@ namespace Dune::IGA {
       LocalCoordinate localcenter(0.5);
       return global(localcenter);
     }
-
 
     /** \brief Computes the volume of the element with an integration rule for order max(order)*elementdim */
     [[nodiscard]] double volume(int scaleOrder = 1) const {
@@ -130,14 +125,13 @@ namespace Dune::IGA {
 
     FieldVector<ctype, dimworld> operator()(const LocalCoordinate& local) const { return global(local); }
 
-
     /** \brief evaluates the geometric position
      *
      *  \param[in] u coordinates for each dimension in the [knotSpan.front(), knotSpan.back() ] domain
      */
     [[nodiscard]] FieldVector<ctype, dimworld> global(const LocalCoordinate& u) const {
-      auto [nurbsLocalView,cpNet] = calculateNurbsAndControlPointNet(u);
-      return this->global(u, nurbsLocalView,cpNet);
+      auto [nurbsLocalView, cpNet] = calculateNurbsAndControlPointNet(u);
+      return this->global(u, nurbsLocalView, cpNet);
     }
 
     auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
@@ -149,8 +143,8 @@ namespace Dune::IGA {
         subDirs[subI++] = i;
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
-      auto cpCoordinateNet                = netOfSpan(u, patchData_.knotSpans, patchData_.degree,
-                                                      extractControlCoordinates(patchData_.controlPoints));
+      auto cpCoordinateNet
+          = netOfSpan(u, patchData_.knotSpans, patchData_.degree, extractControlCoordinates(patchData_.controlPoints));
       std::array<unsigned int, mydimension> ithVecZero{};
       pos = Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), cpCoordinateNet);
 
@@ -215,14 +209,11 @@ namespace Dune::IGA {
      *  \param local coordinates for each dimension
      */
     [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
-      auto [nurbsLocalView,cpNet] = calculateNurbsAndControlPointNet(u);
-      return jacobianTransposedImpl(u, nurbsLocalView,cpNet);
+      auto [nurbsLocalView, cpNet] = calculateNurbsAndControlPointNet(u);
+      return jacobianTransposedImpl(u, nurbsLocalView, cpNet);
     }
 
-    [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const {
-      return transpose(jacobianTransposed(local));
-    }
-
+    [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const { return transpose(jacobianTransposed(local)); }
 
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
       auto j = jacobianTransposed(local);
@@ -252,26 +243,27 @@ namespace Dune::IGA {
       return result;
     }
 
-  private:
+   private:
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
       auto subNetStart = findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
 
-      auto cpCoordinateNet = netOfSpan(subNetStart,patchData_.degree,
-                                       extractControlCoordinates(patchData_.controlPoints));
+      auto cpCoordinateNet
+          = netOfSpan(subNetStart, patchData_.degree, extractControlCoordinates(patchData_.controlPoints));
       auto nurbsLocalView = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
-      return std::make_pair(nurbsLocalView,cpCoordinateNet);
+      return std::make_pair(nurbsLocalView, cpCoordinateNet);
     }
-    [[nodiscard]] static FieldVector<ctype, dimworld> global(const LocalCoordinate& u,const NurbsLocalView& nurbsLocalView,
-      const MultiDimensionNet<dim, ControlPoint<FieldVector<ctype,dimworld>>>& localControlPointNet)  {
-      auto basis           = nurbsLocalView.basisFunctions(u);
+    [[nodiscard]] static FieldVector<ctype, dimworld> global(
+        const LocalCoordinate& u, const NurbsLocalView& nurbsLocalView,
+        const MultiDimensionNet<dim, ControlPoint<FieldVector<ctype, dimworld>>>& localControlPointNet) {
+      auto basis = nurbsLocalView.basisFunctions(u);
 
       return IGA::dot(basis, localControlPointNet);
     }
 
-    [[nodiscard]] static JacobianTransposed jacobianTransposedImpl(const LocalCoordinate& u,const NurbsLocalView& nurbsLocalView,
-      const MultiDimensionNet<dim, ControlPoint<FieldVector<ctype,dimworld>>>& localControlPointNet)  {
-
+    [[nodiscard]] static JacobianTransposed jacobianTransposedImpl(
+        const LocalCoordinate& u, const NurbsLocalView& nurbsLocalView,
+        const MultiDimensionNet<dim, ControlPoint<FieldVector<ctype, dimworld>>>& localControlPointNet) {
       JacobianTransposed result;
 
       const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(u, 1);

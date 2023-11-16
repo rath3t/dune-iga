@@ -9,35 +9,29 @@
  * \brief The PatchGridEntitySeed class
  */
 
-
 namespace Dune::IGANEW {
-
 
   /**
    * \brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
    * \ingroup PatchGrid
    *
    */
-  template<int codim, class GridImp>
-  class PatchGridEntitySeed
-  {
-  protected:
-
+  template <int codim, class GridImp>
+  class PatchGridEntitySeed {
+   protected:
     // Entity type of the hostgrid
     typedef typename GridImp::HostGridType::Traits::template Codim<codim>::Entity HostEntity;
 
     // EntitySeed type of the hostgrid
     typedef typename GridImp::HostGridType::Traits::template Codim<codim>::EntitySeed HostEntitySeed;
 
-  public:
-
+   public:
     constexpr static int codimension = codim;
 
     /**
      * \brief Construct an empty (i.e. isValid() == false) seed.
      */
-    PatchGridEntitySeed()
-    {}
+    PatchGridEntitySeed() {}
 
     /**
      * \brief Create EntitySeed from hostgrid Entity
@@ -45,30 +39,22 @@ namespace Dune::IGANEW {
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
      */
-    PatchGridEntitySeed(const HostEntity& hostEntity) :
-      hostEntitySeed_(hostEntity.seed())
-    {}
+    PatchGridEntitySeed(const HostEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
 
     /**
      * \brief Get stored HostEntitySeed
      */
-    const HostEntitySeed& hostEntitySeed() const
-    {
-      return hostEntitySeed_;
-    }
+    const HostEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
 
     /**
      * \brief Check whether it is safe to create an Entity from this Seed
      */
-    bool isValid() const
-    {
-      return hostEntitySeed_.isValid();
-    }
-  private:
+    bool isValid() const { return hostEntitySeed_.isValid(); }
 
+   private:
     HostEntitySeed hostEntitySeed_;
   };
 
-} // namespace Dune
+}  // namespace Dune::IGANEW
 
-  // #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH
+// #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH

@@ -1224,7 +1224,6 @@ auto testSurfaceHigherOrderDerivatives() {
   return t;
 }
 
-
 void testHierarchicPatch() {
   const double R       = 2.0;
   const double r       = 1.0;

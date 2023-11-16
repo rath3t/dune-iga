@@ -10,7 +10,6 @@
 
 namespace Dune::IGANEW {
 
-
   //**********************************************************************
   //
   /** \brief Iterator over the descendants of an entity.
@@ -20,55 +19,40 @@ namespace Dune::IGANEW {
      Iteration over this set of entities is provided by the HierarchicIterator,
      starting from a given entity.
    */
-  template<class GridImp>
-  class PatchGridHierarchicIterator
-  {
-
+  template <class GridImp>
+  class PatchGridHierarchicIterator {
     // Type of the corresponding HierarchicIterator in the host grid
     typedef typename GridImp::HostGridType::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
 
-  public:
-
+   public:
     constexpr static int codimension = 0;
 
     typedef typename GridImp::template Codim<0>::Entity Entity;
 
     //! the default Constructor
-    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel) :
-      identityGrid_(identityGrid),
-      hostHierarchicIterator_(startEntity.impl().hostEntity_.hbegin(maxLevel))
-    {}
-
+    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel)
+        : identityGrid_(identityGrid), hostHierarchicIterator_(startEntity.impl().hostEntity_.hbegin(maxLevel)) {}
 
     //! \todo Please doc me !
-    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel, [[maybe_unused]] bool endDummy) :
-      identityGrid_(identityGrid),
-      hostHierarchicIterator_(startEntity.impl().hostEntity_.hend(maxLevel))
-    {}
-
+    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel,
+                                         [[maybe_unused]] bool endDummy)
+        : identityGrid_(identityGrid), hostHierarchicIterator_(startEntity.impl().hostEntity_.hend(maxLevel)) {}
 
     //! \todo Please doc me !
-    void increment()
-    {
-      ++hostHierarchicIterator_;
-    }
+    void increment() { ++hostHierarchicIterator_; }
 
     //! dereferencing
-    Entity dereference() const {
-      return Entity{{identityGrid_,*hostHierarchicIterator_}};
-    }
+    Entity dereference() const { return Entity{{identityGrid_, *hostHierarchicIterator_}}; }
 
     //! equality
     bool equals(const PatchGridHierarchicIterator& i) const {
       return hostHierarchicIterator_ == i.hostHierarchicIterator_;
     }
 
-  private:
+   private:
     const GridImp* identityGrid_;
 
     HostGridHierarchicIterator hostHierarchicIterator_;
-
   };
 
-
-}  // end namespace Dune
+}  // namespace Dune::IGANEW

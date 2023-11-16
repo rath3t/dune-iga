@@ -4,8 +4,8 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include "hierachicpatchgridintersections.hh"
 #include "hierachicpatchgridentity.hh"
+#include "hierachicpatchgridintersections.hh"
 
 #include <dune/grid/common/intersection.hh>
 
@@ -23,10 +23,8 @@ namespace Dune::IGANEW {
    * non-matching meshes. The number of neighbors may be different from the number
    * of an element!
    */
-  template<class GridImp>
-  class PatchGridLeafIntersectionIterator
-  {
-
+  template <class GridImp>
+  class PatchGridLeafIntersectionIterator {
     constexpr static int dim = GridImp::dimension;
 
     constexpr static int dimworld = GridImp::dimensionworld;
@@ -36,51 +34,35 @@ namespace Dune::IGANEW {
 
     typedef typename GridImp::HostGridType::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
 
-  public:
-
+   public:
     typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
 
-    PatchGridLeafIntersectionIterator()
-    {}
+    PatchGridLeafIntersectionIterator() {}
 
-    PatchGridLeafIntersectionIterator(const GridImp* identityGrid,
-                                         const HostLeafIntersectionIterator& hostIterator)
-      : identityGrid_(identityGrid)
-      , hostIterator_(hostIterator)
-    {}
+    PatchGridLeafIntersectionIterator(const GridImp* identityGrid, const HostLeafIntersectionIterator& hostIterator)
+        : identityGrid_(identityGrid), hostIterator_(hostIterator) {}
 
     //! equality
-    bool equals(const PatchGridLeafIntersectionIterator& other) const {
-      return hostIterator_ == other.hostIterator_;
-    }
-
+    bool equals(const PatchGridLeafIntersectionIterator& other) const { return hostIterator_ == other.hostIterator_; }
 
     //! prefix increment
-    void increment() {
-      ++hostIterator_;
-    }
+    void increment() { ++hostIterator_; }
 
     //! \brief dereferencing
-    Intersection dereference() const {
-      return PatchGridLeafIntersection<GridImp>(identityGrid_,*hostIterator_);
-    }
+    Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(identityGrid_, *hostIterator_); }
 
-  private:
+   private:
     //**********************************************************
     //  private data
     //**********************************************************
 
-    const GridImp* identityGrid_ = nullptr;
+    const GridImp* identityGrid_               = nullptr;
     HostLeafIntersectionIterator hostIterator_ = {};
   };
 
-
-
-
   //! \todo Please doc me !
-  template<class GridImp>
-  class PatchGridLevelIntersectionIterator
-  {
+  template <class GridImp>
+  class PatchGridLevelIntersectionIterator {
     constexpr static int dim = GridImp::dimension;
 
     constexpr static int dimworld = GridImp::dimensionworld;
@@ -90,42 +72,28 @@ namespace Dune::IGANEW {
 
     typedef typename GridImp::HostGridType::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
 
-  public:
-
+   public:
     typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
 
-    PatchGridLevelIntersectionIterator()
-    {}
+    PatchGridLevelIntersectionIterator() {}
 
-    PatchGridLevelIntersectionIterator(const GridImp* identityGrid,
-                                          const HostLevelIntersectionIterator& hostIterator)
-      : identityGrid_(identityGrid)
-      , hostIterator_(hostIterator)
-    {}
+    PatchGridLevelIntersectionIterator(const GridImp* identityGrid, const HostLevelIntersectionIterator& hostIterator)
+        : identityGrid_(identityGrid), hostIterator_(hostIterator) {}
 
     //! equality
     bool equals(const PatchGridLevelIntersectionIterator<GridImp>& other) const {
       return hostIterator_ == other.hostIterator_;
     }
 
-
     //! prefix increment
-    void increment() {
-      ++hostIterator_;
-    }
+    void increment() { ++hostIterator_; }
 
     //! \brief dereferencing
-    Intersection dereference() const {
-      return PatchGridLevelIntersection<GridImp>(identityGrid_,*hostIterator_);
-    }
+    Intersection dereference() const { return PatchGridLevelIntersection<GridImp>(identityGrid_, *hostIterator_); }
 
-  private:
-
-
-    const GridImp* identityGrid_ = nullptr;
+   private:
+    const GridImp* identityGrid_                = nullptr;
     HostLevelIntersectionIterator hostIterator_ = {};
-
   };
 
-
-}  // namespace Dune
+}  // namespace Dune::IGANEW

@@ -300,4 +300,4 @@ namespace Dune::IGA::Ibra {
 
 }  // namespace Dune::IGA::Ibra
 
-  // DUNE_IGA_IBRAGEOMETRY_HH
+// DUNE_IGA_IBRAGEOMETRY_HH

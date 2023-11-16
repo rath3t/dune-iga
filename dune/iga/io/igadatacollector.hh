@@ -185,7 +185,6 @@ namespace Dune::Vtk {
     using Super::gridView_;
     const auto& gridView() const { return gridView_; }
 
-
     std::uint64_t numPoints_ = 0;
     std::uint64_t numCells_  = 0;
 

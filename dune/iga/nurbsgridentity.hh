@@ -266,4 +266,4 @@ namespace Dune::IGA {
 
 }  // namespace Dune::IGA
 
-  // DUNE_IGA_NURBSGRIDENTITY_HH
+// DUNE_IGA_NURBSGRIDENTITY_HH

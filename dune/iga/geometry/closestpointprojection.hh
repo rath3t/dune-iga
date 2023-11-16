@@ -10,18 +10,13 @@
 
 namespace Dune::IGA {
   template <typename Geo>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
-  auto closestPointProjectionByTrustRegion(
-      const Geo& geo, auto& point,
-      const std::optional<typename Geo::LocalCoordinate>&
-          start
-      = std::nullopt)
-      -> std::tuple<typename Geo::LocalCoordinate,
-                    typename Geo::ctype, typename Geo::ctype,
-                    typename Geo::ctype>
+  auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
+                                           const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
+      -> std::tuple<typename Geo::LocalCoordinate, typename Geo::ctype, typename Geo::ctype, typename Geo::ctype>
   requires(Geo::mydimension == 1 or Geo::mydimension == 2) {
-    using ctype    = typename Geo::ctype;
-static constexpr int dim = Geo::mydimension;
-    auto energy = [&](const auto& uL) {
+    using ctype              = typename Geo::ctype;
+    static constexpr int dim = Geo::mydimension;
+    auto energy              = [&](const auto& uL) {
       auto pointOnCurve = geo.global(uL);
       auto dist         = pointOnCurve - point;
       return 0.5 * dist.two_norm2();

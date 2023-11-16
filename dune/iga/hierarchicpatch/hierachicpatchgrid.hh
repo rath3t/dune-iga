@@ -4,84 +4,65 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-
 /** \file
  * \brief The PatchGrid class
  */
 
-#include <string>
 #include <map>
+#include <string>
 
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
-#include <dune/subgrid/subgrid.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/subgrid/subgrid.hh>
 
 // The components of the PatchGrid interface
-#include "hierachicpatchgridgeometry.hh"
-#include "hierachicpatchgridentity.hh"
-#include "hierachicpatchgridentityseed.hh"
-#include "hierachicpatchgridintersectioniterator.hh"
-#include "hierachicpatchgridleveliterator.hh"
-#include "hierachicpatchgridleafiterator.hh"
-#include "hierachicpatchgridhierarchiciterator.hh"
-#include "hierachicpatchgridindexsets.hh"
-#include "hierachicpatchgridlocalgeometry.hh"
 #include "enums.hh"
 #include "gridcapabilities.hh"
+#include "hierachicpatchgridentity.hh"
+#include "hierachicpatchgridentityseed.hh"
+#include "hierachicpatchgridgeometry.hh"
+#include "hierachicpatchgridhierarchiciterator.hh"
+#include "hierachicpatchgridindexsets.hh"
+#include "hierachicpatchgridintersectioniterator.hh"
+#include "hierachicpatchgridleafiterator.hh"
+#include "hierachicpatchgridleveliterator.hh"
+#include "hierachicpatchgridlocalgeometry.hh"
 
-namespace Dune::IGANEW
-{
+namespace Dune::IGANEW {
 
   // Forward declaration
-  template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
+  template <int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid>
   class PatchGrid;
 
   // External forward declarations
-  template< class Grid >
+  template <class Grid>
   struct HostGridAccess;
 
-  template<int dim, int dimworld,  Trimming trim_,typename ScalarType, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
-  struct PatchGridFamily
-  {
-
+  template <int dim, int dimworld, Trimming trim_, typename ScalarType,
+            typename HostGrid = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>
+  struct PatchGridFamily {
     static constexpr Trimming trim = trim_;
 
     typedef GridTraits<
-        dim,
-        dimworld,
-        PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>,
-        PatchGridGeometry,
-        PatchGridEntity,
-        PatchGridLevelIterator,
-        PatchGridLeafIntersection,
-        PatchGridLevelIntersection,
-        PatchGridLeafIntersectionIterator,
-        PatchGridLevelIntersectionIterator,
-        PatchGridHierarchicIterator,
-        PatchGridLeafIterator,
-        PatchGridLevelIndexSet< const PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >,
-        PatchGridLeafIndexSet< const PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >,
-        PatchGridGlobalIdSet< const PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >,
+        dim, dimworld, PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>, PatchGridGeometry, PatchGridEntity,
+        PatchGridLevelIterator, PatchGridLeafIntersection, PatchGridLevelIntersection,
+        PatchGridLeafIntersectionIterator, PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator,
+        PatchGridLeafIterator, PatchGridLevelIndexSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
+        PatchGridLeafIndexSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
+        PatchGridGlobalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
         typename HostGrid::Traits::GlobalIdSet::IdType,
-        PatchGridLocalIdSet< const PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >,
-        typename HostGrid::Traits::LocalIdSet::IdType,
-        Communication<No_Comm>,
-        DefaultLevelGridViewTraits,
-        DefaultLeafGridViewTraits,
-        PatchGridEntitySeed,
-        PatchGridLocalGeometry,
-        typename HostGrid::Traits::LevelIndexSet::IndexType,
-        typename HostGrid::Traits::LevelIndexSet::Types,
-        typename HostGrid::Traits::LeafIndexSet::IndexType,
-        typename HostGrid::Traits::LeafIndexSet::Types
-        > Traits;
-
+        PatchGridLocalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
+        typename HostGrid::Traits::LocalIdSet::IdType, Communication<No_Comm>, DefaultLevelGridViewTraits,
+        DefaultLeafGridViewTraits, PatchGridEntitySeed, PatchGridLocalGeometry,
+        typename HostGrid::Traits::LevelIndexSet::IndexType, typename HostGrid::Traits::LevelIndexSet::Types,
+        typename HostGrid::Traits::LeafIndexSet::IndexType, typename HostGrid::Traits::LeafIndexSet::Types>
+        Traits;
   };
-  template<std::size_t dim,typename ScalarType>
+  template <std::size_t dim, typename ScalarType>
   auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
-    std::array<std::vector<double>, dim>uniqueKnotVector;
+    std::array<std::vector<double>, dim> uniqueKnotVector;
     for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
       std::ranges::unique_copy(knotSpans[i], std::back_inserter(uniqueKnotVector[i]),
                                [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
@@ -89,17 +70,17 @@ namespace Dune::IGANEW
     return uniqueKnotVector;
   }
 
-  template<std::size_t dim,typename ScalarType>
+  template <std::size_t dim, typename ScalarType>
   auto createParameterPatchGridFromKnotVectors(const std::array<std::vector<ScalarType>, dim>& uniqueKnotVector_) {
-
-    auto grid=std::make_unique< YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>> (uniqueKnotVector_);
+    auto grid = std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueKnotVector_);
     return grid;
   }
 
-
-//! deduction guide
+  //! deduction guide
   template <std::size_t dim, std::size_t dimworld, typename ScalarType>
-  PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ScalarType>& patchData) -> PatchGrid<static_cast<int>(dim),static_cast<int>(dimworld),Trimming::Disabled,ScalarType,YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>;
+  PatchGrid(const IGA::NURBSPatchData<dim, dimworld, ScalarType>& patchData)
+      -> PatchGrid<static_cast<int>(dim), static_cast<int>(dimworld), Trimming::Disabled, ScalarType,
+                   YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;
   //**********************************************************************
   //
   // --PatchGrid
@@ -112,37 +93,37 @@ namespace Dune::IGANEW
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template<int dim, int dimworld,  Trimming trim_=Trimming::Disabled,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
-  class PatchGrid
-  : public GridDefaultImplementation<dim, dimworld,
-                                     ScalarType, PatchGridFamily<dim,dimworld,trim_,ScalarType, HostGrid> >
-  {
+  template <int dim, int dimworld, Trimming trim_ = Trimming::Disabled, typename ScalarType = double,
+            typename HostGrid = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>
+  class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
+                                                     PatchGridFamily<dim, dimworld, trim_, ScalarType, HostGrid>> {
     using ParameterSpaceUntrimmedGrid = HostGrid;
 
-    using SubGridParameterSpaceGridView = std::conditional_t<trim_==Trimming::Enabled,SubGrid<dim,ParameterSpaceUntrimmedGrid>,ParameterSpaceUntrimmedGrid>;
+    using SubGridParameterSpaceGridView
+        = std::conditional_t<trim_ == Trimming::Enabled, SubGrid<dim, ParameterSpaceUntrimmedGrid>,
+                             ParameterSpaceUntrimmedGrid>;
 
-    friend class PatchGridLevelIndexSet<const PatchGrid >;
-    friend class PatchGridLeafIndexSet<const PatchGrid >;
-    friend class PatchGridGlobalIdSet<const PatchGrid >;
-    friend class PatchGridLocalIdSet<const PatchGrid >;
-    friend class PatchGridHierarchicIterator<const PatchGrid >;
-    friend class PatchGridLevelIntersectionIterator<const PatchGrid >;
-    friend class PatchGridLeafIntersectionIterator<const PatchGrid >;
+    friend class PatchGridLevelIndexSet<const PatchGrid>;
+    friend class PatchGridLeafIndexSet<const PatchGrid>;
+    friend class PatchGridGlobalIdSet<const PatchGrid>;
+    friend class PatchGridLocalIdSet<const PatchGrid>;
+    friend class PatchGridHierarchicIterator<const PatchGrid>;
+    friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
+    friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
 
-    template<int codim, PartitionIteratorType pitype, class GridImp_>
+    template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLevelIterator;
 
-    template<int codim, PartitionIteratorType pitype, class GridImp_>
+    template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLeafIterator;
 
-
-    template<int codim_, int dim_, class GridImp_>
+    template <int codim_, int dim_, class GridImp_>
     friend class PatchGridEntity;
 
-    friend struct HostGridAccess< PatchGrid >;
+    friend struct HostGridAccess<PatchGrid>;
 
-  public:
-    static constexpr Trimming trim= trim_;
+   public:
+    static constexpr Trimming trim = trim_;
 
     /** \todo Should not be public */
     typedef HostGrid HostGridType;
@@ -152,189 +133,139 @@ namespace Dune::IGANEW
     //**********************************************************
 
     //! type of the used GridFamily for this grid
-    using GridFamily=  PatchGridFamily<dim,dimworld,trim,ScalarType,HostGrid>;
+    using GridFamily = PatchGridFamily<dim, dimworld, trim, ScalarType, HostGrid>;
 
     //! the Traits
-    using Traits= typename  PatchGridFamily<dim,dimworld,trim,ScalarType,HostGrid>::Traits ;
+    using Traits = typename PatchGridFamily<dim, dimworld, trim, ScalarType, HostGrid>::Traits;
 
     //! The type used to store coordinates, inherited from the HostGrid
     typedef typename ParameterSpaceUntrimmedGrid::ctype ctype;
-
 
     /** \brief Constructor
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
-    explicit PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ctype>& patchData) :
-      uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
-      hostgrid_(createParameterPatchGridFromKnotVectors(uniqueCoarseKnotSpans)),
-      leafIndexSet_(*this),
-      globalIdSet_(*this),
-      localIdSet_(*this)
-    {
+    explicit PatchGrid(const IGA::NURBSPatchData<dim, dimworld, ctype>& patchData)
+        : uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
+          hostgrid_(createParameterPatchGridFromKnotVectors(uniqueCoarseKnotSpans)),
+          leafIndexSet_(*this),
+          globalIdSet_(*this),
+          localIdSet_(*this) {
       setIndices();
       patchGeometries.emplace_back(patchData);
     }
-
-
 
     /** \brief Return maximum level defined in this grid.
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
-    int maxLevel() const {
-      return hostgrid_->maxLevel();
+    int maxLevel() const { return hostgrid_->maxLevel(); }
+
+    //! Iterator to first entity of given codim on level
+    template <int codim>
+    typename Traits::template Codim<codim>::LevelIterator lbegin(int level) const {
+      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level);
+    }
+
+    //! one past the end on this level
+    template <int codim>
+    typename Traits::template Codim<codim>::LevelIterator lend(int level) const {
+      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level, true);
     }
 
     //! Iterator to first entity of given codim on level
-    template<int codim>
-    typename Traits::template Codim<codim>::LevelIterator lbegin (int level) const {
-      return PatchGridLevelIterator<codim,All_Partition, const PatchGrid >(this, level);
+    template <int codim, PartitionIteratorType PiType>
+    typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin(int level) const {
+      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level);
     }
-
 
     //! one past the end on this level
-    template<int codim>
-    typename Traits::template Codim<codim>::LevelIterator lend (int level) const {
-      return PatchGridLevelIterator<codim,All_Partition, const PatchGrid >(this, level, true);
+    template <int codim, PartitionIteratorType PiType>
+    typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend(int level) const {
+      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level, true);
     }
-
-
-    //! Iterator to first entity of given codim on level
-    template<int codim, PartitionIteratorType PiType>
-    typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin (int level) const {
-      return PatchGridLevelIterator<codim,PiType, const PatchGrid >(this, level);
-    }
-
-
-    //! one past the end on this level
-    template<int codim, PartitionIteratorType PiType>
-    typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend (int level) const {
-      return PatchGridLevelIterator<codim,PiType, const PatchGrid >(this, level, true);
-    }
-
 
     //! Iterator to first leaf entity of given codim
-    template<int codim>
+    template <int codim>
     typename Traits::template Codim<codim>::LeafIterator leafbegin() const {
-      return PatchGridLeafIterator<codim,All_Partition, const PatchGrid >(this);
+      return PatchGridLeafIterator<codim, All_Partition, const PatchGrid>(this);
     }
-
 
     //! one past the end of the sequence of leaf entities
-    template<int codim>
+    template <int codim>
     typename Traits::template Codim<codim>::LeafIterator leafend() const {
-      return PatchGridLeafIterator<codim,All_Partition, const PatchGrid >(this, true);
+      return PatchGridLeafIterator<codim, All_Partition, const PatchGrid>(this, true);
     }
-
 
     //! Iterator to first leaf entity of given codim
-    template<int codim, PartitionIteratorType PiType>
+    template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafbegin() const {
-      return PatchGridLeafIterator<codim,PiType, const PatchGrid >(this);
+      return PatchGridLeafIterator<codim, PiType, const PatchGrid>(this);
     }
-
 
     //! one past the end of the sequence of leaf entities
-    template<int codim, PartitionIteratorType PiType>
+    template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafend() const {
-      return PatchGridLeafIterator<codim,PiType, const PatchGrid >(this, true);
+      return PatchGridLeafIterator<codim, PiType, const PatchGrid>(this, true);
     }
-
 
     /** \brief Number of grid entities per level and codim
      */
-    [[nodiscard]] int size (int level, int codim) const {
-      return hostgrid_->size(level,codim);
-    }
+    [[nodiscard]] int size(int level, int codim) const { return hostgrid_->size(level, codim); }
 
     /** \brief returns the number of boundary segments within the macro grid
      */
-    [[nodiscard]] size_t numBoundarySegments () const {
-      return hostgrid_->numBoundarySegments();
-    }
+    [[nodiscard]] size_t numBoundarySegments() const { return hostgrid_->numBoundarySegments(); }
 
     //! number of leaf entities per codim in this process
-    [[nodiscard]] int size (int codim) const {
-      return leafIndexSet().size(codim);
-    }
-
+    [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
 
     //! number of entities per level, codim and geometry type in this process
-    int size (int level, GeometryType type) const {
-      return levelIndexSets_[level]->size(type);
-    }
-
+    int size(int level, GeometryType type) const { return levelIndexSets_[level]->size(type); }
 
     //! number of leaf entities per codim and geometry type in this process
-    int size (GeometryType type) const
-    {
-      return leafIndexSet().size(type);
-    }
-
+    int size(GeometryType type) const { return leafIndexSet().size(type); }
 
     /** \brief Access to the GlobalIdSet */
-    const typename Traits::GlobalIdSet& globalIdSet() const {
-      return globalIdSet_;
-    }
-
+    const typename Traits::GlobalIdSet& globalIdSet() const { return globalIdSet_; }
 
     /** \brief Access to the LocalIdSet */
-    const typename Traits::LocalIdSet& localIdSet() const {
-      return localIdSet_;
-    }
-
+    const typename Traits::LocalIdSet& localIdSet() const { return localIdSet_; }
 
     /** \brief Access to the LevelIndexSets */
-    const typename Traits::LevelIndexSet& levelIndexSet(int level) const
-    {
-      if (level < 0 || level > maxLevel())
-      {
+    const typename Traits::LevelIndexSet& levelIndexSet(int level) const {
+      if (level < 0 || level > maxLevel()) {
         DUNE_THROW(GridError, "levelIndexSet of nonexisting level " << level << " requested!");
       }
       return *levelIndexSets_[level];
     }
 
-
     /** \brief Access to the LeafIndexSet */
-    const typename Traits::LeafIndexSet& leafIndexSet() const
-    {
-      return leafIndexSet_;
-    }
-
+    const typename Traits::LeafIndexSet& leafIndexSet() const { return leafIndexSet_; }
 
     /** \brief Create Entity from EntitySeed */
-    template < class EntitySeed >
-    typename Traits::template Codim<EntitySeed::codimension>::Entity
-    entity(const EntitySeed& seed) const
-    {
-      typedef PatchGridEntity<
-        EntitySeed::codimension,
-        HostGrid::dimension,
-        const typename Traits::Grid
-        > EntityImp;
+    template <class EntitySeed>
+    typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
+      typedef PatchGridEntity<EntitySeed::codimension, HostGrid::dimension, const typename Traits::Grid> EntityImp;
 
       return EntityImp(this, hostgrid_->entity(seed.impl().hostEntitySeed()));
     }
 
-
     /** @name Grid Refinement Methods */
     /*@{*/
-
 
     /** global refinement
      * \todo optimize implementation
      */
-    void globalRefine (int refCount) {
+    void globalRefine(int refCount) {
       for (int i = 0; i < refCount; ++i) {
         const auto& finestPatchData = patchGeometries.back().patchData_;
-        auto newfinestPatchData = finestPatchData;
+        auto newfinestPatchData     = finestPatchData;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
-          auto additionalKnots  = IGA::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
-          newfinestPatchData = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
+          auto additionalKnots = IGA::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
+          newfinestPatchData   = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
         }
         patchGeometries.emplace_back(std::move(newfinestPatchData));
-
       }
 
       hostgrid_->globalRefine(refCount);
@@ -351,8 +282,7 @@ namespace Dune::IGANEW
      * <li> false, if marking was not possible </li>
      * </ul>
      */
-    bool mark(int refCount, const typename Traits::template Codim<0>::Entity & e)
-    {
+    bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
       return hostgrid_->mark(refCount, getHostEntity<0>(e));
     }
 
@@ -360,53 +290,32 @@ namespace Dune::IGANEW
      *
      * \return refinement mark (1,0,-1)
      */
-    int getMark(const typename Traits::template Codim<0>::Entity & e) const
-    {
+    int getMark(const typename Traits::template Codim<0>::Entity& e) const {
       return hostgrid_->getMark(getHostEntity<0>(e));
     }
 
     /** \brief returns true, if at least one entity is marked for adaption */
-    bool preAdapt() {
-      return hostgrid_->preAdapt();
-    }
-
+    bool preAdapt() { return hostgrid_->preAdapt(); }
 
     //! Triggers the grid refinement process
-    bool adapt()
-    {
-      return hostgrid_->adapt();
-    }
+    bool adapt() { return hostgrid_->adapt(); }
 
     /** \brief Clean up refinement markers */
-    void postAdapt() {
-      return hostgrid_->postAdapt();
-    }
+    void postAdapt() { return hostgrid_->postAdapt(); }
 
     /*@}*/
 
     /** \brief Size of the overlap on the leaf level */
-    unsigned int overlapSize(int codim) const {
-      return hostgrid_->leafGridView().overlapSize(codim);
-    }
-
+    unsigned int overlapSize(int codim) const { return hostgrid_->leafGridView().overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on the leaf level */
-    unsigned int ghostSize(int codim) const {
-      return hostgrid_->leafGridView().ghostSize(codim);
-    }
-
+    unsigned int ghostSize(int codim) const { return hostgrid_->leafGridView().ghostSize(codim); }
 
     /** \brief Size of the overlap on a given level */
-    unsigned int overlapSize(int level, int codim) const {
-      return hostgrid_->levelGridView(level).overlapSize(codim);
-    }
-
+    unsigned int overlapSize(int level, int codim) const { return hostgrid_->levelGridView(level).overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on a given level */
-    unsigned int ghostSize(int level, int codim) const {
-      return hostgrid_->levelGridView(level).ghostSize(codim);
-    }
-
+    unsigned int ghostSize(int level, int codim) const { return hostgrid_->levelGridView(level).ghostSize(codim); }
 
 #if 0
     /** \brief Distributes this grid over the available nodes in a distributed machine
@@ -419,61 +328,46 @@ namespace Dune::IGANEW
     }
 #endif
 
-
     /** \brief dummy communication */
-    const Communication<No_Comm>& comm () const
-    {
-      return ccobj;
-    }
+    const Communication<No_Comm>& comm() const { return ccobj; }
 
     /** \brief Communicate data of level gridView */
     template <class DataHandle>
-    void communicate (DataHandle& handle, InterfaceType iftype,
-                      CommunicationDirection dir, int level) const
-    {
-      hostgrid_->levelGridView(level).communicate(handle,iftype,dir);
+    void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
+      hostgrid_->levelGridView(level).communicate(handle, iftype, dir);
     }
 
     /** \brief Communicate data of leaf gridView */
     template <class DataHandle>
-    void communicate (DataHandle& handle, InterfaceType iftype,
-                      CommunicationDirection dir) const
-    {
-      hostgrid_->leafGridView().communicate(handle,iftype,dir);
+    void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
+      hostgrid_->leafGridView().communicate(handle, iftype, dir);
     }
-
 
     // **********************************************************
     // End of Interface Methods
     // **********************************************************
 
     //! Returns the hostgrid this PatchGrid lives in
-    HostGridType& getHostGrid() const
-    {
-      return *hostgrid_;
-    }
-
+    HostGridType& getHostGrid() const { return *hostgrid_; }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
     template <int codim>
-    const typename HostGrid::Traits::template Codim<codim>::Entity& getHostEntity(const typename Traits::template Codim<codim>::Entity& e) const
-    {
+    const typename HostGrid::Traits::template Codim<codim>::Entity& getHostEntity(
+        const typename Traits::template Codim<codim>::Entity& e) const {
       return e.impl().hostEntity_;
     }
 
-  public:
-    std::array<std::vector<ScalarType>,dim> uniqueCoarseKnotSpans;
-    std::vector<NURBSPatchGeometry<dim,dimworld,ScalarType>> patchGeometries;
-  protected:
+   public:
+    std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
+    std::vector<NURBSPatchGeometry<dim, dimworld, ScalarType>> patchGeometries;
 
+   protected:
     //! The host grid which contains the actual grid hierarchy structure
     std::unique_ptr<HostGrid> hostgrid_;
 
-  private:
-
+   private:
     //! compute the grid indices and ids
-    void setIndices()
-    {
+    void setIndices() {
       localIdSet_.update();
 
       globalIdSet_.update();
@@ -481,40 +375,32 @@ namespace Dune::IGANEW
       // //////////////////////////////////////////
       //   Create the index sets
       // //////////////////////////////////////////
-      for (int i=levelIndexSets_.size(); i<=maxLevel(); i++) {
-        auto p
-          = std::make_unique<PatchGridLevelIndexSet<const PatchGrid >>();
+      for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
+        auto p = std::make_unique<PatchGridLevelIndexSet<const PatchGrid>>();
         levelIndexSets_.emplace_back(std::move(p));
       }
 
-      for (int i=0; i<=maxLevel(); i++)
-        if (levelIndexSets_[i])
-          levelIndexSets_[i]->update(*this, i);
+      for (int i = 0; i <= maxLevel(); i++)
+        if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
 
       leafIndexSet_.update(*this);
-
     }
-
-
 
     //! \todo Please doc me !
     Communication<No_Comm> ccobj;
 
     //! Our set of level indices
-    std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid >>> levelIndexSets_;
+    std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
 
     //! \todo Please doc me !
-    PatchGridLeafIndexSet<const PatchGrid > leafIndexSet_;
+    PatchGridLeafIndexSet<const PatchGrid> leafIndexSet_;
 
     //! \todo Please doc me !
-    PatchGridGlobalIdSet<const PatchGrid > globalIdSet_;
+    PatchGridGlobalIdSet<const PatchGrid> globalIdSet_;
 
     //! \todo Please doc me !
-    PatchGridLocalIdSet<const PatchGrid > localIdSet_;
+    PatchGridLocalIdSet<const PatchGrid> localIdSet_;
 
+  };  // end Class PatchGrid
 
-
-  }; // end Class PatchGrid
-
-
-} // namespace Dune::IGA
+}  // namespace Dune::IGANEW

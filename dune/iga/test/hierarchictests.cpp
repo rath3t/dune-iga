@@ -39,25 +39,104 @@ auto checkUniqueEdges(const auto& gridView) {
 
   constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
   constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
-  std::set<std::array<FieldVector<double, gridDimensionworld>, 2>, Compare<double, gridDimensionworld, 2>>
-      edgeVertexPairSet;
-  for (int eleIndex = 0; auto&& element : elements(gridView)) {
-    edgeVertexPairSet.clear();
-    for (int edgeIndex = 0; edgeIndex < element.subEntities(gridDimension - 1); ++edgeIndex) {
-      auto edge = element.template subEntity<gridDimension - 1>(edgeIndex);
-      std::array<FieldVector<double, gridDimensionworld>, 2> pair;
-      for (int c = 0; c < edge.geometry().corners(); ++c)
-        pair[c] = edge.geometry().corner(c);
-      bool inserted = edgeVertexPairSet.insert(pair).second;
-      t.require(inserted) << "Duplicate edge detected in Element " << eleIndex << " Edges: " << pair[0] << ", "
-                          << pair[1];
+  if constexpr(gridDimension<2)
+    return t;
+  else {
+    std::set<std::array<FieldVector<double, gridDimensionworld>, 2>, Compare<double, gridDimensionworld, 2>>
+        edgeVertexPairSet;
+    for (int eleIndex = 0; auto&& element : elements(gridView)) {
+      edgeVertexPairSet.clear();
+      for (int edgeIndex = 0; edgeIndex < element.subEntities(gridDimension - 1); ++edgeIndex) {
+        auto edge = element.template subEntity<gridDimension - 1>(edgeIndex);
+        std::array<FieldVector<double, gridDimensionworld>, 2> pair;
+        for (int c = 0; c < edge.geometry().corners(); ++c)
+          pair[c] = edge.geometry().corner(c);
+        bool inserted = edgeVertexPairSet.insert(pair).second;
+        t.require(inserted) << "Duplicate edge detected in Element " << eleIndex << " Edges: " << pair[0] << ", "
+                            << pair[1];
+      }
+      ++eleIndex;
     }
-    ++eleIndex;
+    return t;
   }
+}
+
+auto checkUniqueSurfaces(const auto& gridView) {
+  TestSuite t;
+
+  constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
+  constexpr int gridDimension = std::remove_cvref_t<decltype(gridView)>::dimension;
+  if constexpr(gridDimension<3)
+    return t;
+  else {
+    std::set<std::array<FieldVector<double, gridDimensionworld>, 4>, Compare<double, gridDimensionworld, 4>>
+       edgeVertexPairSet;
+    for (int eleIndex = 0; auto&& element : elements(gridView)) {
+      edgeVertexPairSet.clear();
+      for (int edgeIndex = 0; edgeIndex < element.subEntities(2); ++edgeIndex) {
+        auto edge = element.template subEntity<2>(edgeIndex);
+        std::array<FieldVector<double, gridDimensionworld>, 4> tuple;
+        for (int c = 0; c < edge.geometry().corners(); ++c)
+          tuple[c] = edge.geometry().corner(c);
+
+        t.require(edgeVertexPairSet.insert(tuple).second)
+            << "Duplicate surface detected in Element " << eleIndex << " Surfaces: " << tuple[0] << ", " << tuple[1]
+            << ", " << tuple[2] << ", " << tuple[3];
+      }
+      ++eleIndex;
+    }
+    return t;
+  }
+}
+
+auto thoroughGridCheck(auto& grid) {
+  TestSuite t;
+  constexpr int gridDimension = std::remove_cvref_t<decltype(grid)>::dimension;
+  auto gvTest = [&](auto&& gv) {
+    TestSuite tl;
+    gridcheck(grid);
+    checkEntityLifetime(gv);
+
+    for (auto&& elegeo : elements(gv) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
+      checkJacobians(elegeo);
+
+    checkIterators(gv);
+
+    gridcheck(grid);
+    tl.subTest(checkUniqueEdges(gv));
+    tl.subTest(checkUniqueSurfaces(gv));
+
+
+    auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
+    for (auto&& elegeo : elements(gv) | extractGeo)
+      checkJacobians(elegeo);
+
+    for (auto&& vertGeo : vertices(gv) | extractGeo)
+      checkJacobians(vertGeo);
+
+    if constexpr(gridDimension>1)
+      for (auto&& edgegeo : edges(gv) | extractGeo)
+        checkJacobians(edgegeo);
+
+    if constexpr(gridDimension>2)
+      for (auto&& edgegeo : facets(gv) | extractGeo)
+        checkJacobians(edgegeo);
+
+    checkIterators(gv);
+    return tl;
+  };
+
+  for (int lvl = 0; lvl < grid.maxLevel(); ++lvl) {
+    auto gridView = grid.levelGridView(lvl);
+    t.subTest(gvTest(gridView));
+  }
+  t.subTest(gvTest(grid.leafGridView()));
+
+  gridcheck(grid);
   return t;
 }
 
-void testNurbsGridCylinder() {
+auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   //  First test
   //  A B-Spline surface of dimWorld 3
@@ -100,9 +179,8 @@ void testNurbsGridCylinder() {
 
   TestSuite testSuite;
 
-
-
-  testSuite.subTest(checkUniqueEdges(gridView));
+  testSuite.subTest(thoroughGridCheck(grid));
+  return testSuite;
 }
 
 auto testHierarchicPatch() {
@@ -129,39 +207,10 @@ auto testHierarchicPatch() {
   coords = coords.refine(std::bitset<2>(), std::bitset<2>(), 0, false);
   std::cout << coords << std::endl;
 
-  // Dune::YaspGrid<2,Dune::TensorProductCoordinates<double,2>> g;
-  // g.leafGridView().begin<0>()->geometry().impl().jacobian()
-  // Dune::TensorProductCoordinates<double,2> coords();
 
   Dune::IGANEW::PatchGrid patch(nurbsPatchData);
-  patch.globalRefine(3);
-  auto gridView = patch.leafGridView();
 
-
-
-  t.subTest(checkUniqueEdges(gridView));
-
-  auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
-  for (auto&& elegeo : elements(gridView) | extractGeo)
-    checkJacobians(elegeo);
-  for (auto&& edgegeo : edges(gridView) | extractGeo)
-    checkJacobians(edgegeo);
-
-  for (auto&& vertGeo : vertices(gridView) | extractGeo)
-    checkJacobians(vertGeo);
-
-
-  checkEntityLifetime(gridView, gridView.size(0));
-  gridcheck(patch);
-  for (int i = 0; i < 3; ++i)
-    checkIterators(patch.levelGridView(i));
-    checkIterators(patch.leafGridView());
-  //   Dune::TensorProductCoordinates<double,2> coords2(patch.uniqueKnotSpans,std::array<int,2>());
-  //   std::cout<<coords2<<std::endl;
-  // }
-  checkEntityLifetime(gridView, gridView.size(0));
-
-
+  t.subTest(thoroughGridCheck(patch));
 
   return t;
 }
@@ -207,7 +256,6 @@ auto testTorusGeometry() {
   //   checkTwists( grid.leafGridView(), NoMapTwist() );
   // }
 
-
   double area = 0.0;
   for (auto&& ele : elements(gridView)) {
     area += ele.geometry().volume();
@@ -221,29 +269,193 @@ auto testTorusGeometry() {
   double gaussBonnet = 0.0;
   // for (auto& ele : elements(gridView)) {
   //   const auto rule
-  //       = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * (*std::ranges::max_element(grid.patchData().degree)));
+  //       = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 *
+  //       (*std::ranges::max_element(grid.patchData().degree)));
   //   for (auto& gp : rule) {
   //     const auto Kinc = ele.geometry().impl().gaussianCurvature(gp.position());
   //     const auto Kmax = 1 / (r * (R + r));
   //     const auto Kmin = -1 / (r * (R - r));
   //     test.check(Kinc < Kmax && Kinc > Kmin)
-  //         << "The Gaussian curvature should be within bounds " << Kmin << " < " << Kinc << " < " << Kmax << std::endl;
+  //         << "The Gaussian curvature should be within bounds " << Kmin << " < " << Kinc << " < " << Kmax <<
+  //         std::endl;
   //     gaussBonnet += Kinc * gp.weight() * ele.geometry().integrationElement(gp.position());
   //   }
   // }
   //
   // test.check(std::abs(gaussBonnet) < 1e-5)
-  //     << "Gauss-Bonnet theorem dictates a vanishing integrated Gaussian curvature for the torus! It is " << gaussBonnet;
-  checkEntityLifetime(gridView, gridView.size(0));
-
-  for (auto&& elegeo : elements(gridView) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
-    checkJacobians(elegeo);
-
-  checkIterators(gridView);
-
-  gridcheck(grid);
-  test.subTest(checkUniqueEdges(gridView));
+  //     << "Gauss-Bonnet theorem dictates a vanishing integrated Gaussian curvature for the torus! It is " <<
+  //     gaussBonnet;
+  test.subTest(thoroughGridCheck(grid));
   return test;
+}
+
+auto testNURBSGridCurve() {
+  ////////////////////////////////////////////////////////////////
+  //  Second test
+  //  A B-Spline curve of dimWorld 3
+  ////////////////////////////////////////////////////////////////
+
+  // parameters
+  int subSampling = 80;
+
+  const auto dim      = 1;
+  const auto dimworld = 3;
+
+  const std::array<int, dim> order                     = {3};
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 3, 4, 4, 4, 5, 5, 5, 5}}};
+  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<ControlPoint> controlPoints
+      = {{.p = {1, 3, 4}, .w = 1}, {.p = {2, 2, 2}, .w = 3}, {.p = {3, 4, 5}, .w = 1},
+         {.p = {5, 1, 7}, .w = 2}, {.p = {4, 7, 2}, .w = 1}, {.p = {8, 6, 2}, .w = 1},
+         {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
+  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+  auto additionalKnots    = std::vector<double>(2);
+  additionalKnots[0]      = 0.5;
+  additionalKnots[1]      = 3.5;
+  patchData               = knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData               = degreeElevate(patchData, 0, 1);
+
+  TestSuite t;
+  IGANEW::PatchGrid<dim, dimworld> grid(patchData);
+  grid.globalRefine(3);
+  auto gridView        = grid.leafGridView();
+  const auto& indexSet = gridView.indexSet();
+
+  for (int eleIndex = 0; const auto& ele : elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
+  {
+    const int numCorners = ele.subEntities(dim);
+    for (int c = 0; c < numCorners; ++c) {
+      auto vertex = ele.template subEntity<dim>(c).geometry();
+      auto elegeo = ele.geometry();
+      t.check(Dune::FloatCmp::eq((elegeo.corner(c) - vertex.corner(0)).two_norm(), 0.0))
+          << "Corner " << c << " " << elegeo.corner(c) << " Alt: " << vertex.corner(0);
+    }
+    ++eleIndex;
+  }
+
+  Dune::RefinementIntervals refinementIntervals1(subSampling);
+  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
+  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
+  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  t.subTest(thoroughGridCheck(grid));
+  return t;
+}
+
+auto testNURBSGridSurface() {
+  TestSuite t;
+  int subSampling = 10;
+
+  //////////////////////////////////////////////////////////////
+  // Create a 2d NURBS surface in 3d
+  //////////////////////////////////////////////////////////////
+
+  const auto dim                   = 2;
+  const auto dimworld              = 3;
+  const std::array<int, dim> order = {2, 2};
+
+  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  //  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
+  //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
+         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
+         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
+
+  std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+  IGANEW::PatchGrid<dim, dimworld> grid(patchData);
+  auto gridView        = grid.leafGridView();
+  const auto& indexSet = gridView.indexSet();
+
+  Dune::RefinementIntervals refinementIntervals1(subSampling);
+  SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
+  vtkWriter.write("NURBSGridTest-Surface");
+
+  t.subTest(thoroughGridCheck(grid));
+  return t;
+}
+
+auto test3DGrid() {
+  constexpr std::size_t dim        = 3;
+  constexpr std::size_t dimworld   = 3;
+  const std::array<int, dim> order = {2, 2, 2};
+  // quarter cylindrical hyperSurface
+  const double lx = 2;
+  const double ly = 1;
+  const double lz = 1;
+
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
+  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  std::vector<std::vector<std::vector<ControlPoint>>> controlp;
+  std::array<int, dim> dimSize = {3, 3, 3};
+  for (int i = 0; i < dimSize[0]; ++i) {
+    controlp.emplace_back();
+    for (int j = 0; j < dimSize[1]; ++j) {
+      controlp[i].emplace_back();
+      for (int k = 0; k < dimSize[2]; ++k) {
+        controlp[i][j].push_back(
+            {.p = {i * i * lx / (dimSize[0] - 1) + 1, 2 * i * j * k * ly / (dimSize[1] - 1) + (k + 1) + (j + 1),
+                   k * k * lz / (dimSize[2] - 1)},
+             .w = 1});
+      }
+    }
+  }
+
+  nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
+  nurbsPatchData.degree        = order;
+
+  auto additionalKnots = std::vector<double>(2);
+  additionalKnots[0]   = 0.1;
+  additionalKnots[1]   = 0.3;
+  //  additionalKnots[2] = 0.6;
+  //  additionalKnots[1] = 3.5;
+  //  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
+  //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+  //  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
+  //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
+  IGANEW::PatchGrid<3, 3> grid(nurbsPatchData);
+  //  grid.globalRefine(1);
+  //  gridcheck(grid);
+  //  grid.globalRefineInDirection(0,1);
+  //  gridcheck(grid);
+  //  grid.globalRefineInDirection(1,2);
+  //  gridcheck(grid);
+  //  grid.globalRefineInDirection(2, 3);
+  //  gridcheck(grid);
+
+  auto gridView = grid.leafGridView();
+  TestSuite t;
+  t.subTest(checkUniqueEdges(gridView));
+  t.subTest(checkUniqueSurfaces(gridView));
+
+  const int subSampling = 10;
+  Dune::RefinementIntervals refinementIntervals1(subSampling);
+  SubsamplingVTKWriter vtkWriter(gridView, refinementIntervals1);
+  vtkWriter.write("NURBSGridTest-Solid2");
+
+  t.subTest(thoroughGridCheck(grid));
+
+  return t;
 }
 
 int main(int argc, char** argv) try {
@@ -252,11 +464,13 @@ int main(int argc, char** argv) try {
   TestSuite t;
   t.subTest(testHierarchicPatch());
   // TestSuite t;
-  // t.subTest(test3DGrid());
-  // t.subTest(testNURBSGridCurve());
+  t.subTest(test3DGrid());
+  t.subTest(testNURBSGridCurve());
+  t.subTest(testNurbsGridCylinder());
+  t.subTest(testNURBSGridSurface());
   // t.subTest(testPlate());
   // testNurbsGridCylinder();
-  // t.subTest(testTorusGeometry());
+  t.subTest(testTorusGeometry());
   // std::cout << " t.subTest(testNurbsBasis());" << std::endl;
   // t.subTest(testNurbsBasis());
   // t.subTest(testCurveHigherOrderDerivatives());

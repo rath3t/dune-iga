@@ -78,8 +78,7 @@ namespace Dune::IGA {
    * @return subNet with the strideSizes degree+1 per direction
    */
   template <std::integral auto dim, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)
-  auto netOfSpan(
+  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
       std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
       const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
@@ -133,34 +132,28 @@ namespace Dune::IGA {
      */
     template <std::integral auto dimworld>
     explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data)
-        : knots_{data.knotSpans},
-          degree_{data.degree},
-          weights_{extractWeights(data.controlPoints)} {}
+        : knots_{data.knotSpans}, degree_{data.degree}, weights_{extractWeights(data.controlPoints)} {}
 
-    auto localView() const {
-      return LocalView(*this);
-    }
+    auto localView() const { return LocalView(*this); }
 
     struct LocalView {
       LocalView() = default;
-      explicit LocalView(const Nurbs& nurbs):nurbs_{&nurbs}{}
+      explicit LocalView(const Nurbs& nurbs) : nurbs_{&nurbs} {}
 
-      void bind(const std::array<int, dim>& spIndex) {
-        spIndex_=spIndex;
-      }
+      void bind(const std::array<int, dim>& spIndex) { spIndex_ = spIndex; }
 
-      auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder)const {
+      auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
         assert(spIndex_ && "Bind the local view first!");
-        return nurbs_->basisFunctionDerivatives(u,derivativeOrder,spIndex_.value());
+        return nurbs_->basisFunctionDerivatives(u, derivativeOrder, spIndex_.value());
       }
 
       auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
         assert(spIndex_ && "Bind the local view first!");
-        return nurbs_->basisFunctions(u,spIndex_.value() );
+        return nurbs_->basisFunctions(u, spIndex_.value());
       }
 
       std::optional<std::array<int, dim>> spIndex_;
-      Nurbs const*  nurbs_{nullptr};
+      Nurbs const* nurbs_{nullptr};
     };
 
     Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
@@ -173,11 +166,11 @@ namespace Dune::IGA {
 
     auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
       auto subNetStart = findSpanCorrecte(degree_, u, knots_);
-      return basisFunctions(u, knots_, degree_, weights_,subNetStart);
+      return basisFunctions(u, knots_, degree_, weights_, subNetStart);
     }
 
-    auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,const std::array<int, dim>& spIndex) const {
-      return basisFunctions(u, knots_, degree_, weights_,spIndex);
+    auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u, const std::array<int, dim>& spIndex) const {
+      return basisFunctions(u, knots_, degree_, weights_, spIndex);
     }
 
     static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
@@ -187,11 +180,10 @@ namespace Dune::IGA {
       std::array<DynamicVectorType, (size_t)dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
-        bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(
-            u[i], knots[i], degree[i], spIndex[i]);
+        bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
-      auto Nnet        = MultiDimensionNet<dim, ScalarType>(bSplines);
-      //TODO this should also be cached when called with a localView
+      auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
+      // TODO this should also be cached when called with a localView
       const auto subNetWeights = netOfSpan(spIndex, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
@@ -274,8 +266,8 @@ namespace Dune::IGA {
     }
 
     auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder,
-                              const std::array<int, dim>& spIndex) const {
-      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, false,spIndex);
+                                  const std::array<int, dim>& spIndex) const {
+      return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, false, spIndex);
     }
 
    private:

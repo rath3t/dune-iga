@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-
 namespace Dune::IGANEW {
 
-  template<typename Geometry>
-  typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(const Geometry& geo, const typename Geometry::GlobalCoordinate& global) {
-    static constexpr int mydimension = Geometry::mydimension;
+  template <typename Geometry>
+  typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(
+      const Geometry& geo, const typename Geometry::GlobalCoordinate& global) {
+    static constexpr int mydimension    = Geometry::mydimension;
     static constexpr int worlddimension = Geometry::worlddimension;
-    using ctype = typename Geometry::ctype;
-    using LocalCoordinate = typename Geometry::LocalCoordinate;
-    using GlobalCoordinate = typename Geometry::GlobalCoordinate;
-    using MatrixHelper = typename Geometry::MatrixHelper;
+    using ctype                         = typename Geometry::ctype;
+    using LocalCoordinate               = typename Geometry::LocalCoordinate;
+    using GlobalCoordinate              = typename Geometry::GlobalCoordinate;
+    using MatrixHelper                  = typename Geometry::MatrixHelper;
     if constexpr (mydimension == 0)
       return {};
     else if constexpr (mydimension != worlddimension) {
@@ -42,5 +42,4 @@ namespace Dune::IGANEW {
     }
   }
 
-
-}
+}  // namespace Dune::IGANEW
