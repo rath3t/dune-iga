@@ -48,9 +48,9 @@ namespace Dune::IGA {
     // ::                ::          _:    ::
     // ::................::..........|:....::
     // ::''''''''''''''''::''''''''''/'''''::
-    // ::                ::         _:B     ::
+    // ::                ::         _:B    ::
     // ::                ::        .|      ::
-    // ::                ::      `::A       ::
+    // ::                ::      `::A      ::
     // ::           '::::||::::::'         ::
     // ::         ::`    ::          x     ::
     // ::        |'      ::                ::
@@ -175,7 +175,8 @@ namespace Dune::IGA {
 
       [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
         JacobianInverseTransposed jacobianInverseTransposed1;
-        MatrixHelper::template rightInvA<mydimension, coorddimension>(jacobianTransposed(local),
+        const JacobianTransposed Jt = jacobianTransposed(local);
+        MatrixHelper::template rightInvA<mydimension, coorddimension>(Jt,
                                                                       jacobianInverseTransposed1);
         return jacobianInverseTransposed1;
       }

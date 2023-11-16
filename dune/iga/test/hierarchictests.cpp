@@ -91,6 +91,8 @@ auto testHierarchicPatch() {
   auto gridView= patch.leafGridView();
   Dune::GeometryChecker<decltype(patch)> geometryChecker;
   geometryChecker.checkGeometry(gridView);
+  for (int i = 0; i < 3; ++i)
+  geometryChecker.checkGeometry(patch.levelGridView(i));
 
   t.subTest(checkUniqueEdges(gridView));
 

@@ -39,6 +39,7 @@ namespace Dune::IGA {
     constexpr static int dim = GridImp::dimension;
 
     constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static bool trim = GridImp::trim;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
@@ -57,13 +58,13 @@ namespace Dune::IGA {
 
     PatchGridLeafIntersection(const GridImp* identityGrid,
                                  const HostLeafIntersection& hostIntersection)
-      : identityGrid_(identityGrid)
+      : patchGrid_(identityGrid)
       , hostIntersection_(hostIntersection)
     {}
 
     PatchGridLeafIntersection(const GridImp* identityGrid,
                                  HostLeafIntersection&& hostIntersection)
-      : identityGrid_(identityGrid)
+      : patchGrid_(identityGrid)
       , hostIntersection_(std::move(hostIntersection))
     {}
 
@@ -75,14 +76,14 @@ namespace Dune::IGA {
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     Entity inside() const {
-      return PatchGridEntity<0,dim,GridImp>(identityGrid_,hostIntersection_.inside());
+      return PatchGridEntity<0,dim,GridImp>(patchGrid_,hostIntersection_.inside());
     }
 
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     Entity outside() const {
-      return PatchGridEntity<0,dim,GridImp>(identityGrid_,hostIntersection_.outside());
+      return PatchGridEntity<0,dim,GridImp>(patchGrid_,hostIntersection_.outside());
     }
 
 
@@ -141,7 +142,9 @@ namespace Dune::IGA {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      return Geometry( hostIntersection_.geometry() );
+      assert(trim==false && "This intersection geometry does not make sense for trimmed elements");
+      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1>());
+      return Geometry( geo );
     }
 
 
@@ -190,7 +193,7 @@ namespace Dune::IGA {
     //  private methods
     //**********************************************************
 
-    const GridImp* identityGrid_;
+    const GridImp* patchGrid_;
 
     HostLeafIntersection hostIntersection_;
   };
@@ -211,6 +214,8 @@ namespace Dune::IGA {
 
     constexpr static int dimworld = GridImp::dimensionworld;
 
+    constexpr static bool trim = GridImp::trim;
+
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
@@ -230,13 +235,13 @@ namespace Dune::IGA {
 
     PatchGridLevelIntersection(const GridImp* identityGrid,
                                   const HostLevelIntersection& hostIntersection)
-      : identityGrid_(identityGrid)
+      : patchGrid_(identityGrid)
       , hostIntersection_(hostIntersection)
     {}
 
     PatchGridLevelIntersection(const GridImp* identityGrid,
                                   HostLevelIntersection&& hostIntersection)
-      : identityGrid_(identityGrid)
+      : patchGrid_(identityGrid)
       , hostIntersection_(std::move(hostIntersection))
     {}
 
@@ -248,14 +253,14 @@ namespace Dune::IGA {
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     Entity inside() const {
-      return PatchGridEntity<0,dim,GridImp>(identityGrid_,hostIntersection_.inside());
+      return PatchGridEntity<0,dim,GridImp>(patchGrid_,hostIntersection_.inside());
     }
 
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     Entity outside() const {
-      return PatchGridEntity<0,dim,GridImp>(identityGrid_,hostIntersection_.outside());
+      return PatchGridEntity<0,dim,GridImp>(patchGrid_,hostIntersection_.outside());
     }
 
 
@@ -315,7 +320,9 @@ namespace Dune::IGA {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      return Geometry( hostIntersection_.geometry() );
+      assert(trim==false && "This intersection geometry does not make sense for trimmed elements");
+      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1>());
+      return Geometry( geo );
     }
 
 
@@ -333,7 +340,8 @@ namespace Dune::IGA {
 
     //! return outer normal
     FieldVector<ctype, dimworld> outerNormal (const FieldVector<ctype, dim-1>& local) const {
-      FieldMatrix<ctype,dimworld,dim> J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      const auto globalInPatch = geometryInInside().global(local);
+      FieldMatrix<ctype,dimworld,dim> J = inside().geometry().jacobianInverseTransposed(globalInPatch);
       FieldVector<ctype, dimworld> res;
       J.mv(hostIntersection_.outerNormal(local),res);
       return res;
@@ -341,8 +349,8 @@ namespace Dune::IGA {
 
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, dimworld> integrationOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
-      const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
+      auto J = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      const ctype detJ = inside().geometry().integrationElement(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
       J.mv(hostIntersection_.integrationOuterNormal(local),res);
       res*=detJ;
@@ -351,7 +359,7 @@ namespace Dune::IGA {
 
     //! return unit outer normal
     FieldVector<ctype, dimworld> unitOuterNormal (const FieldVector<ctype, dim-1>& local) const {
-      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      auto J = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
       J.mv(hostIntersection_.unitOuterNormal(local),res);
       res/=res.two_norm();
@@ -360,7 +368,7 @@ namespace Dune::IGA {
 
   private:
 
-    const GridImp* identityGrid_;
+    const GridImp* patchGrid_;
 
     HostLevelIntersection hostIntersection_;
 

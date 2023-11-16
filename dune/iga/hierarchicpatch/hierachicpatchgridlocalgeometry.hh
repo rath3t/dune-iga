@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_IDENTITYGRIDGEOMETRY_HH
-#define DUNE_IDENTITYGRIDGEOMETRY_HH
-
+#pragma once
 /** \file
- * \brief The PatchGridGeometry class and its specializations
+ * \brief The PatchGridLocalGeometry class and its specializations
  */
 
 #include <dune/common/fmatrix.hh>
@@ -18,9 +16,9 @@ namespace Dune::IGA {
 
 
 
-  template<int mydim, int coorddim, class GridImp> //requires ( coorddim== GridImp::dimensionworld )
-  class PatchGridGeometry :
-    public GeometryDefaultImplementation <mydim, coorddim, GridImp, PatchGridGeometry>
+  template<int mydim, int coorddim, class GridImp>
+  class PatchGridLocalGeometry :
+    public GeometryDefaultImplementation <mydim, coorddim, GridImp, PatchGridLocalGeometry>
   {
   public:
 
@@ -57,11 +55,15 @@ namespace Dune::IGA {
 
     /** constructor from host geometry
      */
-    PatchGridGeometry(const HostGridGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
+    PatchGridLocalGeometry(const HostGridGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
       : hostGeometry_(hostGeometry),
     geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)){
       geometryLocalView_.bind(hostGeometry_.impl());
           }
+
+    PatchGridLocalGeometry(const HostGridGeometry& hostGeometry)
+  : hostGeometry_(hostGeometry){
+    }
 
     /** \brief Return the element type identifier
      */
@@ -89,35 +91,35 @@ namespace Dune::IGA {
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
     GlobalCoordinate global (const LocalCoordinate& local) const {
-      return geometryLocalView_.global(local);
+      return hostGeometry_.global(local);
     }
 
     /** \brief Return the transposed of the Jacobian
      */
     JacobianTransposed
     jacobianTransposed ( const LocalCoordinate& local ) const {
-      return geometryLocalView_.jacobianTransposed(local);
+      return hostGeometry_.jacobianTransposed(local);
     }
 
     /** \brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
     LocalCoordinate local (const GlobalCoordinate& global) const {
-      return geometryLocalView_.local(global);
+      return hostGeometry_.local(global);
     }
 
     //! Returns true if the point is in the current element
     bool checkInside(const FieldVector<ctype, mydim> &local) const {
-      return geometryLocalView_.checkInside(local);
+      return hostGeometry_.checkInside(local);
     }
 
 
     [[nodiscard]] Volume integrationElement (const LocalCoordinate& local) const {
-      return geometryLocalView_.integrationElement(local);
+      return hostGeometry_.integrationElement(local);
     }
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed (const FieldVector<ctype, mydim>& local) const {
-      return geometryLocalView_.jacobianInverseTransposed(local);
+      return hostGeometry_.jacobianInverseTransposed(local);
     }
   private:
 
@@ -127,5 +129,3 @@ namespace Dune::IGA {
   };
 
 }  // namespace Dune
-
-#endif

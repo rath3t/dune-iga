@@ -27,6 +27,7 @@
 #include "hierachicpatchgridleafiterator.hh"
 #include "hierachicpatchgridhierarchiciterator.hh"
 #include "hierachicpatchgridindexsets.hh"
+#include "hierachicpatchgridlocalgeometry.hh"
 
 namespace Dune::IGA
 {
@@ -67,7 +68,7 @@ namespace Dune::IGA
         DefaultLevelGridViewTraits,
         DefaultLeafGridViewTraits,
         PatchGridEntitySeed,
-        PatchGridGeometry,
+        PatchGridLocalGeometry,
         typename HostGrid::Traits::LevelIndexSet::IndexType,
         typename HostGrid::Traits::LevelIndexSet::Types,
         typename HostGrid::Traits::LeafIndexSet::IndexType,
@@ -136,6 +137,7 @@ namespace Dune::IGA
 
   public:
     static constexpr bool trim= trim_;
+
     /** \todo Should not be public */
     typedef HostGrid HostGridType;
 
@@ -168,14 +170,6 @@ namespace Dune::IGA
       patchGeometries.emplace_back(patchData);
     }
 
-    //! Destructor
-    ~PatchGrid()
-    {
-      // Delete level index sets
-      for (size_t i=0; i<levelIndexSets_.size(); i++)
-        if (levelIndexSets_[i])
-          delete (levelIndexSets_[i]);
-    }
 
 
     /** \brief Return maximum level defined in this grid.
@@ -482,9 +476,9 @@ namespace Dune::IGA
       //   Create the index sets
       // //////////////////////////////////////////
       for (int i=levelIndexSets_.size(); i<=maxLevel(); i++) {
-        auto* p
-          = new PatchGridLevelIndexSet<const PatchGrid >();
-        levelIndexSets_.push_back(p);
+        auto p
+          = std::make_unique<PatchGridLevelIndexSet<const PatchGrid >>();
+        levelIndexSets_.emplace_back(std::move(p));
       }
 
       for (int i=0; i<=maxLevel(); i++)
@@ -501,7 +495,7 @@ namespace Dune::IGA
     Communication<No_Comm> ccobj;
 
     //! Our set of level indices
-    std::vector<PatchGridLevelIndexSet<const PatchGrid >*> levelIndexSets_;
+    std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid >>> levelIndexSets_;
 
     //! \todo Please doc me !
     PatchGridLeafIndexSet<const PatchGrid > leafIndexSet_;
