@@ -29,6 +29,7 @@ namespace Dune::IGANEW {
     typedef typename GridImp::template Codim<codim>::Entity Entity;
 
     //! Constructor
+     PatchGridLevelIterator() =default;
     explicit PatchGridLevelIterator(const GridImp* identityGrid, int level)
     : identityGrid_(identityGrid),
       hostLevelIterator_(identityGrid->hostgrid_->levelGridView(level).template begin<codim,pitype>())

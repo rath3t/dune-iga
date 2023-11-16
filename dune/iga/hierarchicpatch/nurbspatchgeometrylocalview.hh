@@ -181,7 +181,41 @@ namespace Dune::IGANEW {
         return jacobianInverseTransposed1;
       }
 
+    /**
+ * @brief Compute the first and second derivatives of the composition function h(g_1(t), g_2(t)) with respect to the parameter t.
+ *
+ * This function calculates the Jacobian and Hessian matrices for the composition function h(g_1(t), g_2(t)) where g(t) is the original curve
+ * and h(u, v) is the parametrization function. The computation involves chain and product rules between g(t) and h(u, v).
+ *
+ * @param[in] t The parameter value for the curve g(t).
+ * @param[in] g1_t The first component of the curve g(t).
+ * @param[in] g2_t The second component of the curve g(t).
+ *
+ * @return std::pair<Eigen::Matrix<double, 2, 1>, Eigen::Matrix<double, 2, 2>> A pair containing the Jacobian matrix and the Hessian matrix.
+ *
+ * @details
+ * The Jacobian matrix J is given by:
+ * \f[
+ * J = \begin{bmatrix}
+ * \frac{\partial h}{\partial g_1} \cdot \frac{\partial g_1}{\partial t} + \frac{\partial h}{\partial g_2} \cdot \frac{\partial g_2}{\partial t} \\
+ * \frac{\partial h}{\partial g_1} \cdot \frac{\partial g_1}{\partial t} \\
+ * \end{bmatrix}
+ * \f]
+ *
+ * The Hessian matrix H is given by:
+ * \f[
+ * H = \begin{bmatrix}
+ * \frac{\partial^2 h}{\partial g_1^2} \cdot \left(\frac{\partial g_1}{\partial t}\right)^2 + 2 \cdot \frac{\partial^2 h}{\partial g_1 \partial g_2} \cdot \frac{\partial g_1}{\partial t} \cdot \frac{\partial g_2}{\partial t} + \frac{\partial^2 h}{\partial g_2^2} \cdot \left(\frac{\partial g_2}{\partial t}\right)^2 & \frac{\partial^2 h}{\partial g_1^2} \cdot \frac{\partial g_1}{\partial t} + \frac{\partial^2 h}{\partial g_1 \partial g_2} \cdot \frac{\partial g_2}{\partial t} \\
+ * \frac{\partial^2 h}{\partial g_1^2} & \frac{\partial^2 h}{\partial g_1 \partial g_2} \\
+ * \end{bmatrix}
+ * \f]
+ */
       std::tuple<GlobalCoordinate,JacobianTransposed,Hessian> zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
+        assert(parameterSpaceGeometry && "Bind the local view first!");
+        const auto ouInPatch = globalInParameterSpace(u);
+        parameterSpaceGeometry.value().zeroFirstAndSecondDerivativeOfPosition(ouInPatch);
+
+
       return {};
       }
 

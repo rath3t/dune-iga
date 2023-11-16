@@ -32,7 +32,7 @@
 namespace Dune::IGANEW
 {
   // Forward declaration
-  template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
+  template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
   class PatchGrid;
 
   // External forward declarations
@@ -94,6 +94,9 @@ namespace Dune::IGANEW
   }
 
 
+//! deduction guide
+  template <std::size_t dim, std::size_t dimworld, typename ScalarType>
+  PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ScalarType>& patchData) -> PatchGrid<static_cast<int>(dim),static_cast<int>(dimworld),false,ScalarType,YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>;
   //**********************************************************************
   //
   // --PatchGrid
@@ -106,7 +109,7 @@ namespace Dune::IGANEW
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template<std::size_t dim, std::size_t dimworld,  bool trim_=false,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
+  template<int dim, int dimworld,  bool trim_=false,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
   class PatchGrid
   : public GridDefaultImplementation<dim, dimworld,
                                      ScalarType, PatchGridFamily<dim,dimworld,trim_,ScalarType, HostGrid> >
@@ -561,6 +564,15 @@ namespace Dune {
     };
   } // end namespace Capabilities
 
-}
 
+
+}
+template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
+struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> : public std::true_type {
+};
+
+template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
+struct EnableLevelIntersectionIteratorCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> {
+  static const bool v = true;
+};
 #endif // DUNE_GRID_IDENTITYGRID_HH

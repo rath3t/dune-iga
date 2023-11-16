@@ -30,7 +30,7 @@ namespace Dune::IGANEW {
     constexpr static int codimension = codim;
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
-
+    PatchGridLeafIterator()=default;
     //! \todo Please doc me !
     explicit PatchGridLeafIterator(const GridImp* identityGrid) :
       identityGrid_(identityGrid),
