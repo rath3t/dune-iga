@@ -39,7 +39,7 @@ namespace Dune::IGANEW {
     constexpr static int dim = GridImp::dimension;
 
     constexpr static int dimworld = GridImp::dimensionworld;
-    constexpr static bool trim = GridImp::trim;
+    constexpr static Trimming trim = GridImp::trim;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
@@ -142,8 +142,8 @@ namespace Dune::IGANEW {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      assert(trim==false && "This intersection geometry does not make sense for trimmed elements");
-      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1>());
+      assert(trim==Trimming::Disabled && "This intersection geometry does not make sense for trimmed elements");
+      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1,trim>());
       return Geometry( geo );
     }
 
@@ -213,7 +213,7 @@ namespace Dune::IGANEW {
 
     constexpr static int dimworld = GridImp::dimensionworld;
 
-    constexpr static bool trim = GridImp::trim;
+    constexpr static Trimming trim = GridImp::trim;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
@@ -319,8 +319,8 @@ namespace Dune::IGANEW {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry () const
     {
-      assert(trim==false && "This intersection geometry does not make sense for trimmed elements");
-      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1>());
+      assert(trim==Trimming::Disabled && "This intersection geometry does not make sense for trimmed elements");
+      auto geo = typename Geometry::Implementation( hostIntersection_.geometry() ,patchGrid_->patchGeometries.back().template localView<1,trim>());
       return Geometry( geo );
     }
 

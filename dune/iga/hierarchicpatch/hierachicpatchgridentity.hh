@@ -71,6 +71,7 @@ namespace Dune::IGANEW {
 
   private:
 
+
     typedef typename GridImp::ctype ctype;
 
     // The codimension of this entity wrt the host grid
@@ -81,7 +82,7 @@ namespace Dune::IGANEW {
 
 
   public:
-
+    static constexpr Trimming trim = GridImp::trim;
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
     //! The type of the EntitySeed interface class
@@ -172,7 +173,7 @@ namespace Dune::IGANEW {
     //! geometry of this entity
     Geometry geometry () const
     {
-      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<codim>());
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<codim,trim>());
       return Geometry( geo);
     }
 
@@ -207,7 +208,7 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess< typename std::remove_const< GridImp >::type >;
 
   public:
-    static constexpr bool trim = GridImp::trim;
+    static constexpr Trimming trim = GridImp::trim;
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - GridImp::dimension;
     constexpr static int dimworld = GridImp::dimensionworld;
@@ -312,8 +313,8 @@ namespace Dune::IGANEW {
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry () const
     {
-      static_assert(std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].template localView<0>()),typename NURBSPatchGeometry<dim,dimworld,trim,ctype>::template GeometryLocalView<0>>);
-      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<0>());
+      static_assert(std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].template localView<0,trim>()),typename NURBSPatchGeometry<dim,dimworld,ctype>::template GeometryLocalView<0,trim>>);
+      auto geo = typename Geometry::Implementation( hostEntity_.geometry() ,patchGrid_->patchGeometries[this->level()].template localView<0,trim>());
       return Geometry(geo);
     }
 

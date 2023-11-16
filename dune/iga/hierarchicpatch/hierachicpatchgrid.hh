@@ -28,22 +28,24 @@
 #include "hierachicpatchgridhierarchiciterator.hh"
 #include "hierachicpatchgridindexsets.hh"
 #include "hierachicpatchgridlocalgeometry.hh"
+#include "enums.hh"
 
 namespace Dune::IGANEW
 {
+
   // Forward declaration
-  template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
+  template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
   class PatchGrid;
 
   // External forward declarations
   template< class Grid >
   struct HostGridAccess;
 
-  template<int dim, int dimworld,  bool trim_,typename ScalarType, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
+  template<int dim, int dimworld,  Trimming trim_,typename ScalarType, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
   struct PatchGridFamily
   {
 
-    static constexpr bool trim = trim_;
+    static constexpr Trimming trim = trim_;
 
     typedef GridTraits<
         dim,
@@ -96,7 +98,7 @@ namespace Dune::IGANEW
 
 //! deduction guide
   template <std::size_t dim, std::size_t dimworld, typename ScalarType>
-  PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ScalarType>& patchData) -> PatchGrid<static_cast<int>(dim),static_cast<int>(dimworld),false,ScalarType,YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>;
+  PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ScalarType>& patchData) -> PatchGrid<static_cast<int>(dim),static_cast<int>(dimworld),Trimming::Disabled,ScalarType,YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>;
   //**********************************************************************
   //
   // --PatchGrid
@@ -109,14 +111,14 @@ namespace Dune::IGANEW
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template<int dim, int dimworld,  bool trim_=false,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
+  template<int dim, int dimworld,  Trimming trim_=Trimming::Disabled,typename ScalarType=double, typename HostGrid=YaspGrid<dim,TensorProductCoordinates<ScalarType,dim>>>
   class PatchGrid
   : public GridDefaultImplementation<dim, dimworld,
                                      ScalarType, PatchGridFamily<dim,dimworld,trim_,ScalarType, HostGrid> >
   {
     using ParameterSpaceUntrimmedGrid = HostGrid;
 
-    using SubGridParameterSpaceGridView = std::conditional_t<trim_,SubGrid<dim,ParameterSpaceUntrimmedGrid>,ParameterSpaceUntrimmedGrid>;
+    using SubGridParameterSpaceGridView = std::conditional_t<trim_==Trimming::Enabled,SubGrid<dim,ParameterSpaceUntrimmedGrid>,ParameterSpaceUntrimmedGrid>;
 
     friend class PatchGridLevelIndexSet<const PatchGrid >;
     friend class PatchGridLeafIndexSet<const PatchGrid >;
@@ -139,7 +141,7 @@ namespace Dune::IGANEW
     friend struct HostGridAccess< PatchGrid >;
 
   public:
-    static constexpr bool trim= trim_;
+    static constexpr Trimming trim= trim_;
 
     /** \todo Should not be public */
     typedef HostGrid HostGridType;
@@ -460,7 +462,7 @@ namespace Dune::IGANEW
 
   public:
     std::array<std::vector<ScalarType>,dim> uniqueCoarseKnotSpans;
-    std::vector<NURBSPatchGeometry<dim,dimworld,trim,ScalarType>> patchGeometries;
+    std::vector<NURBSPatchGeometry<dim,dimworld,ScalarType>> patchGeometries;
   protected:
 
     //! The host grid which contains the actual grid hierarchy structure
@@ -524,13 +526,13 @@ namespace Dune {
     /** \brief has entities for some codimensions as host grid
      * \ingroup PatchGrid
      */
-    template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
+    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
     struct hasEntity<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = hasEntity<HostGrid,codim>::v;
     };
 
-    template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
+    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
     struct hasEntityIterator<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = hasEntityIterator<HostGrid, codim>::v;
@@ -539,7 +541,7 @@ namespace Dune {
     /** \brief PatchGrid can communicate when the host grid can communicate
      *  \ingroup PatchGrid
      */
-    template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
+    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
     struct canCommunicate<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = canCommunicate<HostGrid, codim>::v;
@@ -548,7 +550,7 @@ namespace Dune {
     /** \brief has conforming level grids when host grid has
      * \ingroup PatchGrid
      */
-    template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
+    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
     struct isLevelwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
     {
       static const bool v = isLevelwiseConforming<HostGrid>::v;
@@ -557,7 +559,7 @@ namespace Dune {
     /** \brief has conforming leaf grids when host grid has
      * \ingroup PatchGrid
      */
-    template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
+    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
     struct isLeafwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
     {
       static const bool v = isLeafwiseConforming<HostGrid>::v;
@@ -567,11 +569,11 @@ namespace Dune {
 
 
 }
-template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
+template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
 struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> : public std::true_type {
 };
 
-template<int dim, int dimworld,  bool trim,typename ScalarType, typename HostGrid>
+template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
 struct EnableLevelIntersectionIteratorCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> {
   static const bool v = true;
 };

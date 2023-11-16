@@ -13,7 +13,7 @@
 #include <dune/common/typetraits.hh>
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/hierarchicpatch/nurbspatchgeometry.hh>
-
+#include "enums.hh"
 namespace Dune::IGANEW {
 
 
@@ -25,21 +25,21 @@ namespace Dune::IGANEW {
   public:
 
     static constexpr int mydimension = mydim;
-    static constexpr bool trim = GridImp::trim;
+    static constexpr Trimming trim = GridImp::trim;
 
-    static constexpr std::integral auto coorddimension = coorddim;
+    static constexpr std::integral auto worlddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
     static constexpr std::integral auto codim        = griddim-mydim;
     using ctype                     = typename GridImp::ctype;
-    using PatchGeometry =NURBSPatchGeometry<GridImp::dimension,coorddimension,trim,ctype>;
+    using PatchGeometry =NURBSPatchGeometry<GridImp::dimension,worlddimension,ctype>;
     using LocalCoordinateInPatch           = typename PatchGeometry::LocalCoordinate;
     using LocalCoordinate           = FieldVector<ctype, mydimension>;
-    using GlobalCoordinate          = FieldVector<ctype, coorddimension>;
-    using JacobianTransposed        = FieldMatrix<ctype, mydimension, coorddimension>;
-    using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension>;
-    using Jacobian                  = FieldMatrix<ctype, coorddimension, mydimension>;
-    using JacobianInverseTransposed = FieldMatrix<ctype, coorddimension, mydimension>;
-    using JacobianInverse           = FieldMatrix<ctype, mydimension, coorddimension>;
+    using GlobalCoordinate          = FieldVector<ctype, worlddimension>;
+    using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
+    using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension>;
+    using Jacobian                  = FieldMatrix<ctype, worlddimension, mydimension>;
+    using JacobianInverseTransposed = FieldMatrix<ctype, worlddimension, mydimension>;
+    using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
     using Volume                    = ctype;
 
     // The codimension of this entitypointer wrt the host grid
@@ -53,7 +53,7 @@ namespace Dune::IGANEW {
     using HostGridGeometry= typename std::conditional<coorddim==DimensionWorldOfHostGrid, HostGridGeometryType, HostGridLocalGeometryType>::type;
 
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView= typename NURBSPatchGeometry<GridImp::dimension,coorddimension,trim,ctype>::template GeometryLocalView<codim>;
+    using GeometryLocalView= typename NURBSPatchGeometry<GridImp::dimension,worlddimension,ctype>::template GeometryLocalView<codim,trim>;
 
     /** constructor from host geometry
      */

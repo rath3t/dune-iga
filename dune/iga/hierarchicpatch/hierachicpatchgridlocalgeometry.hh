@@ -23,13 +23,13 @@ namespace Dune::IGANEW {
   public:
 
     static constexpr int mydimension = mydim;
-    static constexpr bool trim = GridImp::trim;
+    static constexpr Trimming trim = GridImp::trim;
 
     static constexpr std::integral auto coorddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
     static constexpr std::integral auto codim        = griddim-mydim;
     using ctype                     = typename GridImp::ctype;
-    using PatchGeometry =NURBSPatchGeometry<GridImp::dimension,coorddimension,trim,ctype>;
+    using PatchGeometry =NURBSPatchGeometry<GridImp::dimension,coorddimension,ctype>;
     using LocalCoordinateInPatch           = typename PatchGeometry::LocalCoordinate;
     using LocalCoordinate           = FieldVector<ctype, mydimension>;
     using GlobalCoordinate          = FieldVector<ctype, coorddimension>;
@@ -51,7 +51,7 @@ namespace Dune::IGANEW {
     using HostGridGeometry= typename std::conditional<coorddim==DimensionWorldOfHostGrid, HostGridGeometryType, HostGridLocalGeometryType>::type;
 
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView= typename NURBSPatchGeometry<GridImp::dimension,coorddimension,trim,ctype>::template GeometryLocalView<codim>;
+    using GeometryLocalView= typename NURBSPatchGeometry<GridImp::dimension,coorddimension,ctype>::template GeometryLocalView<codim,trim>;
 
     /** constructor from host geometry
      */

@@ -46,3 +46,5 @@ HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
 EXTRA_PACKAGES         = amsmath amssymb
 
 GENERATE_XML = YES
+GENERATE_LATEX = YES
+USE_MATHJAX =YES
