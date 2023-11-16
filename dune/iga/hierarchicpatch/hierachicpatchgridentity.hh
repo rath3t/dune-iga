@@ -11,7 +11,7 @@
 
 #include <dune/grid/common/grid.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
 
   // Forward declarations

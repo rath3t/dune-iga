@@ -13,7 +13,7 @@
 
 #include <vector>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   /** \todo Take the index types from the host grid */
   template<class GridImp>

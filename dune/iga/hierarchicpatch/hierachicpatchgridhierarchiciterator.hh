@@ -9,7 +9,7 @@
  * \brief The PatchGridHierarchicIterator class
  */
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
 
   //**********************************************************************

@@ -6,11 +6,14 @@ set(HEADERS
         hierachicpatchgridentityseed.hh
   hierachicpatchgridhierarchiciterator.hh
   hierachicpatchgridgeometry.hh
+        hierachicpatchgridlocalgeometry.hh
+        nurbspatchgeometrylocalview.hh
   hierachicpatchgridintersectioniterator.hh
   hierachicpatchgridintersections.hh
   hierachicpatchgridindexsets.hh
   hierachicpatchgridleafiterator.hh
-  hierachicpatchgridleveliterator.hh)
+  hierachicpatchgridleveliterator.hh
+)
 
 install(FILES ${HEADERS}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/hierarchicpatch)

@@ -11,7 +11,7 @@
 
 #include <dune/iga/hierarchicpatch/nurbspatchgeometrylocalview.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   template <int dim, int dimworld,bool trim=false, typename ScalarType = double>
   class NURBSPatchGeometry {
@@ -33,9 +33,9 @@ namespace Dune::IGA {
     template<int codim>
     using ParameterSpaceGeometry= YaspGeometry<patchDimension-codim,patchDimension,const YaspGrid<patchDimension,TensorProductCoordinates<ctype,patchDimension>>>;
 
-    using ControlPointType = typename NURBSPatchData<patchDimension, dimworld, ScalarType>::ControlPointType;
-    using ControlPointNetType = typename NURBSPatchData<patchDimension, dimworld, ScalarType>::ControlPointNetType;
-    using ControlPointCoordinateNetType = MultiDimensionNet<dim, typename NURBSPatchData<patchDimension, dimworld, ScalarType>::GlobalCoordinateType>;
+    using ControlPointType = typename IGA::NURBSPatchData<patchDimension, dimworld, ScalarType>::ControlPointType;
+    using ControlPointNetType = typename IGA::NURBSPatchData<patchDimension, dimworld, ScalarType>::ControlPointNetType;
+    using ControlPointCoordinateNetType = IGA::MultiDimensionNet<dim, typename IGA::NURBSPatchData<patchDimension, dimworld, ScalarType>::GlobalCoordinateType>;
     using Nurbs = Dune::IGA::Nurbs<patchDimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template<int codim>
@@ -58,7 +58,7 @@ namespace Dune::IGA {
     }
 
 
-    explicit NURBSPatchGeometry(const NURBSPatchData<patchDimension, dimworld, ScalarType>& patchData)
+    explicit NURBSPatchGeometry(const IGA::NURBSPatchData<patchDimension, dimworld, ScalarType>& patchData)
         : patchData_(patchData), nurbs_{patchData},localView_(localView<0>()) {}
 
     /** \brief Map the center of the element to the geometry */
@@ -120,7 +120,7 @@ namespace Dune::IGA {
 
       const auto basisFunctionDerivatives = nurbs_.basisFunctionDerivatives(u, 2);
       auto cpCoordinateNet                = netOfSpan(u, patchData_.knotSpans, patchData_.degree,
-                                                      extractControlCoordinates(patchData_.controlPoints));
+                                                      IGA::extractControlCoordinates(patchData_.controlPoints));
       std::array<unsigned int, patchDimension> ithVecZero{};
       pos = Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), cpCoordinateNet);
 
@@ -169,8 +169,8 @@ namespace Dune::IGA {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(patchDimension); }
 
     // The following are functions are not part of the Geometry Interface
-    [[nodiscard]] std::array<Utilities::Domain<double>, patchDimension> domain() const {
-      std::array<Utilities::Domain<double>, patchDimension> result{};
+    [[nodiscard]] std::array<IGA::Utilities::Domain<double>, patchDimension> domain() const {
+      std::array<IGA::Utilities::Domain<double>, patchDimension> result{};
       for (int i = 0; i < patchDimension; ++i)
         result[i] = {patchData_.knotSpans[i].front(), patchData_.knotSpans[i].back()};
 
@@ -190,10 +190,10 @@ namespace Dune::IGA {
 
   private:
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
-      auto subNetStart = findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
+      auto subNetStart = IGA::findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
 
       auto cpCoordinateNet = netOfSpan(subNetStart,patchData_.degree,
-                                       extractControlCoordinates(patchData_.controlPoints));
+                                       IGA::extractControlCoordinates(patchData_.controlPoints));
       auto nurbsLocalView = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
       return std::make_tuple(nurbsLocalView,cpCoordinateNet,subNetStart);
@@ -222,11 +222,11 @@ namespace Dune::IGA {
     }
 
    public:
-    NURBSPatchData<patchDimension, dimworld, ScalarType> patchData_;
+    IGA::NURBSPatchData<patchDimension, dimworld, ScalarType> patchData_;
 
    private:
     IGA::Nurbs<patchDimension, ScalarType> nurbs_;
     GeometryLocalView<0> localView_;
   };
 
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

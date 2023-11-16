@@ -11,7 +11,7 @@
  */
 
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
 
   /**

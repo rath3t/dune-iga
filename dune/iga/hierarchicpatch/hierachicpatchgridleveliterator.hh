@@ -11,7 +11,7 @@
  * \brief The PatchGridLevelIterator class
  */
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   /** \brief Iterator over all entities of a given codimension and level of a grid.
    * \ingroup PatchGrid

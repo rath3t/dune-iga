@@ -3,7 +3,7 @@
 #pragma once
 
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   template<typename Geometry>
   typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(const Geometry& geo, const typename Geometry::GlobalCoordinate& global) {
@@ -33,7 +33,7 @@ namespace Dune::IGA {
         x -= dx;
         // if local is outside of maximum knot vector span bound, thus we clamp it to it and return
         // clamp result into boundaries
-        if (Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
+        if (IGA::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
           break;
         }
 

@@ -14,7 +14,7 @@
  * \brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   /** \brief Iterator over all element neighbors
    * \ingroup PatchGrid

@@ -10,7 +10,7 @@
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/hierarchicpatch/geometryalgorithms.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   template <int codim, typename PatchGeometry >
     struct PatchGeometryLocalView {
@@ -69,7 +69,7 @@ namespace Dune::IGA {
       using MatrixHelper = typename PatchGeometry::MatrixHelper;
       using Volume                    = ctype;
 
-    using Nurbs = Nurbs<gridDimension, ctype>;
+    using Nurbs = IGA::Nurbs<gridDimension, ctype>;
     using NurbsLocalView = typename Nurbs::LocalView;
 
     using ControlPointCoordinateNetType= typename PatchGeometry::ControlPointCoordinateNetType;
@@ -194,7 +194,7 @@ namespace Dune::IGA {
         return result;
       }
 
-      [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
+      [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
       [[nodiscard]] bool affine() const { return false; }
       [[nodiscard]] const std::array<int, gridDimension>&  spanIndices() const { return spanIndices_; }
@@ -216,4 +216,4 @@ namespace Dune::IGA {
     };
 
 
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

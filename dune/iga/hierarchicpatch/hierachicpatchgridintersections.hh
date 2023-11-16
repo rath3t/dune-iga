@@ -12,7 +12,7 @@
  * \brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes
  */
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
 
   // External forward declarations
@@ -193,15 +193,14 @@ namespace Dune::IGA {
     //  private methods
     //**********************************************************
 
-    const GridImp* patchGrid_;
+    const GridImp* patchGrid_{nullptr};
 
-    HostLeafIntersection hostIntersection_;
+    HostLeafIntersection hostIntersection_{};
   };
 
 
 
 
-  //! \todo Please doc me !
   template<class GridImp>
   class PatchGridLevelIntersection
   {

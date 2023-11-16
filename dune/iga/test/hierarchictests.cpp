@@ -86,7 +86,7 @@ auto testHierarchicPatch() {
   // g.leafGridView().begin<0>()->geometry().impl().jacobian()
   // Dune::TensorProductCoordinates<double,2> coords();
 
-  Dune::IGA::PatchGrid patch(nurbsPatchData);
+  Dune::IGANEW::PatchGrid patch(nurbsPatchData);
   patch.globalRefine(3);
   auto gridView= patch.leafGridView();
   Dune::GeometryChecker<decltype(patch)> geometryChecker;

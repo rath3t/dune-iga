@@ -14,7 +14,7 @@
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/hierarchicpatch/nurbspatchgeometry.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
 
 

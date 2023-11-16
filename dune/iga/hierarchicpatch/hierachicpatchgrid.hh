@@ -29,7 +29,7 @@
 #include "hierachicpatchgridindexsets.hh"
 #include "hierachicpatchgridlocalgeometry.hh"
 
-namespace Dune::IGA
+namespace Dune::IGANEW
 {
   // Forward declaration
   template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
@@ -159,7 +159,7 @@ namespace Dune::IGA
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
-    explicit PatchGrid(const NURBSPatchData<dim,dimworld,ctype>& patchData) :
+    explicit PatchGrid(const IGA::NURBSPatchData<dim,dimworld,ctype>& patchData) :
       uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
       hostgrid_(createParameterPatchGridFromKnotVectors(uniqueCoarseKnotSpans)),
       leafIndexSet_(*this),
@@ -324,7 +324,7 @@ namespace Dune::IGA
         const auto& finestPatchData = patchGeometries.back().patchData_;
         auto newfinestPatchData = finestPatchData;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
-          auto additionalKnots  = generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
+          auto additionalKnots  = IGA::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
           newfinestPatchData = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
         }
         patchGeometries.emplace_back(std::move(newfinestPatchData));
@@ -522,13 +522,13 @@ namespace Dune {
      * \ingroup PatchGrid
      */
     template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
-    struct hasEntity<IGA::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
+    struct hasEntity<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = hasEntity<HostGrid,codim>::v;
     };
 
     template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
-    struct hasEntityIterator<IGA::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
+    struct hasEntityIterator<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = hasEntityIterator<HostGrid, codim>::v;
     };
@@ -537,7 +537,7 @@ namespace Dune {
      *  \ingroup PatchGrid
      */
     template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid,int codim>
-    struct canCommunicate<IGA::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
+    struct canCommunicate<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
     {
       static const bool v = canCommunicate<HostGrid, codim>::v;
     };
@@ -546,7 +546,7 @@ namespace Dune {
      * \ingroup PatchGrid
      */
     template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
-    struct isLevelwiseConforming<IGA::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
+    struct isLevelwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
     {
       static const bool v = isLevelwiseConforming<HostGrid>::v;
     };
@@ -555,7 +555,7 @@ namespace Dune {
      * \ingroup PatchGrid
      */
     template<std::size_t dim, std::size_t dimworld,  bool trim,typename ScalarType, typename HostGrid>
-    struct isLeafwiseConforming<IGA::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
+    struct isLeafwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
     {
       static const bool v = isLeafwiseConforming<HostGrid>::v;
     };
