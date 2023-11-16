@@ -169,7 +169,7 @@ namespace Dune::IGANEW {
       return std::make_tuple(nurbsLocalView,cpCoordinateNet,subNetStart);
     }
 
-    [[nodiscard]] static FieldVector<ctype, dimworld> global(const LocalCoordinate& u,const NurbsLocalView& nurbsLocalView,
+    [[nodiscard]] static FieldVector<ctype, worlddimension> global(const LocalCoordinate& u,const NurbsLocalView& nurbsLocalView,
       const ControlPointCoordinateNetType& localControlPointNet)  {
       auto basis           = nurbsLocalView.basisFunctions(u);
 

@@ -6,7 +6,7 @@
 #endif
 #include <iostream>
 
-#include "dune/iga/gridcapabilities.hh"
+// #include "dune/iga/gridcapabilities.hh"
 // #include "dune/iga/nurbsbasis.hh"
 // #include "dune/iga/nurbsgrid.hh"
 // #include "dune/iga/nurbspatch.hh"

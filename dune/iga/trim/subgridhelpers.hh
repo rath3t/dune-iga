@@ -186,4 +186,3 @@ namespace mapbox::util {
     inline static auto get(const Dune::FieldVector<T, 2>& t) { return t[1]; };
   };
 }  // namespace mapbox::util
-#endif

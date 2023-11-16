@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-#ifndef DUNE_GRID_IDENTITYGRID_HH
-#define DUNE_GRID_IDENTITYGRID_HH
+#pragma once
+
 
 /** \file
  * \brief The PatchGrid class
@@ -29,6 +29,7 @@
 #include "hierachicpatchgridindexsets.hh"
 #include "hierachicpatchgridlocalgeometry.hh"
 #include "enums.hh"
+#include "gridcapabilities.hh"
 
 namespace Dune::IGANEW
 {
@@ -517,64 +518,3 @@ namespace Dune::IGANEW
 
 
 } // namespace Dune::IGA
-
-namespace Dune {
-
-
-  namespace Capabilities
-  {
-    /** \brief has entities for some codimensions as host grid
-     * \ingroup PatchGrid
-     */
-    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
-    struct hasEntity<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
-    {
-      static const bool v = hasEntity<HostGrid,codim>::v;
-    };
-
-    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
-    struct hasEntityIterator<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
-    {
-      static const bool v = hasEntityIterator<HostGrid, codim>::v;
-    };
-
-    /** \brief PatchGrid can communicate when the host grid can communicate
-     *  \ingroup PatchGrid
-     */
-    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid,int codim>
-    struct canCommunicate<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, codim>
-    {
-      static const bool v = canCommunicate<HostGrid, codim>::v;
-    };
-
-    /** \brief has conforming level grids when host grid has
-     * \ingroup PatchGrid
-     */
-    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
-    struct isLevelwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
-    {
-      static const bool v = isLevelwiseConforming<HostGrid>::v;
-    };
-
-    /** \brief has conforming leaf grids when host grid has
-     * \ingroup PatchGrid
-     */
-    template<std::size_t dim, std::size_t dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
-    struct isLeafwiseConforming<IGANEW::PatchGrid<dim,dimworld,trim,ScalarType,HostGrid> >
-    {
-      static const bool v = isLeafwiseConforming<HostGrid>::v;
-    };
-  } // end namespace Capabilities
-
-
-
-}
-template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
-struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> : public std::true_type {
-};
-
-template<int dim, int dimworld,  Trimming trim,typename ScalarType, typename HostGrid>
-struct EnableLevelIntersectionIteratorCheck<Dune::IGANEW::PatchGrid<dim, dimworld, trim,ScalarType,HostGrid>> {
-  static const bool v = true;
-};
-#endif // DUNE_GRID_IDENTITYGRID_HH

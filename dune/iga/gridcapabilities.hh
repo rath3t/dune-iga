@@ -67,5 +67,3 @@ template <std::integral auto dim, std::integral auto dimworld, typename ScalarTy
 struct EnableLevelIntersectionIteratorCheck<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>> {
   static const bool v = true;
 };
-
-#endif

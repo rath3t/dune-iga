@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef DUNE_IGA_NURBSGRIDENTITY_HH
-#define DUNE_IGA_NURBSGRIDENTITY_HH
+#pragma once
 
 #include "dune/iga/nurbsintersection.hh"
 #include "dune/iga/nurbsleafgridview.hh"
@@ -267,4 +266,4 @@ namespace Dune::IGA {
 
 }  // namespace Dune::IGA
 
-#endif  // DUNE_IGA_NURBSGRIDENTITY_HH
+  // DUNE_IGA_NURBSGRIDENTITY_HH

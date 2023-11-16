@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH
-#define DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH
+#pragma once
 
 /** \file
  * \brief The B-spline global function space basis
@@ -776,4 +775,4 @@ namespace Dune::Functions {
 
 }  // namespace Dune::Functions
 
-#endif  // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH
+  // DUNE_FUNCTIONS_FUNCTIONSPACEBASES_NURBSBASIS_HH

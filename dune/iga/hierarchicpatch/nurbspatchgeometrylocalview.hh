@@ -8,24 +8,51 @@
 #include "dune/iga/nurbsalgorithms.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/hierarchicpatch/geometryalgorithms.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
+#include <dune/iga/hierarchicpatch/geometryalgorithms.hh>
 
 namespace Dune::IGANEW {
 
-  template <int codim, typename PatchGeometry,Trimming trim_ >
+  namespace Impl {
+    struct IndexPair
+    {
+      int row;
+      int col;
+    };
+
+    template<int dim>
+    auto& voigtIndices() {
+      if constexpr (dim==1)
+      {          static std::array<IndexPair,dim * (dim + 1) / 2> voigt1D = {{0,0}};
+        return voigt1D;
+      }else if constexpr (dim==2)
+      {
+        static std::array<IndexPair,dim * (dim + 1) / 2> voigt2D ={ {{0,0},{1,1},{0,1}}};
+        return voigt2D;
+      }else if constexpr (dim==3)
+      {
+        static std::array<IndexPair,dim * (dim + 1) / 2> voigt3D ={ {{0,0},{1,1},{2,2},{1,2},{0,2},{0,1}}};
+        return voigt3D;
+      }
+    }
+  }
+
+  template <int codim, typename PatchGeometry, Trimming trim_>
   struct PatchGeometryLocalView {
-    using ctype                        = typename PatchGeometry::ctype;
-    static constexpr int gridDimension = PatchGeometry::patchDimension;
-    static constexpr int mydimension   = gridDimension - codim;
-    static constexpr Trimming trim         = trim_;
+    using ctype                                    = typename PatchGeometry::ctype;
+    static constexpr int gridDimension             = PatchGeometry::patchDimension;
+    static constexpr int mydimension               = gridDimension - codim;
+    static constexpr int numberOfSecondDerivatives = mydimension * (mydimension + 1) / 2;
+    static constexpr int patchNumberOfSecondDerivatives = gridDimension * (gridDimension + 1) / 2;
+    static constexpr Trimming trim                 = trim_;
 
     static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;
 
-    using LocalCoordinate           = FieldVector<ctype, mydimension>;
-    using GlobalCoordinate          = typename PatchGeometry::GlobalCoordinate;
-    using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
-    using JacobianTransposedInPatch = FieldMatrix<ctype, gridDimension, worlddimension>;
+    using LocalCoordinate         = FieldVector<ctype, mydimension>;
+    using GlobalCoordinate        = typename PatchGeometry::GlobalCoordinate;
+    using JacobianTransposed      = FieldMatrix<ctype, mydimension, worlddimension>;
+    using PatchJacobianTransposed = typename PatchGeometry::JacobianTransposed ;
+    using PatchHessian = typename PatchGeometry::Hessian ;
     // TODO trim ParameterSpaceGeometry
     using ParameterSpaceGeometry = typename PatchGeometry::template ParameterSpaceGeometry<codim>;
 
@@ -63,7 +90,7 @@ namespace Dune::IGANEW {
     using JacobianTransposedInParameterSpace = typename ParameterSpaceGeometry::JacobianTransposed;
     using GlobalInParameterSpace             = typename ParameterSpaceGeometry::GlobalCoordinate;
 
-    using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension>;
+    using Hessian                   = FieldMatrix<ctype, numberOfSecondDerivatives, worlddimension>;
     using Jacobian                  = FieldMatrix<ctype, worlddimension, mydimension>;
     using JacobianInverseTransposed = FieldMatrix<ctype, worlddimension, mydimension>;
     using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
@@ -108,7 +135,7 @@ namespace Dune::IGANEW {
       assert(parameterSpaceGeometry && "Bind the local view first!");
       // using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
       const auto ouInPatch = globalInParameterSpace(u);
-      const JacobianTransposedInPatch JTinPatch
+      const PatchJacobianTransposed JTinPatch
           = patchGeometry_->jacobianTransposedImpl(ouInPatch, nurbsLocalView_, localControlPointNet);
       const JacobianTransposedInParameterSpace jInparaMeterSpace = jacobianTransposedInParameterSpace(u);
       JacobianTransposed jacobianOfEntity                        = jInparaMeterSpace * JTinPatch;
@@ -130,7 +157,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] double volume(int scaleOrder = 1) const {
       assert(parameterSpaceGeometry && "Bind the local view first!");
 
-      if constexpr (trim==Trimming::Enabled) {
+      if constexpr (trim == Trimming::Enabled) {
         // if constexpr (mydimension == 2)
         // if (subgrid_) {
         //   Dune::QuadratureRule<double, mydimension> rule;
@@ -182,98 +209,129 @@ namespace Dune::IGANEW {
       return jacobianInverseTransposed1;
     }
 
+    std::tuple<GlobalCoordinate, JacobianTransposed, Hessian> zeroFirstAndSecondDerivativeOfPosition(
+        const LocalCoordinate& u) const {
+      assert(parameterSpaceGeometry && "Bind the local view first!");
+
+      return std::make_tuple(global(u), jacobianTransposed(u), hessian(u));
+    }
+
     /**
-     * @brief Compute the first and second derivatives of the local view.
+     * @brief Computes the second derivatives of the local view.
      *
      * @param[in] u The parameter value of the local view on the geometry
      * @return A tuple of the global position, the Jacobian matrix and Hessian matrix
      * @details
      * **Example curve on surface**
      *
-     * The local view contains a `parameterSpaceGeometry`, which describes the  composition function \f[g: \begin{cases}\mathbb{R} \rightarrow \mathbb{R}^2 \\ t \mapsto g(t) \end{cases},\f] which
-     * describes the curve's local parametrization in terms of the patch geometries parametrization
-     * The patch geometry is described by \f[f: \begin{cases}\mathbb{R}^2 \rightarrow \mathbb{R}^3 \\ (u,v) \mapsto f(u,v) \end{cases},\f] which describes a surface in 3D.
-     * Then the curve's realization on the surface in the 3D space can be written by \f[h: \begin{cases}\mathbb{R} \rightarrow \mathbb{R}^3 \\ t \mapsto f(g_1(t),g_2(t)) \end{cases},\f]
+     * The local view contains a `parameterSpaceGeometry`, which describes the  composition function
      *
-     * This function calculates the Jacobian and Hessian matrices for the composition function \f$h(g_1(t), g_2(t))\f$  where
-     * \f$g(t)\f$ is the original curve and \f$h(u, v)\f$  is the patch geometry function. The computation involves chain and
-     * product rules between \f$g(t)\f$ and \f$h(u, v)\f$.
+     * \f[g: \begin{cases}\mathbb{R} \rightarrow \mathbb{R}^2 \\ t \mapsto g(t) \end{cases},\f] which
+     * describes the curve's local parametrization in terms of the patch geometries parametrization
+     * The patch geometry is described by \f[f: \begin{cases}\mathbb{R}^2 \rightarrow \mathbb{R}^3 \\ (u,v) \mapsto f(u,v) \end{cases},\f]
+     *
+     * which describes a surface in 3D.
+     * Then the curve's realization on the surface in the 3D space can be written by
+     *
+     * \f[h: \begin{cases}\mathbb{R} \rightarrow \mathbb{R}^3 \\ t \mapsto f(g_1(t),g_2(t)) \end{cases},\f]
+     *
+     * This function calculates the Jacobian and Hessian matrices for the composition function \f$h(g_1(t), g_2(t))\f$
+     * where \f$g(t)\f$ is the original curve and \f$h(u, v)\f$  is the patch geometry function. The computation
+     * involves chain and product rules between \f$g(t)\f$ and \f$h(u, v)\f$.
      *     *
      * The Jacobian matrix J is given by
      * \f[
      * J =
-     * \frac{\partial f }{\partial g_1}  \frac{\partial g_1}{\partial t} + \frac{\partial f}{\partial g_2} \frac{\partial g_2}{\partial t}
-     * \f]
-     * and has dimensions \f$3\times 1\f$ or in general \f$\verb+worlddimension+\times \verb+mydimension+\f$.
+     * \frac{\partial f }{\partial g_1}  \frac{\partial g_1}{\partial t} + \frac{\partial f}{\partial g_2}
+     * \frac{\partial g_2}{\partial t} \f] and has dimensions \f$3\times 1\f$ or in general
+     * \f$\verb+worlddimension+\times \verb+mydimension+\f$.
      *
      * The Hessian matrix H is given by:
      * \f[
      * H =
-     * \frac{\partial^2 f}{\partial g_1\partial g_1}  \left(\frac{\partial g_1}{\partial t}\right)^2 +\frac{\partial^2 f}{\partial g_2\partial g_2}  \left(\frac{\partial g_2}{\partial t}\right)^2 + 2\frac{\partial^2 f}{\partial g_1\partial g_2}  \frac{\partial g_1}{\partial t} \frac{\partial g_2}{\partial t} + \frac{\partial f}{\partial g_1}\frac{\partial^2 g_1}{\partial t^2}+ \frac{\partial f}{\partial g_2}\frac{\partial^2 g_2}{\partial t^2}
-     * \f]
+     * \frac{\partial^2 f}{\partial g_1\partial g_1}  \left(\frac{\partial g_1}{\partial t}\right)^2 +\frac{\partial^2
+     * f}{\partial g_2\partial g_2}  \left(\frac{\partial g_2}{\partial t}\right)^2 + 2\frac{\partial^2 f}{\partial
+     * g_1\partial g_2}  \frac{\partial g_1}{\partial t} \frac{\partial g_2}{\partial t} + \frac{\partial f}{\partial
+     * g_1}\frac{\partial^2 g_1}{\partial t^2}+ \frac{\partial f}{\partial g_2}\frac{\partial^2 g_2}{\partial t^2} \f]
      *
-    * and has dimensions \f$1\times 3\f$ or in general \f$\verb|mydimension*(mydimension+1)/2| \times \verb+worlddimension+\f$.
+     * and has dimensions \f$1\times 3\f$ or in general \f$\verb|mydimension*(mydimension+1)/2| \times
+     * \verb+worlddimension+\f$.
      */
-    std::tuple<GlobalCoordinate, JacobianTransposed, Hessian> zeroFirstAndSecondDerivativeOfPosition(
-        const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-
-      const GlobalCoordinate p = global(u);
-      const JacobianTransposed JT = jacobianTransposed(u);
-      const JacobianTransposed h = hessian(u);
-
-      return std::make_tuple(p,JT,h);
-    }
-
-    Hessian hessian(
-    const LocalCoordinate& u) const {
+    Hessian hessian(const LocalCoordinate& u) const {
       assert(parameterSpaceGeometry && "Bind the local view first!");
       const auto ouInPatch = globalInParameterSpace(u);
 
-      const auto [p,dfdg,dfdgdg]= patchGeometry_.zeroFirstAndSecondDerivativeOfPositionImpl(ouInPatch, nurbsLocalView_, localControlPointNet));
+      const auto [p,dfdg,dfdgdg]= patchGeometry_->zeroFirstAndSecondDerivativeOfPositionImpl(ouInPatch, nurbsLocalView_, localControlPointNet);
 
-      const GlobalCoordinate p = global(u);
-      const JacobianTransposed JT = jacobianTransposed(u);
+      static_assert(std::is_same_v<std::remove_const_t<decltype(dfdg)>,PatchJacobianTransposed>);
+      static_assert(std::is_same_v<std::remove_const_t<decltype(dfdgdg)>,PatchHessian>);
+      static_assert(std::is_same_v<std::remove_const_t<decltype(p)>,GlobalCoordinate>);
 
-      /* if trimming is enabled the parameter space geometry is potentially non-linear,
-       * the resutling Hessian has another contribution due to chain-rule, the second derivative of g
-       */
+      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
+      //dgdt (1x2, curve on surface), (2x2 surface in surface), (2x3 surface in 3D), (3x3 volume in 3D)
+      FieldMatrix<ctype, patchNumberOfSecondDerivatives, numberOfSecondDerivatives> dgdtSquared;
 
-      // therefore
-      if constexpr (trim==Trimming::Enabled)
-        parameterSpaceGeometry.value().zeroFirstAndSecondDerivativeOfPosition(ouInPatch);
+      for (int patchIndex=0; auto [patchRow,patchCol] : Impl::voigtIndices<gridDimension>()) {
+        for (int myIndex=0;auto [myRow,myCol] : Impl::voigtIndices<mydimension>()) {
+          if constexpr (not std::is_same_v<JacobianTransposedInParameterSpace,Dune::DiagonalMatrix<ctype,gridDimension>>)
+            dgdtSquared[patchIndex++][myIndex++] = (dgdt[myRow][patchRow] * dgdt[myCol][patchCol]+dgdt[myRow][patchCol] * dgdt[myCol][patchRow])* (( myRow==myCol)? 0.5:1.0);
+          else {
+            const auto dgdtmyRowpatchRow= (myRow==patchRow) ? dgdt[myRow][patchRow] : 0;
+            const auto dgdtmyColpatchCol= (myCol==patchCol) ? dgdt[myCol][patchCol] : 0;
+            const auto dgdtmyRowpatchCol= (myRow==patchCol) ? dgdt[myRow][patchCol] : 0;
+            const auto dgdtmyColpatchRow= (myCol==patchRow) ? dgdt[myCol][patchRow] : 0;
+            dgdtSquared[patchIndex++][myIndex++] = (dgdtmyRowpatchRow * dgdtmyColpatchCol+dgdtmyRowpatchCol * dgdtmyColpatchRow)* (( myRow==myCol)? 0.5:1.0);
+          }
+        }
+      }
 
-      return {};
+      Hessian h;
+      // h = mydimension * (mydimension + 1) / 2 X worlddimension = 1x2 (curve in 2D), 1x3 (curve in 3D), (3x2 surface in 2D), (3x3 surface in 3D), (6x3 volume in 3D)
+      // dfdgdg = gridDimension*(gridDimension + 1) / 2 X worlddimension = 3x2 (curve on surface flat),3x3 (curve on surface in 3D), 6x3 (curve in volume), 6x3 (surface in volume),(3x3 surface in surface in 3D)
+      // dgdtSquared = gridDimension * (gridDimension + 1) / 2 X mydimension * (mydimension + 1) / 2 = 3x1 (curve on surface), 6x1 (curve in volume), 6x3 (surface in volume), 3x3 ( surface in surface), 6x6 ( volume in volume)
+      h=transposedView(dgdtSquared)*dfdgdg;
+
+    /* if trimming is enabled the parameter space geometry is potentially non-linear,
+     * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
+    if constexpr (trim == Trimming::Enabled) {
+      const auto dgdtdt = parameterSpaceGeometry.value().hessian(ouInPatch);
+      // static_assert(dgdtdt.rows()==mydimension);
+      // static_assert(dgdtdt.cols()==gridDimension); //TODO
+      assert( trim == Trimming::Disabled && "This can not be checked yet. Check if this works with trimming and then remove assert");
+      h+= transpose(transposedView(dfdg)*dgdtdt);
     }
+    return h;
+  }
 
-    [[nodiscard]] LocalCoordinate domainMidPoint() const {
-      auto dom = domain();
-      LocalCoordinate result{};
-      for (int i = 0; i < mydimension; ++i)
-        result[i] = dom[i].center();
+  [[nodiscard]] LocalCoordinate
+  domainMidPoint() const {
+    auto dom = domain();
+    LocalCoordinate result{};
+    for (int i = 0; i < mydimension; ++i)
+      result[i] = dom[i].center();
 
-      return result;
-    }
+    return result;
+  }
 
-    [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const { return {}; }
+  [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
-    [[nodiscard]] bool affine() const { return false; }
-    [[nodiscard]] const std::array<int, gridDimension>& spanIndices() const { return spanIndices_; }
-    [[nodiscard]] const PatchGeometry& patchGeometry() const { return *patchGeometry_; }
-    [[nodiscard]] const auto& patchData() const { return patchGeometry_->patchData_; }
-    [[nodiscard]] const NurbsLocalView& nurbs() const { return nurbsLocalView_; }
-    [[nodiscard]] const ControlPointCoordinateNetType& controlPointCoordinates() const { return localControlPointNet; }
+  [[nodiscard]] bool affine() const { return false; }
+  [[nodiscard]] const std::array<int, gridDimension>& spanIndices() const { return spanIndices_; }
+  [[nodiscard]] const PatchGeometry& patchGeometry() const { return *patchGeometry_; }
+  [[nodiscard]] const auto& patchData() const { return patchGeometry_->patchData_; }
+  [[nodiscard]] const NurbsLocalView& nurbs() const { return nurbsLocalView_; }
+  [[nodiscard]] const ControlPointCoordinateNetType& controlPointCoordinates() const { return localControlPointNet; }
 
-   private:
-    GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-      return parameterSpaceGeometry.value().global(local);
-    }
-    ControlPointCoordinateNetType localControlPointNet;
-    NurbsLocalView nurbsLocalView_;
-    std::array<int, gridDimension> spanIndices_;
-    const PatchGeometry* patchGeometry_;
-    std::optional<ParameterSpaceGeometry> parameterSpaceGeometry;
-  };
+ private:
+  GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {
+    assert(parameterSpaceGeometry && "Bind the local view first!");
+    return parameterSpaceGeometry.value().global(local);
+  }
+  ControlPointCoordinateNetType localControlPointNet;
+  NurbsLocalView nurbsLocalView_;
+  std::array<int, gridDimension> spanIndices_;
+  const PatchGeometry* patchGeometry_;
+  std::optional<ParameterSpaceGeometry> parameterSpaceGeometry;
+};
 
 }  // namespace Dune::IGANEW

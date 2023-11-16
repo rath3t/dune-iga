@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef DUNE_IGA_IBRAGEOMETRY_HH
-#define DUNE_IGA_IBRAGEOMETRY_HH
+#pragma once
 
 #include <nlohmann/json.hpp>
 
@@ -301,4 +300,4 @@ namespace Dune::IGA::Ibra {
 
 }  // namespace Dune::IGA::Ibra
 
-#endif  // DUNE_IGA_IBRAGEOMETRY_HH
+  // DUNE_IGA_IBRAGEOMETRY_HH

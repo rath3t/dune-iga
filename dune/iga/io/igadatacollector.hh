@@ -184,7 +184,7 @@ namespace Dune::Vtk {
 #if DUNE_VERSION_LT(DUNE_VTK, 2, 10)
     using Super::gridView_;
     const auto& gridView() const { return gridView_; }
-#endif
+
 
     std::uint64_t numPoints_ = 0;
     std::uint64_t numCells_  = 0;
