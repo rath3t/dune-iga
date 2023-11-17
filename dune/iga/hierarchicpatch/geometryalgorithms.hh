@@ -4,6 +4,8 @@
 
 namespace Dune::IGANEW {
 
+  namespace GeometryKernel{
+
   template <typename Geometry>
   typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(
       const Geometry& geo, const typename Geometry::GlobalCoordinate& global) {
@@ -40,6 +42,40 @@ namespace Dune::IGANEW {
       } while (dx.two_norm2() > tolerance);
       return x;
     }
+  }
+
+  template <typename Geometry>
+  typename Geometry::Hessian hessian(const typename Geometry::LocalCoordinate& local,const typename Geometry::NurbsLocalView& nurbsLocalView,
+                                                           const typename Geometry::ControlPointCoordinateNetType& localControlPointNet) {
+    typename Geometry::Hessian H;
+    const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(local, 2);
+    static constexpr int mydimension = Geometry::mydimension;
+
+    for (int dir = 0; dir < mydimension; ++dir) {
+      std::array<unsigned int, mydimension> ithVec{};
+      ithVec[dir] = 2;  // second derivative in dir direction
+      H[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
+    }
+    if constexpr (mydimension > 1) {
+      std::array<int, mydimension> mixeDerivs;
+      std::ranges::fill(mixeDerivs, 0);  // first mixed derivatives
+      if constexpr (mydimension == 2)
+        for (int dir = 0; dir < mydimension; ++dir) {
+          mixeDerivs[dir] = 1;
+        }
+      else
+        std::ranges::fill_n(mixeDerivs.begin()+1, 2, 1);  // first mixed derivatives
+      int mixedDireCounter = mydimension;
+      do {
+        H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), localControlPointNet);
+
+        if constexpr (mydimension == 2) break;
+
+      } while (std::ranges::next_permutation(mixeDerivs, std::less()).found);
+    }
+    return H;
+  }
+
   }
 
 }  // namespace Dune::IGANEW

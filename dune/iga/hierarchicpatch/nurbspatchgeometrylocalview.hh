@@ -119,7 +119,7 @@ namespace Dune::IGANEW {
      */
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& u) const {
       assert(parameterSpaceGeometry && "Bind the local view first!");
-      return patchGeometry_->global(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
+      return patchGeometry_->globalImpl(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
     }
 
     [[nodiscard]] JacobianTransposedInParameterSpace jacobianTransposedInParameterSpace(
@@ -164,7 +164,10 @@ namespace Dune::IGANEW {
         //     vol += integrationElement(gp.position()) * gp.weight();
         //   return vol;
         // }
+        //TODO here the integration of trimmed quantities has to happen and also the new edge geometries
       }
+
+
 
       const auto& rule = Dune::QuadratureRules<ctype, mydimension>::rule(
           GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchData().degree)));
@@ -196,7 +199,7 @@ namespace Dune::IGANEW {
      *  \param global global coordinates for the point where the local coordinates are searched for
      */
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
-      return computeParameterSpaceCoordinate(*this, global);
+      return GeometryKernel::computeParameterSpaceCoordinate(*this, global);
     }
 
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {

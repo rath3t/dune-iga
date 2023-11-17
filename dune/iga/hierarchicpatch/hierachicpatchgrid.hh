@@ -359,7 +359,7 @@ namespace Dune::IGANEW {
 
    public:
     std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
-    std::vector<NURBSPatchGeometry<dim, dimworld, ScalarType>> patchGeometries;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
 
    protected:
     //! The host grid which contains the actual grid hierarchy structure
