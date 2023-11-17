@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-namespace Dune::IGANEW {
 
-  namespace GeometryKernel{
+
+  namespace Dune::IGANEW::GeometryKernel{
 
   template <typename Geometry>
   typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(
@@ -82,4 +82,4 @@ namespace Dune::IGANEW {
 
   }
 
-}  // namespace Dune::IGANEW
+

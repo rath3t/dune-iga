@@ -9,9 +9,9 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
-#include <dune/iga/hierarchicpatch/geometryalgorithms.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/geometryalgorithms.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::GeometryKernel {
 
   namespace Impl {
     struct IndexPair {
@@ -170,7 +170,7 @@ namespace Dune::IGANEW {
 
 
       const auto& rule = Dune::QuadratureRules<ctype, mydimension>::rule(
-          GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchData().degree)));
+          GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchGeometry_->patchData_.degree)));
       ctype vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
@@ -333,11 +333,11 @@ namespace Dune::IGANEW {
     [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
     [[nodiscard]] bool affine() const { return false; }
-    [[nodiscard]] const std::array<int, gridDimension>& spanIndices() const { return spanIndices_; }
-    [[nodiscard]] const PatchGeometry& patchGeometry() const { return *patchGeometry_; }
-    [[nodiscard]] const auto& patchData() const { return patchGeometry_->patchData_; }
-    [[nodiscard]] const NurbsLocalView& nurbs() const { return nurbsLocalView_; }
-    [[nodiscard]] const ControlPointCoordinateNetType& controlPointCoordinates() const { return localControlPointNet; }
+    // [[nodiscard]] const std::array<int, gridDimension>& spanIndices() const { return spanIndices_; }
+    // [[nodiscard]] const PatchGeometry& patchGeometry() const { return *patchGeometry_; }
+    // [[nodiscard]] const auto& patchData() const { return patchGeometry_->patchData_; }
+    // [[nodiscard]] const NurbsLocalView& nurbs() const { return nurbsLocalView_; }
+    // [[nodiscard]] const ControlPointCoordinateNetType& controlPointCoordinates() const { return localControlPointNet; }
 
    private:
     GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {

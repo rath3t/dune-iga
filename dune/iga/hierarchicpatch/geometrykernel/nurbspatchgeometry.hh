@@ -5,11 +5,10 @@
 
 #include "dune/iga/geometry/closestpointprojection.hh"
 #include "dune/iga/geometry/geohelper.hh"
-#include "dune/iga/nurbsalgorithms.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/hierarchicpatch/nurbspatchgeometrylocalview.hh>
-#include <dune/iga/hierarchicpatch/geometryalgorithms.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/geometryalgorithms.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
 
@@ -42,10 +41,10 @@ namespace Dune::IGANEW::GeometryKernel {
     using Nurbs          = Dune::IGA::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
-    using GeometryLocalView = Dune::IGANEW::PatchGeometryLocalView<codim, NURBSPatch, trim>;
+    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, trim>;
 
     template <int codim, typename NURBSPatch, Trimming trim>
-    friend struct Dune::IGANEW::PatchGeometryLocalView;
+    friend struct PatchGeometryLocalView;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */

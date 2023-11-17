@@ -11,9 +11,8 @@
 #include "enums.hh"
 
 #include <dune/common/fmatrix.hh>
-#include <dune/common/typetraits.hh>
 #include <dune/grid/common/geometry.hh>
-#include <dune/iga/hierarchicpatch/nurbspatchgeometry.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometry.hh>
 namespace Dune::IGANEW {
 
   template <int mydim, int coorddim, class GridImp>  // requires ( coorddim== GridImp::dimensionworld )
@@ -26,11 +25,11 @@ namespace Dune::IGANEW {
     static constexpr std::integral auto griddim        = GridImp::dimension;
     static constexpr std::integral auto codim          = griddim - mydim;
     using ctype                                        = typename GridImp::ctype;
-    using PatchGeometry                                = GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension, ctype>;
-    using LocalCoordinateInPatch                       = typename PatchGeometry::LocalCoordinate;
-    using LocalCoordinate                              = FieldVector<ctype, mydimension>;
-    using GlobalCoordinate                             = FieldVector<ctype, worlddimension>;
-    using JacobianTransposed                           = FieldMatrix<ctype, mydimension, worlddimension>;
+    using PatchGeometry             = GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension, ctype>;
+    using LocalCoordinateInPatch    = typename PatchGeometry::LocalCoordinate;
+    using LocalCoordinate           = FieldVector<ctype, mydimension>;
+    using GlobalCoordinate          = FieldVector<ctype, worlddimension>;
+    using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
     using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension>;
     using Jacobian                  = FieldMatrix<ctype, worlddimension, mydimension>;
     using JacobianInverseTransposed = FieldMatrix<ctype, worlddimension, mydimension>;
@@ -39,18 +38,12 @@ namespace Dune::IGANEW {
 
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid          = GridImp::HostGridType::dimension - mydim;
-    constexpr static int DimensionWorldOfHostGrid = GridImp::HostGridType::dimensionworld;
 
-    // select appropriate hostgrid geometry via typeswitch
-    typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry HostGridGeometryType;
-    typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry HostGridLocalGeometryType;
-
-    using HostGridGeometry = typename std::conditional<coorddim == DimensionWorldOfHostGrid, HostGridGeometryType,
-                                                       HostGridLocalGeometryType>::type;
+    using HostGridGeometry = typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry;
 
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView =
-        typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension, ctype>::template GeometryLocalView<codim, trim>;
+    using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
+                                                                  ctype>::template GeometryLocalView<codim, trim>;
 
     /** constructor from host geometry
      */
@@ -82,11 +75,8 @@ namespace Dune::IGANEW {
       return geometryLocalView_.jacobianTransposed(local);
     }
 
-    /** \brief Return the transposed of the Jacobian
- */
-    Hessian hessian(const LocalCoordinate& local) const {
-      return geometryLocalView_.hessian(local);
-    }
+    /** \brief Return the Hessian */
+    Hessian hessian(const LocalCoordinate& local) const { return geometryLocalView_.hessian(local); }
 
     /** \brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */

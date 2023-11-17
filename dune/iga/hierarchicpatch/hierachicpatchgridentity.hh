@@ -8,7 +8,6 @@
  * \brief The PatchGridEntity class
  */
 
-#include <dune/grid/common/grid.hh>
 #include "hierachicpatchgridgeometry.hh"
 namespace Dune::IGANEW {
 

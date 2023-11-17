@@ -125,10 +125,10 @@ namespace Dune::IGANEW {
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal(
         const FieldVector<ctype, GridImp::dimension - 1>& local) const {
-      auto J           = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      auto Jinv           = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.integrationOuterNormal(local), res);
+      Jinv.mv(hostIntersection_.integrationOuterNormal(local), res);
       res *= detJ;
       return res;
     }
@@ -136,9 +136,9 @@ namespace Dune::IGANEW {
     //! return unit outer normal
     FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal(
         const FieldVector<ctype, GridImp::dimension - 1>& local) const {
-      auto J = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      auto Jinv = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.unitOuterNormal(local), res);
+      Jinv.mv(hostIntersection_.unitOuterNormal(local), res);
       res /= res.two_norm();
       return res;
     }
@@ -186,19 +186,19 @@ namespace Dune::IGANEW {
     PatchGridLevelIntersection(const GridImp* identityGrid, HostLevelIntersection&& hostIntersection)
         : patchGrid_(identityGrid), hostIntersection_(std::move(hostIntersection)) {}
 
-    bool equals(const PatchGridLevelIntersection& other) const { return hostIntersection_ == other.hostIntersection_; }
+    [[nodiscard]] bool equals(const PatchGridLevelIntersection& other) const { return hostIntersection_ == other.hostIntersection_; }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
-    Entity inside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside()); }
+    [[nodiscard]] Entity inside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside()); }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
-    Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside()); }
+    [[nodiscard]] Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside()); }
 
     /** \brief return true if intersection is with boundary.
      */
-    bool boundary() const { return hostIntersection_.boundary(); }
+    [[nodiscard]] bool boundary() const { return hostIntersection_.boundary(); }
 
     /** \brief Return unit outer normal (length == 1)
      *
@@ -208,30 +208,30 @@ namespace Dune::IGANEW {
     NormalVector centerUnitOuterNormal() const { return hostIntersection_.centerUnitOuterNormal(); }
 
     //! return true if across the edge an neighbor on this level exists
-    bool neighbor() const { return hostIntersection_.neighbor(); }
+    [[nodiscard]] bool neighbor() const { return hostIntersection_.neighbor(); }
 
     //! return the boundary segment index
-    size_t boundarySegmentIndex() const { return hostIntersection_.boundarySegmentIndex(); }
+    [[nodiscard]] size_t boundarySegmentIndex() const { return hostIntersection_.boundarySegmentIndex(); }
 
     //! Return true if this is a conforming intersection
-    bool conforming() const { return hostIntersection_.conforming(); }
+    [[nodiscard]] bool conforming() const { return hostIntersection_.conforming(); }
 
     //! Geometry type of an intersection
-    GeometryType type() const { return hostIntersection_.type(); }
+    [[nodiscard]] GeometryType type() const { return hostIntersection_.type(); }
 
     //! intersection of codimension 1 of this neighbor with element where
     //! iteration started.
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
-    LocalGeometry geometryInInside() const { return LocalGeometry(hostIntersection_.geometryInInside()); }
+    [[nodiscard]] LocalGeometry geometryInInside() const { return LocalGeometry(hostIntersection_.geometryInInside()); }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
-    LocalGeometry geometryInOutside() const { return LocalGeometry(hostIntersection_.geometryInOutside()); }
+    [[nodiscard]] LocalGeometry geometryInOutside() const { return LocalGeometry(hostIntersection_.geometryInOutside()); }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
-    Geometry geometry() const {
+    [[nodiscard]] Geometry geometry() const {
       assert(trim == Trimming::Disabled && "This intersection geometry does not make sense for trimmed elements");
       auto geo = typename Geometry::Implementation(hostIntersection_.geometry(),
                                                    patchGrid_->patchGeometries.back().template localView<1, trim>());
@@ -239,13 +239,13 @@ namespace Dune::IGANEW {
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
-    int indexInInside() const { return hostIntersection_.indexInInside(); }
+    [[nodiscard]] int indexInInside() const { return hostIntersection_.indexInInside(); }
 
     //! local number of codim 1 entity in neighbor where intersection is contained
-    int indexInOutside() const { return hostIntersection_.indexInOutside(); }
+    [[nodiscard]] int indexInOutside() const { return hostIntersection_.indexInOutside(); }
 
     //! return outer normal
-    FieldVector<ctype, dimworld> outerNormal(const FieldVector<ctype, dim - 1>& local) const {
+    [[nodiscard]] FieldVector<ctype, dimworld> outerNormal(const FieldVector<ctype, dim - 1>& local) const {
       const auto globalInPatch            = geometryInInside().global(local);
       FieldMatrix<ctype, dimworld, dim> J = inside().geometry().jacobianInverseTransposed(globalInPatch);
       FieldVector<ctype, dimworld> res;
@@ -254,7 +254,7 @@ namespace Dune::IGANEW {
     }
 
     //! return outer normal multiplied by the integration element
-    FieldVector<ctype, dimworld> integrationOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
+    [[nodiscard]] FieldVector<ctype, dimworld> integrationOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
       auto J           = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       const ctype detJ = inside().geometry().integrationElement(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
@@ -264,7 +264,7 @@ namespace Dune::IGANEW {
     }
 
     //! return unit outer normal
-    FieldVector<ctype, dimworld> unitOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
+    [[nodiscard]] FieldVector<ctype, dimworld> unitOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
       auto J = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
       J.mv(hostIntersection_.unitOuterNormal(local), res);

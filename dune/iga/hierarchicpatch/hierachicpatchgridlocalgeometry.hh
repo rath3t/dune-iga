@@ -10,7 +10,7 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/grid/common/geometry.hh>
-#include <dune/iga/hierarchicpatch/nurbspatchgeometry.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometry.hh>
 
 namespace Dune::IGANEW {
 

@@ -7,7 +7,7 @@ set(HEADERS
   hierachicpatchgridhierarchiciterator.hh
   hierachicpatchgridgeometry.hh
         hierachicpatchgridlocalgeometry.hh
-        nurbspatchgeometrylocalview.hh
+        geometrykernel/nurbspatchgeometrylocalview.hh
   hierachicpatchgridintersectioniterator.hh
   hierachicpatchgridintersections.hh
   hierachicpatchgridindexsets.hh
