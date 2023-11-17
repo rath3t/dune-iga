@@ -132,10 +132,10 @@ namespace Dune::IGANEW {
       assert(parameterSpaceGeometry && "Bind the local view first!");
       // using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
       const auto ouInPatch = globalInParameterSpace(u);
-      const PatchJacobianTransposed JTinPatch
+      const PatchJacobianTransposed dfdg
           = patchGeometry_->jacobianTransposedImpl(ouInPatch, nurbsLocalView_, localControlPointNet);
-      const JacobianTransposedInParameterSpace jInparaMeterSpace = jacobianTransposedInParameterSpace(u);
-      JacobianTransposed jacobianOfEntity                        = jInparaMeterSpace * JTinPatch;
+      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
+      JacobianTransposed jacobianOfEntity                        = dgdt * dfdg;
       return jacobianOfEntity;
     }
 
@@ -269,24 +269,26 @@ namespace Dune::IGANEW {
       static_assert(std::is_same_v<std::remove_const_t<decltype(p)>, GlobalCoordinate>);
 
       const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
+      static_assert(JacobianTransposedInParameterSpace::rows==mydimension);
+      static_assert(JacobianTransposedInParameterSpace::cols==gridDimension);
       // dgdt (1x2, curve on surface), (2x2 surface in surface), (2x3 surface in 3D), (3x3 volume in 3D)
-      FieldMatrix<ctype, patchNumberOfSecondDerivatives, numberOfSecondDerivatives> dgdtSquared;
+      FieldMatrix<ctype, patchNumberOfSecondDerivatives, numberOfSecondDerivatives> dgdtSquared(0);
 
       for (int patchIndex = 0; auto [patchRow, patchCol] : Impl::voigtIndices<gridDimension>()) {
         for (int myIndex = 0; auto [myRow, myCol] : Impl::voigtIndices<mydimension>()) {
           if constexpr (not std::is_same_v<JacobianTransposedInParameterSpace,
-                                           Dune::DiagonalMatrix<ctype, gridDimension>>)
+                                           DiagonalMatrix<ctype, gridDimension>>)
             dgdtSquared[patchIndex++][myIndex++]
-                = (dgdt[myRow][patchRow] * dgdt[myCol][patchCol] + dgdt[myRow][patchCol] * dgdt[myCol][patchRow])
-                  * ((myRow == myCol) ? 0.5 : 1.0);
+                = (dgdt[myRow][patchRow]*dgdt[myCol][patchCol]+ dgdt[myCol][patchRow]*dgdt[myRow][patchCol])
+                  * ((patchRow == patchCol) ? 0.5 : 1.0);
           else {
             const auto dgdtmyRowpatchRow = (myRow == patchRow) ? dgdt[myRow][patchRow] : 0;
             const auto dgdtmyColpatchCol = (myCol == patchCol) ? dgdt[myCol][patchCol] : 0;
-            const auto dgdtmyRowpatchCol = (myRow == patchCol) ? dgdt[myRow][patchCol] : 0;
-            const auto dgdtmyColpatchRow = (myCol == patchRow) ? dgdt[myCol][patchRow] : 0;
+            const auto dgdtmyColpatchRow = (myRow == patchCol) ? dgdt[myCol][patchRow] : 0;
+            const auto dgdtmyRowpatchCol = (myCol == patchRow) ? dgdt[myRow][patchCol] : 0;
             dgdtSquared[patchIndex++][myIndex++]
-                = (dgdtmyRowpatchRow * dgdtmyColpatchCol + dgdtmyRowpatchCol * dgdtmyColpatchRow)
-                  * ((myRow == myCol) ? 0.5 : 1.0);
+                = (dgdtmyRowpatchRow * dgdtmyColpatchCol + dgdtmyColpatchRow * dgdtmyRowpatchCol)
+                  * ((patchRow == patchCol) ? 0.5 : 1.0);
           }
         }
       }

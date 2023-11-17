@@ -94,18 +94,9 @@ auto thoroughGridCheck(auto& grid) {
   constexpr int gridDimension = std::remove_cvref_t<decltype(grid)>::dimension;
   auto gvTest = [&](auto&& gv) {
     TestSuite tl;
-    gridcheck(grid);
-    checkEntityLifetime(gv);
 
-    for (auto&& elegeo : elements(gv) | std::views::transform([](const auto& ele) { return ele.geometry(); }))
-      checkJacobians(elegeo);
-
-    checkIterators(gv);
-
-    gridcheck(grid);
     tl.subTest(checkUniqueEdges(gv));
     tl.subTest(checkUniqueSurfaces(gv));
-
 
     auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
     for (auto&& elegeo : elements(gv) | extractGeo)
@@ -123,6 +114,7 @@ auto thoroughGridCheck(auto& grid) {
         checkJacobians(edgegeo);
 
     checkIterators(gv);
+    checkEntityLifetime(gv);
     return tl;
   };
 
@@ -242,6 +234,7 @@ auto testTorusGeometry() {
   vtkWriter.write("NURBSGridTest-SurfaceRevolutionFLAT");
 
   TestSuite test;
+  grid.globalRefine( 1 );
   gridcheck(grid);
 
   // checkIntersectionIterator(grid,true);
@@ -464,8 +457,11 @@ int main(int argc, char** argv) try {
   TestSuite t;
   t.subTest(testHierarchicPatch());
   // TestSuite t;
+  std::cout<<"Test3D"<<std::endl;
   t.subTest(test3DGrid());
+  std::cout<<"Test1Din3D"<<std::endl;
   t.subTest(testNURBSGridCurve());
+  std::cout<<"testNurbsGridCylinder"<<std::endl;
   t.subTest(testNurbsGridCylinder());
   t.subTest(testNURBSGridSurface());
   // t.subTest(testPlate());

@@ -69,10 +69,9 @@ namespace Dune::IGA {
     auto [oldEnergy, R, H] = energyGradAndHess(u);
     energyVal              = oldEnergy;
     for (i = 0; i < maxiter; ++i) {
-      Dune::FieldVector<ctype, dim> du;
+      FieldVector<ctype, dim> du;
       H.solve(du, -R);
       Rnorm = R.two_norm();
-
       // if the increment is too large, we tend to overshoot, thus, we limit it to a fraction of the total domain
       ctype duNorm = du.two_norm();
       if (duNorm > domainFraction) du *= domainFraction / duNorm;
@@ -108,7 +107,8 @@ namespace Dune::IGA {
         } else
           break;
 
-        if (j == testSteps - 1) DUNE_THROW(Dune::MathError, "We couldn't find an energy decreasing direction");
+        if (j == testSteps - 1)
+          DUNE_THROW(Dune::MathError, "We couldn't find an energy decreasing direction");
       }
       std::tie(oldEnergy, R, H) = energyGradAndHess(u);
 

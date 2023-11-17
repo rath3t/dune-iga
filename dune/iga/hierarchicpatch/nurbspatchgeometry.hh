@@ -189,34 +189,43 @@ namespace Dune::IGANEW {
     static auto zeroFirstAndSecondDerivativeOfPositionImpl(const LocalCoordinate& u,
                                                            const NurbsLocalView& nurbsLocalView,
                                                            const ControlPointCoordinateNetType& localControlPointNet) {
-      FieldVector<ctype, worlddimension> pos;
-      JacobianTransposed J;
-      FieldMatrix<ctype, patchDimension*(patchDimension + 1) / 2, worlddimension> H;
+      GlobalCoordinate pos;
 
+      Hessian H;
       const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(u, 2);
 
       std::array<unsigned int, patchDimension> ithVecZero{};
       pos = Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), localControlPointNet);
-
+      JacobianTransposed J;
       for (int dir = 0; dir < patchDimension; ++dir) {
         std::array<unsigned int, patchDimension> ithVec{};
         ithVec[dir] = 1;
-        J[dir]      = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
+        J[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
       }
+
       for (int dir = 0; dir < patchDimension; ++dir) {
         std::array<unsigned int, patchDimension> ithVec{};
-        ithVec[dir] = 2;  // second derivative in dir direction
-        H[dir]      = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
+        ithVec[dir] = 2;  // second derivative in subDirs[dir] direction
+        H[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
       }
       if constexpr (patchDimension > 1) {
         std::array<int, patchDimension> mixeDerivs;
-        std::ranges::fill(mixeDerivs, 0); 
-        std::ranges::fill_n(mixeDerivs.begin(), 2, 1);  // first mixed derivatives
+        std::ranges::fill(mixeDerivs, 0);  // first mixed derivatives
+        if constexpr (patchDimension == 2)
+          for (int dir = 0; dir < patchDimension; ++dir) {
+            mixeDerivs[dir] = 1;
+          }
+        else
+          std::ranges::fill_n(mixeDerivs.begin()+1, 2, 1);  // first mixed derivatives
         int mixedDireCounter = patchDimension;
         do {
           H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), localControlPointNet);
-        } while (std::ranges::next_permutation(mixeDerivs, std::greater()).found);
+
+          if constexpr (patchDimension == 2) break;
+
+        } while (std::ranges::next_permutation(mixeDerivs, std::less()).found);
       }
+
       return std::make_tuple(pos, J, H);
     }
 
