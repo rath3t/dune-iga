@@ -3,13 +3,11 @@
 
 #pragma once
 
-#include "dune/iga/geometry/closestpointprojection.hh"
-#include "dune/iga/geometry/geohelper.hh"
-#include "dune/iga/nurbsalgorithms.hh"
-#include <dune/geometry/multilineargeometry.hh>
+// #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/geometryalgorithms.hh>
+#include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
 
@@ -94,7 +92,7 @@ namespace Dune::IGANEW::GeometryKernel {
     using MatrixHelper              = typename PatchGeometry::MatrixHelper;
     using Volume                    = ctype;
 
-    using Nurbs          = IGA::Nurbs<gridDimension, ctype>;
+    using Nurbs          = Nurbs<gridDimension, ctype>;
     using NurbsLocalView = typename Nurbs::LocalView;
 
     using ControlPointCoordinateNetType = typename PatchGeometry::ControlPointCoordinateNetType;
@@ -102,10 +100,7 @@ namespace Dune::IGANEW::GeometryKernel {
     PatchGeometryLocalView() = default;
     explicit PatchGeometryLocalView(const PatchGeometry& patchGeometry) : patchGeometry_{&patchGeometry} {}
 
-    [[nodiscard]] GlobalCoordinate center() const {
-      LocalCoordinate localcenter(0.5);
-      return global(localcenter);
-    }
+    [[nodiscard]] GlobalCoordinate center() const { return global(LocalCoordinate(0.5)); }
 
     void bind(const ParameterSpaceGeometry& lGeo) {
       parameterSpaceGeometry = std::make_optional<ParameterSpaceGeometry>(lGeo);
@@ -113,47 +108,32 @@ namespace Dune::IGANEW::GeometryKernel {
           = patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
     }
 
-    /** \brief evaluates the geometric position
-     *
-     *  \param[in] u coordinates for each dimension in the [knotSpan.front(), knotSpan.back() ] domain
+    /**
+     * \brief evaluates the geometric position
+     * \param[in] local coordinate
+     * \return position in world space
      */
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-      return patchGeometry_->globalImpl(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
-    }
-
-    [[nodiscard]] JacobianTransposedInParameterSpace jacobianTransposedInParameterSpace(
-        const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-      return parameterSpaceGeometry.value().jacobianTransposed(u);
+      checkState();
+      return GeometryKernel::position(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
     }
 
     [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-      // using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
-      const auto ouInPatch = globalInParameterSpace(u);
+      checkState();
       const PatchJacobianTransposed dfdg
-          = patchGeometry_->jacobianTransposedImpl(ouInPatch, nurbsLocalView_, localControlPointNet);
+          = GeometryKernel::jacobianTransposed(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
       const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
-      JacobianTransposed jacobianOfEntity                        = dgdt * dfdg;
-      return jacobianOfEntity;
+      return dgdt * dfdg;
     }
 
-    [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-
-      return transpose(jacobianTransposed(local));
-    }
+    [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const { return transpose(jacobianTransposed(local)); }
 
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-      auto j = jacobianTransposed(local);
-      return MatrixHelper::template sqrtDetAAT<mydimension, worlddimension>(j);
+      auto jT = jacobianTransposed(local);
+      return MatrixHelper::template sqrtDetAAT<mydimension, worlddimension>(jT);
     }
 
     [[nodiscard]] double volume(int scaleOrder = 1) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-
       if constexpr (trim == Trimming::Enabled) {
         // if constexpr (mydimension == 2)
         // if (subgrid_) {
@@ -164,19 +144,18 @@ namespace Dune::IGANEW::GeometryKernel {
         //     vol += integrationElement(gp.position()) * gp.weight();
         //   return vol;
         // }
-        //TODO here the integration of trimmed quantities has to happen and also the new edge geometries
+        // TODO here the integration of trimmed quantities has to happen and also the new edge geometries
       }
 
-
-
-      const auto& rule = Dune::QuadratureRules<ctype, mydimension>::rule(
+      const auto& rule = QuadratureRules<ctype, mydimension>::rule(
           GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchGeometry_->patchData_.degree)));
-      ctype vol = 0.0;
+      Volume vol = 0.0;
       for (auto& gp : rule)
         vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
 
+    /** \brief Type of the type of the parameter space element */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     /** \brief Return the number of corners of the element */
@@ -184,12 +163,10 @@ namespace Dune::IGANEW::GeometryKernel {
 
     /** \brief Return world coordinates of the k-th corner of the element */
     [[nodiscard]] GlobalCoordinate corner(int k) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
-
       LocalCoordinate localcorner;
-      for (size_t i = 0; i < mydimension; i++) {
+      for (size_t i = 0; i < mydimension; i++)
         localcorner[i] = (k & (1 << i)) ? 1 : 0;
-      }
+
       return global(localcorner);
     }
 
@@ -203,15 +180,15 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
-      JacobianInverseTransposed jacobianInverseTransposed1;
-      const JacobianTransposed Jt = jacobianTransposed(local);
-      MatrixHelper::template rightInvA<mydimension, worlddimension>(Jt, jacobianInverseTransposed1);
-      return jacobianInverseTransposed1;
+      JacobianTransposed Jt = jacobianTransposed(local);
+      JacobianInverseTransposed jacobianInverseTransposed;
+      MatrixHelper::template rightInvA<mydimension, worlddimension>(Jt, jacobianInverseTransposed);
+      return jacobianInverseTransposed;
     }
 
     std::tuple<GlobalCoordinate, JacobianTransposed, Hessian> zeroFirstAndSecondDerivativeOfPosition(
         const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
+      checkState();
 
       return std::make_tuple(global(u), jacobianTransposed(u), hessian(u));
     }
@@ -261,28 +238,23 @@ namespace Dune::IGANEW::GeometryKernel {
      * \verb+worlddimension+\f$.
      */
     Hessian hessian(const LocalCoordinate& u) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
+      checkState();
       const auto ouInPatch = globalInParameterSpace(u);
 
       const auto [p, dfdg, dfdgdg] = patchGeometry_->zeroFirstAndSecondDerivativeOfPositionImpl(
           ouInPatch, nurbsLocalView_, localControlPointNet);
 
-      static_assert(std::is_same_v<std::remove_const_t<decltype(dfdg)>, PatchJacobianTransposed>);
-      static_assert(std::is_same_v<std::remove_const_t<decltype(dfdgdg)>, PatchHessian>);
-      static_assert(std::is_same_v<std::remove_const_t<decltype(p)>, GlobalCoordinate>);
-
       const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
-      static_assert(JacobianTransposedInParameterSpace::rows==mydimension);
-      static_assert(JacobianTransposedInParameterSpace::cols==gridDimension);
+      static_assert(JacobianTransposedInParameterSpace::rows == mydimension);
+      static_assert(JacobianTransposedInParameterSpace::cols == gridDimension);
       // dgdt (1x2, curve on surface), (2x2 surface in surface), (2x3 surface in 3D), (3x3 volume in 3D)
       FieldMatrix<ctype, patchNumberOfSecondDerivatives, numberOfSecondDerivatives> dgdtSquared(0);
 
       for (int patchIndex = 0; auto [patchRow, patchCol] : Impl::voigtIndices<gridDimension>()) {
         for (int myIndex = 0; auto [myRow, myCol] : Impl::voigtIndices<mydimension>()) {
-          if constexpr (not std::is_same_v<JacobianTransposedInParameterSpace,
-                                           DiagonalMatrix<ctype, gridDimension>>)
+          if constexpr (not std::is_same_v<JacobianTransposedInParameterSpace, DiagonalMatrix<ctype, gridDimension>>)
             dgdtSquared[patchIndex++][myIndex++]
-                = (dgdt[myRow][patchRow]*dgdt[myCol][patchCol]+ dgdt[myCol][patchRow]*dgdt[myRow][patchCol])
+                = (dgdt[myRow][patchRow] * dgdt[myCol][patchCol] + dgdt[myCol][patchRow] * dgdt[myRow][patchCol])
                   * ((patchRow == patchCol) ? 0.5 : 1.0);
           else {
             const auto dgdtmyRowpatchRow = (myRow == patchRow) ? dgdt[myRow][patchRow] : 0;
@@ -330,20 +302,23 @@ namespace Dune::IGANEW::GeometryKernel {
       return result;
     }
 
-    [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const { return {}; }
+    [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
     [[nodiscard]] bool affine() const { return false; }
-    // [[nodiscard]] const std::array<int, gridDimension>& spanIndices() const { return spanIndices_; }
-    // [[nodiscard]] const PatchGeometry& patchGeometry() const { return *patchGeometry_; }
-    // [[nodiscard]] const auto& patchData() const { return patchGeometry_->patchData_; }
-    // [[nodiscard]] const NurbsLocalView& nurbs() const { return nurbsLocalView_; }
-    // [[nodiscard]] const ControlPointCoordinateNetType& controlPointCoordinates() const { return localControlPointNet; }
 
    private:
+    void checkState() const { assert(parameterSpaceGeometry && "Bind the local view first!"); }
     GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {
-      assert(parameterSpaceGeometry && "Bind the local view first!");
+      checkState();
       return parameterSpaceGeometry.value().global(local);
     }
+
+    [[nodiscard]] JacobianTransposedInParameterSpace jacobianTransposedInParameterSpace(
+        const LocalCoordinate& u) const {
+      checkState();
+      return parameterSpaceGeometry.value().jacobianTransposed(u);
+    }
+
     ControlPointCoordinateNetType localControlPointNet;
     NurbsLocalView nurbsLocalView_;
     std::array<int, gridDimension> spanIndices_;
@@ -351,4 +326,4 @@ namespace Dune::IGANEW::GeometryKernel {
     std::optional<ParameterSpaceGeometry> parameterSpaceGeometry;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::GeometryKernel

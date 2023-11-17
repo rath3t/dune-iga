@@ -125,7 +125,7 @@ namespace Dune::IGANEW {
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal(
         const FieldVector<ctype, GridImp::dimension - 1>& local) const {
-      auto Jinv           = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+      auto Jinv        = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
       const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
       FieldVector<ctype, dimworld> res;
       Jinv.mv(hostIntersection_.integrationOuterNormal(local), res);
@@ -186,15 +186,21 @@ namespace Dune::IGANEW {
     PatchGridLevelIntersection(const GridImp* identityGrid, HostLevelIntersection&& hostIntersection)
         : patchGrid_(identityGrid), hostIntersection_(std::move(hostIntersection)) {}
 
-    [[nodiscard]] bool equals(const PatchGridLevelIntersection& other) const { return hostIntersection_ == other.hostIntersection_; }
+    [[nodiscard]] bool equals(const PatchGridLevelIntersection& other) const {
+      return hostIntersection_ == other.hostIntersection_;
+    }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
-    [[nodiscard]] Entity inside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside()); }
+    [[nodiscard]] Entity inside() const {
+      return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside());
+    }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
-    [[nodiscard]] Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside()); }
+    [[nodiscard]] Entity outside() const {
+      return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside());
+    }
 
     /** \brief return true if intersection is with boundary.
      */
@@ -227,7 +233,9 @@ namespace Dune::IGANEW {
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
-    [[nodiscard]] LocalGeometry geometryInOutside() const { return LocalGeometry(hostIntersection_.geometryInOutside()); }
+    [[nodiscard]] LocalGeometry geometryInOutside() const {
+      return LocalGeometry(hostIntersection_.geometryInOutside());
+    }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.

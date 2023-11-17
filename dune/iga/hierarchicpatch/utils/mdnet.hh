@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "concepts.hh"
-
 #include <concepts>
 #include <functional>
 #include <iterator>
@@ -12,8 +10,9 @@
 #include <ranges>
 
 #include <dune/common/fvector.hh>
+#include <dune/iga/hierarchicpatch/concepts.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
@@ -348,7 +347,7 @@ namespace Dune::IGA {
 
     Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
-      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, 0);
+      return Impl::HyperSurfaceIterator(*this, direction, 0);
     }
     Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
@@ -362,7 +361,7 @@ namespace Dune::IGA {
       } else
         directionEnd = this->strideSizes()[0];
 
-      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, directionEnd);
+      return Impl::HyperSurfaceIterator(*this, direction, directionEnd);
     }
 
    private:
@@ -559,4 +558,4 @@ namespace Dune::IGA {
     std::array<int, netdim> dimSize_;
     int size_;
   };
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

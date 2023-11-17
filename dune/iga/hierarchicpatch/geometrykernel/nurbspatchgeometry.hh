@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include "dune/iga/geometry/closestpointprojection.hh"
-#include "dune/iga/geometry/geohelper.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
-#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/geometryalgorithms.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
 
@@ -16,7 +15,7 @@ namespace Dune::IGANEW::GeometryKernel {
   class NURBSPatch {
    public:
     static constexpr std::integral auto worlddimension = dimworld_;
-    static constexpr std::integral auto mydimension = dim_;
+    static constexpr std::integral auto mydimension    = dim_;
 
     using ctype                     = ScalarType;
     using LocalCoordinate           = FieldVector<ctype, mydimension>;
@@ -33,12 +32,12 @@ namespace Dune::IGANEW::GeometryKernel {
         = YaspGeometry<mydimension - codim, mydimension,
                        const YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>>;
 
-    using ControlPointType = typename IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointType;
-    using ControlPointNetType =
-        typename IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
-    using ControlPointCoordinateNetType = IGA::MultiDimensionNet<
-        mydimension, typename IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
-    using Nurbs          = Dune::IGA::Nurbs<mydimension, ScalarType>;
+    using ControlPointType    = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointType;
+    using ControlPointNetType = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
+    using ControlPointCoordinateNetType
+        = MultiDimensionNet<mydimension,
+                            typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
+    using Nurbs          = Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, trim>;
@@ -58,14 +57,11 @@ namespace Dune::IGANEW::GeometryKernel {
       return GeometryLocalView<codim, trim>(*this);
     }
 
-    explicit NURBSPatch(const IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
+    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
         : patchData_(patchData), nurbs_{patchData}, localView_(localView<0, Trimming::Disabled>()) {}
 
     /** \brief Map the center of the element to the geometry */
-    [[nodiscard]] GlobalCoordinate center() const {
-      LocalCoordinate localcenter(0.5);
-      return global(localcenter);
-    }
+    [[nodiscard]] GlobalCoordinate center() const { return global(domainMidPoint()); }
 
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
       return computeParameterSpaceCoordinate(*this, global);
@@ -77,8 +73,7 @@ namespace Dune::IGANEW::GeometryKernel {
           this->type(), scaleOrder * mydimension * (*std::ranges::max_element(patchData_.degree)));
       ctype vol = 0.0;
       for (auto& gp : rule) {
-        localView_.bind(gp.position());
-        vol += localView_.integrationElement(gp.position()) * gp.weight();
+        vol += integrationElement(gp.position()) * gp.weight();
       }
       return vol;
     }
@@ -105,7 +100,7 @@ namespace Dune::IGANEW::GeometryKernel {
      */
     [[nodiscard]] FieldVector<ctype, worlddimension> global(const LocalCoordinate& u) const {
       auto [nurbsLocalView, cpNet, subNetStart] = calculateNurbsAndControlPointNet(u);
-      return this->global(u, nurbsLocalView, cpNet);
+      return GeometryKernel::position(u, nurbsLocalView, cpNet);
     }
 
     auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
@@ -119,12 +114,12 @@ namespace Dune::IGANEW::GeometryKernel {
      */
     [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
       auto [nurbsLocalView, cpNet, subNetStart] = calculateNurbsAndControlPointNet(u);
-      return jacobianTransposedImpl(u, nurbsLocalView, cpNet);
+      return GeometryKernel::jacobianTransposed(u, nurbsLocalView, cpNet);
     }
 
     [[nodiscard]] Hessian hessian(const LocalCoordinate& u) const {
       auto [nurbsLocalView, cpNet, subNetStart] = calculateNurbsAndControlPointNet(u);
-      return GeometryKernel::hessian<GeometryKernel::NURBSPatch>(u, nurbsLocalView, cpNet);
+      return GeometryKernel::hessian(u, nurbsLocalView, cpNet);
     }
 
     [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const { return transpose(jacobianTransposed(local)); }
@@ -138,8 +133,8 @@ namespace Dune::IGANEW::GeometryKernel {
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
     // The following are functions are not part of the Geometry Interface
-    [[nodiscard]] std::array<IGA::Utilities::Domain<double>, mydimension> domain() const {
-      std::array<IGA::Utilities::Domain<double>, mydimension> result{};
+    [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const {
+      std::array<Utilities::Domain<double>, mydimension> result{};
       for (int i = 0; i < mydimension; ++i)
         result[i] = {patchData_.knotSpans[i].front(), patchData_.knotSpans[i].back()};
 
@@ -159,90 +154,31 @@ namespace Dune::IGANEW::GeometryKernel {
 
    private:
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
-      auto subNetStart = IGA::findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
+      auto subNetStart = findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
 
       auto cpCoordinateNet
-          = netOfSpan(subNetStart, patchData_.degree, IGA::extractControlCoordinates(patchData_.controlPoints));
+          = netOfSpan(subNetStart, patchData_.degree, extractControlCoordinates(patchData_.controlPoints));
       auto nurbsLocalView = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
       return std::make_tuple(nurbsLocalView, cpCoordinateNet, subNetStart);
     }
 
-    [[nodiscard]] static FieldVector<ctype, worlddimension> globalImpl(
-        const LocalCoordinate& u, const NurbsLocalView& nurbsLocalView,
-        const ControlPointCoordinateNetType& localControlPointNet) {
-      auto basis = nurbsLocalView.basisFunctions(u);
-
-      return IGA::dot(basis, localControlPointNet);
-    }
-
-    [[nodiscard]] static JacobianTransposed jacobianTransposedImpl(
-        const LocalCoordinate& u, const NurbsLocalView& nurbsLocalView,
-        const ControlPointCoordinateNetType& localControlPointNet) {
-      JacobianTransposed result;
-
-      const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(u, 1);
-
-      for (int dir = 0; dir < mydimension; ++dir) {
-        std::array<unsigned int, mydimension> ithVec{};
-        ithVec[dir] = 1;
-        result[dir] = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
-      }
-      return result;
-    }
-
-
     static auto zeroFirstAndSecondDerivativeOfPositionImpl(const LocalCoordinate& u,
                                                            const NurbsLocalView& nurbsLocalView,
                                                            const ControlPointCoordinateNetType& localControlPointNet) {
-      // GlobalCoordinate pos;
-      //
-      // Hessian H;
-      // const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(u, 2);
-      //
-      // std::array<unsigned int, mydimension> ithVecZero{};
-      // pos = Dune::IGA::dot(basisFunctionDerivatives.get(ithVecZero), localControlPointNet);
-      // JacobianTransposed J;
-      // for (int dir = 0; dir < mydimension; ++dir) {
-      //   std::array<unsigned int, mydimension> ithVec{};
-      //   ithVec[dir] = 1;
-      //   J[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
-      // }
-      //
-      // for (int dir = 0; dir < mydimension; ++dir) {
-      //   std::array<unsigned int, mydimension> ithVec{};
-      //   ithVec[dir] = 2;  // second derivative in subDirs[dir] direction
-      //   H[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
-      // }
-      // if constexpr (mydimension > 1) {
-      //   std::array<int, mydimension> mixeDerivs;
-      //   std::ranges::fill(mixeDerivs, 0);  // first mixed derivatives
-      //   if constexpr (mydimension == 2)
-      //     for (int dir = 0; dir < mydimension; ++dir) {
-      //       mixeDerivs[dir] = 1;
-      //     }
-      //   else
-      //     std::ranges::fill_n(mixeDerivs.begin()+1, 2, 1);  // first mixed derivatives
-      //   int mixedDireCounter = mydimension;
-      //   do {
-      //     H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), localControlPointNet);
-      //
-      //     if constexpr (mydimension == 2) break;
-      //
-      //   } while (std::ranges::next_permutation(mixeDerivs, std::less()).found);
-      // }
-
       // TODO the above code is more efficient since there is only on call to the derivatives
 
-      return std::make_tuple(globalImpl(u,nurbsLocalView,localControlPointNet), jacobianTransposedImpl(u,nurbsLocalView,localControlPointNet), GeometryKernel::hessian(u,nurbsLocalView,localControlPointNet));
+      return std::make_tuple(GeometryKernel::position(u, nurbsLocalView, localControlPointNet),
+                             GeometryKernel::jacobianTransposed(u, nurbsLocalView, localControlPointNet),
+                             GeometryKernel::hessian(u, nurbsLocalView, localControlPointNet));
     }
 
    public:
-    IGA::NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
+    NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
 
    private:
-    IGA::Nurbs<mydimension, ScalarType> nurbs_;
+    Nurbs nurbs_;
     GeometryLocalView<0, Trimming::Disabled> localView_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::GeometryKernel

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <dune/iga/hierarchicpatch/geometrykernel/closestpointprojection.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 
-
-  namespace Dune::IGANEW::GeometryKernel{
+namespace Dune::IGANEW::GeometryKernel {
 
   template <typename Geometry>
   typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(
@@ -18,7 +19,7 @@
     if constexpr (mydimension == 0)
       return {};
     else if constexpr (mydimension != worlddimension) {
-      auto [u, Ru, fu, gap] = Dune::IGA::closestPointProjectionByTrustRegion(geo, global);
+      auto [u, Ru, fu, gap] = closestPointProjectionByTrustRegion(geo, global);
       return u;
     } else {
       const ctype tolerance = ctype(16) * std::numeric_limits<ctype>::epsilon();
@@ -35,7 +36,7 @@
         x -= dx;
         // if local is outside of maximum knot vector span bound, thus we clamp it to it and return
         // clamp result into boundaries
-        if (IGA::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
+        if (Dune::IGANEW::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
           break;
         }
 
@@ -45,20 +46,20 @@
   }
 
   template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
-  auto hessian(const LocalCoordinate& local,const NurbsLocalView& nurbsLocalView,
-                                                           const ControlPointCoordinateNetType& localControlPointNet) {
+  auto hessian(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
+               const ControlPointCoordinateNetType& localControlPointNet) {
+    static constexpr int mydimension    = NurbsLocalView::dimension;
+    static constexpr int worlddimension = ControlPointCoordinateNetType::value_type::dimension;
+    using ctype                         = typename ControlPointCoordinateNetType::value_type::value_type;
+
+    FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension> H;
 
     const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(local, 2);
-    static constexpr int mydimension = NurbsLocalView::dimension;
-    static constexpr int worlddimension = ControlPointCoordinateNetType::value_type::dimension;
-    using ctype = typename ControlPointCoordinateNetType::value_type::value_type;
-
-    FieldMatrix<ctype,mydimension*(mydimension + 1) / 2,worlddimension> H;
 
     for (int dir = 0; dir < mydimension; ++dir) {
       std::array<unsigned int, mydimension> ithVec{};
       ithVec[dir] = 2;  // second derivative in dir direction
-      H[dir]               = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
+      H[dir]      = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
     }
     if constexpr (mydimension > 1) {
       std::array<int, mydimension> mixeDerivs;
@@ -68,18 +69,40 @@
           mixeDerivs[dir] = 1;
         }
       else
-        std::ranges::fill_n(mixeDerivs.begin()+1, 2, 1);  // first mixed derivatives
+        std::ranges::fill_n(mixeDerivs.begin() + 1, 2, 1);  // first mixed derivatives
       int mixedDireCounter = mydimension;
       do {
         H[mixedDireCounter++] = dot(basisFunctionDerivatives.get(mixeDerivs), localControlPointNet);
-
         if constexpr (mydimension == 2) break;
-
       } while (std::ranges::next_permutation(mixeDerivs, std::less()).found);
     }
     return H;
   }
 
+  template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
+  [[nodiscard]] auto jacobianTransposed(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
+                                        const ControlPointCoordinateNetType& localControlPointNet) {
+    static constexpr int mydimension    = NurbsLocalView::dimension;
+    static constexpr int worlddimension = ControlPointCoordinateNetType::value_type::dimension;
+    using ctype                         = typename ControlPointCoordinateNetType::value_type::value_type;
+
+    FieldMatrix<ctype, mydimension, worlddimension> result;
+
+    const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(local, 1);
+
+    for (int dir = 0; dir < mydimension; ++dir) {
+      std::array<unsigned int, mydimension> ithVec{};
+      ithVec[dir] = 1;
+      result[dir] = dot(basisFunctionDerivatives.get(ithVec), localControlPointNet);
+    }
+    return result;
   }
 
+  template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
+  [[nodiscard]] auto position(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
+                              const ControlPointCoordinateNetType& localControlPointNet) {
+    auto basis = nurbsLocalView.basisFunctions(local);
+    return dot(basis, localControlPointNet);
+  }
 
+}  // namespace Dune::IGANEW::GeometryKernel

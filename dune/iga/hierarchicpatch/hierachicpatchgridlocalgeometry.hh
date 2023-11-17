@@ -25,11 +25,11 @@ namespace Dune::IGANEW {
     static constexpr std::integral auto griddim        = GridImp::dimension;
     static constexpr std::integral auto codim          = griddim - mydim;
     using ctype                                        = typename GridImp::ctype;
-    using PatchGeometry                                = GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension, ctype>;
-    using LocalCoordinateInPatch                       = typename PatchGeometry::LocalCoordinate;
-    using LocalCoordinate                              = FieldVector<ctype, mydimension>;
-    using GlobalCoordinate                             = FieldVector<ctype, coorddimension>;
-    using JacobianTransposed                           = FieldMatrix<ctype, mydimension, coorddimension>;
+    using PatchGeometry             = GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension, ctype>;
+    using LocalCoordinateInPatch    = typename PatchGeometry::LocalCoordinate;
+    using LocalCoordinate           = FieldVector<ctype, mydimension>;
+    using GlobalCoordinate          = FieldVector<ctype, coorddimension>;
+    using JacobianTransposed        = FieldMatrix<ctype, mydimension, coorddimension>;
     using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, coorddimension>;
     using Jacobian                  = FieldMatrix<ctype, coorddimension, mydimension>;
     using JacobianInverseTransposed = FieldMatrix<ctype, coorddimension, mydimension>;
@@ -48,8 +48,8 @@ namespace Dune::IGANEW {
                                                        HostGridLocalGeometryType>::type;
 
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView =
-        typename GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension, ctype>::template GeometryLocalView<codim, trim>;
+    using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension,
+                                                                  ctype>::template GeometryLocalView<codim, trim>;
 
     /** constructor from host geometry
      */

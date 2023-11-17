@@ -3,11 +3,10 @@
 
 #pragma once
 
-#include "dune/iga/controlpoint.hh"
-#include "dune/iga/utils/concepts.hh"
-#include "dune/iga/utils/mdnet.hh"
+#include <dune/iga/hierarchicpatch/geometrykernel/controlpoint.hh>
+#include <dune/iga/hierarchicpatch/utils/mdnet.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
   /** \brief class that holds all data regarding the NURBS structure
    *
    * @tparam dim Dimension of the patch
@@ -18,7 +17,7 @@ namespace Dune::IGA {
   struct NURBSPatchData {
     static constexpr int patchDim = dim;
     static constexpr int dimworld = dimworld_;
-    using GlobalCoordinateType    = Dune::FieldVector<ScalarType, dimworld>;
+    using GlobalCoordinateType    = FieldVector<ScalarType, dimworld>;
     using ControlPointType        = ControlPoint<GlobalCoordinateType>;
     using ControlPointNetType     = MultiDimensionNet<dim, ControlPointType>;
 
@@ -27,8 +26,8 @@ namespace Dune::IGA {
                    const std::array<int, dim>& degreeInput)
         : knotSpans(knotSpansI), controlPoints(controlPointsI), degree(degreeInput) {}
 
-    std::array<std::vector<double>, dim> knotSpans;
-    ControlPointNetType controlPoints;
-    std::array<int, dim> degree;
+    std::array<std::vector<double>, dim> knotSpans{};
+    ControlPointNetType controlPoints{};
+    std::array<int, dim> degree{};
   };
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

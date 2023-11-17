@@ -31,7 +31,7 @@ namespace Dune::IGANEW {
     /**
      * \brief Construct an empty (i.e. isValid() == false) seed.
      */
-    PatchGridEntitySeed() {}
+    PatchGridEntitySeed() = default;
 
     /**
      * \brief Create EntitySeed from hostgrid Entity

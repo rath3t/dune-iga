@@ -37,7 +37,7 @@ namespace Dune::IGANEW {
     using Volume                    = ctype;
 
     // The codimension of this entitypointer wrt the host grid
-    constexpr static int CodimInHostGrid          = GridImp::HostGridType::dimension - mydim;
+    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - mydim;
 
     using HostGridGeometry = typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry;
 
@@ -63,27 +63,33 @@ namespace Dune::IGANEW {
     [[nodiscard]] int corners() const { return hostGeometry_.corners(); }
 
     //! access to coordinates of corners. Index is the number of the corner
-    GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
+    [[nodiscard]] GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
 
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
-    GlobalCoordinate global(const LocalCoordinate& local) const { return geometryLocalView_.global(local); }
+    [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
+      return geometryLocalView_.global(local);
+    }
 
     /** \brief Return the transposed of the Jacobian
      */
-    JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
+    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       return geometryLocalView_.jacobianTransposed(local);
     }
 
     /** \brief Return the Hessian */
-    Hessian hessian(const LocalCoordinate& local) const { return geometryLocalView_.hessian(local); }
+    [[nodiscard]] Hessian hessian(const LocalCoordinate& local) const { return geometryLocalView_.hessian(local); }
 
-    /** \brief Maps a global coordinate within the element to a
+    /** \brief Maps a global coordinate to a
      * local coordinate in its reference element */
-    LocalCoordinate local(const GlobalCoordinate& global) const { return geometryLocalView_.local(global); }
+    [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
+      return geometryLocalView_.local(global);
+    }
 
     //! Returns true if the point is in the current element
-    bool checkInside(const FieldVector<ctype, mydim>& local) const { return geometryLocalView_.checkInside(local); }
+    [[nodiscard]] bool checkInside(const FieldVector<ctype, mydim>& local) const {
+      return geometryLocalView_.checkInside(local);
+    }
 
     [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
       return geometryLocalView_.integrationElement(local);

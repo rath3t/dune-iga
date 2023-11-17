@@ -7,11 +7,12 @@
 #include <numbers>
 #include <ranges>
 
-#include "dune/iga/bsplinealgorithms.hh"
-#include "dune/iga/nurbspatchdata.hh"
-#include "dune/iga/utils/linearalgebra.hh"
-#include "dune/iga/utils/mdnet.hh"
-#include "dune/iga/utils/typetraits.hh"
+#include <dune/iga/hierarchicpatch/concepts.hh>
+#include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
+#include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
+#include <dune/iga/hierarchicpatch/utils/linearalgebra.hh>
+#include <dune/iga/hierarchicpatch/utils/mdnet.hh>
+#include <dune/iga/hierarchicpatch/utils/typetraits.hh>
 namespace Dune::IGANEW {
 
   namespace Impl {
@@ -119,10 +120,10 @@ namespace Dune::IGANEW {
   template <int dim, typename ScalarType_ = double>
   class Nurbs {
    public:
-    Nurbs()                 = default;
-    using ScalarType        = ScalarType_;
-    using DynamicVectorType = Dune::DynamicVector<ScalarType>;
-    using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
+    Nurbs()                        = default;
+    using ScalarType               = ScalarType_;
+    using DynamicVectorType        = Dune::DynamicVector<ScalarType>;
+    using DynamicMatrixType        = Dune::DynamicMatrix<ScalarType>;
     static constexpr int dimension = dim;
 
     /**
@@ -132,14 +133,14 @@ namespace Dune::IGANEW {
      * @param spIndex
      */
     template <std::integral auto dimworld>
-    explicit Nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld, ScalarType>& data)
+    explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
         : knots_{data.knotSpans}, degree_{data.degree}, weights_{extractWeights(data.controlPoints)} {}
 
     auto localView() const { return LocalView(*this); }
 
     struct LocalView {
       static constexpr int dimension = dim;
-      LocalView() = default;
+      LocalView()                    = default;
       explicit LocalView(const Nurbs& nurbs) : nurbs_{&nurbs} {}
 
       void bind(const std::array<int, dim>& spIndex) { spIndex_ = spIndex; }
@@ -185,7 +186,7 @@ namespace Dune::IGANEW {
         bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
       auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
-      // TODO this should also be cached when called with a localView
+      // TODO Alex this should also be cached when called with a localView
       const auto subNetWeights = netOfSpan(spIndex, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
@@ -715,4 +716,4 @@ namespace Dune::IGANEW {
     }
     return NURBSPatchData<2UL, 3UL, ScalarType>(newKnotsArray, surfaceCP, {2, generatrix.degree[0]});
   }
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

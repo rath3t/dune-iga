@@ -78,7 +78,7 @@ namespace Dune::IGANEW {
 
   //! deduction guide
   template <std::size_t dim, std::size_t dimworld, typename ScalarType>
-  PatchGrid(const IGA::NURBSPatchData<dim, dimworld, ScalarType>& patchData)
+  PatchGrid(const NURBSPatchData<dim, dimworld, ScalarType>& patchData)
       -> PatchGrid<static_cast<int>(dim), static_cast<int>(dimworld), Trimming::Disabled, ScalarType,
                    YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;
   //**********************************************************************
@@ -145,7 +145,7 @@ namespace Dune::IGANEW {
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
-    explicit PatchGrid(const IGA::NURBSPatchData<dim, dimworld, ctype>& patchData)
+    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
         : uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
           hostgrid_(createParameterPatchGridFromKnotVectors(uniqueCoarseKnotSpans)),
           leafIndexSet_(*this),
@@ -262,7 +262,7 @@ namespace Dune::IGANEW {
         const auto& finestPatchData = patchGeometries.back().patchData_;
         auto newfinestPatchData     = finestPatchData;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
-          auto additionalKnots = IGA::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
+          auto additionalKnots = generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
           newfinestPatchData   = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
         }
         patchGeometries.emplace_back(std::move(newfinestPatchData));

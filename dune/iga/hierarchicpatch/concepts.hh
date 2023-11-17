@@ -4,9 +4,9 @@
 #pragma once
 
 #include <dune/grid/concepts/geometry.hh>
-#include <dune/iga/geometry/geohelper.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 
-namespace Dune::IGA::Concept {
+namespace Dune::IGANEW::Concept {
 
   template <typename VectorType>
   concept Vector = requires(VectorType v, double a, int index) {
@@ -73,4 +73,4 @@ namespace Dune::IGA::Concept {
     { g.domain() } -> std::convertible_to<std::array<Utilities::Domain<double>, G::mydimension>>;
   };
 
-}  // namespace Dune::IGA::Concept
+}  // namespace Dune::IGANEW::Concept

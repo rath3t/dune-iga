@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "dune/iga/utils/concepts.hh"
-namespace Dune::IGA {
+#include <dune/iga/hierarchicpatch/concepts.hh>
+namespace Dune::IGANEW {
 
   /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back to
    * an implementation by hand otherwise
    */
   template <Concept::Vector VectorType>
-  requires(VectorType::dimension == 3) inline VectorType cross(const VectorType& a, const VectorType& b) {
+  requires(VectorType::dimension == 3) VectorType cross(const VectorType& a, const VectorType& b) {
     if constexpr (requires { a.cross(b); })
       return a.cross(b);
     else
       return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
   }
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

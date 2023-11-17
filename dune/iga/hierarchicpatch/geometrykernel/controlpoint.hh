@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-#include "dune/iga/utils/concepts.hh"
-namespace Dune::IGA {
+#include <dune/iga/hierarchicpatch/concepts.hh>
+namespace Dune::IGANEW {
 
   /** \brief The class which stored a Nurbs ControlPoint
-   *
    * @tparam VT The type of coordinates of the controlpoint position
-   *
    * The constrolpoint has two public member variables p and w where p is the position and w is the weight of point
    */
   template <Concept::Vector VT>
@@ -61,4 +59,4 @@ namespace Dune::IGA {
     return {.p = cpL.p - cpR.p, .w = cpL.w - cpR.w};
   }
 
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

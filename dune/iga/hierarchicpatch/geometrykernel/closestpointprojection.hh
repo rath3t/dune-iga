@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include "dune/iga/geometry/geohelper.hh"
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/transpose.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
   template <typename Geo>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
   auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
                                            const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
@@ -107,8 +106,7 @@ namespace Dune::IGA {
         } else
           break;
 
-        if (j == testSteps - 1)
-          DUNE_THROW(Dune::MathError, "We couldn't find an energy decreasing direction");
+        if (j == testSteps - 1) DUNE_THROW(Dune::MathError, "We couldn't find an energy decreasing direction");
       }
       std::tie(oldEnergy, R, H) = energyGradAndHess(u);
 
@@ -137,4 +135,4 @@ namespace Dune::IGA {
     //    std::endl;
     return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());
   }
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

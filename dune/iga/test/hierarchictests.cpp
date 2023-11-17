@@ -26,7 +26,7 @@
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 using namespace Dune;
-using namespace Dune::IGA;
+using namespace Dune::IGANEW;
 template <typename T, int worldDim, int Items>
 struct Compare {
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
@@ -39,7 +39,7 @@ auto checkUniqueEdges(const auto& gridView) {
 
   constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
   constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
-  if constexpr(gridDimension<2)
+  if constexpr (gridDimension < 2)
     return t;
   else {
     std::set<std::array<FieldVector<double, gridDimensionworld>, 2>, Compare<double, gridDimensionworld, 2>>
@@ -65,12 +65,12 @@ auto checkUniqueSurfaces(const auto& gridView) {
   TestSuite t;
 
   constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
-  constexpr int gridDimension = std::remove_cvref_t<decltype(gridView)>::dimension;
-  if constexpr(gridDimension<3)
+  constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
+  if constexpr (gridDimension < 3)
     return t;
   else {
     std::set<std::array<FieldVector<double, gridDimensionworld>, 4>, Compare<double, gridDimensionworld, 4>>
-       edgeVertexPairSet;
+        edgeVertexPairSet;
     for (int eleIndex = 0; auto&& element : elements(gridView)) {
       edgeVertexPairSet.clear();
       for (int edgeIndex = 0; edgeIndex < element.subEntities(2); ++edgeIndex) {
@@ -92,7 +92,7 @@ auto checkUniqueSurfaces(const auto& gridView) {
 auto thoroughGridCheck(auto& grid) {
   TestSuite t;
   constexpr int gridDimension = std::remove_cvref_t<decltype(grid)>::dimension;
-  auto gvTest = [&](auto&& gv) {
+  auto gvTest                 = [&](auto&& gv) {
     TestSuite tl;
 
     tl.subTest(checkUniqueEdges(gv));
@@ -105,11 +105,11 @@ auto thoroughGridCheck(auto& grid) {
     for (auto&& vertGeo : vertices(gv) | extractGeo)
       checkJacobians(vertGeo);
 
-    if constexpr(gridDimension>1)
+    if constexpr (gridDimension > 1)
       for (auto&& edgegeo : edges(gv) | extractGeo)
         checkJacobians(edgegeo);
 
-    if constexpr(gridDimension>2)
+    if constexpr (gridDimension > 2)
       for (auto&& edgegeo : facets(gv) | extractGeo)
         checkJacobians(edgegeo);
 
@@ -150,7 +150,7 @@ auto testNurbsGridCylinder() {
   //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
   const std::vector<std::vector<ControlPoint>> controlPoints
       = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
          {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
@@ -158,9 +158,9 @@ auto testNurbsGridCylinder() {
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -223,7 +223,7 @@ auto testTorusGeometry() {
   vtkWriter.write("NURBSGridTest-SurfaceRevolutionFLAT");
 
   TestSuite test;
-  grid.globalRefine( 1 );
+  grid.globalRefine(1);
   gridcheck(grid);
 
   // checkIntersectionIterator(grid,true);
@@ -244,7 +244,7 @@ auto testTorusGeometry() {
   }
   const double pi                        = std::numbers::pi_v<double>;
   const double referenceTorusSurfaceArea = 4.0 * pi * pi * r * R;
-  test.check(abs(area - referenceTorusSurfaceArea) <5e-1)
+  test.check(abs(area - referenceTorusSurfaceArea) < 5e-1)
       << "The integrated area of the torus surface is wrong! Expected: " << referenceTorusSurfaceArea
       << " Computed: " << area;
 
@@ -286,7 +286,7 @@ auto testNURBSGridCurve() {
   const std::array<int, dim> order                     = {3};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 3, 4, 4, 4, 5, 5, 5, 5}}};
   //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
 
   const std::vector<ControlPoint> controlPoints
       = {{.p = {1, 3, 4}, .w = 1}, {.p = {2, 2, 2}, .w = 3}, {.p = {3, 4, 5}, .w = 1},
@@ -294,9 +294,9 @@ auto testNURBSGridCurve() {
          {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -312,7 +312,9 @@ auto testNURBSGridCurve() {
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
-  for (int eleIndex = 0; const auto& ele : elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
+  for (int eleIndex = 0;
+       const auto& ele :
+       elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
   {
     const int numCorners = ele.subEntities(dim);
     for (int c = 0; c < numCorners; ++c) {
@@ -348,7 +350,7 @@ auto testNURBSGridSurface() {
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
   //  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
   //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
       = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
@@ -357,9 +359,9 @@ auto testNURBSGridSurface() {
 
   std::array dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  NURBSPatchData<dim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -384,8 +386,8 @@ auto test3DGrid() {
   const double ly = 1;
   const double lz = 1;
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
+  using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
+  NURBSPatchData<dim, dimworld> nurbsPatchData;
   nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
 
   std::vector<std::vector<std::vector<ControlPoint>>> controlp;
@@ -440,28 +442,211 @@ auto test3DGrid() {
   return t;
 }
 
+auto testCurveHigherOrderDerivatives() {
+  constexpr auto gridDim               = 1;
+  constexpr auto dimworld              = 3;
+  const std::array<int, gridDim> order = {2};
+  TestSuite t;
+  // parameters
+
+  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 0.5, 1, 1, 1}}};
+  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  using ControlPoint = NURBSPatchData<gridDim, dimworld>::ControlPointType;
+
+  const std::vector<ControlPoint> controlPoints
+      = {{.p = {0.086956521739130, -0.434782608695652, 0}, .w = 11.5},
+         {.p = {0.200000000000000, 5.400000000000000, 0.200000000000000}, .w = 5},
+         {.p = {1.857142857142857, 0.142857142857143, 0}, .w = 7},
+         {.p = {3.714285714285714, 0.285714285714286, 2.000000000000000}, .w = 3.5}};
+
+  std::array<int, gridDim> dimsize = {static_cast<int>(controlPoints.size())};
+  auto controlNet                  = NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  NURBSPatchData<gridDim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+
+  std::vector<Dune::FieldVector<double, 3>> expectedControlPoints
+      = {{0.086956521739130, -0.434782608695652, 0},
+         {0.121212121212121, 1.333333333333333, 0.060606060606061},
+         {0.320000000000000, 3.120000000000000, 0.120000000000000},
+         {0.727272727272727, 3.727272727272727, 0.136363636363636},
+         {1.538461538461539, 1.153846153846154, 0.038461538461538},
+         {1.920000000000000, 0.506666666666667, 0.200000000000000},
+         {2.476190476190476, 0.190476190476190, 0.666666666666667},
+         {3.714285714285714, 0.285714285714286, 2.000000000000000}};
+
+  std::vector<double> expectedWeights = {11.5, 8.25, 6.25, 5.5, 6.5, 6.25, 5.25, 3.5};
+
+  GeometryKernel::NURBSPatch<gridDim, dimworld> geo(patchData);
+  double vol  = geo.volume();
+  int samples = 20;
+  std::vector<Dune::FieldVector<double, 3>> evaluatedPoints;
+  std::vector<Dune::FieldMatrix<double, 1, 3>> evaluatedJacobians;
+  std::vector<Dune::FieldMatrix<double, 1, 3>> evaluatedHessians;
+
+  for (int i = 0; i < samples + 1; ++i) {
+    const Dune::FieldVector<double, 1> u = {i / static_cast<double>(samples)};
+    evaluatedPoints.push_back(geo.global(u));
+    const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
+    evaluatedHessians.push_back(H);
+    evaluatedJacobians.push_back(geo.jacobianTransposed(u));
+  }
+
+  for (int i = 1; i < 5; ++i) {
+    auto patchDataN = degreeElevate(patchData, 0, i);
+    GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
+    for (int j = 0; j < samples + 1; ++j) {
+      const Dune::FieldVector<double, 1> u = {j / static_cast<double>(samples)};
+      t.check(Dune::FloatCmp::eq(geo2.global(u), evaluatedPoints[j], 1e-10))
+          << "evaluatedPoints[i] " << evaluatedPoints[j] << " is " << geo2.global(u);
+      const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
+      t.check(Dune::FloatCmp::eq(geo2.jacobianTransposed(u)[0], evaluatedJacobians[j][0], 1e-10))
+          << "evaluatedJacobians[i] " << evaluatedJacobians[j] << " is " << geo2.jacobianTransposed(u);
+      t.check(Dune::FloatCmp::eq(H[0], evaluatedHessians[j][0], 1e-10))
+          << "evaluatedJacobians[i] " << evaluatedHessians[j] << " is " << H;
+    }
+  }
+
+  patchData = degreeElevate(patchData, 0, 2);
+  t.check(expectedControlPoints.size() == patchData.controlPoints.directGetAll().size())
+      << "Size mismatch " << expectedControlPoints.size() << "is " << patchData.controlPoints.directGetAll().size();
+  t.check(expectedWeights.size() == patchData.controlPoints.directGetAll().size())
+      << "Size mismatch" << expectedWeights.size() << "is " << patchData.controlPoints.directGetAll().size();
+  t.check(patchData.degree[0] == 4) << "Size mismatch";
+
+  for (int i = 0; auto cp : patchData.controlPoints.directGetAll()) {
+    t.check(Dune::FloatCmp::eq(cp.p, expectedControlPoints[i], 1e-10))
+        << "expectedControlPoints[i] " << expectedControlPoints[i] << " is " << cp.p;
+    t.check(Dune::FloatCmp::eq(cp.w, expectedWeights[i], 1e-10))
+        << "expectedWeights[i] " << expectedWeights[i] << " is " << cp.w;
+    ++i;
+  }
+
+  return t;
+}
+
+auto testSurfaceHigherOrderDerivatives() {
+  TestSuite t;
+
+  constexpr int gridDim                = 2;
+  constexpr auto dimworld              = 3;
+  const std::array<int, gridDim> order = {2, 2};
+
+  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+
+  //  const std::vector<std::vector<ControlPoint>> controlPoints
+  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
+  //         {{.p = {0.5, 0,0}, .w = 1}, {.p = {0.5, 0.5,0}, .w = 1}},
+  //         {{.p = {1, 0,0}, .w = 1}, {.p = {1, 0.5,0}, .w = 1}}};
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 0.5, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}},
+         {{.p = {0.5, 0, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {0.5, 1, 0}, .w = 1}},
+         {{.p = {1, 0, 0}, .w = 1}, {.p = {1, 0.5, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}}};
+
+  //  const std::vector<std::vector<ControlPoint>> controlPoints
+  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
+  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+
+  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+  auto additionalKnots    = std::vector<double>(1);
+  additionalKnots[0]      = 0.5;
+  patchData               = knotRefinement<2>(patchData, additionalKnots, 1);
+  //  const double R       = 2.0;
+  //  const double r       = 1.0;
+  //  auto circle          = makeCircularArc(r);
+  //  auto patchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 10.0);
+  //  patchData       = degreeElevate(patchData, 0, 2);
+  //  patchData       = degreeElevate(patchData, 1, 2);
+  //  auto additionalKnots = std::vector<double>(1);
+  ////  additionalKnots[0]   = 0.1;
+  ////  patchData       = knotRefinement<2>(patchData, additionalKnots, 1);
+
+  GeometryKernel::NURBSPatch<gridDim, dimworld> geo(patchData);
+  double vol  = geo.volume();
+  int samples = 2;
+  std::vector<Dune::FieldVector<double, 3>> evaluatedPoints;
+  std::vector<Dune::FieldMatrix<double, 2, 3>> evaluatedJacobians;
+  std::vector<Dune::FieldMatrix<double, 3, 3>> evaluatedHessians;
+  //  std::vector<double> evaluatedJacobians;
+  for (int i = 0; i < samples + 1; ++i) {
+    for (int j = 0; j < samples + 1; ++j) {
+      const Dune::FieldVector<double, 2> u = {i / static_cast<double>(samples), j / static_cast<double>(samples)};
+      evaluatedPoints.push_back(geo.global(u));
+      const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
+      evaluatedHessians.push_back(H);
+      evaluatedJacobians.push_back(geo.jacobianTransposed(u));
+      //    evaluatedJacobians.push_back(geo.impl()(u));
+    }
+  }
+
+  for (int i = 1; i < 2; ++i) {
+    auto patchDataN = degreeElevate(patchData, 1, i);
+    GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
+    //    t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
+    for (int j = 0, index = 0; j < samples + 1; ++j) {
+      for (int k = 0; k < samples + 1; ++k) {
+        const Dune::FieldVector<double, 2> u = {j / static_cast<double>(samples), k / static_cast<double>(samples)};
+        t.check(Dune::FloatCmp::eq(geo2.global(u), evaluatedPoints[index], 1e-10))
+            << "evaluatedPoints[i] " << evaluatedPoints[index] << " is " << geo2.global(u);
+        const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
+        t.check((geo2.jacobianTransposed(u)[0] - evaluatedJacobians[index][0]).two_norm() < 1e-8)
+            << "evaluatedJacobians[i][0] \n"
+            << evaluatedJacobians[index] << "\n is \n"
+            << geo2.jacobianTransposed(u)
+            << "\n norm:" << (geo2.jacobianTransposed(u)[0] - evaluatedJacobians[index][0]).two_norm();
+        t.check((geo2.jacobianTransposed(u)[1] - evaluatedJacobians[index][1]).two_norm() < 1e-8)
+            << "evaluatedJacobians[i][1] \n"
+            << evaluatedJacobians[index] << "\n is \n"
+            << geo2.jacobianTransposed(u)
+            << "\n norm:" << (geo2.jacobianTransposed(u)[1] - evaluatedJacobians[index][1]).two_norm();
+        t.check(Dune::FloatCmp::eq(H[0], evaluatedHessians[index][0], 1e-10))
+            << "evaluatedJacobians[i][0] " << evaluatedHessians[index][0] << " is " << H;
+        t.check(Dune::FloatCmp::eq(H[1], evaluatedHessians[index][1], 1e-10))
+            << "evaluatedJacobians[i][1] " << evaluatedHessians[index] << " is " << H;
+        t.check(Dune::FloatCmp::eq(H[2], evaluatedHessians[index][2], 1e-10))
+            << "evaluatedJacobians[i][2] " << evaluatedHessians[index] << " is " << H;
+        ++index;
+      }
+    }
+  }
+
+  return t;
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
   t.subTest(testHierarchicPatch());
   // TestSuite t;
-  std::cout<<"Test3D"<<std::endl;
+  std::cout << "Test3D" << std::endl;
   t.subTest(test3DGrid());
-  std::cout<<"Test1Din3D"<<std::endl;
+  std::cout << "Test1Din3D" << std::endl;
   t.subTest(testNURBSGridCurve());
-  std::cout<<"testNurbsGridCylinder"<<std::endl;
+  std::cout << "testNurbsGridCylinder" << std::endl;
   t.subTest(testNurbsGridCylinder());
-  std::cout<<"testNURBSGridSurface"<<std::endl;
+  std::cout << "testNURBSGridSurface" << std::endl;
   t.subTest(testNURBSGridSurface());
   // t.subTest(testPlate());
   // testNurbsGridCylinder();
-  std::cout<<"testTorusGeometry"<<std::endl;
+  std::cout << "testTorusGeometry" << std::endl;
   t.subTest(testTorusGeometry());
   // std::cout << " t.subTest(testNurbsBasis());" << std::endl;
   // t.subTest(testNurbsBasis());
-  // t.subTest(testCurveHigherOrderDerivatives());
-  // t.subTest(testSurfaceHigherOrderDerivatives());
+  t.subTest(testCurveHigherOrderDerivatives());
+  t.subTest(testSurfaceHigherOrderDerivatives());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

@@ -6,11 +6,11 @@
 #include <concepts>
 #include <ranges>
 
-#include "dune/iga/utils/concepts.hh"
+// #include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW {
 
   /** \brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than
    * u -p+1-times-     returned        -p+1-times-
@@ -30,13 +30,6 @@ namespace Dune::IGA {
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
-  template <std::ranges::random_access_range Range>
-  auto findSpanUncorrected(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
-    if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
-    return static_cast<long int>(std::distance(U.begin(), it) - 1);
-  }
-
   /** \brief Same as findSpanCorrected() but for dim - knotvectors  */
   template <int dim, size_t dim2, typename ValueType>
   auto findSpanCorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
@@ -44,16 +37,6 @@ namespace Dune::IGA {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpanCorrected(p[i], u[i], U[i]);
-    return res;
-  }
-
-  /** \brief Same as findSpanUncorrected() but for dim - knotvectors  */
-  template <int dim, size_t dim2, typename ValueType>
-  auto findSpanUncorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
-                           const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
-    std::array<int, dim> res;
-    for (auto i = 0; i < dim; ++i)
-      res[i] = findSpanUncorrected(p[i], u[i], U[i]);
     return res;
   }
 
@@ -76,8 +59,6 @@ namespace Dune::IGA {
     /** \brief The evaluation function modified version of The Nurbs Book Algorithm A2.2
      *
      * @tparam Range range of knotvector
-     * @tparam ContainerType Container where the returned values should be stored, it needs to satisfy
-     * StdVectorLikeContainer
      * @param u scalar point where to evaluate the spline
      * @param knots knotvector
      * @param p polynomial degree of the underlying b-spline basis
@@ -92,11 +73,12 @@ namespace Dune::IGA {
       DynamicVectorType N;
       N.resize(p + 1, 0.0);
       u = std::clamp(u, knots.front(), knots.back());
-      if (Dune::FloatCmp::eq(u, knots.back()))  // early exit
+      if (FloatCmp::eq(u, knots.back()))  // early exit
       {
         N.back() = 1;
         return N;
-      } else if (Dune::FloatCmp::eq(u, knots.front())) {
+      }
+      if (FloatCmp::eq(u, knots.front())) {
         N.front() = 1;
         return N;
       }
@@ -216,4 +198,4 @@ namespace Dune::IGA {
     std::vector<ScalarType> knots_;
     int degree_;
   };
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

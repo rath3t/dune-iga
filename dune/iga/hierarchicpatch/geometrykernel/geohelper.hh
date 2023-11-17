@@ -6,10 +6,10 @@
 
 #include <dune/common/fvector.hh>
 
-namespace Dune::IGA::Utilities {
+namespace Dune::IGANEW::Utilities {
 
   template <typename ScalarType = double>
-  struct Domain : public std::array<ScalarType, 2> {
+  struct Domain : std::array<ScalarType, 2> {
     using Base = std::array<ScalarType, 2>;
     Domain(ScalarType l, ScalarType r) : Base({l, r}) {}
 
@@ -33,22 +33,17 @@ namespace Dune::IGA::Utilities {
       x[j] = std::clamp(x[j], domain[j].left(), domain[j].right());
       if (x[j] == domain[j].left() or x[j] == domain[j].right()) ++breakDueToBoundaryCounter;
     }
-    if (dim == breakDueToBoundaryCounter)
-      return true;
-    else
-      return false;
+    if (dim == breakDueToBoundaryCounter) return true;
+    return false;
   }
 
   template <std::floating_point T>
   auto linspace(T a, T b, unsigned int N) {
     T inc    = (b - a) / static_cast<T>(N - 1);
     auto val = [=](int i) -> T {
-      if (i != 0 and i != N - 1)
-        return a + i * inc;
-      else if (i == N - 1)
-        return b;
-      else
-        return a;
+      if (i != 0 and i != N - 1) return a + i * inc;
+      if (i == N - 1) return b;
+      return a;
     };
 
     return std::views::iota(0u, N) | std::views::transform(val);
@@ -80,4 +75,4 @@ namespace Dune::IGA::Utilities {
     T midPoint = domain.center();
     return {{{domain.left(), midPoint}, {midPoint, domain.right()}}};
   }
-}  // namespace Dune::IGA::Utilities
+}  // namespace Dune::IGANEW::Utilities
