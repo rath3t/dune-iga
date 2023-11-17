@@ -14,7 +14,7 @@
 namespace Dune::IGANEW::GeometryKernel {
 
   template <int dim_, int dimworld_, typename ScalarType = double>
-  class NURBSPatchGeometry {
+  class NURBSPatch {
    public:
     static constexpr std::integral auto worlddimension = dimworld_;
     static constexpr std::integral auto mydimension = dim_;
@@ -42,24 +42,24 @@ namespace Dune::IGANEW::GeometryKernel {
     using Nurbs          = Dune::IGA::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
-    using GeometryLocalView = PatchGeometryLocalView<codim, GeometryKernel::NURBSPatch, trim>;
+    using GeometryLocalView = Dune::IGANEW::PatchGeometryLocalView<codim, NURBSPatch, trim>;
 
-    template <int codim, typename NURBSPatchGeometry, Trimming trim>
-    friend struct PatchGeometryLocalView;
+    template <int codim, typename NURBSPatch, Trimming trim>
+    friend struct Dune::IGANEW::PatchGeometryLocalView;
 
    private:
     /* Helper class to compute a matrix pseudo inverse */
     using MatrixHelper = typename MultiLinearGeometryTraits<ctype>::MatrixHelper;
 
    public:
-    NURBSPatchGeometry() = default;
+    NURBSPatch() = default;
 
     template <int codim, Trimming trim>
     auto localView() const {
       return GeometryLocalView<codim, trim>(*this);
     }
 
-    explicit NURBSPatchGeometry(const IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
+    explicit NURBSPatch(const IGA::NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
         : patchData_(patchData), nurbs_{patchData}, localView_(localView<0, Trimming::Disabled>()) {}
 
     /** \brief Map the center of the element to the geometry */
@@ -235,7 +235,7 @@ namespace Dune::IGANEW::GeometryKernel {
 
       // TODO the above code is more efficient since there is only on call to the derivatives
 
-      return std::make_tuple(globalImpl(u,nurbsLocalView,localControlPointNet), jacobianTransposedImpl(u,nurbsLocalView,localControlPointNet), GeometryKernel::hessian<GeometryKernel::NURBSPatch>(u,nurbsLocalView,localControlPointNet));
+      return std::make_tuple(globalImpl(u,nurbsLocalView,localControlPointNet), jacobianTransposedImpl(u,nurbsLocalView,localControlPointNet), GeometryKernel::hessian(u,nurbsLocalView,localControlPointNet));
     }
 
    public:

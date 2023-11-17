@@ -37,7 +37,7 @@ namespace Dune::IGANEW {
   template <int codim, typename PatchGeometry, Trimming trim_>
   struct PatchGeometryLocalView {
     using ctype                                         = typename PatchGeometry::ctype;
-    static constexpr int gridDimension                  = PatchGeometry::patchDimension;
+    static constexpr int gridDimension                  = PatchGeometry::mydimension;
     static constexpr int mydimension                    = gridDimension - codim;
     static constexpr int numberOfSecondDerivatives      = mydimension * (mydimension + 1) / 2;
     static constexpr int patchNumberOfSecondDerivatives = gridDimension * (gridDimension + 1) / 2;

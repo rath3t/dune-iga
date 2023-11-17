@@ -234,7 +234,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] Geometry geometry() const {
       static_assert(
           std::is_same_v<decltype(patchGrid_->patchGeometries[this->level()].template localView<0, trim>()),
-                         typename GeometryKernel::NURBSPatchGeometry<dim, dimworld, ctype>::template GeometryLocalView<0, trim>>);
+                         typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, trim>>);
       auto geo = typename Geometry::Implementation(
           hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<0, trim>());
       return Geometry(geo);

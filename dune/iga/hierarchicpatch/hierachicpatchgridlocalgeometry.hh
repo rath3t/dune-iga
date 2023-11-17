@@ -25,7 +25,7 @@ namespace Dune::IGANEW {
     static constexpr std::integral auto griddim        = GridImp::dimension;
     static constexpr std::integral auto codim          = griddim - mydim;
     using ctype                                        = typename GridImp::ctype;
-    using PatchGeometry                                = GeometryKernel::NURBSPatchGeometry<GridImp::dimension, coorddimension, ctype>;
+    using PatchGeometry                                = GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension, ctype>;
     using LocalCoordinateInPatch                       = typename PatchGeometry::LocalCoordinate;
     using LocalCoordinate                              = FieldVector<ctype, mydimension>;
     using GlobalCoordinate                             = FieldVector<ctype, coorddimension>;

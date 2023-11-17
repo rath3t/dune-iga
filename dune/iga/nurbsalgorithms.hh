@@ -123,6 +123,7 @@ namespace Dune::IGA {
     using ScalarType        = ScalarType_;
     using DynamicVectorType = Dune::DynamicVector<ScalarType>;
     using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
+    static constexpr int dimension = dim;
 
     /**
      *
@@ -137,6 +138,7 @@ namespace Dune::IGA {
     auto localView() const { return LocalView(*this); }
 
     struct LocalView {
+      static constexpr int dimension = dim;
       LocalView() = default;
       explicit LocalView(const Nurbs& nurbs) : nurbs_{&nurbs} {}
 

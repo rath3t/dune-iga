@@ -44,12 +44,16 @@ namespace Dune::IGANEW {
     }
   }
 
-  template <typename Geometry>
-  typename Geometry::Hessian hessian(const typename Geometry::LocalCoordinate& local,const typename Geometry::NurbsLocalView& nurbsLocalView,
-                                                           const typename Geometry::ControlPointCoordinateNetType& localControlPointNet) {
-    typename Geometry::Hessian H;
+  template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
+  auto hessian(const LocalCoordinate& local,const NurbsLocalView& nurbsLocalView,
+                                                           const ControlPointCoordinateNetType& localControlPointNet) {
+
     const auto basisFunctionDerivatives = nurbsLocalView.basisFunctionDerivatives(local, 2);
-    static constexpr int mydimension = Geometry::mydimension;
+    static constexpr int mydimension = NurbsLocalView::dimension;
+    static constexpr int worlddimension = ControlPointCoordinateNetType::value_type::dimension;
+    using ctype = typename ControlPointCoordinateNetType::value_type::value_type;
+
+    FieldMatrix<ctype,mydimension*(mydimension + 1) / 2,worlddimension> H;
 
     for (int dir = 0; dir < mydimension; ++dir) {
       std::array<unsigned int, mydimension> ithVec{};
