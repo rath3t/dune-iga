@@ -93,7 +93,7 @@ namespace Dune::IGANEW {
   requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
       const Dune::FieldVector<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
       const std::array<int, dim2>& degree, const MultiDimensionNet<dim2, NetValueType>& net) requires(dim == dim2) {
-    auto subNetStart = findSpanCorrected(degree, u, knots);
+    auto subNetStart = findSpan(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
 
@@ -183,7 +183,7 @@ namespace Dune::IGANEW {
       std::array<DynamicVectorType, (size_t)dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
-        bSplines[i] = BsplineBasis1D<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
+        bSplines[i] = BsplineBasis<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
       auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
       // TODO Alex this should also be cached when called with a localView
@@ -214,7 +214,7 @@ namespace Dune::IGANEW {
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
       std::array<DynamicMatrixType, dim> bSplineDerivatives;
       for (int i = 0; i < dim; ++i)
-        bSplineDerivatives[i] = BsplineBasis1D<ScalarType>::basisFunctionDerivatives(
+        bSplineDerivatives[i] = BsplineBasis<ScalarType>::basisFunctionDerivatives(
             u[i], knots[i], degree[i], derivativeOrder,
             (spIndex ? std::optional<int>(spIndex.value()[i]) : std::nullopt));
 
@@ -231,7 +231,7 @@ namespace Dune::IGANEW {
 
       MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netOfDerivativeNets;
       MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
-      auto subNetStart         = spIndex ? spIndex.value() : findSpanCorrected(degree, u, knots);
+      auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
       for (int j = 0; j < R.size(); ++j) {
@@ -488,8 +488,8 @@ namespace Dune::IGANEW {
     auto scaleCPWithW = [](const auto& cp) -> ControlPoint { return {.p = cp.w * cp.p, .w = cp.w}; };
 
     const int p = oldData.degree[refinementDirection];
-    const int a = findSpanCorrected(p, newKnots.front(), oldKnotVec);
-    const int b = findSpanCorrected(p, newKnots.back(), oldKnotVec);
+    const int a = findSpan(p, newKnots.front(), oldKnotVec);
+    const int b = findSpan(p, newKnots.back(), oldKnotVec);
 
     auto newSurfI = newCPv.hyperSurfBegin(otherDirections);
     auto oldSurfI = oldCPv.hyperSurfBegin(otherDirections);
@@ -581,69 +581,7 @@ namespace Dune::IGANEW {
     }
   }  // namespace Impl
 
-  ///
-  /// \tparam ScalarType the field type (use float, double, complex, etc)
-  /// \param radius Radius of the arc
-  /// \param startAngle starting angle of the arc
-  /// \param endAngle end angle of the arc
-  /// \param origin center of the circle
-  /// \param X first base vector of plane where the arc should reside
-  /// \param Y second base vector of plane where the arc should reside
-  /// \return NURBSPatchData representing the arc
-  template <typename ScalarType = double>
-  NURBSPatchData<1, 3, ScalarType> makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,
-                                                   ScalarType endAngle                            = 360.0,
-                                                   const Dune::FieldVector<ScalarType, 3>& origin = {0, 0, 0},
-                                                   const Dune::FieldVector<ScalarType, 3>& X      = {1, 0, 0},
-                                                   const Dune::FieldVector<ScalarType, 3>& Y      = {0, 1, 0}) {
-    using GlobalCoordinateType = typename NURBSPatchData<1, 3, ScalarType>::GlobalCoordinateType;
-    const auto pi              = std::numbers::pi_v<ScalarType>;
 
-    if (endAngle < startAngle) endAngle += 360.0;
-    const ScalarType theta = endAngle - startAngle;
-    const int narcs        = std::ceil(theta / 90);
-
-    typename NURBSPatchData<1, 3, ScalarType>::ControlPointNetType circleCPs(2 * narcs + 1);
-    const ScalarType dtheta  = theta / narcs * pi / 180;
-    const int n              = 2 * narcs;
-    const ScalarType w1      = cos(dtheta / 2.0);
-    GlobalCoordinateType PO  = origin + radius * cos(startAngle) * X + radius * sin(startAngle) * Y;
-    GlobalCoordinateType TO  = -sin(startAngle) * X + cos(startAngle) * Y;
-    circleCPs.directGet(0).p = PO;
-    ScalarType angle         = startAngle;
-    for (int index = 0, i = 0; i < narcs; ++i) {
-      angle += dtheta;
-      const GlobalCoordinateType P2    = origin + radius * cos(angle) * X + radius * sin(angle) * Y;
-      circleCPs.directGet(index + 2).p = P2;
-      const GlobalCoordinateType T2    = -sin(angle) * X + cos(angle) * Y;
-      const GlobalCoordinateType P1    = Impl::intersect3DLines(PO, TO, P2, T2);
-      circleCPs.directGet(index + 1)   = {.p = P1, .w = w1};
-      index += 2;
-      if (i < narcs - 1) {
-        PO = P2;
-        TO = T2;
-      }
-    }
-
-    auto knotVec = std::array<std::vector<double>, 1>{};
-    auto& U      = knotVec[0];
-    U.resize(2 * (narcs + 2));
-    if (narcs == 1) {
-    } else if (narcs == 2) {
-      U[3] = U[4] = 1.0 / 2.0;
-    } else if (narcs == 3) {
-      U[3] = U[4] = 1.0 / 3.0;
-      U[5] = U[6] = 2.0 / 3.0;
-    } else {
-      U[3] = U[4] = 1.0 / 4.0;
-      U[5] = U[6] = 2.0 / 4.0;
-      U[7] = U[8] = 3.0 / 4.0;
-    }
-
-    std::ranges::fill_n(U.begin(), 3, 0.0);
-    std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
-    return NURBSPatchData<1, 3, ScalarType>(knotVec, circleCPs, {2});
-  }
 
   // Algo 8.1
   template <typename ScalarType = double>

@@ -154,7 +154,7 @@ namespace Dune::IGANEW::GeometryKernel {
 
    private:
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
-      auto subNetStart = findSpanCorrected(patchData_.degree, u, patchData_.knotSpans);
+      auto subNetStart = findSpan(patchData_.degree, u, patchData_.knotSpans);
 
       auto cpCoordinateNet
           = netOfSpan(subNetStart, patchData_.degree, extractControlCoordinates(patchData_.controlPoints));
