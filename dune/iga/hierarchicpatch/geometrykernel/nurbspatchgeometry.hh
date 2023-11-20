@@ -6,7 +6,7 @@
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
-#include <dune/iga/hierarchicpatch/geometrykernel/geometryalgorithms.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
 
 namespace Dune::IGANEW::GeometryKernel {

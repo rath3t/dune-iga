@@ -76,11 +76,6 @@ namespace Dune::IGANEW {
     return grid;
   }
 
-  //! deduction guide
-  template <std::size_t dim, std::size_t dimworld, typename ScalarType>
-  PatchGrid(const NURBSPatchData<dim, dimworld, ScalarType>& patchData)
-      -> PatchGrid<static_cast<int>(dim), static_cast<int>(dimworld), Trimming::Disabled, ScalarType,
-                   YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;
   //**********************************************************************
   //
   // --PatchGrid
@@ -147,7 +142,7 @@ namespace Dune::IGANEW {
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
         : uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
-          hostgrid_(createParameterPatchGridFromKnotVectors(uniqueCoarseKnotSpans)),
+          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueCoarseKnotSpans)),
           leafIndexSet_(*this),
           globalIdSet_(*this),
           localIdSet_(*this) {

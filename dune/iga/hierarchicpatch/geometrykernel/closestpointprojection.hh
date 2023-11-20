@@ -54,8 +54,7 @@ namespace Dune::IGANEW {
     // start with mid-point if nothing else is given
     Dune::FieldVector<ctype, dim> u = start ? start.value() : geo.domainMidPoint();
 
-    ctype tol = 1e-10;
-    ctype energyVal;
+    ctype tol = ctype(16) * std::numeric_limits<ctype>::epsilon();
     ctype Rnorm;
     auto domain = geo.domain();
 
@@ -66,11 +65,11 @@ namespace Dune::IGANEW {
     domainFraction /= domainFractionFactor;
     int i;
     auto [oldEnergy, R, H] = energyGradAndHess(u);
-    energyVal              = oldEnergy;
+    ctype energyVal              = oldEnergy;
+    ctype r              = oldEnergy;
     for (i = 0; i < maxiter; ++i) {
       FieldVector<ctype, dim> du;
       H.solve(du, -R);
-      Rnorm = R.two_norm();
       // if the increment is too large, we tend to overshoot, thus, we limit it to a fraction of the total domain
       ctype duNorm = du.two_norm();
       if (duNorm > domainFraction) du *= domainFraction / duNorm;
@@ -113,26 +112,11 @@ namespace Dune::IGANEW {
       Rnorm = R.two_norm();
       if (Rnorm < tol) break;
     }
-    // If we end up at the boundary, and the residual is non-zero, we restart at the opposite domain boundary
-    // If this does also not help we return the point at the boundary with smaller energy(distance)
+
+    // clamp again to boundary
     for (int j = 0; j < dim; ++j)
       u[j] = clampToDomain(u[j], domain[j]);
-    //    auto uRestart = u;
-    //    if (Rnorm > tol and not start) {
-    //      for (int j = 0; j < dim; ++j)
-    //        if (abs(domain[j].left() - uRestart[j]) < tol)
-    //          uRestart[j] = domain[j].right();
-    //        else if (abs(domain[j].right() - uRestart[j]) < tol)
-    //          uRestart[j] = domain[j].left();
-    //
-    //      auto [u2, Rnorm2, energyVal2, gap] = closestPointProjectionByTrustRegion(geo, point, uRestart);
-    //
-    //      return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm())
-    //                                    : std::make_tuple(u2, Rnorm2, energyVal2, (geo.global(u2) -
-    //                                    point).two_norm());
-    //    }
-    //    std::cout << "u " << u << " Rnorm " << Rnorm << " energyVal " << energyVal << "geo " << geo.global(u) <<
-    //    std::endl;
+
     return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());
   }
 }  // namespace Dune::IGANEW

@@ -2,17 +2,22 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-namespace DUNE::IGANEW
+#include<dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
+#include<dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
+
+namespace Dune::IGANEW
 {
-  /// \brief Create a circular arc with different customization options
-  /// \tparam ScalarType the field type (use float, double, complex, etc)
-  /// \param radius Radius of the arc
-  /// \param startAngle starting angle of the arc
-  /// \param endAngle end angle of the arc
-  /// \param origin center of the circle
-  /// \param X first base vector of plane where the arc should reside
-  /// \param Y second base vector of plane where the arc should reside
-  /// \return NURBSPatchData representing the arc
+  // TODO Alex quote algo from NURBS book
+  /* \brief Create a circular arc with different customization options
+  * \tparam ScalarType the field type (use float, double, complex, etc)
+  * \param radius Radius of the arc
+  * \param startAngle starting angle of the arc in degrees
+  * \param endAngle end angle of the arc in degrees
+  * \param origin center of the circle
+  * \param X first base vector of plane where the arc should reside
+  * \param Y second base vector of plane where the arc should reside
+  * \return NURBSPatchData representing the arc
+  */
   template <typename ScalarType = double>
   NURBSPatchData<1, 3, ScalarType> makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,
                                                    ScalarType endAngle                            = 360.0,
@@ -39,7 +44,7 @@ namespace DUNE::IGANEW
       const GlobalCoordinateType P2    = origin + radius * cos(angle) * X + radius * sin(angle) * Y;
       circleCPs.directGet(index + 2).p = P2;
       const GlobalCoordinateType T2    = -sin(angle) * X + cos(angle) * Y;
-      const GlobalCoordinateType P1    = Impl::intersect3DLines(PO, TO, P2, T2);
+      const GlobalCoordinateType P1    = intersect3DLines(PO, TO, P2, T2);
       circleCPs.directGet(index + 1)   = {.p = P1, .w = w1};
       index += 2;
       if (i < narcs - 1) {

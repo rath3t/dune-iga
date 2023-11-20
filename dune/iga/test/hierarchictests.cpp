@@ -25,6 +25,8 @@
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/makecirculararc.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/makesurfaceofrevolution.hh>
 using namespace Dune;
 using namespace Dune::IGANEW;
 template <typename T, int worldDim, int Items>
