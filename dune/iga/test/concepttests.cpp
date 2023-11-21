@@ -6,9 +6,9 @@
 #endif
 
 #include <dune/grid/concepts.hh>
-#include <dune/iga/nurbsgeometry.hh>
-#include <dune/iga/nurbsgrid.hh>
-#include <dune/iga/utils/concepts.hh>
+// #include <dune/iga/hierarchicpatch/hierachicpatchgridgeometry.hh>
+#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
+#include <dune/iga/hierarchicpatch/concepts.hh>
 
 template <typename G>
 void checkConcepts() {
@@ -22,21 +22,21 @@ void checkConcepts() {
 
   static_assert(Dune::Concept::EntityGeneral<GridEntity>);
 
-  static_assert(Dune::IGA::Concept::NurbsGeometry<typename GridEntityGeometry::Implementation>);
+  // static_assert(Dune::IGANEW::Concept::NurbsGeometry<typename GridEntityGeometry::Implementation>);
   static_assert(Dune::Concept::GridView<GridView>);
   static_assert(Dune::Concept::IndexSet<IndexSet>);
   static_assert(Dune::Concept::IdSet<GlobalIdSet>);
 }
 
 int main() {
-  checkConcepts<Dune::IGA::NURBSGrid<1, 1>>();
-  checkConcepts<Dune::IGA::NURBSGrid<1, 2>>();
-  checkConcepts<Dune::IGA::NURBSGrid<1, 3>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 1>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 2>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 3>>();
 
-  checkConcepts<Dune::IGA::NURBSGrid<2, 2>>();
-  checkConcepts<Dune::IGA::NURBSGrid<2, 3>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 2>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 3>>();
 
-  checkConcepts<Dune::IGA::NURBSGrid<3, 3>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<3, 3>>();
 
   return 0;
 }

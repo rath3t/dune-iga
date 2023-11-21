@@ -110,6 +110,8 @@ namespace Dune::IGANEW {
     return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
 
+
+
   /** \brief A `dim` dimensional NURBS function
    *
    * /note This class explicitly does not relay on some controlpoints, but only on the weights
@@ -132,9 +134,12 @@ namespace Dune::IGANEW {
      * @param data
      * @param spIndex
      */
-    template <std::integral auto dimworld>
-    explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
-        : knots_{data.knotSpans}, degree_{data.degree}, weights_{extractWeights(data.controlPoints)} {}
+    template <int  dimworld>
+explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
+    : Nurbs(data.knotSpans,data.degree,extractWeights(data.controlPoints)) {}
+
+    explicit Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionNet<dim, ScalarType>& netOfWeight )
+        : knots_{knots}, degree_{degree}, weights_{netOfWeight} {}
 
     auto localView() const { return LocalView(*this); }
 
@@ -168,7 +173,7 @@ namespace Dune::IGANEW {
     // }
 
     auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
-      auto subNetStart = findSpanCorrecte(degree_, u, knots_);
+      auto subNetStart = findSpan(degree_, u, knots_);
       return basisFunctions(u, knots_, degree_, weights_, subNetStart);
     }
 
@@ -278,6 +283,9 @@ namespace Dune::IGANEW {
     std::array<int, dim> degree_;
     MultiDimensionNet<dim, ScalarType> weights_;
   };
+
+  template <size_t dim, typename ScalarType_ = double>
+Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionNet<dim, ScalarType_>& netOfWeight ) -> Nurbs<dim,ScalarType_>;
 
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType_>
   auto degreeElevate(const NURBSPatchData<dim, dimworld, ScalarType_>& oldData, const int refinementDirection,
