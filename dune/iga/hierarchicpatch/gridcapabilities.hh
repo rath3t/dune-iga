@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <dune/grid/common/capabilities.hh>
+#include <dune/grid/test/gridcheck.hh>
 namespace Dune {
 
   namespace IGANEW {

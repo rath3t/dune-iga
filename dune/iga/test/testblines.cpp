@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
-
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
 #include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>
@@ -103,7 +105,7 @@ auto testBsplineBasisFunctions() {
   const std::vector<std::vector<double>> weights2
       = {{{1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13, 14}, {15, 16, 17, 18, 19, 20, 21}}};
   std::array<int, 2> dimsize = {static_cast<int>(weights2.size()), static_cast<int>(weights2[0].size())};
-  Dune::IGANEW::MultiDimensionNet<2UL, double> weightNet(dimsize, weights2);
+  Dune::IGANEW::MultiDimensionalNet<2UL, double> weightNet(dimsize, weights2);
 
   auto Nurbs = Dune::IGANEW::Nurbs( knots2, degree2, weightNet);
   auto N_Nurbs = Nurbs.basisFunctions(xieta).directGetAll();
@@ -317,7 +319,7 @@ auto testBsplineBasisFunctions() {
 }
 
 int main(int argc, char** argv) try {
-
+Dune::TestSuite t;
   t.subTest(testBsplineBasisFunctions());
 
   return t.report();

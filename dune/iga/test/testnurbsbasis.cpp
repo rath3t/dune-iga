@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
+
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+#include <dune/common/test/testsuite.hh>
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/nurbsbasis.hh>
 
-#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
-
-
+using namespace Dune;
 // template <int dim>
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
@@ -27,8 +32,8 @@ auto testNurbsBasis() {
   const double rad = 5;
   //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
+  Dune::IGANEW::NURBSPatchData<dim, dimworld> nurbsPatchData;
   nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
 
   nurbsPatchData.controlPoints
@@ -38,15 +43,15 @@ auto testNurbsBasis() {
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
   nurbsPatchData.degree = order;
 
-  IGA::NURBSGrid<dim, dimworld> grid(nurbsPatchData);
+  IGANEW::PatchGrid<dim, dimworld> grid(nurbsPatchData);
   //  grid.globalRefine(1);
-  grid.globalRefineInDirection(0, 2);
-  grid.globalDegreeElevate(2);
+  grid.globalRefineInDirection({2, 0});
+  grid.degreeElevateOnAllLevels({2,2});
   //  grid.globalRefineInDirection(1, 3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
-  TestSuite test;
+  Dune::TestSuite test;
 
   //! Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);

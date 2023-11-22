@@ -684,7 +684,7 @@ auto testNURBSSurface() {
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   //
 
-  //  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
+  //  auto weightNet  = MultiDimensionalNet<dim, double>(dimsize, weight);
   auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);

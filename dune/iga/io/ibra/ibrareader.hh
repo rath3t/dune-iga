@@ -26,7 +26,7 @@ namespace Dune::IGA {
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim, ScalarType>;
     using ControlPoint        = Dune::IGA::NURBSPatchData<gridDim, worldDim>::ControlPointType;
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
-    using ControlPointNetType = Dune::IGA::MultiDimensionNet<gridDim, ControlPoint>;
+    using ControlPointNetType = Dune::IGA::MultiDimensionalNet<gridDim, ControlPoint>;
 
     static std::unique_ptr<Grid> read(const std::string& fileName, const bool trim = true,
                                       std::array<int, 2> elevateDegree  = {0, 0},

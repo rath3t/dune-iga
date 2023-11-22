@@ -19,7 +19,7 @@ namespace Dune::IGA {
 
     using Geometry            = NURBSPatchGeometry<dim, worldDim>;
     using ControlPointType    = typename Geometry::ControlPointType;
-    using ControlPointNetType = Dune::IGA::MultiDimensionNet<dim, ControlPointType>;
+    using ControlPointNetType = Dune::IGA::MultiDimensionalNet<dim, ControlPointType>;
     using PatchData           = Dune::IGA::NURBSPatchData<dim, worldDim>;
 
     using Point = Dune::FieldVector<double, worldDim>;

@@ -19,7 +19,7 @@ namespace Dune::IGANEW {
     static constexpr int dimworld = dimworld_;
     using GlobalCoordinateType    = FieldVector<ScalarType, dimworld>;
     using ControlPointType        = ControlPoint<GlobalCoordinateType>;
-    using ControlPointNetType     = MultiDimensionNet<dim, ControlPointType>;
+    using ControlPointNetType     = MultiDimensionalNet<dim, ControlPointType>;
 
     NURBSPatchData() = default;
     NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
@@ -33,7 +33,7 @@ namespace Dune::IGANEW {
 
   //Deduction guide, since std::array, takes size_t as second template argument
   template <std::size_t dim, std::size_t dimworld_, typename ScalarType = double>
-  NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const MultiDimensionNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,
+  NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const MultiDimensionalNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,
                  const std::array<int, dim>& degreeInput) -> NURBSPatchData<dim,dimworld_,ScalarType>;
 
 

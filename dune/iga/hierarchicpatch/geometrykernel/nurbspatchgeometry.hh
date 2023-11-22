@@ -35,7 +35,7 @@ namespace Dune::IGANEW::GeometryKernel {
     using ControlPointType    = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
     using ControlPointCoordinateNetType
-        = MultiDimensionNet<mydimension,
+        = MultiDimensionalNet<mydimension,
                             typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;

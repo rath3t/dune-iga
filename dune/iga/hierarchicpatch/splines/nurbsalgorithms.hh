@@ -78,10 +78,10 @@ namespace Dune::IGANEW {
    * @param net the full net itself
    * @return subNet with the strideSizes degree+1 per direction
    */
-  template <std::integral auto dim, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
+  template <std::integral auto dim,std::integral auto dim2, typename NetValueType>
+  requires((std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) and (dim==dim2)) auto netOfSpan(
       std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
-      const MultiDimensionNet<dim, NetValueType>& net) {
+      const MultiDimensionalNet<dim2, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
@@ -90,24 +90,24 @@ namespace Dune::IGANEW {
 
   /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
   template <std::floating_point ScalarType, std::integral auto dim, std::integral auto dim2, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
-      const Dune::FieldVector<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
-      const std::array<int, dim2>& degree, const MultiDimensionNet<dim2, NetValueType>& net) requires(dim == dim2) {
+  requires((std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)and (dim==dim2)) auto netOfSpan(
+      const Dune::FieldVector<ScalarType, dim2>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
+      const std::array<int, dim2>& degree, const MultiDimensionalNet<dim2, NetValueType>& net) requires(dim == dim2) {
     auto subNetStart = findSpan(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
 
   template <std::integral auto dim, Concept::ControlPoint ValueType>
-  auto extractWeights(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
+  auto extractWeights(const MultiDimensionalNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
-    return MultiDimensionNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(),
+    return MultiDimensionalNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(),
                                                                               viewOverWeights);
   }
 
   template <std::integral auto dim, Concept::ControlPoint ValueType>
-  auto extractControlCoordinates(const MultiDimensionNet<dim, ValueType>& cpsandWeight) {
+  auto extractControlCoordinates(const MultiDimensionalNet<dim, ValueType>& cpsandWeight) {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
-    return MultiDimensionNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
+    return MultiDimensionalNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
 
 
@@ -138,7 +138,7 @@ namespace Dune::IGANEW {
 explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
     : Nurbs(data.knotSpans,data.degree,extractWeights(data.controlPoints)) {}
 
-    explicit Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionNet<dim, ScalarType>& netOfWeight )
+    explicit Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionalNet<dim, ScalarType>& netOfWeight )
         : knots_{knots}, degree_{degree}, weights_{netOfWeight} {}
 
     auto localView() const { return LocalView(*this); }
@@ -172,6 +172,11 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
     //   return basisFunctions(u, knots_, degree_, weights_).directGetAll();
     // }
 
+    /**
+     * \brief Evaluate the values of the NURBS basis
+     * \param u local coordinate in the parameter space
+     * \return
+     */
     auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
       auto subNetStart = findSpan(degree_, u, knots_);
       return basisFunctions(u, knots_, degree_, weights_, subNetStart);
@@ -182,15 +187,21 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
     }
 
     static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
+                           const std::array<std::vector<ScalarType>, dim>& knots,
+                           const std::array<int, dim>& degree, const MultiDimensionalNet<dim, ScalarType>& weights) {
+      return basisFunctions(u, knots, degree, weights, findSpan(degree, u, knots));
+    }
+
+    static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
                                const std::array<std::vector<ScalarType>, dim>& knots,
-                               const std::array<int, dim>& degree, const MultiDimensionNet<dim, ScalarType>& weights,
+                               const std::array<int, dim>& degree, const MultiDimensionalNet<dim, ScalarType>& weights,
                                std::array<int, dim> spIndex) {
       std::array<DynamicVectorType, (size_t)dim> bSplines;
 
       for (std::size_t i = 0; i < dim; ++i)
         bSplines[i] = BsplineBasis<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
-      auto Nnet = MultiDimensionNet<dim, ScalarType>(bSplines);
+      auto Nnet = MultiDimensionalNet<dim, ScalarType>(bSplines);
       // TODO Alex this should also be cached when called with a localView
       const auto subNetWeights = netOfSpan(spIndex, degree, weights);
 
@@ -214,7 +225,7 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
     static auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u,
                                          const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree,
-                                         const MultiDimensionNet<dim, double>& weights, const int derivativeOrder,
+                                         const MultiDimensionalNet<dim, double>& weights, const int derivativeOrder,
                                          const bool triangleDerivatives              = false,
                                          std::optional<std::array<int, dim>> spIndex = std::nullopt) {
       std::array<DynamicMatrixType, dim> bSplineDerivatives;
@@ -225,17 +236,17 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
 
       std::array<std::vector<ScalarType>, dim> dimArrayOfVectors;
       FieldVector<int, dim> dimSize(derivativeOrder + 1);
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> netOfDerivativeNets(dimSize);
+      MultiDimensionalNet<dim, MultiDimensionalNet<dim, ScalarType>> netOfDerivativeNets(dimSize);
 
       for (int j = 0; auto& derivNet : netOfDerivativeNets.directGetAll()) {
         auto multiIndex = netOfDerivativeNets.directToMultiIndex(j++);
         for (int i = 0; i < multiIndex.size(); ++i)
           dimArrayOfVectors[i] = bSplineDerivatives[i][multiIndex[i]].container();
-        derivNet = MultiDimensionNet<dim, ScalarType>(dimArrayOfVectors);
+        derivNet = MultiDimensionalNet<dim, ScalarType>(dimArrayOfVectors);
       }
 
-      MultiDimensionNet<dim, MultiDimensionNet<dim, ScalarType>> R = netOfDerivativeNets;
-      MultiDimensionNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
+      MultiDimensionalNet<dim, MultiDimensionalNet<dim, ScalarType>> R = netOfDerivativeNets;
+      MultiDimensionalNet<dim, ScalarType> netsOfWeightfunctions(dimSize);
       auto subNetStart         = spIndex ? spIndex.value() : findSpan(degree, u, knots);
       const auto subNetWeights = netOfSpan(subNetStart, degree, weights);
 
@@ -252,7 +263,7 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
         Impl::createPartialSubDerivativPermutations(derivOrders, perms);
 
         for (const auto& perm : perms) {
-          const MultiDimensionNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
+          const MultiDimensionalNetIndex<dim> kNet(perm + FieldVector<int, dim>(1));
           auto startMultiIndex = perm;
           std::ranges::transform(startMultiIndex, startMultiIndex.begin(), [](const auto& v) { return (v != 0); });
           for (int kk = kNet.index(startMultiIndex); kk < kNet.size(); ++kk) {
@@ -281,11 +292,11 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
    private:
     std::array<std::vector<ScalarType>, dim> knots_;
     std::array<int, dim> degree_;
-    MultiDimensionNet<dim, ScalarType> weights_;
+    MultiDimensionalNet<dim, ScalarType> weights_;
   };
 
-  template <size_t dim, typename ScalarType_ = double>
-Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionNet<dim, ScalarType_>& netOfWeight ) -> Nurbs<dim,ScalarType_>;
+  template <size_t dim, int dim2, typename ScalarType_ = double> requires(dim==dim2)
+Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionalNet<dim2, ScalarType_>& netOfWeight ) -> Nurbs<dim,ScalarType_>;
 
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType_>
   auto degreeElevate(const NURBSPatchData<dim, dimworld, ScalarType_>& oldData, const int refinementDirection,
@@ -345,7 +356,7 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
 
     auto dimSize                 = oldData.controlPoints.strideSizes();
     dimSize[refinementDirection] = Uh.size() - ph - 1;
-    newData.controlPoints        = MultiDimensionNet<dim, ControlPointType>(dimSize);
+    newData.controlPoints        = MultiDimensionalNet<dim, ControlPointType>(dimSize);
     auto& newCPs                 = newData.controlPoints;
 
     int totalCurvesInPatch = 1;
@@ -358,7 +369,7 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
 
     auto newAndOldCurve = [&refinementDirection, indicesOther, &oldCPs, &newCPs](auto i) {
       const auto mI
-          = MultiDimensionNet<dim - 1, int>::template directToMultiIndex<std::array<int, dim - 1>>(indicesOther, i);
+          = MultiDimensionalNet<dim - 1, int>::template directToMultiIndex<std::array<int, dim - 1>>(indicesOther, i);
       std::array<int, dim> multiIndex{};
       for (int c = 0, j = 0; j < dim; ++j)
         if (j != refinementDirection) multiIndex[j] = mI[c++];
