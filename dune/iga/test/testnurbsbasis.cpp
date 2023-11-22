@@ -8,7 +8,8 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/nurbsbasis.hh>
-
+#include <dune/functions/functionspacebases/test/basistest.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
 using namespace Dune;
 // template <int dim>
 auto testNurbsBasis() {
@@ -43,7 +44,7 @@ auto testNurbsBasis() {
          {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
   nurbsPatchData.degree = order;
 
-  IGANEW::PatchGrid<dim, dimworld> grid(nurbsPatchData);
+  IGANEW::PatchGrid grid(nurbsPatchData);
   //  grid.globalRefine(1);
   grid.globalRefineInDirection({2, 0});
   grid.degreeElevateOnAllLevels({2,2});
@@ -59,7 +60,7 @@ auto testNurbsBasis() {
 
   vtkWriter.write("ZylRefine");
   using GridView = decltype(gridView);
-  Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.impl().getPatchData());
+  Dune::Functions::NurbsBasis<GridView> basis(gridView, gridView.impl().patchData());
 
   // Test open knot vectors
   std::cout << "  Testing B-spline basis with open knot vectors" << std::endl;
@@ -92,10 +93,11 @@ auto testNurbsBasis() {
   }
 
   {
-    grid.globalDegreeElevate(1);
+    grid.degreeElevateOnAllLevels({1,1});
     auto gridViewNew = grid.leafGridView();
     // Check lower order basis created via its constructor
-    Functions::NurbsBasis<GridView> basis2(gridViewNew, gridViewNew.impl().lowerOrderPatchData());
+    using namespace Functions::BasisFactory;
+    Functions::NurbsBasis<GridView> basis2(gridViewNew, nurbs(degreeElevate(1,1)));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
   return test;
@@ -110,6 +112,8 @@ auto testNurbsBasis() {
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
+
+  TestSuite t;
 t.subTest(testNurbsBasis());
 
 

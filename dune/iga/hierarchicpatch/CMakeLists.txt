@@ -13,6 +13,7 @@ set(HEADERS
   hierachicpatchgridindexsets.hh
   hierachicpatchgridleafiterator.hh
   hierachicpatchgridleveliterator.hh
+        hierarchicpatchgridview.hh
 )
 
 install(FILES ${HEADERS}

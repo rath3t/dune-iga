@@ -10,7 +10,7 @@
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::Splines {
 
   /** \brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than
    * u -p+1-times-     returned        -p+1-times-
@@ -200,4 +200,14 @@ namespace Dune::IGANEW {
     std::vector<ScalarType> knots_;
     int degree_;
   };
+
+  template <std::size_t dim, typename ScalarType>
+auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
+    std::array<std::vector<double>, dim> uniqueKnotVector;
+    for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
+      std::ranges::unique_copy(knotSpans[i], std::back_inserter(uniqueKnotVector[i]),
+                               [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
+
+    return uniqueKnotVector;
+  }
 }  // namespace Dune::IGANEW

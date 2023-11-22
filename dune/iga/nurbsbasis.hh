@@ -494,7 +494,7 @@ namespace Dune::Functions {
                                  [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
 
       std::ranges::transform(uniqueKnotVector_, elements_.begin(), [](auto& v) { return v.size() - 1; });
-      createOriginalNodeIndices();
+      createUntrimmedNodeIndices();
       prepareForTrim();
     }
 
@@ -530,7 +530,7 @@ namespace Dune::Functions {
       return result;
     }
 
-    void createOriginalNodeIndices() {
+    void createUntrimmedNodeIndices() {
       std::array<unsigned int, dim> localSizes;
       size_type sizeOfShapeFunctions = 1;
       for (int i = 0; i < dim; i++) {

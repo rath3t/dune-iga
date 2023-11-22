@@ -6,18 +6,12 @@
 #endif
 #include <iostream>
 
-// #include "dune/iga/gridcapabilities.hh"
-// #include "dune/iga/nurbsbasis.hh"
-// #include "dune/iga/nurbsgrid.hh"
-// #include "dune/iga/nurbspatch.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-// #include <dune/functions/functionspacebases/flatmultiindex.hh>
-// #include <dune/functions/functionspacebases/powerbasis.hh>
-// #include <dune/functions/functionspacebases/test/basistest.hh>
+
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
@@ -167,6 +161,7 @@ auto testNurbsGridCylinder() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   IGANEW::PatchGrid grid(patchData);
+
   grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -183,13 +178,13 @@ auto testHierarchicPatch() {
   const double r       = 1.0;
   auto circle          = makeCircularArc(r);
   auto nurbsPatchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
-  nurbsPatchData       = degreeElevate(nurbsPatchData, 0, 1);
-  nurbsPatchData       = degreeElevate(nurbsPatchData, 1, 2);
+  nurbsPatchData       = Splines::degreeElevate(nurbsPatchData, 0, 1);
+  nurbsPatchData       = Splines::degreeElevate(nurbsPatchData, 1, 2);
   auto additionalKnots = std::vector<double>(1);
   additionalKnots[0]   = 0.1;
-  nurbsPatchData       = knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
+  nurbsPatchData       = Splines::knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
   for (int refDirection = 0; refDirection < 2; ++refDirection)
-    nurbsPatchData = degreeElevate(nurbsPatchData, refDirection, 1);
+    nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
   Dune::IGANEW::PatchGrid patch(nurbsPatchData);
 
@@ -203,13 +198,13 @@ auto testTorusGeometry() {
   const double r       = 1.0;
   auto circle          = makeCircularArc(r);
   auto nurbsPatchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 360.0);
-  nurbsPatchData       = degreeElevate(nurbsPatchData, 0, 1);
-  nurbsPatchData       = degreeElevate(nurbsPatchData, 1, 2);
+  nurbsPatchData       = Splines::degreeElevate(nurbsPatchData, 0, 1);
+  nurbsPatchData       = Splines::degreeElevate(nurbsPatchData, 1, 2);
   auto additionalKnots = std::vector<double>(1);
   additionalKnots[0]   = 0.1;
-  nurbsPatchData       = knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
+  nurbsPatchData       = Splines::knotRefinement<2>(nurbsPatchData, additionalKnots, 1);
   for (int refDirection = 0; refDirection < 2; ++refDirection)
-    nurbsPatchData = degreeElevate(nurbsPatchData, refDirection, 1);
+    nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
   IGANEW::PatchGrid grid(nurbsPatchData);
   grid.globalRefine(1);
@@ -305,8 +300,8 @@ auto testNURBSGridCurve() {
   auto additionalKnots    = std::vector<double>(2);
   additionalKnots[0]      = 0.5;
   additionalKnots[1]      = 3.5;
-  patchData               = knotRefinement<dim>(patchData, additionalKnots, 0);
-  patchData               = degreeElevate(patchData, 0, 1);
+  patchData               = Dune::IGANEW::Splines::knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData               = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 1);
 
   TestSuite t;
   IGANEW::PatchGrid<dim, dimworld> grid(patchData);
@@ -407,7 +402,7 @@ auto test3DGrid() {
     }
   }
 
-  nurbsPatchData.controlPoints = MultiDimensionNet(dimSize, controlp);
+  nurbsPatchData.controlPoints = MultiDimensionalNet(dimSize, controlp);
   nurbsPatchData.degree        = order;
 
   auto additionalKnots = std::vector<double>(2);
@@ -497,7 +492,7 @@ auto testCurveHigherOrderDerivatives() {
   }
 
   for (int i = 1; i < 5; ++i) {
-    auto patchDataN = degreeElevate(patchData, 0, i);
+    auto patchDataN = Dune::IGANEW::Splines::degreeElevate(patchData, 0, i);
     GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
     for (int j = 0; j < samples + 1; ++j) {
       const Dune::FieldVector<double, 1> u = {j / static_cast<double>(samples)};
@@ -511,7 +506,7 @@ auto testCurveHigherOrderDerivatives() {
     }
   }
 
-  patchData = degreeElevate(patchData, 0, 2);
+  patchData = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 2);
   t.check(expectedControlPoints.size() == patchData.controlPoints.directGetAll().size())
       << "Size mismatch " << expectedControlPoints.size() << "is " << patchData.controlPoints.directGetAll().size();
   t.check(expectedWeights.size() == patchData.controlPoints.directGetAll().size())
@@ -554,9 +549,9 @@ auto testSurfaceHigherOrderDerivatives() {
   //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
   //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
   //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
-  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+  std::array dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
@@ -564,7 +559,7 @@ auto testSurfaceHigherOrderDerivatives() {
   patchData.controlPoints = controlNet;
   auto additionalKnots    = std::vector<double>(1);
   additionalKnots[0]      = 0.5;
-  patchData               = knotRefinement<2>(patchData, additionalKnots, 1);
+  patchData               = Dune::IGANEW::Splines::knotRefinement<2>(patchData, additionalKnots, 1);
   //  const double R       = 2.0;
   //  const double r       = 1.0;
   //  auto circle          = makeCircularArc(r);
@@ -594,7 +589,7 @@ auto testSurfaceHigherOrderDerivatives() {
   }
 
   for (int i = 1; i < 2; ++i) {
-    auto patchDataN = degreeElevate(patchData, 1, i);
+    auto patchDataN = Dune::IGANEW::Splines::degreeElevate(patchData, 1, i);
     GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
     //    t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
     for (int j = 0, index = 0; j < samples + 1; ++j) {
@@ -642,20 +637,22 @@ auto testNURBSCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
   const std::vector<ControlPoint> controlPoints
       = {{.p = {1, 3, 4}, .w = 2}, {.p = {2, 2, 2}, .w = 2}, {.p = {3, 4, 5}, .w = 1},
          {.p = {5, 1, 7}, .w = 1}, {.p = {4, 7, 2}, .w = 4}, {.p = {8, 6, 2}, .w = 2},
          {.p = {2, 9, 9}, .w = 1}, {.p = {1, 4, 3}, .w = 2}, {.p = {1, 7, 1}, .w = 4}};
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
-  auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
+  GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
 
   TestSuite testSuite;
-  testSuite.check(patch.size(0) == 5);
-  testSuite.check(patch.size(1) == controlPoints.size());
+  testSuite.check(patch.numberOfControlPoints().size() == 1);
+  testSuite.check(patch.numberOfControlPoints()[0] == 9);
+  testSuite.check(patch.numberOfElements().size() == 1);
+  testSuite.check(patch.numberOfElements()[0] == 5);
   return testSuite;
 }
 
@@ -674,7 +671,7 @@ auto testNURBSSurface() {
   const std::array<int, dim> order = {2, 2};
 
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  using ControlPoint                                   = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint                                   = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints
       = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
@@ -685,14 +682,17 @@ auto testNURBSSurface() {
   //
 
   //  auto weightNet  = MultiDimensionalNet<dim, double>(dimsize, weight);
-  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
+  IGANEW::GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
 
   TestSuite testSuite;
-  testSuite.check(patch.size(0) == 1);
-  testSuite.check(patch.size(1) == 4);
-  testSuite.check(patch.size(2) == 9);
+  testSuite.check(patch.numberOfControlPoints().size() == 2);
+  testSuite.check(patch.numberOfControlPoints()[0] == 3);
+  testSuite.check(patch.numberOfControlPoints()[1] == 3);
+  testSuite.check(patch.numberOfElements().size() == 1);
+  testSuite.check(patch.numberOfElements()[0] == 1);
+  testSuite.check(patch.numberOfElements()[1] == 1);
 
   return testSuite;
 }

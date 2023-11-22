@@ -13,7 +13,7 @@
 #include <dune/iga/hierarchicpatch/utils/linearalgebra.hh>
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>
 #include <dune/iga/hierarchicpatch/utils/typetraits.hh>
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::Splines {
 
   namespace Impl {
     template <std::integral auto dim>

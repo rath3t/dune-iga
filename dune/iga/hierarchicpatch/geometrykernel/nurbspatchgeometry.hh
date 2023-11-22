@@ -37,7 +37,7 @@ namespace Dune::IGANEW::GeometryKernel {
     using ControlPointCoordinateNetType
         = MultiDimensionalNet<mydimension,
                             typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
-    using Nurbs          = Nurbs<mydimension, ScalarType>;
+    using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, trim>;
@@ -57,8 +57,9 @@ namespace Dune::IGANEW::GeometryKernel {
       return GeometryLocalView<codim, trim>(*this);
     }
 
+
     explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
-        : patchData_(patchData), nurbs_{patchData}, localView_(localView<0, Trimming::Disabled>()) {}
+        : patchData_(patchData), nurbs_{patchData_} {}
 
     /** \brief Map the center of the element to the geometry */
     [[nodiscard]] GlobalCoordinate center() const { return global(domainMidPoint()); }
@@ -151,13 +152,24 @@ namespace Dune::IGANEW::GeometryKernel {
 
       return result;
     }
+    auto numberOfControlPoints()const {
+      return patchData_.controlPoints.strideSizes();
+    }
+
+    auto numberOfElements()const {
+      return patchData_.controlPoints.strideSizes();
+    }
+
+    const auto& patchData() const {return patchData_;}
+     auto& patchData()  {return patchData_;}
 
    private:
+
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
-      auto subNetStart = findSpan(patchData_.degree, u, patchData_.knotSpans);
+      auto subNetStart = Splines::findSpan(patchData_.degree, u, patchData_.knotSpans);
 
       auto cpCoordinateNet
-          = netOfSpan(subNetStart, patchData_.degree, extractControlCoordinates(patchData_.controlPoints));
+          = Splines::netOfSpan(subNetStart, patchData_.degree, Splines::extractControlCoordinates(patchData_.controlPoints));
       auto nurbsLocalView = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
       return std::make_tuple(nurbsLocalView, cpCoordinateNet, subNetStart);
@@ -173,12 +185,8 @@ namespace Dune::IGANEW::GeometryKernel {
                              GeometryKernel::hessian(u, nurbsLocalView, localControlPointNet));
     }
 
-   public:
     NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
-
-   private:
     Nurbs nurbs_;
-    GeometryLocalView<0, Trimming::Disabled> localView_;
   };
 
 }  // namespace Dune::IGANEW::GeometryKernel

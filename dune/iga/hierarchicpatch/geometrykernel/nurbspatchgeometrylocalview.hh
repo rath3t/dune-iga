@@ -92,7 +92,7 @@ namespace Dune::IGANEW::GeometryKernel {
     using MatrixHelper              = typename PatchGeometry::MatrixHelper;
     using Volume                    = ctype;
 
-    using Nurbs          = Nurbs<gridDimension, ctype>;
+    using Nurbs          = Splines::Nurbs<gridDimension, ctype>;
     using NurbsLocalView = typename Nurbs::LocalView;
 
     using ControlPointCoordinateNetType = typename PatchGeometry::ControlPointCoordinateNetType;

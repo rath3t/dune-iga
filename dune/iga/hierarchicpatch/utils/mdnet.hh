@@ -24,6 +24,9 @@ namespace Dune::IGANEW {
     HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
   }  // namespace Impl
 
+
+
+
   /**
    * \brief This is a condensed version of the proposal
    * https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p1684r2.html It is a container with multidimensional
@@ -388,6 +391,11 @@ namespace Dune::IGANEW {
     std::array<int, netdim> dimSize_;
     Container values_;
   };
+
+
+   template <  size_t  netdim,
+    typename  value_type>
+   MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<value_type>>>& values) -> MultiDimensionalNet<netdim,value_type>;
 
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>

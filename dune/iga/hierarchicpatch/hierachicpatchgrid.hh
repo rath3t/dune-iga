@@ -29,8 +29,19 @@
 #include "hierachicpatchgridleafiterator.hh"
 #include "hierachicpatchgridleveliterator.hh"
 #include "hierachicpatchgridlocalgeometry.hh"
+#include "hierarchicpatchgridview.hh"
 
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
+namespace Dune::Functions {
+  template <typename GV, typename ScalarType>
+class NurbsPreBasis;
+}
 namespace Dune::IGANEW {
+
+  namespace Impl {
+    template <int dim>
+class NurbsPreBasisFactoryFromDegreeElevation;
+  }
 
   // Forward declaration
   template <int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid>
@@ -54,27 +65,13 @@ namespace Dune::IGANEW {
         PatchGridGlobalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
         typename HostGrid::Traits::GlobalIdSet::IdType,
         PatchGridLocalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
-        typename HostGrid::Traits::LocalIdSet::IdType, Communication<No_Comm>, DefaultLevelGridViewTraits,
-        DefaultLeafGridViewTraits, PatchGridEntitySeed, PatchGridLocalGeometry,
+        typename HostGrid::Traits::LocalIdSet::IdType, Communication<No_Comm>, PatchGridLevelGridViewTraits,
+        PatchGridLeafGridViewTraits, PatchGridEntitySeed, PatchGridLocalGeometry,
         typename HostGrid::Traits::LevelIndexSet::IndexType, typename HostGrid::Traits::LevelIndexSet::Types,
         typename HostGrid::Traits::LeafIndexSet::IndexType, typename HostGrid::Traits::LeafIndexSet::Types>
         Traits;
   };
-  template <std::size_t dim, typename ScalarType>
-  auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
-    std::array<std::vector<double>, dim> uniqueKnotVector;
-    for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
-      std::ranges::unique_copy(knotSpans[i], std::back_inserter(uniqueKnotVector[i]),
-                               [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
 
-    return uniqueKnotVector;
-  }
-
-  template <std::size_t dim, typename ScalarType>
-  auto createParameterPatchGridFromKnotVectors(const std::array<std::vector<ScalarType>, dim>& uniqueKnotVector_) {
-    auto grid = std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueKnotVector_);
-    return grid;
-  }
 
   //**********************************************************************
   //
@@ -98,19 +95,30 @@ namespace Dune::IGANEW {
         = std::conditional_t<trim_ == Trimming::Enabled, SubGrid<dim, ParameterSpaceUntrimmedGrid>,
                              ParameterSpaceUntrimmedGrid>;
 
+    friend class PatchGridLeafGridView<const PatchGrid>;
+    friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
     friend class PatchGridLeafIndexSet<const PatchGrid>;
     friend class PatchGridGlobalIdSet<const PatchGrid>;
     friend class PatchGridLocalIdSet<const PatchGrid>;
     friend class PatchGridHierarchicIterator<const PatchGrid>;
     friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
+    friend class PatchGridLevelIntersection<const PatchGrid>;
     friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
+    friend class PatchGridLeafIntersection<const PatchGrid>;
 
     template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLevelIterator;
 
     template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLeafIterator;
+
+friend class PatchGridLevelGridView<PatchGrid>;
+friend class PatchGridLeafGridView<PatchGrid>;
+
+friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
+friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView,ScalarType>;
+friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarType>;
 
     template <int codim_, int dim_, class GridImp_>
     friend class PatchGridEntity;
@@ -141,7 +149,7 @@ namespace Dune::IGANEW {
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
-        : uniqueCoarseKnotSpans(createUniqueKnotSpans(patchData.knotSpans)),
+        : uniqueCoarseKnotSpans(Splines::createUniqueKnotSpans(patchData.knotSpans)),
           hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueCoarseKnotSpans)),
           leafIndexSet_(*this),
           globalIdSet_(*this),
@@ -150,6 +158,11 @@ namespace Dune::IGANEW {
       patchGeometries.emplace_back(patchData);
       patchGeometriesUnElevated=patchGeometries;
     }
+
+
+
+    PatchGrid& operator=( PatchGrid&&) noexcept = default;
+    // PatchGrid& operator=( const PatchGrid&)  = default;
 
     /** \brief Return maximum level defined in this grid.
      *
@@ -255,11 +268,11 @@ namespace Dune::IGANEW {
      */
     void globalRefine(int refCount) {
       for (int i = 0; i < refCount; ++i) {
-        const auto& finestPatchData = patchGeometries.back().patchData_;
+        const auto& finestPatchData = patchGeometries.back().patchData();
         auto newfinestPatchData     = finestPatchData;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
-          auto additionalKnots = generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
-          newfinestPatchData   = knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
+          auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
+          newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
         }
         patchGeometries.emplace_back(std::move(newfinestPatchData));
         patchGeometriesUnElevated.emplace_back(std::move(newfinestPatchData));
@@ -277,19 +290,19 @@ namespace Dune::IGANEW {
      * refined in the given directions. This splits the element in half, quarters ,... in the given direction
      */
     void globalRefineInDirection(const std::array<int, dim>& refines) {
-      const auto& finestPatchData = patchGeometries.back().patchData_;
+      const auto& finestPatchData = patchGeometries.back().patchData();
       auto newfinestPatchData     = finestPatchData;
       for (int dir = 0; auto refinesInDirection : refines) {
         if (refinesInDirection == 0) {
           ++dir;
           continue;
         }
-        auto additionalKnots = generateRefinedKnots(finestPatchData.knotSpans, dir, refinesInDirection);
-        newfinestPatchData   = knotRefinement<dim>(newfinestPatchData, additionalKnots, dir);
+        auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, dir, refinesInDirection);
+        newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, dir);
         ++dir;
       }
-
-      this = PatchGrid(newfinestPatchData);
+        auto newGrid =  PatchGrid(newfinestPatchData);
+      *this = std::move(newGrid);
     }
 
     /**
@@ -299,14 +312,14 @@ namespace Dune::IGANEW {
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
       if(lvl>= maxLevel() and lvl>=0)DUNE_THROW(Dune:RangeError,"This level does not exist");
-      auto& patchData = patchGeometries[lvl].patchData_;
-      patchGeometriesUnElevated[lvl].patchData_=patchData;
+      auto& patchData = patchGeometries[lvl].patchData();
+      patchGeometriesUnElevated[lvl].patchData()=patchData;
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
         if (elevatesInDirection == 0) {
           ++dir;
           continue;
         }
-          patchData = degreeElevate(patchData, dir, elevatesInDirection);
+          patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
         ++dir;
       }
     }
@@ -314,7 +327,6 @@ namespace Dune::IGANEW {
     /**
      * \brief Increases the polynomial degree of the NURBS geometry of the given level
      * \param elevationFactors the increase in polynomial degree of the underlying NURBS
-     * \param lvl the level where the degree elevation should be performed
      */
     void degreeElevateOnAllLevels(const std::array<int, dim>& elevationFactors) {
       for (int lvl = 0; lvl < maxLevel(); ++lvl)
@@ -408,16 +420,14 @@ namespace Dune::IGANEW {
         return e.impl().hostEntity_;
       }
 
-     public:
-      std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
-      std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
-      std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
-
      protected:
       //! The host grid which contains the actual grid hierarchy structure
       std::unique_ptr<HostGrid> hostgrid_;
 
      private:
+    std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
       //! compute the grid indices and ids
       void setIndices() {
         localIdSet_.update();

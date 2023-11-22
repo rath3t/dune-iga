@@ -16,7 +16,7 @@ namespace Dune::IGA::Ibra {
 
   enum Type { NurbsCurveGeometry2D, NurbsSurfaceGeometry3D, BrepLoopType, BrepTrimType, BrepType, NoType };
 
-  Type typeForTypeString(const std::string& typeString) {
+  inline Type typeForTypeString(const std::string& typeString) {
     if (typeString == "NurbsCurveGeometry2D")
       return Type::NurbsCurveGeometry2D;
     else if (typeString == "NurbsSurfaceGeometry3D")

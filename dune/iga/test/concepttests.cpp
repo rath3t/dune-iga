@@ -16,14 +16,16 @@ void checkConcepts() {
 
   using GridEntity         = typename G::template Codim<0>::Entity;
   using GridEntityGeometry = typename GridEntity::Geometry;
-  using GridView           = typename G::GridView;
+  using LeafGridView           = typename G::LeafGridView;
+  using LevelGridView           = typename G::LevelGridView;
   using GlobalIdSet        = typename G::GlobalIdSet;
-  using IndexSet           = typename GridView::IndexSet;
+  using IndexSet           = typename LeafGridView::IndexSet;
 
   static_assert(Dune::Concept::EntityGeneral<GridEntity>);
 
   // static_assert(Dune::IGANEW::Concept::NurbsGeometry<typename GridEntityGeometry::Implementation>);
-  static_assert(Dune::Concept::GridView<GridView>);
+  static_assert(Dune::Concept::GridView<LeafGridView>);
+  static_assert(Dune::Concept::GridView<LevelGridView>);
   static_assert(Dune::Concept::IndexSet<IndexSet>);
   static_assert(Dune::Concept::IdSet<GlobalIdSet>);
 }
