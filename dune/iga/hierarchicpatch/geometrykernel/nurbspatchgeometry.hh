@@ -157,7 +157,13 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     auto numberOfElements()const {
-      return patchData_.controlPoints.strideSizes();
+      std::array<int,mydimension> elementsPerDirection;
+      auto numOfControlPoints= numberOfControlPoints();
+      for (int i = 0; i < mydimension; ++i) {
+        elementsPerDirection[i] = patchData_.knotSpans[i].size()-numOfControlPoints[i]- patchData_.degree[i];
+      }
+
+      return elementsPerDirection;
     }
 
     const auto& patchData() const {return patchData_;}

@@ -48,7 +48,11 @@ return this->grid().patchGeometries[this->level_].patchData();
     }
 
     auto untrimmedElementNumbers() const {
-      return this->grid().getHostGrid().levelSize(this->level_);
+      //TODO Trim this should be the quantity from the untrimmed grid
+      if constexpr (trim==Trimming::Disabled)
+        return this->grid().getHostGrid().levelSize(this->level_);
+      else
+        DUNE_THROW(Dune::NotImplemented,"This needs to be implemented");
     }
 
   };

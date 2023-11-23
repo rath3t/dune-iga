@@ -151,9 +151,9 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
         : uniqueCoarseKnotSpans(Splines::createUniqueKnotSpans(patchData.knotSpans)),
           hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueCoarseKnotSpans)),
-          leafIndexSet_(*this),
-          globalIdSet_(*this),
-          localIdSet_(*this) {
+          leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
+          globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
+          localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
       setIndices();
       patchGeometries.emplace_back(patchData);
       patchGeometriesUnElevated=patchGeometries;
@@ -230,16 +230,16 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
 
     //! number of entities per level, codim and geometry type in this process
-    int size(int level, GeometryType type) const { return levelIndexSets_[level]->size(type); }
+    int size(int level, GeometryType type) const { return {}; }
 
     //! number of leaf entities per codim and geometry type in this process
     int size(GeometryType type) const { return leafIndexSet().size(type); }
 
     /** \brief Access to the GlobalIdSet */
-    const typename Traits::GlobalIdSet& globalIdSet() const { return globalIdSet_; }
+    const typename Traits::GlobalIdSet& globalIdSet() const { return *globalIdSet_; }
 
     /** \brief Access to the LocalIdSet */
-    const typename Traits::LocalIdSet& localIdSet() const { return localIdSet_; }
+    const typename Traits::LocalIdSet& localIdSet() const { return *localIdSet_; }
 
     /** \brief Access to the LevelIndexSets */
     const typename Traits::LevelIndexSet& levelIndexSet(int level) const {
@@ -250,7 +250,7 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     }
 
     /** \brief Access to the LeafIndexSet */
-    const typename Traits::LeafIndexSet& leafIndexSet() const { return leafIndexSet_; }
+    const typename Traits::LeafIndexSet& leafIndexSet() const { return *leafIndexSet_; }
 
     /** \brief Create Entity from EntitySeed */
     template <class EntitySeed>
@@ -264,7 +264,6 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     /*@{*/
 
     /** global refinement
-     * \todo optimize implementation
      */
     void globalRefine(int refCount) {
       for (int i = 0; i < refCount; ++i) {
@@ -285,7 +284,6 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     /**
      * \brief This refines the grid in one specific direction, this resets all multilevel structure, since YaspGrid does
      * not support this!
-
      * \param refines how often should the element be
      * refined in the given directions. This splits the element in half, quarters ,... in the given direction
      */
@@ -422,17 +420,18 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
 
      protected:
       //! The host grid which contains the actual grid hierarchy structure
+    std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
       std::unique_ptr<HostGrid> hostgrid_;
 
      private:
-    std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
+
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
       //! compute the grid indices and ids
       void setIndices() {
-        localIdSet_.update();
+        localIdSet_->update();
 
-        globalIdSet_.update();
+        globalIdSet_->update();
 
         // //////////////////////////////////////////
         //   Create the index sets
@@ -445,7 +444,7 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
         for (int i = 0; i <= maxLevel(); i++)
           if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
 
-        leafIndexSet_.update(*this);
+        leafIndexSet_->update(*this);
       }
 
       //! \todo Please doc me !
@@ -455,13 +454,13 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
       std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
 
       //! \todo Please doc me !
-      PatchGridLeafIndexSet<const PatchGrid> leafIndexSet_;
+      std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
 
       //! \todo Please doc me !
-      PatchGridGlobalIdSet<const PatchGrid> globalIdSet_;
+      std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
 
       //! \todo Please doc me !
-      PatchGridLocalIdSet<const PatchGrid> localIdSet_;
+      std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
 
     };  // end Class PatchGrid
 
