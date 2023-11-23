@@ -5,8 +5,9 @@
  * This is the documentation for the dune-iga module.
  * It contains a DUNE grid implementation, that uses NURBS as geometry functions.
  * Furthermore, it contains NURBS ansatz functions for your solutions fields.
- * This functions basis adheres to the concept of <a href="https://www.dune-project.org/modules/dune-functions/">dune-functions</a>.
- * The grid implementation conforms to the concept of a <a href="https://www.dune-project.org/modules/dune-grid/">DUNE grid</a>.
+ * This functions basis adheres to the concept of <a
+ * href="https://www.dune-project.org/modules/dune-functions/">dune-functions</a>. The grid implementation conforms to
+ * the concept of a <a href="https://www.dune-project.org/modules/dune-grid/">DUNE grid</a>.
  *
  *
  *
