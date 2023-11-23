@@ -43,6 +43,10 @@ namespace Dune::IGA::Trim {
     static constexpr int pathSamples  = 800;
     static constexpr double tolerance = 1e-8;
 
+    // ClosestPointProjection needs a good estimate where to begin, especially in high-curvature souroundings,
+    // the amount of samples indicates how often the curve is sampled for a good starting point
+    static constexpr int numSamplesStartingPoint = 50;
+
     /// How far the curve to point distance is allowed to be, to be considered "on" the curve
     static constexpr double gapTolerance = 1e-3;
 
@@ -642,7 +646,7 @@ namespace Dune::IGA::Trim {
       (*it).alreadyVisited = true;
     }
 
-    static double findGoodStartingPoint(CurveGeometry& curve, Point& intersectionPoint, int N) {
+    static double findGoodStartingPoint(CurveGeometry& curve, const Point& intersectionPoint, const int N) {
       auto linSpace = Utilities::linspace(curve.domain()[0], N);
       std::vector<double> distances;
       std::ranges::transform(linSpace, std::back_inserter(distances),
@@ -661,7 +665,7 @@ namespace Dune::IGA::Trim {
 
       if (Dune::FloatCmp::eq(start, intersectionPoint, tolerance)) return {domain.left(), start, true};
       if (Dune::FloatCmp::eq(end, intersectionPoint, tolerance)) return {domain.right(), end, true};
-      Dune::FieldVector<double, 1> uGuess{findGoodStartingPoint(curve, intersectionPoint, 10)};
+      Dune::FieldVector<double, 1> uGuess{findGoodStartingPoint(curve, intersectionPoint, numSamplesStartingPoint)};
       auto [u, Ru, fu, gap] = Dune::IGA::closestPointProjectionByTrustRegion(curve, intersectionPoint, uGuess);
 
       if (gap > gapTolerance) return {u[0], intersectionPoint, false};
