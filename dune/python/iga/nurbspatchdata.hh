@@ -7,6 +7,7 @@
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/nurbspatchdata.hh"
+
 #include <dune/python/functions/globalbasis.hh>
 #include <dune/python/pybind11/eigen.h>
 #include <dune/python/pybind11/functional.h>

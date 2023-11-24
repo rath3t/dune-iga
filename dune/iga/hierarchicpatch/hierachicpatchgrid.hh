@@ -11,12 +11,6 @@
 #include <map>
 #include <string>
 
-#include <dune/common/parallel/communication.hh>
-#include <dune/grid/common/grid.hh>
-#include <dune/grid/yaspgrid.hh>
-#include <dune/subgrid/subgrid.hh>
-
-// The components of the PatchGrid interface
 #include "enums.hh"
 #include "gridcapabilities.hh"
 #include "hierachicpatchgridentity.hh"
@@ -30,7 +24,15 @@
 #include "hierachicpatchgridlocalgeometry.hh"
 #include "hierarchicpatchgridview.hh"
 
+#include <dune/common/parallel/communication.hh>
+
+#include <dune/grid/common/grid.hh>
+#include <dune/grid/yaspgrid.hh>
+
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
+
+#include <dune/subgrid/subgrid.hh>
+
 namespace Dune::Functions {
   template <typename GV, typename ScalarType>
   class NurbsPreBasis;
@@ -154,7 +156,17 @@ namespace Dune::IGANEW {
       patchGeometriesUnElevated = patchGeometries;
     }
 
-    // PatchGrid& operator=(PatchGrid&&) noexcept = default;
+    PatchGrid& operator=(PatchGrid&& other) noexcept {
+      this->uniqueCoarseKnotSpans = std::move(other.uniqueCoarseKnotSpans);
+      this->hostgrid_ = std::move(other.hostgrid_);
+      patchGeometries = std::move(other.patchGeometries);
+      patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
+      leafIndexSet_=std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
+      globalIdSet_=std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
+      localIdSet_=std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this);
+      setIndices();
+      return *this;
+    }
 
     /** \brief Return maximum level defined in this grid.
      *
@@ -301,7 +313,7 @@ namespace Dune::IGANEW {
      * \param lvl the level where the degree elevation should be performed
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
-      if (lvl >= maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
+      if (lvl > maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
       auto& patchData                            = patchGeometries[lvl].patchData();
       patchGeometriesUnElevated[lvl].patchData() = patchData;
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
@@ -319,7 +331,7 @@ namespace Dune::IGANEW {
      * \param elevationFactors the increase in polynomial degree of the underlying NURBS
      */
     void degreeElevateOnAllLevels(const std::array<int, dim>& elevationFactors) {
-      for (int lvl = 0; lvl < maxLevel(); ++lvl)
+      for (int lvl = 0; lvl < maxLevel()+1; ++lvl)
         degreeElevate(elevationFactors, lvl);
     }
 

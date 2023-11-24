@@ -10,6 +10,7 @@
 #include <ranges>
 
 #include <dune/common/fvector.hh>
+
 #include <dune/iga/hierarchicpatch/concepts.hh>
 
 namespace Dune::IGANEW {

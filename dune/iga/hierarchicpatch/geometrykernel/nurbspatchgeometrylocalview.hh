@@ -5,6 +5,8 @@
 
 // #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 #include <dune/geometry/quadraturerules.hh>
+#include <dune/common/diagonalmatrix.hh>
+
 #include <dune/iga/hierarchicpatch/enums.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>

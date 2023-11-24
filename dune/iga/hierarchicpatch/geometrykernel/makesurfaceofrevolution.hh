@@ -5,6 +5,19 @@
 #include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
 namespace Dune::IGANEW {
 
+  namespace Impl {
+    /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back
+     * to an implementation by hand otherwise
+     */
+    template <Concept::Vector VectorType>
+    requires(VectorType::dimension == 3) VectorType cross(const VectorType& a, const VectorType& b) {
+      if constexpr (requires { a.cross(b); })
+        return a.cross(b);
+      else
+        return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+    }
+  }  // namespace Impl
+
   /* \brief Create a surface of revolution from a generating curve, from Piegl and Tiller, Algo 8.1
    * \tparam ScalarType the field type (use float, double, complex, etc)
    * \param generatrix 1D nurbs curve, which should be revolved
@@ -64,7 +77,7 @@ namespace Dune::IGANEW {
       GlobalCoordinateType X        = genCP.directGet(j).p - Om;
       const ScalarType r            = X.two_norm();
       X /= r;
-      const GlobalCoordinateType Y = cross(revolutionAxisN, X);
+      const GlobalCoordinateType Y = Impl::cross(revolutionAxisN, X);
       surfaceCP(0, j) = PO    = genCP.directGet(j);
       GlobalCoordinateType TO = Y;
       for (int index = 0, i = 0; i < narcs; ++i) {

@@ -11,12 +11,14 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
+
 #include <dune/iga/hierarchicpatch/geometrykernel/makecirculararc.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>

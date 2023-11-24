@@ -1,7 +1,7 @@
 
 
 #pragma once
-
+#include "dune/iga/hierarchicpatch/concepts.hh"
 namespace Dune::IGANEW {
   template <Concept::Vector VectorType>
   VectorType projectPointOntoLine(const VectorType basepoint, const VectorType revolutionaxis, const VectorType point) {

@@ -4,6 +4,7 @@
 #  include "config.h"
 #endif
 #include <dune/common/test/testsuite.hh>
+
 #include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>

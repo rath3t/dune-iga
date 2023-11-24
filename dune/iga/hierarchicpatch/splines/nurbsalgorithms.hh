@@ -10,7 +10,6 @@
 #include <dune/iga/hierarchicpatch/concepts.hh>
 #include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
-#include <dune/iga/hierarchicpatch/utils/linearalgebra.hh>
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>
 #include <dune/iga/hierarchicpatch/utils/typetraits.hh>
 namespace Dune::IGANEW::Splines {

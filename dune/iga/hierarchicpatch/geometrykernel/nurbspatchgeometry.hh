@@ -4,11 +4,23 @@
 #pragma once
 
 #include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/axisalignedcubegeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
+
 #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
+#include <dune/grid/yaspgrid/yaspgridgeometry.hh>
 
+
+namespace Dune {
+  template<int dim, class Coordinates >
+class YaspGrid;
+
+  template<class ct, int dim>
+class TensorProductCoordinates
+  ;
+}
 namespace Dune::IGANEW::GeometryKernel {
 
   template <int dim_, int dimworld_, typename ScalarType = double>
@@ -157,7 +169,7 @@ namespace Dune::IGANEW::GeometryKernel {
       std::array<int, mydimension> elementsPerDirection;
       auto numOfControlPoints = numberOfControlPoints();
       for (int i = 0; i < mydimension; ++i) {
-        elementsPerDirection[i] = patchData_.knotSpans[i].size() - numOfControlPoints[i] - patchData_.degree[i];
+        elementsPerDirection[i] = numOfControlPoints[i] - patchData_.degree[i];
       }
 
       return elementsPerDirection;

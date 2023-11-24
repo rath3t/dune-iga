@@ -4,6 +4,7 @@
 #pragma once
 
 #include <dune/common/bitsetvector.hh>
+
 #include <dune/geometry/referenceelements.hh>
 
 template <class GridView, int ncomp = 1>

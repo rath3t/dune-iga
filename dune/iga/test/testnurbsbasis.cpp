@@ -4,14 +4,19 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
 #include <dune/common/test/testsuite.hh>
+
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
-#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/nurbsbasis.hh>
+
 using namespace Dune;
-// template <int dim>
+
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
   //  First test

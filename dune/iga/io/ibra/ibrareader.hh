@@ -3,16 +3,17 @@
 
 #pragma once
 
-#include "ibrageometry.hh"
-
 #include <clipper2/clipper.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <utility>
 
+#include "ibrageometry.hh"
+
+#include <dune/grid/io/file/dgfparser/dgfparser.hh>
+
 #include "dune/iga/nurbsalgorithms.hh"
 #include "dune/iga/trim/nurbstrimboundary.hh"
-#include <dune/grid/io/file/dgfparser/dgfparser.hh>
 
 namespace Dune::IGA {
 

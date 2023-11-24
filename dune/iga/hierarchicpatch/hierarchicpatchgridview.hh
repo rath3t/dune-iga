@@ -6,6 +6,7 @@
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
+
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/defaultgridview.hh>
 
@@ -66,7 +67,12 @@ namespace Dune::IGANEW {
       return this->grid().patchGeometries[this->grid().maxLevel()];
     }
 
-    auto untrimmedElementNumbers() const { return this->grid().getHostGrid().levelSize(this->grid().maxLevel()); }
+    auto untrimmedElementNumbers() const {
+      if constexpr (trim == Trimming::Disabled)
+        return this->grid().getHostGrid().levelSize(this->grid().maxLevel());
+      else
+        DUNE_THROW(Dune::NotImplemented, "This needs to be implemented");
+    }
   };
 
 }  // namespace Dune::IGANEW

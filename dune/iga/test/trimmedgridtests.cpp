@@ -5,6 +5,25 @@
 #  include "config.h"
 #endif
 
+#include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+
+#include <dune/geometry/quadraturerules.hh>
+
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkgeometry.hh>
+#include <dune/grid/test/checkindexset.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/gridcheck.hh>
+
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+
 #include "dune/iga/gridcapabilities.hh"
 #include "dune/iga/io/ibra/ibrareader.hh"
 #include "dune/iga/io/igadatacollector.hh"
@@ -12,21 +31,7 @@
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/nurbspatchgeometry.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
-#include <dune/common/exceptions.hh>
-#include <dune/common/float_cmp.hh>
-#include <dune/common/fvector.hh>
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
-#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
-#include <dune/geometry/quadraturerules.hh>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <dune/grid/test/checkentitylifetime.hh>
-#include <dune/grid/test/checkgeometry.hh>
-#include <dune/grid/test/checkindexset.hh>
-#include <dune/grid/test/checkiterators.hh>
-#include <dune/grid/test/gridcheck.hh>
+
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
