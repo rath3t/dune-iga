@@ -7,8 +7,8 @@
 
 #include <dune/grid/concepts.hh>
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridgeometry.hh>
-#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/concepts.hh>
+#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 
 template <typename G>
 void checkConcepts() {
@@ -16,8 +16,8 @@ void checkConcepts() {
 
   using GridEntity         = typename G::template Codim<0>::Entity;
   using GridEntityGeometry = typename GridEntity::Geometry;
-  using LeafGridView           = typename G::LeafGridView;
-  using LevelGridView           = typename G::LevelGridView;
+  using LeafGridView       = typename G::LeafGridView;
+  using LevelGridView      = typename G::LevelGridView;
   using GlobalIdSet        = typename G::GlobalIdSet;
   using IndexSet           = typename LeafGridView::IndexSet;
 

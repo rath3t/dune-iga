@@ -78,10 +78,12 @@ namespace Dune::IGANEW::Splines {
    * @param net the full net itself
    * @return subNet with the strideSizes degree+1 per direction
    */
-  template <std::integral auto dim,std::integral auto dim2, typename NetValueType>
-  requires((std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) and (dim==dim2)) auto netOfSpan(
-      std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
-      const MultiDimensionalNet<dim2, NetValueType>& net) {
+  template <std::integral auto dim, std::integral auto dim2, typename NetValueType>
+  requires(
+      (std::floating_point<
+           NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)
+      and (dim == dim2)) auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
+                                        const MultiDimensionalNet<dim2, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
@@ -90,9 +92,13 @@ namespace Dune::IGANEW::Splines {
 
   /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
   template <std::floating_point ScalarType, std::integral auto dim, std::integral auto dim2, typename NetValueType>
-  requires((std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)and (dim==dim2)) auto netOfSpan(
-      const Dune::FieldVector<ScalarType, dim2>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
-      const std::array<int, dim2>& degree, const MultiDimensionalNet<dim2, NetValueType>& net) requires(dim == dim2) {
+  requires(
+      (std::floating_point<
+           NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value)
+      and (dim == dim2)) auto netOfSpan(const FieldVector<ScalarType, dim2>& u,
+                                        const std::array<std::vector<ScalarType>, dim2>& knots,
+                                        const std::array<int, dim2>& degree,
+                                        const MultiDimensionalNet<dim2, NetValueType>& net) requires(dim == dim2) {
     auto subNetStart = findSpan(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
@@ -101,7 +107,7 @@ namespace Dune::IGANEW::Splines {
   auto extractWeights(const MultiDimensionalNet<dim, ValueType>& cpsandWeight) {
     auto viewOverWeights = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.w; });
     return MultiDimensionalNet<dim, typename ValueType::VectorType::value_type>(cpsandWeight.strideSizes(),
-                                                                              viewOverWeights);
+                                                                                viewOverWeights);
   }
 
   template <std::integral auto dim, Concept::ControlPoint ValueType>
@@ -109,8 +115,6 @@ namespace Dune::IGANEW::Splines {
     auto viewOverCps = std::ranges::transform_view(cpsandWeight.directGetAll(), [](auto& cp) { return cp.p; });
     return MultiDimensionalNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
-
-
 
   /** \brief A `dim` dimensional NURBS function
    *
@@ -124,8 +128,8 @@ namespace Dune::IGANEW::Splines {
    public:
     Nurbs()                        = default;
     using ScalarType               = ScalarType_;
-    using DynamicVectorType        = Dune::DynamicVector<ScalarType>;
-    using DynamicMatrixType        = Dune::DynamicMatrix<ScalarType>;
+    using DynamicVectorType        = DynamicVector<ScalarType>;
+    using DynamicMatrixType        = DynamicMatrix<ScalarType>;
     static constexpr int dimension = dim;
 
     /**
@@ -134,11 +138,12 @@ namespace Dune::IGANEW::Splines {
      * @param data
      * @param spIndex
      */
-    template <int  dimworld>
-explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
-    : Nurbs(data.knotSpans,data.degree,extractWeights(data.controlPoints)) {}
+    template <int dimworld>
+    explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
+        : Nurbs(data.knotSpans, data.degree, extractWeights(data.controlPoints)) {}
 
-    explicit Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionalNet<dim, ScalarType>& netOfWeight )
+    explicit Nurbs(const std::array<std::vector<ScalarType>, dim>& knots, const std::array<int, dim>& degree,
+                   const MultiDimensionalNet<dim, ScalarType>& netOfWeight)
         : knots_{knots}, degree_{degree}, weights_{netOfWeight} {}
 
     auto localView() const { return LocalView(*this); }
@@ -150,12 +155,12 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
 
       void bind(const std::array<int, dim>& spIndex) { spIndex_ = spIndex; }
 
-      auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
+      auto basisFunctionDerivatives(const FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
         assert(spIndex_ && "Bind the local view first!");
         return nurbs_->basisFunctionDerivatives(u, derivativeOrder, spIndex_.value());
       }
 
-      auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
+      auto basisFunctions(const FieldVector<ScalarType, dim>& u) const {
         assert(spIndex_ && "Bind the local view first!");
         return nurbs_->basisFunctions(u, spIndex_.value());
       }
@@ -168,7 +173,7 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
           const std::vector<ScalarType>& weights)
         : knots_{knots}, degree_{degree}, weights_{weights} {}
 
-    // auto operator()(const Dune::FieldVector<ScalarType, dim>& u) {
+    // auto operator()(const FieldVector<ScalarType, dim>& u) {
     //   return basisFunctions(u, knots_, degree_, weights_).directGetAll();
     // }
 
@@ -177,22 +182,23 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
      * \param u local coordinate in the parameter space
      * \return
      */
-    auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u) const {
+    auto basisFunctions(const FieldVector<ScalarType, dim>& u) const {
       auto subNetStart = findSpan(degree_, u, knots_);
       return basisFunctions(u, knots_, degree_, weights_, subNetStart);
     }
 
-    auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u, const std::array<int, dim>& spIndex) const {
+    auto basisFunctions(const FieldVector<ScalarType, dim>& u, const std::array<int, dim>& spIndex) const {
       return basisFunctions(u, knots_, degree_, weights_, spIndex);
     }
 
-    static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
-                           const std::array<std::vector<ScalarType>, dim>& knots,
-                           const std::array<int, dim>& degree, const MultiDimensionalNet<dim, ScalarType>& weights) {
+    static auto basisFunctions(const FieldVector<ScalarType, dim>& u,
+                               const std::array<std::vector<ScalarType>, dim>& knots,
+                               const std::array<int, dim>& degree,
+                               const MultiDimensionalNet<dim, ScalarType>& weights) {
       return basisFunctions(u, knots, degree, weights, findSpan(degree, u, knots));
     }
 
-    static auto basisFunctions(const Dune::FieldVector<ScalarType, dim>& u,
+    static auto basisFunctions(const FieldVector<ScalarType, dim>& u,
                                const std::array<std::vector<ScalarType>, dim>& knots,
                                const std::array<int, dim>& degree, const MultiDimensionalNet<dim, ScalarType>& weights,
                                std::array<int, dim> spIndex) {
@@ -222,7 +228,7 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
      * @param spIndex
      * @return
      */
-    static auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u,
+    static auto basisFunctionDerivatives(const FieldVector<ScalarType, dim>& u,
                                          const std::array<std::vector<ScalarType>, dim>& knots,
                                          const std::array<int, dim>& degree,
                                          const MultiDimensionalNet<dim, double>& weights, const int derivativeOrder,
@@ -280,11 +286,11 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
       return R;
     }
 
-    auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
+    auto basisFunctionDerivatives(const FieldVector<ScalarType, dim>& u, const int derivativeOrder) const {
       return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder);
     }
 
-    auto basisFunctionDerivatives(const Dune::FieldVector<ScalarType, dim>& u, const int derivativeOrder,
+    auto basisFunctionDerivatives(const FieldVector<ScalarType, dim>& u, const int derivativeOrder,
                                   const std::array<int, dim>& spIndex) const {
       return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, false, spIndex);
     }
@@ -295,14 +301,17 @@ explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
     MultiDimensionalNet<dim, ScalarType> weights_;
   };
 
-  template <size_t dim, int dim2, typename ScalarType_ = double> requires(dim==dim2)
-Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<int, dim> & degree,const MultiDimensionalNet<dim2, ScalarType_>& netOfWeight ) -> Nurbs<dim,ScalarType_>;
+  template <size_t dim, int dim2, typename ScalarType_ = double>
+  requires(dim == dim2)
+      Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<int, dim>& degree,
+            const MultiDimensionalNet<dim2, ScalarType_>& netOfWeight)
+  ->Nurbs<dim, ScalarType_>;
 
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType_>
   auto degreeElevate(const NURBSPatchData<dim, dimworld, ScalarType_>& oldData, const int refinementDirection,
                      const int elevationFactor) {
     using ScalarType          = ScalarType_;
-    using DynamicMatrixType   = Dune::DynamicMatrix<ScalarType>;
+    using DynamicMatrixType   = DynamicMatrix<ScalarType>;
     using NURBSPatchData      = NURBSPatchData<dim, dimworld, ScalarType_>;
     using ControlPointNetType = typename NURBSPatchData::ControlPointNetType;
     using ControlPointType    = typename NURBSPatchData::ControlPointType;
@@ -315,9 +324,9 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
     DynamicMatrixType bezalfs(p + t + 1, p + 1);
     bezalfs[0][0] = bezalfs[ph][p] = 1.0;
     for (int i = 1; i <= ph2; ++i) {
-      const ScalarType inv = 1.0 / Dune::binomial(ph, i);
+      const ScalarType inv = 1.0 / binomial(ph, i);
       for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
-        bezalfs[i][j] = inv * Dune::binomial(p, j) * Dune::binomial(t, i - j);
+        bezalfs[i][j] = inv * binomial(p, j) * binomial(t, i - j);
     }
     for (int i = ph2 + 1; i <= ph - 1; ++i)
       for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
@@ -343,7 +352,7 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
         do {
           Uh.push_back(U[j]);
           ++j;
-        } while (j != U.size() && Dune::FloatCmp::eq(U[j - 1], U[j]));
+        } while (j != U.size() && FloatCmp::eq(U[j - 1], U[j]));
         Uh.insert(Uh.end(), t, U[j - 1]);
         if (j == U.size()) break;
       }
@@ -402,7 +411,7 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
       std::vector<ScalarType> alphas(p - 1);
       while (b < m) {
         const int bold = b;
-        while (b < m && Dune::FloatCmp::eq(U[b], U[b + 1]))
+        while (b < m && FloatCmp::eq(U[b], U[b + 1]))
           ++b;
         const int mul  = b - bold + 1;
         const auto ub  = U[b];
@@ -561,9 +570,4 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
     return NURBSPatchData<dim, dimworld, ScalarType>(newKnotsArray, newCPv, oldData.degree);
   }
 
-
-
-
-
-
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::Splines

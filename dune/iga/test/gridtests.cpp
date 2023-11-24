@@ -11,16 +11,15 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
-#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/makecirculararc.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/makesurfaceofrevolution.hh>
+#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 using namespace Dune;
 using namespace Dune::IGANEW;
 template <typename T, int worldDim, int Items>
@@ -622,7 +621,6 @@ auto testSurfaceHigherOrderDerivatives() {
   return t;
 }
 
-
 auto testNURBSCurve() {
   // parameters
   unsigned int subSampling = 5;
@@ -649,14 +647,16 @@ auto testNURBSCurve() {
   GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
 
   TestSuite testSuite;
-  testSuite.check(patch.numberOfControlPoints().size() == 1)<<"Number of controlpoints net size should be "<<1<< " but is "<<patch.numberOfControlPoints().size();
-  testSuite.check(patch.numberOfControlPoints()[0] == 9)<<"Number of controlpoints in dir "<<0<< " should be "<<9<<" but is "<<patch.numberOfControlPoints()[0];
-  testSuite.check(patch.numberOfElements().size() == 1)<<"Number of net size should be "<<1<< " but is "<<patch.numberOfElements().size();
-  testSuite.check(patch.numberOfElements()[0] == 5 )<<"Number of elements in dir "<<0<< " should be "<<5<<" but is "<<patch.numberOfElements()[0];
+  testSuite.check(patch.numberOfControlPoints().size() == 1)
+      << "Number of controlpoints net size should be " << 1 << " but is " << patch.numberOfControlPoints().size();
+  testSuite.check(patch.numberOfControlPoints()[0] == 9)
+      << "Number of controlpoints in dir " << 0 << " should be " << 9 << " but is " << patch.numberOfControlPoints()[0];
+  testSuite.check(patch.numberOfElements().size() == 1)
+      << "Number of net size should be " << 1 << " but is " << patch.numberOfElements().size();
+  testSuite.check(patch.numberOfElements()[0] == 5)
+      << "Number of elements in dir " << 0 << " should be " << 5 << " but is " << patch.numberOfElements()[0];
   return testSuite;
 }
-
-
 
 auto testNURBSSurface() {
   // parameters
@@ -687,12 +687,18 @@ auto testNURBSSurface() {
   IGANEW::GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
 
   TestSuite testSuite;
-  testSuite.check(patch.numberOfControlPoints().size() == 2)<<"Number of controlpoints net size should be "<<2<< " but is "<<patch.numberOfControlPoints().size();
-  testSuite.check(patch.numberOfControlPoints()[0] == 3)<<"Number of controlpoints in dir "<<0<< " should be "<<3<<" but is "<<patch.numberOfControlPoints()[0];
-  testSuite.check(patch.numberOfControlPoints()[1] == 3)<<"Number of controlpoints in dir "<<1<< " should be "<<3<<" but is "<<patch.numberOfControlPoints()[1];
-  testSuite.check(patch.numberOfElements().size() == 2)<<"Number of net size should be "<<2<< " but is "<<patch.numberOfElements().size();
-  testSuite.check(patch.numberOfElements()[0] == 1)<<"Number of elements in dir "<<0<< " should be "<<1<<" but is "<<patch.numberOfElements()[0];
-  testSuite.check(patch.numberOfElements()[1] == 1)<<"Number of elements in dir "<<1<< " should be "<<1<<" but is "<<patch.numberOfElements()[1];
+  testSuite.check(patch.numberOfControlPoints().size() == 2)
+      << "Number of controlpoints net size should be " << 2 << " but is " << patch.numberOfControlPoints().size();
+  testSuite.check(patch.numberOfControlPoints()[0] == 3)
+      << "Number of controlpoints in dir " << 0 << " should be " << 3 << " but is " << patch.numberOfControlPoints()[0];
+  testSuite.check(patch.numberOfControlPoints()[1] == 3)
+      << "Number of controlpoints in dir " << 1 << " should be " << 3 << " but is " << patch.numberOfControlPoints()[1];
+  testSuite.check(patch.numberOfElements().size() == 2)
+      << "Number of net size should be " << 2 << " but is " << patch.numberOfElements().size();
+  testSuite.check(patch.numberOfElements()[0] == 1)
+      << "Number of elements in dir " << 0 << " should be " << 1 << " but is " << patch.numberOfElements()[0];
+  testSuite.check(patch.numberOfElements()[1] == 1)
+      << "Number of elements in dir " << 1 << " should be " << 1 << " but is " << patch.numberOfElements()[1];
 
   return testSuite;
 }
@@ -701,9 +707,9 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
-    std::cout << "testHierarchicPatch" << std::endl;
+  std::cout << "testHierarchicPatch" << std::endl;
   t.subTest(testHierarchicPatch());
-      std::cout << "testNURBSCurve" << std::endl;
+  std::cout << "testNURBSCurve" << std::endl;
 
   t.subTest(testNURBSCurve());
   // TestSuite t;
@@ -711,7 +717,7 @@ int main(int argc, char** argv) try {
   t.subTest(test3DGrid());
   std::cout << "Test1Din3D" << std::endl;
   t.subTest(testNURBSGridCurve());
-    std::cout << "testNURBSSurface" << std::endl;
+  std::cout << "testNURBSSurface" << std::endl;
   t.subTest(testNURBSSurface());
   std::cout << "testNurbsGridCylinder" << std::endl;
   t.subTest(testNurbsGridCylinder());

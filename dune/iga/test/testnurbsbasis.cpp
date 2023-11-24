@@ -5,11 +5,11 @@
 #  include "config.h"
 #endif
 #include <dune/common/test/testsuite.hh>
+#include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
 #include <dune/iga/hierarchicpatch/nurbsbasis.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
-#include <dune/functions/functionspacebases/powerbasis.hh>
 using namespace Dune;
 // template <int dim>
 auto testNurbsBasis() {
@@ -47,7 +47,7 @@ auto testNurbsBasis() {
   IGANEW::PatchGrid grid(nurbsPatchData);
   //  grid.globalRefine(1);
   grid.globalRefineInDirection({2, 0});
-  grid.degreeElevateOnAllLevels({2,2});
+  grid.degreeElevateOnAllLevels({2, 2});
   //  grid.globalRefineInDirection(1, 3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -93,29 +93,22 @@ auto testNurbsBasis() {
   }
 
   {
-    grid.degreeElevateOnAllLevels({1,1});
+    grid.degreeElevateOnAllLevels({1, 1});
     auto gridViewNew = grid.leafGridView();
     // Check lower order basis created via its constructor
     using namespace Functions::BasisFactory;
-    Functions::NurbsBasis<GridView> basis2(gridViewNew, nurbs(degreeElevate(1,1)));
+    Functions::NurbsBasis<GridView> basis2(gridViewNew, nurbs(degreeElevate(1, 1)));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
   return test;
 }
-
-
-
-
-
-
 
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   MPIHelper::instance(argc, argv);
 
   TestSuite t;
-t.subTest(testNurbsBasis());
-
+  t.subTest(testNurbsBasis());
 
   return t.report();
 } catch (Dune::Exception& e) {

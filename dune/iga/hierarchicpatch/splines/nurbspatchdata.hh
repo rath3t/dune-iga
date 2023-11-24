@@ -31,10 +31,10 @@ namespace Dune::IGANEW {
     std::array<int, dim> degree{};
   };
 
-  //Deduction guide, since std::array, takes size_t as second template argument
+  // Deduction guide, since std::array, takes size_t as second template argument
   template <std::size_t dim, std::size_t dimworld_, typename ScalarType = double>
-  NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const MultiDimensionalNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,
-                 const std::array<int, dim>& degreeInput) -> NURBSPatchData<dim,dimworld_,ScalarType>;
-
+  NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI,
+                 const MultiDimensionalNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,
+                 const std::array<int, dim>& degreeInput) -> NURBSPatchData<dim, dimworld_, ScalarType>;
 
 }  // namespace Dune::IGANEW

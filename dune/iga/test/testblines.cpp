@@ -3,10 +3,10 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include <dune/common/test/testsuite.hh>
 #include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>
-#include <dune/common/test/testsuite.hh>
 
 auto testBsplineBasisFunctions() {
   std::vector<double> knots = {0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3};
@@ -107,7 +107,7 @@ auto testBsplineBasisFunctions() {
   std::array<int, 2> dimsize = {static_cast<int>(weights2.size()), static_cast<int>(weights2[0].size())};
   Dune::IGANEW::MultiDimensionalNet<2UL, double> weightNet(dimsize, weights2);
 
-  auto Nurbs = Dune::IGANEW::Splines::Nurbs( knots2, degree2, weightNet);
+  auto Nurbs   = Dune::IGANEW::Splines::Nurbs(knots2, degree2, weightNet);
   auto N_Nurbs = Nurbs.basisFunctions(xieta).directGetAll();
   test.check(N_Nurbs.size() == (degree2[0] + 1) * (degree2[1] + 1));
 
@@ -319,7 +319,7 @@ auto testBsplineBasisFunctions() {
 }
 
 int main(int argc, char** argv) try {
-Dune::TestSuite t;
+  Dune::TestSuite t;
   t.subTest(testBsplineBasisFunctions());
 
   return t.report();

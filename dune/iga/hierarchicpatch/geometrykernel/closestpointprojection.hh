@@ -65,8 +65,8 @@ namespace Dune::IGANEW {
     domainFraction /= domainFractionFactor;
     int i;
     auto [oldEnergy, R, H] = energyGradAndHess(u);
-    ctype energyVal              = oldEnergy;
-    ctype r              = oldEnergy;
+    ctype energyVal        = oldEnergy;
+    ctype r                = oldEnergy;
     for (i = 0; i < maxiter; ++i) {
       FieldVector<ctype, dim> du;
       H.solve(du, -R);

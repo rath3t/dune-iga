@@ -24,9 +24,6 @@ namespace Dune::IGANEW {
     HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
   }  // namespace Impl
 
-
-
-
   /**
    * \brief This is a condensed version of the proposal
    * https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p1684r2.html It is a container with multidimensional
@@ -37,35 +34,30 @@ namespace Dune::IGANEW {
    * \tparam netdim The rank of the array (How many dimensions it has)
    * \tparam Container The type of storage
    */
-  template <  int  netdim, class ElementType,
-    class Container = std::vector<ElementType>>
+  template <int netdim, class ElementType, class Container = std::vector<ElementType>>
   class MultiDimensionalNet {
    public:
-
     static constexpr std::size_t netDim = netdim;
 
-
-    constexpr MultiDimensionalNet()                 = default;
+    constexpr MultiDimensionalNet()                           = default;
     constexpr MultiDimensionalNet(const MultiDimensionalNet&) = default;
-    constexpr MultiDimensionalNet(MultiDimensionalNet&&) = default;
-    constexpr MultiDimensionalNet& operator= (const MultiDimensionalNet&) = default;
-    constexpr MultiDimensionalNet& operator= (MultiDimensionalNet&&) = default;
-    ~MultiDimensionalNet() = default;
+    constexpr MultiDimensionalNet(MultiDimensionalNet&&)      = default;
+    constexpr MultiDimensionalNet& operator=(const MultiDimensionalNet&) = default;
+    constexpr MultiDimensionalNet& operator=(MultiDimensionalNet&&) = default;
+    ~MultiDimensionalNet()                                          = default;
 
-    using container_type = Container;
-    using element_type = ElementType;
-    using value_type = std::remove_cv_t<element_type>;
-    using index_type = typename Container::size_type;
-    using size_type = index_type;
-    using rank_type = int;
-    using pointer = typename container_type::pointer;
-    using reference = typename container_type::reference;
-    using const_pointer = typename container_type::const_pointer;
+    using container_type  = Container;
+    using element_type    = ElementType;
+    using value_type      = std::remove_cv_t<element_type>;
+    using index_type      = typename Container::size_type;
+    using size_type       = index_type;
+    using rank_type       = int;
+    using pointer         = typename container_type::pointer;
+    using reference       = typename container_type::reference;
+    using const_pointer   = typename container_type::const_pointer;
     using const_reference = typename container_type::const_reference;
 
-
-
-    MultiDimensionalNet(std::initializer_list<std::initializer_list<element_type>> values)requires (netdim==2) {
+    MultiDimensionalNet(std::initializer_list<std::initializer_list<element_type>> values) requires(netdim == 2) {
       std::vector<std::vector<element_type>> vals;
       for (auto&& val : values)
         vals.push_back(val);
@@ -73,12 +65,12 @@ namespace Dune::IGANEW {
       *this                           = MultiDimensionalNet{dimsize, vals};
     }
 
-    explicit MultiDimensionalNet(const std::vector<std::vector<element_type>>& vals) requires (netdim==2)  {
+    explicit MultiDimensionalNet(const std::vector<std::vector<element_type>>& vals) requires(netdim == 2) {
       std::array<int, netdim> dimsize = {static_cast<int>(vals.size()), static_cast<int>(vals.begin()->size())};
       *this                           = MultiDimensionalNet{dimsize, vals};
     }
 
-    explicit MultiDimensionalNet(const std::vector<element_type>& vals) requires (netdim==1) {
+    explicit MultiDimensionalNet(const std::vector<element_type>& vals) requires(netdim == 1) {
       std::array<int, 1> dimsize = {static_cast<int>(vals.size())};
       *this                      = MultiDimensionalNet{dimsize, vals};
     }
@@ -96,7 +88,8 @@ namespace Dune::IGANEW {
     }
 
     template <typename... Args>
-    explicit MultiDimensionalNet(int dimSize0, Args&&... dimSize) : dimSize_({dimSize0, std::forward<Args>(dimSize)...}) {
+    explicit MultiDimensionalNet(int dimSize0, Args&&... dimSize)
+        : dimSize_({dimSize0, std::forward<Args>(dimSize)...}) {
       int size = 1;
       for (auto ds : dimSize_)
         size *= ds;
@@ -152,7 +145,8 @@ namespace Dune::IGANEW {
      *  \param[in] dimSize array of the strideSizes of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<value_type>>& values) requires (netdim==2)
+    MultiDimensionalNet(std::array<int, netdim> dimSize,
+                        const std::vector<std::vector<value_type>>& values) requires(netdim == 2)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size());
       for (int i = 0; i < values.size(); ++i)
@@ -165,7 +159,8 @@ namespace Dune::IGANEW {
      *  \param[in] dimSize array of the strideSizes of each dimension
      *  \param[in] values matrix with values
      */
-    MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<value_type>>>& values) requires (netdim==3)
+    MultiDimensionalNet(std::array<int, netdim> dimSize,
+                        const std::vector<std::vector<std::vector<value_type>>>& values) requires(netdim == 3)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size() * values[0][0].size());
 
@@ -392,10 +387,9 @@ namespace Dune::IGANEW {
     Container values_;
   };
 
-
-   template <  size_t  netdim,
-    typename  value_type>
-   MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<value_type>>>& values) -> MultiDimensionalNet<netdim,value_type>;
+  template <size_t netdim, typename value_type>
+  MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<value_type>>>& values)
+      -> MultiDimensionalNet<netdim, value_type>;
 
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
@@ -503,7 +497,8 @@ namespace Dune::IGANEW {
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
   requires Concept::MultiplyAble<lValueType, rValueType>
-  auto operator-(const MultiDimensionalNet<netdim, lValueType>& lnet, const MultiDimensionalNet<netdim, rValueType>& rnet) {
+  auto operator-(const MultiDimensionalNet<netdim, lValueType>& lnet,
+                 const MultiDimensionalNet<netdim, rValueType>& rnet) {
     assert(lnet.strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
     MultiDimensionalNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), rnet.directGetAll(), res.directGetAll().begin(), std::minus{});

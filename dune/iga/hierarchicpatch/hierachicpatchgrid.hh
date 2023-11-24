@@ -12,7 +12,6 @@
 #include <string>
 
 #include <dune/common/parallel/communication.hh>
-#include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/subgrid/subgrid.hh>
@@ -34,13 +33,13 @@
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 namespace Dune::Functions {
   template <typename GV, typename ScalarType>
-class NurbsPreBasis;
+  class NurbsPreBasis;
 }
 namespace Dune::IGANEW {
 
   namespace Impl {
     template <int dim>
-class NurbsPreBasisFactoryFromDegreeElevation;
+    class NurbsPreBasisFactoryFromDegreeElevation;
   }
 
   // Forward declaration
@@ -71,7 +70,6 @@ class NurbsPreBasisFactoryFromDegreeElevation;
         typename HostGrid::Traits::LeafIndexSet::IndexType, typename HostGrid::Traits::LeafIndexSet::Types>
         Traits;
   };
-
 
   //**********************************************************************
   //
@@ -106,6 +104,13 @@ class NurbsPreBasisFactoryFromDegreeElevation;
     friend class PatchGridLevelIntersection<const PatchGrid>;
     friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
     friend class PatchGridLeafIntersection<const PatchGrid>;
+    friend class PatchGridLevelGridView<PatchGrid>;
+    friend class PatchGridLeafGridView<PatchGrid>;
+    friend struct HostGridAccess<PatchGrid>;
+
+    friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
+    friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView, ScalarType>;
+    friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView, ScalarType>;
 
     template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLevelIterator;
@@ -113,22 +118,12 @@ class NurbsPreBasisFactoryFromDegreeElevation;
     template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLeafIterator;
 
-friend class PatchGridLevelGridView<PatchGrid>;
-friend class PatchGridLeafGridView<PatchGrid>;
-
-friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
-friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView,ScalarType>;
-friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarType>;
-
     template <int codim_, int dim_, class GridImp_>
     friend class PatchGridEntity;
-
-    friend struct HostGridAccess<PatchGrid>;
 
    public:
     static constexpr Trimming trim = trim_;
 
-    /** \todo Should not be public */
     typedef HostGrid HostGridType;
 
     //**********************************************************
@@ -156,13 +151,10 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
       setIndices();
       patchGeometries.emplace_back(patchData);
-      patchGeometriesUnElevated=patchGeometries;
+      patchGeometriesUnElevated = patchGeometries;
     }
 
-
-
-    PatchGrid& operator=( PatchGrid&&) noexcept = default;
-    // PatchGrid& operator=( const PatchGrid&)  = default;
+    // PatchGrid& operator=(PatchGrid&&) noexcept = default;
 
     /** \brief Return maximum level defined in this grid.
      *
@@ -299,8 +291,8 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
         newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, dir);
         ++dir;
       }
-        auto newGrid =  PatchGrid(newfinestPatchData);
-      *this = std::move(newGrid);
+      auto newGrid = PatchGrid(newfinestPatchData);
+      *this        = std::move(newGrid);
     }
 
     /**
@@ -309,15 +301,15 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
      * \param lvl the level where the degree elevation should be performed
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
-      if(lvl>= maxLevel() and lvl>=0)DUNE_THROW(Dune:RangeError,"This level does not exist");
-      auto& patchData = patchGeometries[lvl].patchData();
-      patchGeometriesUnElevated[lvl].patchData()=patchData;
+      if (lvl >= maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
+      auto& patchData                            = patchGeometries[lvl].patchData();
+      patchGeometriesUnElevated[lvl].patchData() = patchData;
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
         if (elevatesInDirection == 0) {
           ++dir;
           continue;
         }
-          patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
+        patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
         ++dir;
       }
     }
@@ -328,55 +320,53 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
      */
     void degreeElevateOnAllLevels(const std::array<int, dim>& elevationFactors) {
       for (int lvl = 0; lvl < maxLevel(); ++lvl)
-        degreeElevate(elevationFactors,lvl);
+        degreeElevate(elevationFactors, lvl);
     }
 
-      /** \brief Mark entity for refinement
-       *
-       * This only works for entities of codim 0.
-       * The parameter is currently ignored
-       *
-       * \return <ul>
-       * <li> true, if marking was successful </li>
-       * <li> false, if marking was not possible </li>
-       * </ul>
-       */
-      bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-        return hostgrid_->mark(refCount, getHostEntity<0>(e));
-      }
+    /** \brief Mark entity for refinement
+     *
+     * This only works for entities of codim 0.
+     * The parameter is currently ignored
+     *
+     * \return <ul>
+     * <li> true, if marking was successful </li>
+     * <li> false, if marking was not possible </li>
+     * </ul>
+     */
+    bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
+      return hostgrid_->mark(refCount, getHostEntity<0>(e));
+    }
 
-      /** \brief Return refinement mark for entity
-       *
-       * \return refinement mark (1,0,-1)
-       */
-      int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-        return hostgrid_->getMark(getHostEntity<0>(e));
-      }
+    /** \brief Return refinement mark for entity
+     *
+     * \return refinement mark (1,0,-1)
+     */
+    int getMark(const typename Traits::template Codim<0>::Entity& e) const {
+      return hostgrid_->getMark(getHostEntity<0>(e));
+    }
 
-      /** \brief returns true, if at least one entity is marked for adaption */
-      bool preAdapt() { return hostgrid_->preAdapt(); }
+    /** \brief returns true, if at least one entity is marked for adaption */
+    bool preAdapt() { return hostgrid_->preAdapt(); }
 
-      //! Triggers the grid refinement process
-      bool adapt() { return hostgrid_->adapt(); }
+    //! Triggers the grid refinement process
+    bool adapt() { return hostgrid_->adapt(); }
 
-      /** \brief Clean up refinement markers */
-      void postAdapt() { return hostgrid_->postAdapt(); }
+    /** \brief Clean up refinement markers */
+    void postAdapt() { return hostgrid_->postAdapt(); }
 
-      /*@}*/
+    /*@}*/
 
-      /** \brief Size of the overlap on the leaf level */
-      unsigned int overlapSize(int codim) const { return hostgrid_->leafGridView().overlapSize(codim); }
+    /** \brief Size of the overlap on the leaf level */
+    unsigned int overlapSize(int codim) const { return hostgrid_->leafGridView().overlapSize(codim); }
 
-      /** \brief Size of the ghost cell layer on the leaf level */
-      unsigned int ghostSize(int codim) const { return hostgrid_->leafGridView().ghostSize(codim); }
+    /** \brief Size of the ghost cell layer on the leaf level */
+    unsigned int ghostSize(int codim) const { return hostgrid_->leafGridView().ghostSize(codim); }
 
-      /** \brief Size of the overlap on a given level */
-      unsigned int overlapSize(int level, int codim) const {
-        return hostgrid_->levelGridView(level).overlapSize(codim);
-      }
+    /** \brief Size of the overlap on a given level */
+    unsigned int overlapSize(int level, int codim) const { return hostgrid_->levelGridView(level).overlapSize(codim); }
 
-      /** \brief Size of the ghost cell layer on a given level */
-      unsigned int ghostSize(int level, int codim) const { return hostgrid_->levelGridView(level).ghostSize(codim); }
+    /** \brief Size of the ghost cell layer on a given level */
+    unsigned int ghostSize(int level, int codim) const { return hostgrid_->levelGridView(level).ghostSize(codim); }
 
 #if 0
     /** \brief Distributes this grid over the available nodes in a distributed machine
@@ -389,79 +379,78 @@ friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView,ScalarTy
     }
 #endif
 
-      /** \brief dummy communication */
-      const Communication<No_Comm>& comm() const { return ccobj; }
+    /** \brief dummy communication */
+    const Communication<No_Comm>& comm() const { return ccobj; }
 
-      /** \brief Communicate data of level gridView */
-      template <class DataHandle>
-      void communicate(DataHandle & handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
-        hostgrid_->levelGridView(level).communicate(handle, iftype, dir);
-      }
+    /** \brief Communicate data of level gridView */
+    template <class DataHandle>
+    void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
+      hostgrid_->levelGridView(level).communicate(handle, iftype, dir);
+    }
 
-      /** \brief Communicate data of leaf gridView */
-      template <class DataHandle>
-      void communicate(DataHandle & handle, InterfaceType iftype, CommunicationDirection dir) const {
-        hostgrid_->leafGridView().communicate(handle, iftype, dir);
-      }
+    /** \brief Communicate data of leaf gridView */
+    template <class DataHandle>
+    void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
+      hostgrid_->leafGridView().communicate(handle, iftype, dir);
+    }
 
-      // **********************************************************
-      // End of Interface Methods
-      // **********************************************************
+    // **********************************************************
+    // End of Interface Methods
+    // **********************************************************
 
-      //! Returns the hostgrid this PatchGrid lives in
-      HostGridType& getHostGrid() const { return *hostgrid_; }
+    //! Returns the hostgrid this PatchGrid lives in
+    HostGridType& getHostGrid() const { return *hostgrid_; }
 
-      //! Returns the hostgrid entity encapsulated in given PatchGrid entity
-      template <int codim>
-      const typename HostGrid::Traits::template Codim<codim>::Entity& getHostEntity(
-          const typename Traits::template Codim<codim>::Entity& e) const {
-        return e.impl().hostEntity_;
-      }
+    //! Returns the hostgrid entity encapsulated in given PatchGrid entity
+    template <int codim>
+    const typename HostGrid::Traits::template Codim<codim>::Entity& getHostEntity(
+        const typename Traits::template Codim<codim>::Entity& e) const {
+      return e.impl().hostEntity_;
+    }
 
-     protected:
-      //! The host grid which contains the actual grid hierarchy structure
+   protected:
+    //! The host grid which contains the actual grid hierarchy structure
     std::array<std::vector<ScalarType>, dim> uniqueCoarseKnotSpans;
-      std::unique_ptr<HostGrid> hostgrid_;
+    std::unique_ptr<HostGrid> hostgrid_;
 
-     private:
-
+   private:
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
-      //! compute the grid indices and ids
-      void setIndices() {
-        localIdSet_->update();
+    //! compute the grid indices and ids
+    void setIndices() {
+      localIdSet_->update();
 
-        globalIdSet_->update();
+      globalIdSet_->update();
 
-        // //////////////////////////////////////////
-        //   Create the index sets
-        // //////////////////////////////////////////
-        for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
-          auto p = std::make_unique<PatchGridLevelIndexSet<const PatchGrid>>();
-          levelIndexSets_.emplace_back(std::move(p));
-        }
-
-        for (int i = 0; i <= maxLevel(); i++)
-          if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
-
-        leafIndexSet_->update(*this);
+      // //////////////////////////////////////////
+      //   Create the index sets
+      // //////////////////////////////////////////
+      for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
+        auto p = std::make_unique<PatchGridLevelIndexSet<const PatchGrid>>();
+        levelIndexSets_.emplace_back(std::move(p));
       }
 
-      //! \todo Please doc me !
-      Communication<No_Comm> ccobj;
+      for (int i = 0; i <= maxLevel(); i++)
+        if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
 
-      //! Our set of level indices
-      std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
+      leafIndexSet_->update(*this);
+    }
 
-      //! \todo Please doc me !
-      std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
+    //! \todo Please doc me !
+    Communication<No_Comm> ccobj;
 
-      //! \todo Please doc me !
-      std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
+    //! Our set of level indices
+    std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
 
-      //! \todo Please doc me !
-      std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
+    //! \todo Please doc me !
+    std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
 
-    };  // end Class PatchGrid
+    //! \todo Please doc me !
+    std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
 
-  }  // namespace Dune::IGANEW
+    //! \todo Please doc me !
+    std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
+
+  };  // end Class PatchGrid
+
+}  // namespace Dune::IGANEW

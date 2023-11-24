@@ -36,7 +36,7 @@ namespace Dune::IGANEW::GeometryKernel {
     using ControlPointNetType = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
     using ControlPointCoordinateNetType
         = MultiDimensionalNet<mydimension,
-                            typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
+                              typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
@@ -56,7 +56,6 @@ namespace Dune::IGANEW::GeometryKernel {
     auto localView() const {
       return GeometryLocalView<codim, trim>(*this);
     }
-
 
     explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
         : patchData_(patchData), nurbs_{patchData_} {}
@@ -152,31 +151,28 @@ namespace Dune::IGANEW::GeometryKernel {
 
       return result;
     }
-    auto numberOfControlPoints()const {
-      return patchData_.controlPoints.strideSizes();
-    }
+    auto numberOfControlPoints() const { return patchData_.controlPoints.strideSizes(); }
 
-    auto numberOfElements()const {
-      std::array<int,mydimension> elementsPerDirection;
-      auto numOfControlPoints= numberOfControlPoints();
+    auto numberOfElements() const {
+      std::array<int, mydimension> elementsPerDirection;
+      auto numOfControlPoints = numberOfControlPoints();
       for (int i = 0; i < mydimension; ++i) {
-        elementsPerDirection[i] = patchData_.knotSpans[i].size()-numOfControlPoints[i]- patchData_.degree[i];
+        elementsPerDirection[i] = patchData_.knotSpans[i].size() - numOfControlPoints[i] - patchData_.degree[i];
       }
 
       return elementsPerDirection;
     }
 
-    const auto& patchData() const {return patchData_;}
-     auto& patchData()  {return patchData_;}
+    const auto& patchData() const { return patchData_; }
+    auto& patchData() { return patchData_; }
 
    private:
-
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
       auto subNetStart = Splines::findSpan(patchData_.degree, u, patchData_.knotSpans);
 
-      auto cpCoordinateNet
-          = Splines::netOfSpan(subNetStart, patchData_.degree, Splines::extractControlCoordinates(patchData_.controlPoints));
-      auto nurbsLocalView = nurbs_.localView();
+      auto cpCoordinateNet = Splines::netOfSpan(subNetStart, patchData_.degree,
+                                                Splines::extractControlCoordinates(patchData_.controlPoints));
+      auto nurbsLocalView  = nurbs_.localView();
       nurbsLocalView.bind(subNetStart);
       return std::make_tuple(nurbsLocalView, cpCoordinateNet, subNetStart);
     }

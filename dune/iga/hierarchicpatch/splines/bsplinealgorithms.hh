@@ -22,7 +22,8 @@ namespace Dune::IGANEW::Splines {
    * @return
    */
   template <std::ranges::random_access_range Range>
-  auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, typename std::remove_cvref_t<Range>::difference_type offset = 0) {
+  auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U,
+                typename std::remove_cvref_t<Range>::difference_type offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
     if (u >= U.back())
       return static_cast<long int>(U.size() - p - 2);  // if the coordinate is to big we return to the last non-end span
@@ -33,7 +34,7 @@ namespace Dune::IGANEW::Splines {
   /** \brief Same as findSpan but for dim  knotvectors  */
   template <int dim, size_t dim2, typename ValueType>
   auto findSpan(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
-                         const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
+                const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpan(p[i], u[i], U[i]);
@@ -66,13 +67,14 @@ namespace Dune::IGANEW::Splines {
      * @return Non-zero B-spline basis functions evaluated at u
      */
     template <std::ranges::random_access_range Range>
-    static auto basisFunctions(typename std::remove_cvref_t<Range>::value_type u, Range&& knots, const int p, std::optional<int> spIndex = std::nullopt) {
+    static auto basisFunctions(typename std::remove_cvref_t<Range>::value_type u, Range&& knots, const int p,
+                               std::optional<int> spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + p + 1, knots.front()) == p + 1);
       assert(std::ranges::count(knots.end() - p - 1, knots.end(), knots.back()) == p + 1);
       assert(spIndex < knots.size() - p - 1);
       DynamicVectorType N;
       N.resize(p + 1, 0.0);
-      u = std::clamp(u, knots.front(), knots.back()); // we clamp the value since sometimes we overshoot slightly
+      u = std::clamp(u, knots.front(), knots.back());  // we clamp the value since sometimes we overshoot slightly
       // due to machine precision
       if (FloatCmp::eq(u, knots.back()))  // early exit
       {
@@ -202,7 +204,7 @@ namespace Dune::IGANEW::Splines {
   };
 
   template <std::size_t dim, typename ScalarType>
-auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
+  auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
     std::array<std::vector<double>, dim> uniqueKnotVector;
     for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
       std::ranges::unique_copy(knotSpans[i], std::back_inserter(uniqueKnotVector[i]),
@@ -210,4 +212,4 @@ auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotS
 
     return uniqueKnotVector;
   }
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::Splines

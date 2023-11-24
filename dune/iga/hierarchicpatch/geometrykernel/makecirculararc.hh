@@ -2,22 +2,21 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-#include<dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
-#include<dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
+#include <dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
+#include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
 
-namespace Dune::IGANEW
-{
+namespace Dune::IGANEW {
   // TODO Alex quote algo from NURBS book
   /* \brief Create a circular arc with different customization options
-  * \tparam ScalarType the field type (use float, double, complex, etc)
-  * \param radius Radius of the arc
-  * \param startAngle starting angle of the arc in degrees
-  * \param endAngle end angle of the arc in degrees
-  * \param origin center of the circle
-  * \param X first base vector of plane where the arc should reside
-  * \param Y second base vector of plane where the arc should reside
-  * \return NURBSPatchData representing the arc
-  */
+   * \tparam ScalarType the field type (use float, double, complex, etc)
+   * \param radius Radius of the arc
+   * \param startAngle starting angle of the arc in degrees
+   * \param endAngle end angle of the arc in degrees
+   * \param origin center of the circle
+   * \param X first base vector of plane where the arc should reside
+   * \param Y second base vector of plane where the arc should reside
+   * \return NURBSPatchData representing the arc
+   */
   template <typename ScalarType = double>
   NURBSPatchData<1, 3, ScalarType> makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,
                                                    ScalarType endAngle                            = 360.0,
@@ -72,4 +71,4 @@ namespace Dune::IGANEW
     std::ranges::fill_n(std::ranges::reverse_view(U).begin(), 3, 1.0);
     return NURBSPatchData<1, 3, ScalarType>(knotVec, circleCPs, {2});
   }
-}
+}  // namespace Dune::IGANEW

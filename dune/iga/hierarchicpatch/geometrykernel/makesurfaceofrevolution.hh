@@ -1,19 +1,18 @@
 
 
 #pragma once
-#include<dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
-#include<dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
-namespace Dune::IGANEW
-{
+#include <dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
+#include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
+namespace Dune::IGANEW {
 
   /* \brief Create a surface of revolution from a generating curve, from Piegl and Tiller, Algo 8.1
-  * \tparam ScalarType the field type (use float, double, complex, etc)
-  * \param generatrix 1D nurbs curve, which should be revolved
-  * \param point the origin of revolution
-  * \param revolutionAxis the axis of revolution
-  * \param revolutionAngle how far the curve should be revolved in degrees
-  * \return NURBSPatchData representing the surface
-  */
+   * \tparam ScalarType the field type (use float, double, complex, etc)
+   * \param generatrix 1D nurbs curve, which should be revolved
+   * \param point the origin of revolution
+   * \param revolutionAxis the axis of revolution
+   * \param revolutionAngle how far the curve should be revolved in degrees
+   * \return NURBSPatchData representing the surface
+   */
   template <typename ScalarType = double>
   auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, ScalarType>& generatrix,
                                const Dune::FieldVector<ScalarType, 3>& point,
@@ -25,9 +24,9 @@ namespace Dune::IGANEW
     const auto pi              = std::numbers::pi_v<ScalarType>;
 
     const auto revolutionAxisN = revolutionAxis / revolutionAxis.two_norm();
-    auto newKnotsArray        = std::array<std::vector<double>, 2UL>();
-    newKnotsArray[1]          = generatrix.knotSpans[0];
-    auto& U                   = newKnotsArray[0];
+    auto newKnotsArray         = std::array<std::vector<double>, 2UL>();
+    newKnotsArray[1]           = generatrix.knotSpans[0];
+    auto& U                    = newKnotsArray[0];
 
     const int narcs = std::ceil(revolutionAngle / 90);
     U.resize(2 * (narcs + 2));
@@ -84,4 +83,4 @@ namespace Dune::IGANEW
     }
     return NURBSPatchData<2UL, 3UL, ScalarType>(newKnotsArray, surfaceCP, {2, generatrix.degree[0]});
   }
-  }
+}  // namespace Dune::IGANEW
