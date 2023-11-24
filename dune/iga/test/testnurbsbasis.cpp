@@ -57,7 +57,7 @@ auto testNurbsBasis() {
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
-  Dune::TestSuite test;
+  Dune::TestSuite test(TestSuite::ThrowPolicy::AlwaysThrow);
 
   //! Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);

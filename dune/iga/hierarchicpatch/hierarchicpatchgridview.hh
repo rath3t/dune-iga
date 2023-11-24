@@ -45,6 +45,12 @@ namespace Dune::IGANEW {
       else
         DUNE_THROW(Dune::NotImplemented, "This needs to be implemented");
     }
+
+    const auto& tensorProductCoordinates() const {
+      return this->grid().tensorProductCoordinates(this->level_);
+    }
+
+
   };
 
   template <class GridImp>
@@ -66,6 +72,11 @@ namespace Dune::IGANEW {
       // TODO Trim
       return this->grid().patchGeometries[this->grid().maxLevel()];
     }
+    const auto& tensorProductCoordinates() const {
+      return this->grid().tensorProductCoordinates(this->grid().maxLevel());
+    }
+
+
 
     auto untrimmedElementNumbers() const {
       if constexpr (trim == Trimming::Disabled)
@@ -73,6 +84,7 @@ namespace Dune::IGANEW {
       else
         DUNE_THROW(Dune::NotImplemented, "This needs to be implemented");
     }
+
   };
 
 }  // namespace Dune::IGANEW

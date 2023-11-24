@@ -490,17 +490,23 @@ namespace Dune::Functions {
     explicit NurbsPreBasis(const GridView& gridView,
                            const std::optional<IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
         : gridView_{gridView} {
-      if (patchData)
+      if (patchData) {
         patchData_ = patchData.value();
-      else
+        uniqueKnotVector_ = IGANEW::Splines::createUniqueKnotSpans(patchData_.knotSpans);
+        for (int d = 0; d < GridView::dimension; ++d)
+          if (not std::ranges::equal(uniqueKnotVector_[d], gridView_.impl().tensorProductCoordinates()[d],
+                                 [](auto& l, auto& r) { return FloatCmp::eq(l, r); }))
+            DUNE_THROW(Dune::RangeError, "The given patch data does not contain the same number of elements in direction "
+                                             << d << " or does not contain the same spacing.");
+      }
+      else {
         patchData_ = gridView_.impl().patchData();
+        uniqueKnotVector_ = gridView_.impl().tensorProductCoordinates();
+      }
       cachedSize_       = computeOriginalSize();
-      uniqueKnotVector_ = IGANEW::Splines::createUniqueKnotSpans(patchData_.knotSpans);
-      for (int d = 0; d < GridView::dimension; ++d)
-        if (std::ranges::equal(uniqueKnotVector_[d], gridView_.grid().uniqueCoarseKnotSpans[d],
-                               [](auto& l, auto& r) { return FloatCmp::eq(l, r); }))
-          DUNE_THROW(Dune::RangeError, "The given patch data does not contain the same number of elements in direction "
-                                           << d << "or does not contain the same spacing.");
+      // createUntrimmedNodeIndices();
+      // store element numbers per directions
+      std::ranges::transform(uniqueKnotVector_, elements_.begin(), [](auto& v) { return v.size() - 1; });
     }
 
     //! Initialize the global indices
@@ -613,7 +619,7 @@ namespace Dune::Functions {
     //! \brief Total number of B-spline basis functions
     [[nodiscard]] unsigned int size() const {
       // assert(!std::isnan(cachedSize_));
-      return originalIndices_.size();
+      return computeOriginalSize();
     }
 
     //! \brief Number of shape functions in one direction

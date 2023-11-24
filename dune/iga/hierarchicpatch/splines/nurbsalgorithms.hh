@@ -503,8 +503,8 @@ namespace Dune::IGANEW::Splines {
 
     auto& newKnotVec = newKnotsArray[refinementDirection];
 
-    newKnotVec.reserve(oldKnotVec.size() + newKnots.size());
-    merge(oldKnotVec, newKnots, std::back_inserter(newKnotVec));
+    newKnotVec.resize(oldKnotVec.size() + newKnots.size());
+    merge(oldKnotVec, newKnots, std::begin(newKnotVec));
 
     const auto newKSize                   = newKnots.size();
     std::array<int, dim> numberOfCPperDir = oldCPv.strideSizes();
