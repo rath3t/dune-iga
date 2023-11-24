@@ -146,13 +146,12 @@ namespace Dune::IGANEW {
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
-        : uniqueKnotVectors(1,Splines::createUniqueKnotSpans(patchData.knotSpans)),
-          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(uniqueKnotVectors[0])),
+        : patchGeometries(1,GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData)),
+          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(patchGeometries[0].uniqueKnotVector())),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
           globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
       setIndices();
-      patchGeometries.emplace_back(patchData);
       patchGeometriesUnElevated = patchGeometries;
     }
 
@@ -273,19 +272,22 @@ namespace Dune::IGANEW {
       for (int i = 0; i < refCount; ++i) {
         const auto& finestPatchData = patchGeometries.back().patchData();
         auto newfinestPatchData     = finestPatchData;
-        uniqueKnotVectors.push_back();
+
+        auto& olduniqueKnotVector = patchGeometries.back().uniqueKnotVector();
+        std::array<std::vector<ctype>,dim> newUniqueKnotVecs;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
           auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
           newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
-          auto& newKnotVec = uniqueKnotVectors.back()[refDirection];
+          auto& newKnotVec = newUniqueKnotVecs[refDirection];
 
-          newKnotVec.resize(newKnotVec.size() + additionalKnots.size());
-          merge(newKnotVec, additionalKnots, std::begin(newKnotVec));
+          // compute new unique Knot vectors from refinement
+          newKnotVec.resize(olduniqueKnotVector[refDirection].size() + additionalKnots.size());
+          std::ranges::merge(olduniqueKnotVector[refDirection], additionalKnots, std::begin(newKnotVec));
         }
 
 
-        patchGeometries.emplace_back(std::move(newfinestPatchData));
-        patchGeometriesUnElevated.emplace_back(std::move(newfinestPatchData));
+        patchGeometries.emplace_back(newfinestPatchData,newUniqueKnotVecs);
+        patchGeometriesUnElevated.emplace_back(patchGeometries.back());
       }
 
       hostgrid_->globalRefine(refCount);
@@ -294,7 +296,7 @@ namespace Dune::IGANEW {
 
 
     const auto& tensorProductCoordinates(int lvl) const {
-      return uniqueKnotVectors[lvl];
+      return patchGeometries[lvl].uniqueKnotSpans_;
     }
 
     /**
@@ -434,13 +436,14 @@ namespace Dune::IGANEW {
       return e.impl().hostEntity_;
     }
 
-   protected:
-    std::vector<std::array<std::vector<ScalarType>, dim>> uniqueKnotVectors;
-    std::unique_ptr<HostGrid> hostgrid_;
-
-   private:
+  private:
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
+
+   protected:
+    std::unique_ptr<HostGrid> hostgrid_;
+
+
     //! compute the grid indices and ids
     void setIndices() {
       localIdSet_->update();

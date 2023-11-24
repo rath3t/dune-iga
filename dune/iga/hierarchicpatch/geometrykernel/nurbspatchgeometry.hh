@@ -70,7 +70,14 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
-        : patchData_(patchData), nurbs_{patchData_} {}
+        : patchData_(patchData),
+        uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
+    nurbs_{patchData_} {    }
+
+    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData, const std::array<std::vector<ctype>,mydimension>& uniqueKnotSpans)
+    : patchData_(patchData),
+    uniqueKnotSpans_{uniqueKnotSpans},
+nurbs_{patchData_} {    }
 
     /** \brief Map the center of the element to the geometry */
     [[nodiscard]] GlobalCoordinate center() const { return global(domainMidPoint()); }
@@ -167,15 +174,14 @@ namespace Dune::IGANEW::GeometryKernel {
 
     auto numberOfElements() const {
       std::array<int, mydimension> elementsPerDirection;
-      auto numOfControlPoints = numberOfControlPoints();
-      for (int i = 0; i < mydimension; ++i) {
-        elementsPerDirection[i] = numOfControlPoints[i] - patchData_.degree[i];
-      }
+      for (int i = 0; i < mydimension; ++i)
+        elementsPerDirection[i] = uniqueKnotSpans_[i].size()-1;
 
       return elementsPerDirection;
     }
 
     const auto& patchData() const { return patchData_; }
+    const auto& uniqueKnotVector() const { return uniqueKnotSpans_; }
     auto& patchData() { return patchData_; }
 
    private:
@@ -200,6 +206,7 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
+    std::array<std::vector<ctype>,mydimension> uniqueKnotSpans_;
     Nurbs nurbs_;
   };
 

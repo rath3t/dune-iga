@@ -323,7 +323,7 @@ int main(int argc, char** argv) try {
   Dune::TestSuite t;
   t.subTest(testBsplineBasisFunctions());
 
-  return t.report();
+  return t.exit();
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
   return 1;

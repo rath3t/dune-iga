@@ -115,7 +115,7 @@ int main(int argc, char** argv) try {
   TestSuite t;
   t.subTest(testNurbsBasis());
 
-  return t.report();
+  return t.exit();
 } catch (Dune::Exception& e) {
   std::cerr << "Dune reported error: " << e << std::endl;
   return 1;
