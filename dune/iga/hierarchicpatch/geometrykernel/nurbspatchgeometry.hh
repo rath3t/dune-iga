@@ -28,15 +28,16 @@ namespace Dune::IGANEW::GeometryKernel {
     static constexpr std::integral auto worlddimension = dimworld_;
     static constexpr std::integral auto mydimension    = dim_;
 
-    using ctype                     = ScalarType;
-    using LocalCoordinate           = FieldVector<ctype, mydimension>;
-    using GlobalCoordinate          = FieldVector<ctype, worlddimension>;
-    using JacobianTransposed        = FieldMatrix<ctype, mydimension, worlddimension>;
-    using Hessian                   = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension>;
-    using Jacobian                  = FieldMatrix<ctype, worlddimension, mydimension>;
-    using JacobianInverseTransposed = FieldMatrix<ctype, worlddimension, mydimension>;
-    using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
-    using Volume                    = ctype;
+    using ctype                        = ScalarType;
+    using LocalCoordinate              = FieldVector<ctype, mydimension>;
+    using GlobalCoordinate             = FieldVector<ctype, worlddimension>;
+    using JacobianTransposed           = FieldMatrix<ctype, mydimension, worlddimension>;
+    using Hessian                      = FieldMatrix<ctype, mydimension*(mydimension + 1) / 2, worlddimension>;
+    using Jacobian                     = FieldMatrix<ctype, worlddimension, mydimension>;
+    using JacobianInverseTransposed    = FieldMatrix<ctype, worlddimension, mydimension>;
+    using JacobianInverse              = FieldMatrix<ctype, mydimension, worlddimension>;
+    using Volume                       = ctype;
+    using TensorProductCoordinatesType = std::array<std::vector<ctype>, mydimension>;
 
     template <int codim>
     using ParameterSpaceGeometry
@@ -179,7 +180,7 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     const auto& patchData() const { return patchData_; }
-    const auto& uniqueKnotVector() const { return uniqueKnotSpans_; }
+    const TensorProductCoordinatesType& uniqueKnotVector() const { return uniqueKnotSpans_; }
     auto& patchData() { return patchData_; }
 
    private:
@@ -204,7 +205,7 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
-    std::array<std::vector<ctype>, mydimension> uniqueKnotSpans_;
+    TensorProductCoordinatesType uniqueKnotSpans_;
     Nurbs nurbs_;
   };
 

@@ -95,6 +95,9 @@ namespace Dune::IGANEW {
         = std::conditional_t<trim_ == Trimming::Enabled, SubGrid<dim, ParameterSpaceUntrimmedGrid>,
                              ParameterSpaceUntrimmedGrid>;
 
+    using TensorProductCoordinatesType =
+        typename GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>::TensorProductCoordinatesType;
+
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
@@ -157,7 +160,6 @@ namespace Dune::IGANEW {
     }
 
     PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->uniqueKnotVectors   = std::move(other.uniqueKnotVectors);
       this->hostgrid_           = std::move(other.hostgrid_);
       patchGeometries           = std::move(other.patchGeometries);
       patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
@@ -294,7 +296,14 @@ namespace Dune::IGANEW {
       setIndices();
     }
 
-    const auto& tensorProductCoordinates(int lvl) const { return patchGeometries[lvl].uniqueKnotSpans_; }
+    /**
+     * \brief Returns the coordinates of the untrimmed tensor product grid
+     * \param lvl The grid level of the requested coordinates
+     * \return the array of the coordinates
+     */
+    const TensorProductCoordinatesType& tensorProductCoordinates(int lvl) const {
+      return patchGeometries[lvl].uniqueKnotVector();
+    }
 
     /**
      * \brief This refines the grid in one specific direction, this resets all multilevel structure, since YaspGrid does
