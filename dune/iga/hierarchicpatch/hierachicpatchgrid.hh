@@ -146,8 +146,9 @@ namespace Dune::IGANEW {
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
-        : patchGeometries(1,GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData)),
-          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(patchGeometries[0].uniqueKnotVector())),
+        : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData)),
+          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(
+              patchGeometries[0].uniqueKnotVector())),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
           globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
@@ -156,13 +157,13 @@ namespace Dune::IGANEW {
     }
 
     PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->uniqueKnotVectors = std::move(other.uniqueKnotVectors);
-      this->hostgrid_ = std::move(other.hostgrid_);
-      patchGeometries = std::move(other.patchGeometries);
+      this->uniqueKnotVectors   = std::move(other.uniqueKnotVectors);
+      this->hostgrid_           = std::move(other.hostgrid_);
+      patchGeometries           = std::move(other.patchGeometries);
       patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
-      leafIndexSet_=std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
-      globalIdSet_=std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
-      localIdSet_=std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this);
+      leafIndexSet_             = std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
+      globalIdSet_              = std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
+      localIdSet_               = std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this);
       setIndices();
       return *this;
     }
@@ -274,19 +275,18 @@ namespace Dune::IGANEW {
         auto newfinestPatchData     = finestPatchData;
 
         auto& olduniqueKnotVector = patchGeometries.back().uniqueKnotVector();
-        std::array<std::vector<ctype>,dim> newUniqueKnotVecs;
+        std::array<std::vector<ctype>, dim> newUniqueKnotVecs;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
           auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
           newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, refDirection);
-          auto& newKnotVec = newUniqueKnotVecs[refDirection];
+          auto& newKnotVec     = newUniqueKnotVecs[refDirection];
 
           // compute new unique Knot vectors from refinement
           newKnotVec.resize(olduniqueKnotVector[refDirection].size() + additionalKnots.size());
           std::ranges::merge(olduniqueKnotVector[refDirection], additionalKnots, std::begin(newKnotVec));
         }
 
-
-        patchGeometries.emplace_back(newfinestPatchData,newUniqueKnotVecs);
+        patchGeometries.emplace_back(newfinestPatchData, newUniqueKnotVecs);
         patchGeometriesUnElevated.emplace_back(patchGeometries.back());
       }
 
@@ -294,10 +294,7 @@ namespace Dune::IGANEW {
       setIndices();
     }
 
-
-    const auto& tensorProductCoordinates(int lvl) const {
-      return patchGeometries[lvl].uniqueKnotSpans_;
-    }
+    const auto& tensorProductCoordinates(int lvl) const { return patchGeometries[lvl].uniqueKnotSpans_; }
 
     /**
      * \brief This refines the grid in one specific direction, this resets all multilevel structure, since YaspGrid does
@@ -328,8 +325,8 @@ namespace Dune::IGANEW {
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
       if (lvl > maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
-      auto& patchData                            = patchGeometries[lvl].patchData();
-      patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim,dimworld,ScalarType>(patchData);
+      auto& patchData                = patchGeometries[lvl].patchData();
+      patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData);
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
         if (elevatesInDirection == 0) {
           ++dir;
@@ -338,8 +335,7 @@ namespace Dune::IGANEW {
         patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
         ++dir;
       }
-      patchGeometries[lvl] = GeometryKernel::NURBSPatch<dim,dimworld,ScalarType>(patchData);
-
+      patchGeometries[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData);
     }
 
     /**
@@ -347,7 +343,7 @@ namespace Dune::IGANEW {
      * \param elevationFactors the increase in polynomial degree of the underlying NURBS
      */
     void degreeElevateOnAllLevels(const std::array<int, dim>& elevationFactors) {
-      for (int lvl = 0; lvl < maxLevel()+1; ++lvl)
+      for (int lvl = 0; lvl < maxLevel() + 1; ++lvl)
         degreeElevate(elevationFactors, lvl);
     }
 
@@ -436,13 +432,12 @@ namespace Dune::IGANEW {
       return e.impl().hostEntity_;
     }
 
-  private:
+   private:
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
 
    protected:
     std::unique_ptr<HostGrid> hostgrid_;
-
 
     //! compute the grid indices and ids
     void setIndices() {

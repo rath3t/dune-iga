@@ -491,19 +491,19 @@ namespace Dune::Functions {
                            const std::optional<IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
         : gridView_{gridView} {
       if (patchData) {
-        patchData_ = patchData.value();
+        patchData_        = patchData.value();
         uniqueKnotVector_ = IGANEW::Splines::createUniqueKnotSpans(patchData_.knotSpans);
         for (int d = 0; d < GridView::dimension; ++d)
           if (not std::ranges::equal(uniqueKnotVector_[d], gridView_.impl().tensorProductCoordinates()[d],
-                                 [](auto& l, auto& r) { return FloatCmp::eq(l, r); }))
-            DUNE_THROW(Dune::RangeError, "The given patch data does not contain the same number of elements in direction "
-                                             << d << " or does not contain the same spacing.");
-      }
-      else {
-        patchData_ = gridView_.impl().patchData();
+                                     [](auto& l, auto& r) { return FloatCmp::eq(l, r); }))
+            DUNE_THROW(Dune::RangeError,
+                       "The given patch data does not contain the same number of elements in direction "
+                           << d << " or does not contain the same spacing.");
+      } else {
+        patchData_        = gridView_.impl().patchData();
         uniqueKnotVector_ = gridView_.impl().tensorProductCoordinates();
       }
-      cachedSize_       = computeOriginalSize();
+      cachedSize_ = computeOriginalSize();
       // createUntrimmedNodeIndices();
       // store element numbers per directions
       std::ranges::transform(uniqueKnotVector_, elements_.begin(), [](auto& v) { return v.size() - 1; });

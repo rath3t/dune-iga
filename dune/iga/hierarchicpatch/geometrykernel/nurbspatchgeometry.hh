@@ -3,24 +3,23 @@
 
 #pragma once
 
-#include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/axisalignedcubegeometry.hh>
+#include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/quadraturerules.hh>
+
+#include <dune/grid/yaspgrid/yaspgridgeometry.hh>
 
 #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
-#include <dune/grid/yaspgrid/yaspgridgeometry.hh>
-
 
 namespace Dune {
-  template<int dim, class Coordinates >
-class YaspGrid;
+  template <int dim, class Coordinates>
+  class YaspGrid;
 
-  template<class ct, int dim>
-class TensorProductCoordinates
-  ;
-}
+  template <class ct, int dim>
+  class TensorProductCoordinates;
+}  // namespace Dune
 namespace Dune::IGANEW::GeometryKernel {
 
   template <int dim_, int dimworld_, typename ScalarType = double>
@@ -71,13 +70,12 @@ namespace Dune::IGANEW::GeometryKernel {
 
     explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
         : patchData_(patchData),
-        uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
-    nurbs_{patchData_} {    }
+          uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
+          nurbs_{patchData_} {}
 
-    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData, const std::array<std::vector<ctype>,mydimension>& uniqueKnotSpans)
-    : patchData_(patchData),
-    uniqueKnotSpans_{uniqueKnotSpans},
-nurbs_{patchData_} {    }
+    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData,
+                        const std::array<std::vector<ctype>, mydimension>& uniqueKnotSpans)
+        : patchData_(patchData), uniqueKnotSpans_{uniqueKnotSpans}, nurbs_{patchData_} {}
 
     /** \brief Map the center of the element to the geometry */
     [[nodiscard]] GlobalCoordinate center() const { return global(domainMidPoint()); }
@@ -175,7 +173,7 @@ nurbs_{patchData_} {    }
     auto numberOfElements() const {
       std::array<int, mydimension> elementsPerDirection;
       for (int i = 0; i < mydimension; ++i)
-        elementsPerDirection[i] = uniqueKnotSpans_[i].size()-1;
+        elementsPerDirection[i] = uniqueKnotSpans_[i].size() - 1;
 
       return elementsPerDirection;
     }
@@ -206,7 +204,7 @@ nurbs_{patchData_} {    }
     }
 
     NURBSPatchData<mydimension, worlddimension, ScalarType> patchData_;
-    std::array<std::vector<ctype>,mydimension> uniqueKnotSpans_;
+    std::array<std::vector<ctype>, mydimension> uniqueKnotSpans_;
     Nurbs nurbs_;
   };
 
