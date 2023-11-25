@@ -7,8 +7,32 @@
 
 namespace Dune::IGANEW::GeometryKernel {
 
+  /**
+   * @brief Computes the parameter space coordinate corresponding to a given global coordinate on a geometry.
+   *
+   * This function calculates the parameter space coordinate for a given global coordinate on a geometry.
+   * It uses different strategies based on the dimensionality of the geometry and whether it is a parametric
+   * or non-parametric case.
+   *
+   * @tparam Geometry The geometry type representing the shape.
+   * @param geo The geometry object.
+   * @param global The global coordinate for which the parameter space coordinate is computed.
+   * @return The parameter space coordinate corresponding to the global coordinate.
+   * If the jacobian is not invertable std::numeric_limits<ctype>::max() is returned as local coordinates.
+   *
+   * @note The geometry type must provide appropriate member functions and traits:
+   *  - `Geometry::mydimension`: The dimensionality of the parameter space.
+   *  - `Geometry::worlddimension`: The dimensionality of the world space.
+   *  - `Geometry::ctype`: The type for numerical computations.
+   *  - `Geometry::LocalCoordinate`: The type representing a point in the parameter space.
+   *  - `Geometry::GlobalCoordinate`: The type representing a point in the world space.
+   *  - `Geometry::MatrixHelper`: A helper class providing matrix operations.
+   *
+   * @throws Dune::MathError if the trust region method fails to find an energy-decreasing direction.
+   *
+   */
   template <typename Geometry>
-  typename Geometry::LocalCoordinate computeParameterSpaceCoordinate(
+  typename Geometry::LocalCoordinate findClosestParameterSpaceCoordinate(
       const Geometry& geo, const typename Geometry::GlobalCoordinate& global) {
     static constexpr int mydimension    = Geometry::mydimension;
     static constexpr int worlddimension = Geometry::worlddimension;
@@ -45,6 +69,25 @@ namespace Dune::IGANEW::GeometryKernel {
     }
   }
 
+  /**
+   * @brief Computes the Hessian matrix of a NURBS geometry at a specified local coordinate.
+   *
+   * The Hessian matrix represents the second-order partial derivatives of the basis functions
+   * with respect to the local coordinates. The computation is based on the given local coordinate,
+   * NURBS local view, and the net of control points' coordinates.
+   *
+   * @tparam LocalCoordinate The type representing a point in the local coordinate space.
+   * @tparam NurbsLocalView The type providing access to NURBS basis functions and derivatives.
+   * @tparam ControlPointCoordinateNetType The type representing the coordinates of control points.
+   * @param local The local coordinate at which the Hessian is computed.
+   * @param nurbsLocalView The NURBS local view providing basis function derivatives.
+   * @param localControlPointNet The net of control points' coordinates.
+   * @return The Hessian matrix at the specified local coordinate.
+   *
+   *
+   * @see NurbsLocalView::basisFunctionDerivatives
+   *
+   */
   template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
   auto hessian(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
                const ControlPointCoordinateNetType& localControlPointNet) {
@@ -79,6 +122,21 @@ namespace Dune::IGANEW::GeometryKernel {
     return H;
   }
 
+  /**
+   * @brief Computes the transposed Jacobian matrix of a NURBS geometry at a specified local coordinate.
+   *
+   * The transposed Jacobian matrix represents the first-order partial derivatives of the basis functions
+   * with respect to the local coordinates, transposed for use in geometry transformations. The computation
+   * is based on the given local coordinate, NURBS local view, and the net of control points' coordinates.
+   *
+   * @tparam LocalCoordinate The type representing a point in the local coordinate space.
+   * @tparam NurbsLocalView The type providing access to NURBS basis functions and derivatives.
+   * @tparam ControlPointCoordinateNetType The type representing the coordinates of control points.
+   * @param local The local coordinate at which the transposed Jacobian is computed.
+   * @param nurbsLocalView The NURBS local view providing basis function derivatives.
+   * @param localControlPointNet The net of control points' coordinates.
+   * @return The transposed Jacobian matrix at the specified local coordinate.
+   */
   template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
   [[nodiscard]] auto jacobianTransposed(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
                                         const ControlPointCoordinateNetType& localControlPointNet) {
@@ -98,6 +156,21 @@ namespace Dune::IGANEW::GeometryKernel {
     return result;
   }
 
+  /**
+   * @brief Computes the global position of a NURBS geometry at a specified local coordinate.
+   *
+   * This function calculates the global position of a NURBS geometry at a given local coordinate.
+   * The computation is based on the NURBS basis functions evaluated at the local coordinate and
+   * the net of control points' coordinates.
+   *
+   * @tparam LocalCoordinate The type representing a point in the local coordinate space.
+   * @tparam NurbsLocalView The type providing access to NURBS basis functions.
+   * @tparam ControlPointCoordinateNetType The type representing the coordinates of control points.
+   * @param local The local coordinate at which the global position is computed.
+   * @param nurbsLocalView The NURBS local view providing basis functions.
+   * @param localControlPointNet The net of control points' coordinates.
+   * @return The global position at the specified local coordinate.
+   */
   template <typename LocalCoordinate, typename NurbsLocalView, typename ControlPointCoordinateNetType>
   [[nodiscard]] auto position(const LocalCoordinate& local, const NurbsLocalView& nurbsLocalView,
                               const ControlPointCoordinateNetType& localControlPointNet) {

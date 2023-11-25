@@ -8,7 +8,24 @@
 #include <dune/common/transpose.hh>
 
 namespace Dune::IGANEW {
-  template <typename Geo>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
+  /**
+   * @brief Finds the closest point projection on a NURBS curve or surface by trust region method.
+   *
+   * This function computes the closest point projection of a given point onto a NURBS curve or surface.
+   * The trust region method is used to iteratively refine the solution. The function returns a tuple
+   * containing the local coordinates of the closest point projection, the residual norm, the energy value,
+   * and the distance between the projected point and the original point.
+   *
+   * @tparam Geo The NURBS geometry type
+   * @param geo The NURBS geometry object.
+   * @param point The point to be projected onto the NURBS geometry.
+   * @param start Optional starting point for the iteration. If not provided, the midpoint of the domain is used.
+   * @return A tuple containing the local coordinates, residual norm, energy value, and distance from the point.
+   *
+   * @throws Dune::MathError if the trust region method fails to find an energy-decreasing direction.
+   *
+   */
+  template <typename Geo>  // TODO add concept
   auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
                                            const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
       -> std::tuple<typename Geo::LocalCoordinate, typename Geo::ctype, typename Geo::ctype, typename Geo::ctype>

@@ -653,10 +653,10 @@ auto testNURBSCurve() {
       << "Number of controlpoints net size should be " << 1 << " but is " << patch.numberOfControlPoints().size();
   testSuite.check(patch.numberOfControlPoints()[0] == 9)
       << "Number of controlpoints in dir " << 0 << " should be " << 9 << " but is " << patch.numberOfControlPoints()[0];
-  testSuite.check(patch.numberOfElements().size() == 1)
-      << "Number of net size should be " << 1 << " but is " << patch.numberOfElements().size();
-  testSuite.check(patch.numberOfElements()[0] == 5)
-      << "Number of elements in dir " << 0 << " should be " << 5 << " but is " << patch.numberOfElements()[0];
+  testSuite.check(patch.numberOfSpans().size() == 1)
+      << "Number of net size should be " << 1 << " but is " << patch.numberOfSpans().size();
+  testSuite.check(patch.numberOfSpans()[0] == 5)
+      << "Number of elements in dir " << 0 << " should be " << 5 << " but is " << patch.numberOfSpans()[0];
   return testSuite;
 }
 
@@ -695,12 +695,12 @@ auto testNURBSSurface() {
       << "Number of controlpoints in dir " << 0 << " should be " << 3 << " but is " << patch.numberOfControlPoints()[0];
   testSuite.check(patch.numberOfControlPoints()[1] == 3)
       << "Number of controlpoints in dir " << 1 << " should be " << 3 << " but is " << patch.numberOfControlPoints()[1];
-  testSuite.check(patch.numberOfElements().size() == 2)
-      << "Number of net size should be " << 2 << " but is " << patch.numberOfElements().size();
-  testSuite.check(patch.numberOfElements()[0] == 1)
-      << "Number of elements in dir " << 0 << " should be " << 1 << " but is " << patch.numberOfElements()[0];
-  testSuite.check(patch.numberOfElements()[1] == 1)
-      << "Number of elements in dir " << 1 << " should be " << 1 << " but is " << patch.numberOfElements()[1];
+  testSuite.check(patch.numberOfSpans().size() == 2)
+      << "Number of net size should be " << 2 << " but is " << patch.numberOfSpans().size();
+  testSuite.check(patch.numberOfSpans()[0] == 1)
+      << "Number of elements in dir " << 0 << " should be " << 1 << " but is " << patch.numberOfSpans()[0];
+  testSuite.check(patch.numberOfSpans()[1] == 1)
+      << "Number of elements in dir " << 1 << " should be " << 1 << " but is " << patch.numberOfSpans()[1];
 
   return testSuite;
 }

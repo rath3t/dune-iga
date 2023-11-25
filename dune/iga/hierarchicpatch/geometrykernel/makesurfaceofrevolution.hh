@@ -18,13 +18,28 @@ namespace Dune::IGANEW {
     }
   }  // namespace Impl
 
-  /* \brief Create a surface of revolution from a generating curve, from Piegl and Tiller, Algo 8.1
-   * \tparam ScalarType the field type (use float, double, complex, etc)
-   * \param generatrix 1D nurbs curve, which should be revolved
-   * \param point the origin of revolution
-   * \param revolutionAxis the axis of revolution
-   * \param revolutionAngle how far the curve should be revolved in degrees
-   * \return NURBSPatchData representing the surface
+  /**
+   * @brief Create a surface of revolution from a generating curve.
+   *
+   * This function generates a NURBS surface of revolution based on a given generatrix curve, origin point, revolution
+   * axis, and angle. The generatrix is a 1D NURBS curve that is revolved around the specified axis.
+   *
+   * @tparam ScalarType The field type for coordinates (e.g., float, double, complex).
+   * @param generatrix 1D NURBS curve representing the generatrix to be revolved.
+   * @param point The origin point of revolution.
+   * @param revolutionAxis The axis of revolution.
+   * @param revolutionAngle The angle by which the generatrix should be revolved in degrees (default is 360 degrees for
+   * a full revolution).
+   * @return NURBSPatchData representing the generated surface of revolution.
+   *
+   * @note The angles are specified in degrees.
+   *
+   * Example (Create a torus):
+   * @code
+   * using ScalarType = double; // or any other numeric type
+   * auto generatrix = makeCircularArc<ScalarType>(1.0, 0.0, 180.0); // Full circle with radius one
+   * auto torus = makeSurfaceOfRevolution<ScalarType>(generatrix, {2, 0, 0}, {1, 0, 0});
+   * @endcode
    */
   template <typename ScalarType = double>
   auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, ScalarType>& generatrix,

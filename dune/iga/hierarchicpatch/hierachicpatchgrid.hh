@@ -79,8 +79,7 @@ namespace Dune::IGANEW {
   //
   //************************************************************************
   /*!
-   * \brief Provides a meta grid that is identical to its host
-   * \ingroup GridImplementations
+   * \brief Provides a NURBS grid based on a single NURBS patch
    * \ingroup PatchGrid
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid

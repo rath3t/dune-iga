@@ -7,31 +7,44 @@
 #include <dune/iga/hierarchicpatch/utils/mdnet.hh>
 
 namespace Dune::IGANEW {
-  /** \brief struct that holds all data regarding the NURBS geometric structure
+
+  /**
+   * \brief Struct that holds all data regarding the NURBS geometric structure
    *
-   * @tparam dim Dimension of the patch
-   * @tparam dimworld Dimension of the control point coordinates , i.e. where the patch lives in
-   * @tparam NurbsGridLinearAlgebraTraits Traits where FixedVectorType is derived
+   * \tparam dim Dimension of the patch
+   * \tparam dimworld Dimension of the control point coordinates, i.e., where the patch lives in
+   * \tparam ScalarType The type for the functions values and arguments, defaults to double
    */
   template <int dim, int dimworld_, typename ScalarType = double>
   struct NURBSPatchData {
-    static constexpr int patchDim = dim;
-    static constexpr int dimworld = dimworld_;
-    using GlobalCoordinateType    = FieldVector<ScalarType, dimworld>;
-    using ControlPointType        = ControlPoint<GlobalCoordinateType>;
-    using ControlPointNetType     = MultiDimensionalNet<dim, ControlPointType>;
+    static constexpr int patchDim = dim;                                 ///< Dimension of the patch
+    static constexpr int dimworld = dimworld_;                           ///< Dimension of the control point coordinates
+    using GlobalCoordinateType    = FieldVector<ScalarType, dimworld>;   ///< Type for global coordinates
+    using ControlPointType        = ControlPoint<GlobalCoordinateType>;  ///< Type for control points
+    using ControlPointNetType     = MultiDimensionalNet<dim, ControlPointType>;  ///< Type for the net of control points
 
+    /* \brief Default constructor */
     NURBSPatchData() = default;
+
+    /**
+     * \brief Constructor with explicit initialization
+     *
+     * \param knotSpansI Knot spans for each dimension
+     * \param controlPointsI Net of control points
+     * \param degreeInput Degree of the NURBS patch in each dimension
+     */
     NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
                    const std::array<int, dim>& degreeInput)
         : knotSpans(knotSpansI), controlPoints(controlPointsI), degree(degreeInput) {}
 
-    std::array<std::vector<double>, dim> knotSpans{};
-    ControlPointNetType controlPoints{};
-    std::array<int, dim> degree{};
+    std::array<std::vector<double>, dim> knotSpans{};  ///< Knot spans for each dimension
+    ControlPointNetType controlPoints{};               ///< Net of control points
+    std::array<int, dim> degree{};                     ///< Degree of the NURBS patch in each dimension
   };
 
-  // Deduction guide, since std::array, takes size_t as second template argument
+  /**
+   * \brief Deduction guide for creating NURBSPatchData instances without explicitly specifying template arguments
+   */
   template <std::size_t dim, std::size_t dimworld_, typename ScalarType = double>
   NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI,
                  const MultiDimensionalNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,

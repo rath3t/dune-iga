@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: 2022 Alexander Müller mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#pragma once
+/**
+ * @file nurbspatchgeometrylocalview.hh
+ * @brief Definition of the NURBSPatch geometry local view class.
+ * @author Alexander Müller <mueller@ibb.uni-stuttgart.de>
+ * @date 2022
+ */
 
-// #include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
-#include <dune/common/diagonalmatrix.hh>
+#pragma once
 
 #include <dune/geometry/quadraturerules.hh>
 
@@ -35,6 +39,13 @@ namespace Dune::IGANEW::GeometryKernel {
     }
   }  // namespace Impl
 
+  /**
+   * @brief Represents a local view of a patch geometry.
+   *
+   * @tparam codim Codimension of the patch geometry.
+   * @tparam PatchGeometry Type of the patch geometry.
+   * @tparam trim_ Trimming flag.
+   */
   template <int codim, typename PatchGeometry, Trimming trim_>
   struct PatchGeometryLocalView {
     using ctype                                         = typename PatchGeometry::ctype;
@@ -103,8 +114,16 @@ namespace Dune::IGANEW::GeometryKernel {
     PatchGeometryLocalView() = default;
     explicit PatchGeometryLocalView(const PatchGeometry& patchGeometry) : patchGeometry_{&patchGeometry} {}
 
+    /**
+     * @brief Get the center of the patch geometry.
+     * @return Global coordinates of the center.
+     */
     [[nodiscard]] GlobalCoordinate center() const { return global(LocalCoordinate(0.5)); }
 
+    /**
+     * @brief Bind the local view to a parameter space geometry.
+     * @param lGeo Parameter space geometry.
+     */
     void bind(const ParameterSpaceGeometry& lGeo) {
       parameterSpaceGeometry = std::make_optional<ParameterSpaceGeometry>(lGeo);
       std::tie(nurbsLocalView_, localControlPointNet, spanIndices_)
@@ -112,42 +131,56 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     /**
-     * \brief evaluates the geometric position
-     * \param[in] local coordinate
-     * \return position in world space
+     * @brief Get the global position at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Global coordinates of the position.
      */
-    [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& u) const {
+    [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
       checkState();
-      return GeometryKernel::position(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
+      return GeometryKernel::position(globalInParameterSpace(local), nurbsLocalView_, localControlPointNet);
     }
 
-    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& u) const {
+    /**
+     * @brief Get the transposed Jacobian matrix at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Transposed Jacobian matrix.
+     */
+    [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       checkState();
       const PatchJacobianTransposed dfdg
-          = GeometryKernel::jacobianTransposed(globalInParameterSpace(u), nurbsLocalView_, localControlPointNet);
-      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
+          = GeometryKernel::jacobianTransposed(globalInParameterSpace(local), nurbsLocalView_, localControlPointNet);
+      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(local);
       return dgdt * dfdg;
     }
 
+    /**
+     * @brief Get the Jacobian matrix at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Jacobian matrix.
+     */
     [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const { return transpose(jacobianTransposed(local)); }
 
+    /**
+     * @brief Compute the integration element at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Integration element.
+     */
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
       auto jT = jacobianTransposed(local);
       return MatrixHelper::template sqrtDetAAT<mydimension, worlddimension>(jT);
     }
 
-    [[nodiscard]] double volume(int scaleOrder = 1) const {
+    /**
+     * @brief Compute the volume of the patch.
+     * @return Volume of the patch.
+     */
+    [[nodiscard]] double volume() const {
       if constexpr (trim == Trimming::Enabled) {
-        // if constexpr (mydimension == 2)
-        // if (subgrid_) {
-        //   Dune::QuadratureRule<double, mydimension> rule;
-        //   fillQuadratureRuleImpl(rule, *subgrid_.get(), (*std::ranges::max_element(patchData().degree)));
-        //   Volume vol = 0.0;
-        //   for (auto& gp : rule)
-        //     vol += integrationElement(gp.position()) * gp.weight();
-        //   return vol;
-        // }
-        // TODO here the integration of trimmed quantities has to happen and also the new edge geometries
+        // TODO: Implement integration of trimmed quantities and new edge geometries.
       }
 
       const auto& rule = QuadratureRules<ctype, mydimension>::rule(
@@ -173,15 +206,21 @@ namespace Dune::IGANEW::GeometryKernel {
       return global(localcorner);
     }
 
-    /** \brief Inverse of global this function gets a point defined in the world space and return
-     * the closest point in local coordinates, i.e. in [0,1] domain for each grid dimension
-     *
-     *  \param global global coordinates for the point where the local coordinates are searched for
+    /**
+     * @brief Compute the local coordinate corresponding to a global position.
+     * @param global Global coordinates for which the local coordinates are sought.
+     * @return Local coordinates in the [0,1] domain for each grid dimension.
      */
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
-      return GeometryKernel::computeParameterSpaceCoordinate(*this, global);
+      return GeometryKernel::findClosestParameterSpaceCoordinate(*this, global);
     }
 
+    /**
+     * @brief Get the transposed inverse Jacobian matrix at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Transposed inverse Jacobian matrix.
+     */
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
       JacobianTransposed Jt = jacobianTransposed(local);
       JacobianInverseTransposed jacobianInverseTransposed;
@@ -189,17 +228,24 @@ namespace Dune::IGANEW::GeometryKernel {
       return jacobianInverseTransposed;
     }
 
+    /**
+     * @brief Compute the zeroth, first, and second derivatives of the position at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
+     * @return Tuple of the global position, transposed Jacobian matrix, and Hessian matrix.
+     */
     std::tuple<GlobalCoordinate, JacobianTransposed, Hessian> zeroFirstAndSecondDerivativeOfPosition(
-        const LocalCoordinate& u) const {
+        const LocalCoordinate& local) const {
       checkState();
 
-      return std::make_tuple(global(u), jacobianTransposed(u), hessian(u));
+      return std::make_tuple(global(local), jacobianTransposed(local), hessian(local));
     }
 
     /**
      * @brief Computes the second derivatives of the local view.
      *
-     * @param[in] u The parameter value of the local view on the geometry
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+     * dimension
      * @return A tuple of the global position, the Jacobian matrix and Hessian matrix
      * @details
      * **Example curve on surface**
@@ -240,14 +286,14 @@ namespace Dune::IGANEW::GeometryKernel {
      * and has dimensions \f$1\times 3\f$ or in general \f$\verb|mydimension*(mydimension+1)/2| \times
      * \verb+worlddimension+\f$.
      */
-    Hessian hessian(const LocalCoordinate& u) const {
+    Hessian hessian(const LocalCoordinate& local) const {
       checkState();
-      const auto ouInPatch = globalInParameterSpace(u);
+      const auto ouInPatch = globalInParameterSpace(local);
 
       const auto [p, dfdg, dfdgdg] = patchGeometry_->zeroFirstAndSecondDerivativeOfPositionImpl(
           ouInPatch, nurbsLocalView_, localControlPointNet);
 
-      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(u);
+      const JacobianTransposedInParameterSpace dgdt = jacobianTransposedInParameterSpace(local);
       static_assert(JacobianTransposedInParameterSpace::rows == mydimension);
       static_assert(JacobianTransposedInParameterSpace::cols == gridDimension);
       // dgdt (1x2, curve on surface), (2x2 surface in surface), (2x3 surface in 3D), (3x3 volume in 3D)
@@ -296,6 +342,7 @@ namespace Dune::IGANEW::GeometryKernel {
       return h;
     }
 
+    /* returns the midpoint of the domain */
     [[nodiscard]] LocalCoordinate domainMidPoint() const {
       auto dom = domain();
       LocalCoordinate result{};
@@ -305,6 +352,7 @@ namespace Dune::IGANEW::GeometryKernel {
       return result;
     }
 
+    /* @brief returns the domain, i.e. [0,1] */
     [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
     [[nodiscard]] bool affine() const { return false; }

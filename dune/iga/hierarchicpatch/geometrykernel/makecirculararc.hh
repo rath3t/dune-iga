@@ -7,15 +7,28 @@
 
 namespace Dune::IGANEW {
   // TODO Alex quote algo from NURBS book
-  /* \brief Create a circular arc with different customization options
-   * \tparam ScalarType the field type (use float, double, complex, etc)
-   * \param radius Radius of the arc
-   * \param startAngle starting angle of the arc in degrees
-   * \param endAngle end angle of the arc in degrees
-   * \param origin center of the circle
-   * \param X first base vector of plane where the arc should reside
-   * \param Y second base vector of plane where the arc should reside
-   * \return NURBSPatchData representing the arc
+  /**
+   * @brief Create a circular arc as a NURBS patch with customizable options.
+   *
+   * This function generates a circular arc with specified customization options, including radius, start and end
+   * angles, origin, and base vectors of the plane where the arc should reside.
+   *
+   * @tparam ScalarType The field type for coordinates (e.g., float, double, complex).
+   * @param radius Radius of the circular arc.
+   * @param startAngle Starting angle of the arc in degrees.
+   * @param endAngle End angle of the arc in degrees.
+   * @param origin Center of the circle.
+   * @param X First base vector of the plane where the arc should reside.
+   * @param Y Second base vector of the plane where the arc should reside.
+   * @return NURBSPatchData representing the circular arc.
+   *
+   * @note The angles are specified in degrees.
+   *
+   * Example:
+   * @code
+   * using ScalarType = double; // or any other numeric type
+   * auto circularArc = makeCircularArc<double>(2.0, 45.0, 180.0);
+   * @endcode
    */
   template <typename ScalarType = double>
   NURBSPatchData<1, 3, ScalarType> makeCircularArc(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,

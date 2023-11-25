@@ -6,14 +6,13 @@
 #include <concepts>
 #include <ranges>
 
-// #include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 
 namespace Dune::IGANEW::Splines {
 
   /** \brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than
-   * u -p+1-times-     returned        -p+1-times-
+   * u
    * @tparam Range knotvector range
    * @param p polynomial degree of the underlying spline
    * @param u span value which is searched for
@@ -31,7 +30,7 @@ namespace Dune::IGANEW::Splines {
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
-  /** \brief Same as findSpan but for dim  knotvectors  */
+  /** \brief Same as findSpan but for dim  knotvectors @see findSpan */
   template <int dim, size_t dim2, typename ValueType>
   auto findSpan(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
                 const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
