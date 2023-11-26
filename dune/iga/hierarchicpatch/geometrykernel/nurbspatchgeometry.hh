@@ -65,9 +65,9 @@ namespace Dune::IGANEW::GeometryKernel {
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
     template <int codim, Trimming trim>
-    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, trim>;
+    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch>;
 
-    template <int codim, typename NURBSPatch, Trimming trim>
+    template <int codim, typename NURBSPatch,typename TrimmedLocalParameterSpaceGeometry>
     friend struct PatchGeometryLocalView;
 
    private:

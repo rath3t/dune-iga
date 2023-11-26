@@ -106,8 +106,8 @@ namespace Dune::IGANEW {
     GeometryLocalView geometryLocalView_{};
   };
 
-    template <int mydim, int coorddim, class GridImp> requires ((coorddim==2 and mydim==2) or (coorddim==3 and mydim>=2) )
-  class TrimmedPatchGridLocalGeometry
+  template <int mydim, int coorddim, class GridImp>
+  requires((coorddim == 2 and mydim == 2) or (coorddim == 3 and mydim >= 2)) class TrimmedPatchGridLocalGeometry
       : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridLocalGeometry> {
    public:
     static constexpr int mydimension = mydim;
@@ -161,8 +161,8 @@ namespace Dune::IGANEW {
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
     [[nodiscard]] int corners() const {
-      //TODO
-      // return hostGeometry_.corners();
+      // TODO
+      //  return hostGeometry_.corners();
     }
 
     //! access to coordinates of corners. Index is the number of the corner

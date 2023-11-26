@@ -14,7 +14,7 @@
 
 #include <dune/iga/hierarchicpatch/enums.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
-#include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
+// #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
@@ -47,14 +47,14 @@ namespace Dune::IGANEW::GeometryKernel {
    * @tparam PatchGeometry Type of the patch geometry.
    * @tparam trim_ Trimming flag.
    */
-  template <int codim, typename PatchGeometry, Trimming trim_, typename TrimmedLocalParameterSpaceGeometry=void>
-  struct PatchGeometryLocalView {
+  template <int codim, typename PatchGeometry, typename TrimmedLocalParameterSpaceGeometry = void>
+ struct PatchGeometryLocalView {
     using ctype                                         = typename PatchGeometry::ctype;
     static constexpr int gridDimension                  = PatchGeometry::mydimension;
     static constexpr int mydimension                    = gridDimension - codim;
     static constexpr int numberOfSecondDerivatives      = mydimension * (mydimension + 1) / 2;
     static constexpr int patchNumberOfSecondDerivatives = gridDimension * (gridDimension + 1) / 2;
-    static constexpr Trimming trim                      = trim_;
+    static constexpr Trimming trim                      = std::is_same_v<TrimmedLocalParameterSpaceGeometry,void> ? Trimming::Disabled:Trimming::Enabled;
 
     static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;
 
@@ -64,10 +64,13 @@ namespace Dune::IGANEW::GeometryKernel {
     using PatchJacobianTransposed = typename PatchGeometry::JacobianTransposed;
     using PatchHessian            = typename PatchGeometry::Hessian;
     // TODO trim ParameterSpaceGeometry
-    using UntrimmedReferenceElementGeometry = decltype(referenceElement< ctype, mydimension >(GeometryType::cube(mydimension)).template geomemetry<codim>());
-    static constexpr bool isTrimmedSubGeometry = codim>0 and trim==Trimming::Disabled;
+    // using UntrimmedSubEntityGeometry
+    //     = decltype(referenceElement<ctype, gridDimension>(GeometryTypes::cube(mydimension)).template geometry<codim>(0));
+    static constexpr bool isTrimmedSubGeometry = codim > 0 and trim == Trimming::Enabled;
+    using UntrimmedSubEntityGeometry = typename PatchGeometry::template ParameterSpaceGeometry<codim>;
 
-    using ParameterSpaceGeometry = std::conditional_t<isTrimmedSubGeometry ,TrimmedLocalParameterSpaceGeometry,UntrimmedReferenceElementGeometry>;
+    using ParameterSpaceGeometry = std::conditional_t<isTrimmedSubGeometry, TrimmedLocalParameterSpaceGeometry,
+                                                      UntrimmedSubEntityGeometry>;
 
     //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix, and
     // Coordinates in a single knot span differ from coordinates on the B-spline patch

@@ -9,6 +9,7 @@
 
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 
+#include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 
@@ -75,7 +76,7 @@ auto testNurbsBasis() {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, nurbs());
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
-  Dune::Functions::forEachBoundaryDof(basis2,[](auto&& localIndex){});
+    Dune::Functions::forEachBoundaryDOF(basis2, [](auto&& localIndex) {});
   }
 
   {

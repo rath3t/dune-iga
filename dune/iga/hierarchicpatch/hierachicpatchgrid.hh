@@ -444,15 +444,14 @@ namespace Dune::IGANEW {
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
 
-    //TODO Trim store triming information here, it should be accessable with a grid entity ID,
-    //such that we can hand out if for the elements, thus it should be a map maybe
-    // auto trimmingInfoOfent = trimminginfo[globalIdSet_.index(ent)];
-    // the trick with conditional_t,Empty and no_unique_address makes sure that this member variables occupies no space,
-    // if trimming is disabled
-    //struct Empty{};
+    // TODO Trim store triming information here, it should be accessable with a grid entity ID,
+    // such that we can hand out if for the elements, thus it should be a map maybe
+    //  auto trimmingInfoOfent = trimminginfo[globalIdSet_.index(ent)];
+    //  the trick with conditional_t,Empty and no_unique_address makes sure that this member variables occupies no
+    //  space, if trimming is disabled
+    // struct Empty{};
     //[[no_unique_address]] std::conditional_t<trim,TrimmInfos,Empty> trimminginfo;
-    //TODO Trim, we maybe also need global information about the trim
-
+    // TODO Trim, we maybe also need global information about the trim
 
    protected:
     std::unique_ptr<HostGrid> hostgrid_;
