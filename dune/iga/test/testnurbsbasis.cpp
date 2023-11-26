@@ -75,6 +75,7 @@ auto testNurbsBasis() {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, nurbs());
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
+  Dune::Functions::forEachBoundaryDof(basis2,[](auto&& localIndex){});
   }
 
   {

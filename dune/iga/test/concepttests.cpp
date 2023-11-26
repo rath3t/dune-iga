@@ -9,6 +9,13 @@
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/concepts.hh>
 #include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
+#include <dune/common/classname.hh>
+#include <dune/functions/functionspacebases/boundarydofs.hh>
+  template <template <typename> class Type, typename>
+  struct IsDefaultReferenceElement: std::false_type {};
+
+  template <template <typename> class Type, typename S>
+  struct IsDefaultReferenceElement<Type, ReferenceElement<S>> : std::true_type {};
 
 template <typename G>
 void checkConcepts() {
@@ -20,6 +27,13 @@ void checkConcepts() {
   using LevelGridView      = typename G::LevelGridView;
   using GlobalIdSet        = typename G::GlobalIdSet;
   using IndexSet           = typename LeafGridView::IndexSet;
+
+
+
+std::cout<<Dune::className<GridEntity>()<<std::endl;
+static_assert(std::IsDefaultReferenceElement<decltype(referenceElement(GridEntity())>::value);
+
+
 
   static_assert(Dune::Concept::EntityGeneral<GridEntity>);
 

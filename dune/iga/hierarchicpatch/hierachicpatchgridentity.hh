@@ -9,6 +9,7 @@
  */
 
 #include "hierachicpatchgridgeometry.hh"
+#include "referenceelement.hh"
 namespace Dune::IGANEW {
 
   // Forward declarations
@@ -331,5 +332,23 @@ namespace Dune::IGANEW {
     typedef typename GridImp::ctype ctype;
 
   };  // end of PatchGridEntity codim = 0
+
+
+  template <int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid>
+  class PatchGrid;
+
+  template< int cd, int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid,
+  template<int,int,class> class PatchGridEntity >
+  auto referenceElement(const Entity< cd, dim, const PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>, PatchGridEntity >& entity )
+  {
+  if constexpr (trim==Trimming::Enabled)
+     return TrimmedReferenceElement(entity);
+  else
+  {
+    typedef typename PatchGrid<dim,dimworld,trim,ScalarType,HostGrid>::template Codim<cd>::Geometry Geo;
+    return referenceElement< typename Geo::ctype, Geo::mydimension >(entity.type());
+   }
+  }
+
 
 }  // namespace Dune::IGANEW
