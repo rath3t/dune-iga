@@ -1,23 +1,23 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef DUNE_IGA_IBRAGEOMETRY_HH
-#define DUNE_IGA_IBRAGEOMETRY_HH
+#pragma once
 
 #include <nlohmann/json.hpp>
 
-#include "dune/iga/geometry/geohelper.hh"
-#include "dune/iga/nurbspatchdata.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/dynvector.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
+#include "dune/iga/geometry/geohelper.hh"
+#include "dune/iga/nurbspatchdata.hh"
+
 namespace Dune::IGA::Ibra {
 
   enum Type { NurbsCurveGeometry2D, NurbsSurfaceGeometry3D, BrepLoopType, BrepTrimType, BrepType, NoType };
 
-  Type typeForTypeString(const std::string& typeString) {
+  inline Type typeForTypeString(const std::string& typeString) {
     if (typeString == "NurbsCurveGeometry2D")
       return Type::NurbsCurveGeometry2D;
     else if (typeString == "NurbsSurfaceGeometry3D")
@@ -301,4 +301,4 @@ namespace Dune::IGA::Ibra {
 
 }  // namespace Dune::IGA::Ibra
 
-#endif  // DUNE_IGA_IBRAGEOMETRY_HH
+// DUNE_IGA_IBRAGEOMETRY_HH

@@ -6,14 +6,13 @@
 #include <concepts>
 #include <ranges>
 
-#include "dune/iga/utils/concepts.hh"
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 
-namespace Dune::IGA {
+namespace Dune::IGANEW::Splines {
 
   /** \brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than
-   * u -p+1-times-     returned        -p+1-times-
+   * u
    * @tparam Range knotvector range
    * @param p polynomial degree of the underlying spline
    * @param u span value which is searched for
@@ -22,7 +21,8 @@ namespace Dune::IGA {
    * @return
    */
   template <std::ranges::random_access_range Range>
-  auto findSpanCorrected(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
+  auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U,
+                typename std::remove_cvref_t<Range>::difference_type offset = 0) {
     if (u <= U[0]) return static_cast<long int>(p);
     if (u >= U.back())
       return static_cast<long int>(U.size() - p - 2);  // if the coordinate is to big we return to the last non-end span
@@ -30,54 +30,35 @@ namespace Dune::IGA {
     return static_cast<long int>(std::distance(U.begin(), it) - 1);
   }
 
-  template <std::ranges::random_access_range Range>
-  auto findSpanUncorrected(const int p, typename std::remove_cvref_t<Range>::value_type u, Range&& U, int offset = 0) {
-    if (u <= U[0]) return static_cast<long int>(p);
-    auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
-    return static_cast<long int>(std::distance(U.begin(), it) - 1);
-  }
-
-  /** \brief Same as findSpanCorrected() but for dim - knotvectors  */
+  /** \brief Same as findSpan but for dim  knotvectors @see findSpan */
   template <int dim, size_t dim2, typename ValueType>
-  auto findSpanCorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
-                         const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
+  auto findSpan(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
+                const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
     std::array<int, dim> res;
     for (auto i = 0; i < dim; ++i)
-      res[i] = findSpanCorrected(p[i], u[i], U[i]);
-    return res;
-  }
-
-  /** \brief Same as findSpanUncorrected() but for dim - knotvectors  */
-  template <int dim, size_t dim2, typename ValueType>
-  auto findSpanUncorrected(const std::array<int, dim2>& p, const Dune::FieldVector<ValueType, dim>& u,
-                           const std::array<std::vector<ValueType>, dim2>& U) requires(dim2 == dim) {
-    std::array<int, dim> res;
-    for (auto i = 0; i < dim; ++i)
-      res[i] = findSpanUncorrected(p[i], u[i], U[i]);
+      res[i] = findSpan(p[i], u[i], U[i]);
     return res;
   }
 
   /** \brief One dimensional b-spline basis
    *
-   * @tparam NurbsGridLinearAlgebraTraits Specialization where the Traits are directly given
+   * @tparam ScalarType_ Scalar type of the coordinates
    */
   template <typename ScalarType_>
-  class BsplineBasis1D {
+  class BsplineBasis {
    public:
     using ScalarType        = ScalarType_;
     using DynamicVectorType = Dune::DynamicVector<ScalarType>;
     using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
     using RowFixedMatrix    = std::array<DynamicVectorType, 2>;
 
-    BsplineBasis1D(const std::vector<ScalarType>& knots, const int degree) : knots_{knots}, degree_{degree} {}
+    BsplineBasis(const std::vector<ScalarType>& knots, const int degree) : knots_{knots}, degree_{degree} {}
 
     auto operator()(ScalarType u) { return basisFunctions(u, knots_, degree_); }
 
     /** \brief The evaluation function modified version of The Nurbs Book Algorithm A2.2
      *
      * @tparam Range range of knotvector
-     * @tparam ContainerType Container where the returned values should be stored, it needs to satisfy
-     * StdVectorLikeContainer
      * @param u scalar point where to evaluate the spline
      * @param knots knotvector
      * @param p polynomial degree of the underlying b-spline basis
@@ -85,23 +66,27 @@ namespace Dune::IGA {
      * @return Non-zero B-spline basis functions evaluated at u
      */
     template <std::ranges::random_access_range Range>
-    static auto basisFunctions(ScalarType u, Range&& knots, const int p, std::optional<int> spIndex = std::nullopt) {
+    static auto basisFunctions(typename std::remove_cvref_t<Range>::value_type u, Range&& knots, const int p,
+                               std::optional<int> spIndex = std::nullopt) {
       assert(std::ranges::count(knots.begin(), knots.begin() + p + 1, knots.front()) == p + 1);
       assert(std::ranges::count(knots.end() - p - 1, knots.end(), knots.back()) == p + 1);
       assert(spIndex < knots.size() - p - 1);
       DynamicVectorType N;
       N.resize(p + 1, 0.0);
-      u = std::clamp(u, knots.front(), knots.back());
-      if (Dune::FloatCmp::eq(u, knots.back()))  // early exit
+      u = std::clamp(u, knots.front(), knots.back());  // we clamp the value since sometimes we overshoot slightly
+      // due to machine precision
+      if (FloatCmp::eq(u, knots.back()))  // early exit
       {
         N.back() = 1;
         return N;
-      } else if (Dune::FloatCmp::eq(u, knots.front())) {
+      }
+      if (FloatCmp::eq(u, knots.front())) {
         N.front() = 1;
         return N;
       }
 
-      const int sp = spIndex ? spIndex.value() : findSpanCorrected(p, u, knots);
+      // if the index in the knot span is not given we search for it
+      const int sp = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
       auto lDiff = transform_view(reverse_view(std::views::counted(knots.begin() + sp + 1 - p, p)),
                                   [&u](auto& kn) { return u - kn; });
@@ -140,7 +125,7 @@ namespace Dune::IGA {
                                          const int derivativeOrder, std::optional<int> spIndex = std::nullopt) {
       assert(spIndex < knots.size() - p - 1);
       const int order = p + 1;
-      const int sp    = spIndex ? spIndex.value() : findSpanCorrected(p, u, knots);
+      const int sp    = spIndex ? spIndex.value() : findSpan(p, u, knots);
       using namespace std::ranges;
 
       DynamicMatrixType dN(derivativeOrder + 1, order);
@@ -216,4 +201,14 @@ namespace Dune::IGA {
     std::vector<ScalarType> knots_;
     int degree_;
   };
-}  // namespace Dune::IGA
+
+  template <std::size_t dim, typename ScalarType>
+  auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotSpans) {
+    std::array<std::vector<double>, dim> uniqueKnotVector;
+    for (int i = 0; i < dim; ++i)  // create unique knotspan vectors
+      std::ranges::unique_copy(knotSpans[i], std::back_inserter(uniqueKnotVector[i]),
+                               [](auto& l, auto& r) { return Dune::FloatCmp::eq(l, r); });
+
+    return uniqueKnotVector;
+  }
+}  // namespace Dune::IGANEW::Splines

@@ -4,6 +4,7 @@
 #pragma once
 #if HAVE_DUNE_FUFEM
 #  include "dune/iga/utils/igahelpers.hh"
+
 #  include <dune/fufem/boundarypatch.hh>
 #  include <dune/python/pybind11/eigen.h>
 #  include <dune/python/pybind11/functional.h>

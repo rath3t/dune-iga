@@ -6,8 +6,10 @@
 #include "igarefinedgeometries.hh"
 
 #include <dune/geometry/referenceelements.hh>
+
 #include <dune/grid/common/partitionset.hh>
 #include <dune/grid/common/rangegenerators.hh>
+
 #include <dune/vtk/datacollectors/unstructureddatacollector.hh>
 #include <dune/vtk/function.hh>
 #include <dune/vtk/types.hh>
@@ -184,7 +186,6 @@ namespace Dune::Vtk {
 #if DUNE_VERSION_LT(DUNE_VTK, 2, 10)
     using Super::gridView_;
     const auto& gridView() const { return gridView_; }
-#endif
 
     std::uint64_t numPoints_ = 0;
     std::uint64_t numCells_  = 0;

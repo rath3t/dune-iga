@@ -3,16 +3,18 @@
 
 #pragma once
 
+#include <clipper2/clipper.core.h>
+
 #include "nurbstrimboundary.hh"
 #include "nurbstrimmer.hh"
 #include "subgridhelpers.hh"
 
-#include <clipper2/clipper.core.h>
-
-#include "dune/iga/geometry/geohelper.hh"
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/virtualrefinement.hh>
+
 #include <dune/grid/uggrid.hh>
+
+#include "dune/iga/geometry/geohelper.hh"
 
 namespace Dune::IGA {
 

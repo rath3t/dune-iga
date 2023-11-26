@@ -3,14 +3,15 @@
 
 #pragma once
 
-#include "nurbstrimboundary.hh"
-
 #include <clipper2/clipper.core.h>
 #include <clipper2/clipper.h>
 
+#include "nurbstrimboundary.hh"
+
 // #include "dune/iga/geometry/closestpointprojection.hh"
-#include "dune/iga/nurbspatchgeometry.hh"
 #include <dune/grid/yaspgrid.hh>
+
+#include "dune/iga/nurbspatchgeometry.hh"
 
 namespace Dune::IGA {
   enum class ElementTrimFlag { full, empty, trimmed };
@@ -621,8 +622,8 @@ namespace Dune::IGA::Trim {
     }
 
     static std::array<Point, 2> curveStartEndPoint(const CurveGeometry& curve) {
-      std::array<int, 2> indices{0, static_cast<int>(curve.patchData_->controlPoints.strideSizes()[0]) - 1};
-      return {curve.patchData_->controlPoints.get({indices[0]}).p, curve.patchData_->controlPoints.get({indices[1]}).p};
+      std::array<int, 2> indices{0, static_cast<int>(curve.patchData_.controlPoints.strideSizes()[0]) - 1};
+      return {curve.patchData_.controlPoints.get({indices[0]}).p, curve.patchData_.controlPoints.get({indices[1]}).p};
     }
 
     /// This scales back to the floatDomain

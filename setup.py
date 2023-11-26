@@ -17,7 +17,7 @@ from skbuild import setup
 # /dune/dune-common/build-cmake/run-in-dune-env python -m twine upload dist/* --verbose
 
 duneigaVersion = "0.1.7"
-duneVersion = "2.9.0"
+duneVersion = "2.10.0"
 
 metadata = metaData(duneVersion)[1]
 metadata["version"] = duneigaVersion

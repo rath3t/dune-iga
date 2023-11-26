@@ -3,27 +3,36 @@
 
 #pragma once
 
-#include "dune/iga/geometry/geohelper.hh"
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/transpose.hh>
 
-namespace Dune::IGA {
-  template <template <std::integral auto, std::integral auto, typename> typename Geo, std::integral auto dim,
-            std::integral auto dimworld, typename GeoArgs>  // requires NurbsGeometry<Geo<dim, dimworld, GeoArgs>>
-  auto closestPointProjectionByTrustRegion(
-      const Geo<dim, dimworld, GeoArgs>& geo, auto& point,
-      const std::optional<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, static_cast<size_t>(dim)>>&
-          start
-      = std::nullopt)
-      -> std::tuple<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, dim>,
-                    typename Geo<dim, dimworld, GeoArgs>::ctype, typename Geo<dim, dimworld, GeoArgs>::ctype,
-                    typename Geo<dim, dimworld, GeoArgs>::ctype>
-  requires(dim == 1 or dim == 2) {
-    using Geometry = Geo<dim, dimworld, GeoArgs>;
-    using ctype    = typename Geometry::ctype;
-
-    auto energy = [&](const auto& uL) {
+namespace Dune::IGANEW {
+  /**
+   * @brief Finds the closest point projection on a NURBS curve or surface by trust region method.
+   *
+   * This function computes the closest point projection of a given point onto a NURBS curve or surface.
+   * The trust region method is used to iteratively refine the solution. The function returns a tuple
+   * containing the local coordinates of the closest point projection, the residual norm, the energy value,
+   * and the distance between the projected point and the original point.
+   *
+   * @tparam Geo The NURBS geometry type
+   * @param geo The NURBS geometry object.
+   * @param point The point to be projected onto the NURBS geometry.
+   * @param start Optional starting point for the iteration. If not provided, the midpoint of the domain is used.
+   * @return A tuple containing the local coordinates, residual norm, energy value, and distance from the point.
+   *
+   * @throws Dune::MathError if the trust region method fails to find an energy-decreasing direction.
+   *
+   */
+  template <typename Geo>  // TODO add concept
+  auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
+                                           const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
+      -> std::tuple<typename Geo::LocalCoordinate, typename Geo::ctype, typename Geo::ctype, typename Geo::ctype>
+  requires(Geo::mydimension == 1 or Geo::mydimension == 2) {
+    using ctype              = typename Geo::ctype;
+    static constexpr int dim = Geo::mydimension;
+    auto energy              = [&](const auto& uL) {
       auto pointOnCurve = geo.global(uL);
       auto dist         = pointOnCurve - point;
       return 0.5 * dist.two_norm2();
@@ -62,8 +71,7 @@ namespace Dune::IGA {
     // start with mid-point if nothing else is given
     Dune::FieldVector<ctype, dim> u = start ? start.value() : geo.domainMidPoint();
 
-    ctype tol = 1e-10;
-    ctype energyVal;
+    ctype tol = ctype(16) * std::numeric_limits<ctype>::epsilon();
     ctype Rnorm;
     auto domain = geo.domain();
 
@@ -74,12 +82,11 @@ namespace Dune::IGA {
     domainFraction /= domainFractionFactor;
     int i;
     auto [oldEnergy, R, H] = energyGradAndHess(u);
-    energyVal              = oldEnergy;
+    ctype energyVal        = oldEnergy;
+    ctype r                = oldEnergy;
     for (i = 0; i < maxiter; ++i) {
-      Dune::FieldVector<ctype, dim> du;
+      FieldVector<ctype, dim> du;
       H.solve(du, -R);
-      Rnorm = R.two_norm();
-
       // if the increment is too large, we tend to overshoot, thus, we limit it to a fraction of the total domain
       ctype duNorm = du.two_norm();
       if (duNorm > domainFraction) du *= domainFraction / duNorm;
@@ -122,26 +129,11 @@ namespace Dune::IGA {
       Rnorm = R.two_norm();
       if (Rnorm < tol) break;
     }
-    // If we end up at the boundary, and the residual is non-zero, we restart at the opposite domain boundary
-    // If this does also not help we return the point at the boundary with smaller energy(distance)
+
+    // clamp again to boundary
     for (int j = 0; j < dim; ++j)
       u[j] = clampToDomain(u[j], domain[j]);
-    //    auto uRestart = u;
-    //    if (Rnorm > tol and not start) {
-    //      for (int j = 0; j < dim; ++j)
-    //        if (abs(domain[j].left() - uRestart[j]) < tol)
-    //          uRestart[j] = domain[j].right();
-    //        else if (abs(domain[j].right() - uRestart[j]) < tol)
-    //          uRestart[j] = domain[j].left();
-    //
-    //      auto [u2, Rnorm2, energyVal2, gap] = closestPointProjectionByTrustRegion(geo, point, uRestart);
-    //
-    //      return energyVal2 > energyVal ? std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm())
-    //                                    : std::make_tuple(u2, Rnorm2, energyVal2, (geo.global(u2) -
-    //                                    point).two_norm());
-    //    }
-    //    std::cout << "u " << u << " Rnorm " << Rnorm << " energyVal " << energyVal << "geo " << geo.global(u) <<
-    //    std::endl;
+
     return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());
   }
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-#include "dune/python/iga/gridenums.hh"
 #include <dune/iga/io/ibra/ibrareader.hh>
 #include <dune/iga/nurbsgrid.hh>
+
+#include "dune/python/iga/gridenums.hh"
 #include <dune/python/common/typeregistry.hh>
 #include <dune/python/grid/capabilities.hh>
 #include <dune/python/grid/enums.hh>
@@ -13,6 +14,7 @@
 
 #if HAVE_DUNE_VTK
 #  include <dune/iga/io/igadatacollector.hh>
+
 #  include <dune/python/vtk/writer.hh>
 #  include <dune/vtk/writers/vtkunstructuredgridwriter.hh>
 #endif
