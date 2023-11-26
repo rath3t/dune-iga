@@ -161,7 +161,8 @@ namespace Dune::IGANEW {
    public:
     static constexpr Trimming trim = GridImp::trim;
     // The codimension of this entitypointer wrt the host grid
-    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - GridImp::dimension;
+    constexpr static int dimension        = GridImp::dimension;
+    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - dimension;
     constexpr static int dimworld        = GridImp::dimensionworld;
 
     // equivalent entity in the host grid

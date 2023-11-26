@@ -38,6 +38,8 @@ namespace Dune::IGANEW {
       return this->grid().patchGeometries[this->level_];
     }
 
+
+
     auto untrimmedElementNumbers() const {
       // TODO Trim this should be the quantity from the untrimmed grid
       if constexpr (trim == Trimming::Disabled)

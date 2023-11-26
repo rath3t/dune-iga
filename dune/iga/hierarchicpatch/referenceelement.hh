@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
+#include <ranges>
 
+#include "hierachicpatchgridlocalgeometry.hh"
 namespace Dune {
   namespace Geo {
 
@@ -28,6 +30,8 @@ namespace Dune {
     {
 
     public:
+        //! The dimension of the reference element.
+        static constexpr int dimension= GridentityImpl::dimension;
 
 
 
@@ -36,24 +40,23 @@ namespace Dune {
       struct Codim
       {
         //! type of geometry embedding a subentity into the reference element
-      //  using Geometry = implementation-defined;
+        using TrimmedLocalGeometry = IGANEW::TrimmedPatchGridLocalGeometry<dimension-codim,dimension,typename GridentityImpl::Grid::Implementation>;
+        using UnTrimmedLocalGeometry = IGANEW::PatchGridLocalGeometry<dimension-codim,dimension,typename GridentityImpl::Grid::Implementation>;
+      using Geometry =std::conditional_t<codim==0,TrimmedLocalGeometry,UnTrimmedLocalGeometry>;
       };
 
 
       //! The coordinate field type.
-      using ctype = ctype_;
+      using ctype = typename GridentityImpl::ctype;
 
       //! The coordinate field type.
       using CoordinateField = ctype;
 
       //! The coordinate type.
-      using Coordinate = Dune::FieldVector<ctype,dim>;
+      using Coordinate = Dune::FieldVector<ctype,dimension>;
 
       /** \brief Type used for volume */
       typedef ctype Volume;
-
-      //! The dimension of the reference element.
-      static constexpr int dimension = dim;
 
 
       /** \brief number of subentities of codimension c
@@ -125,7 +128,7 @@ namespace Dune {
       auto subEntities ( int i, int c, int cc ) const
       {
         //TODO TRIM this should return something usefull
-        return std::ranges::iota(0,10);
+        return std::ranges::iota_view(0,10);
       }
 
 
@@ -211,6 +214,10 @@ namespace Dune {
       {
         //TODO trim returns the reference element in geometry space
         // return _impl->template geometry<codim>(i);
+        // if constexpr (codim==0)
+        //   return IGANEW::TrimmedPatchGridLocalGeometry();
+        // else
+        //   return IGANEW::PatchGridLocalGeometry
       }
 
 

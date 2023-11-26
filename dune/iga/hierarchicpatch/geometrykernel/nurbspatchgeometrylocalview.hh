@@ -14,6 +14,7 @@
 
 #include <dune/iga/hierarchicpatch/enums.hh>
 #include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
+#include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
 #include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
@@ -46,7 +47,7 @@ namespace Dune::IGANEW::GeometryKernel {
    * @tparam PatchGeometry Type of the patch geometry.
    * @tparam trim_ Trimming flag.
    */
-  template <int codim, typename PatchGeometry, Trimming trim_>
+  template <int codim, typename PatchGeometry, Trimming trim_, typename TrimmedLocalParameterSpaceGeometry=void>
   struct PatchGeometryLocalView {
     using ctype                                         = typename PatchGeometry::ctype;
     static constexpr int gridDimension                  = PatchGeometry::mydimension;
@@ -63,7 +64,10 @@ namespace Dune::IGANEW::GeometryKernel {
     using PatchJacobianTransposed = typename PatchGeometry::JacobianTransposed;
     using PatchHessian            = typename PatchGeometry::Hessian;
     // TODO trim ParameterSpaceGeometry
-    using ParameterSpaceGeometry = typename PatchGeometry::template ParameterSpaceGeometry<codim>;
+    using UntrimmedReferenceElementGeometry = decltype(referenceElement< ctype, mydimension >(GeometryType::cube(mydimension)).template geomemetry<codim>());
+    static constexpr bool isTrimmedSubGeometry = codim>0 and trim==Trimming::Disabled;
+
+    using ParameterSpaceGeometry = std::conditional_t<isTrimmedSubGeometry ,TrimmedLocalParameterSpaceGeometry,UntrimmedReferenceElementGeometry>;
 
     //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix, and
     // Coordinates in a single knot span differ from coordinates on the B-spline patch
