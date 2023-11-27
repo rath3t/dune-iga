@@ -63,7 +63,7 @@ namespace Dune::IGANEW {
       geometryLocalView_.bind(hostGeometry_.impl());
     }
 
-    PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
+    // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
     /** \brief Return the element type identifier
      */
@@ -73,35 +73,35 @@ namespace Dune::IGANEW {
     [[nodiscard]] bool affine() const { return geometryLocalView_.affine(); }
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
-    [[nodiscard]] int corners() const { return hostGeometry_.corners(); }
+    [[nodiscard]] int corners() const { return geometryLocalView_.corners(); }
 
     //! access to coordinates of corners. Index is the number of the corner
     GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
 
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
-    GlobalCoordinate global(const LocalCoordinate& local) const { return hostGeometry_.global(local); }
+    GlobalCoordinate global(const LocalCoordinate& local) const { return geometryLocalView_.global(local); }
 
     /** \brief Return the transposed of the Jacobian
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-      return hostGeometry_.jacobianTransposed(local);
+      return geometryLocalView_.jacobianTransposed(local);
     }
 
     /** \brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
-    LocalCoordinate local(const GlobalCoordinate& global) const { return hostGeometry_.local(global); }
+    LocalCoordinate local(const GlobalCoordinate& global) const { return geometryLocalView_.local(global); }
 
     //! Returns true if the point is in the current element
-    bool checkInside(const FieldVector<ctype, mydim>& local) const { return hostGeometry_.checkInside(local); }
+    bool checkInside(const FieldVector<ctype, mydim>& local) const { return geometryLocalView_.checkInside(local); }
 
     [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
-      return hostGeometry_.integrationElement(local);
+      return geometryLocalView_.integrationElement(local);
     }
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
-      return hostGeometry_.jacobianInverseTransposed(local);
+      return geometryLocalView_.jacobianInverseTransposed(local);
     }
 
    private:

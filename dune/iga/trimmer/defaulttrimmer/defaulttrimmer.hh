@@ -47,13 +47,10 @@ namespace Dune {
         static constexpr bool isAlwaysTrivial = false;  ///< Boolean indicating if the trimming is always trivial, no
                                                         ///< trimming or simple deletion of element.
 
-        /**
-         * @brief Boolean for the linearity of the local geometry.
-         * For codim==0, the parameter geometry is linear.
-         */
+        using UntrimmedParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
+
         using ParameterSpaceGrid
-            = SubGrid<mydimension,
-                      YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>>;  ///< Type of the Parametric
+            = SubGrid<mydimension,   UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
                                                                                              ///< grid
 
         using ReferenceElementType = DefaultTrimmedReferenceElement<mydimension, ctype>;  ///< Reference element type.

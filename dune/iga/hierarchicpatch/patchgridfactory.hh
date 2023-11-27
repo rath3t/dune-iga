@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <nlohmann/json.hpp>
 namespace Dune::IGANEW {
 
   template <class GridType>
@@ -13,6 +14,8 @@ namespace Dune::IGANEW {
     using TrimmerType             = typename GridType::TrimmerType;
     using PatchTrimData           = typename TrimmerType::PatchTrimData;
     using TrimParameterType       = typename TrimmerType::ParameterType;
+    using UntrimmedParameterSpaceGrid       = typename TrimmerType::UntrimmedParameterSpaceGrid;
+    using ParameterSpaceGrid       = typename TrimmerType::ParameterSpaceGrid;
 
     /** \brief Type used by the grid for coordinates */
     typedef typename GridType::ctype ctype;
@@ -21,16 +24,21 @@ namespace Dune::IGANEW {
     void setupTrimmer(const TrimParameterType& parameter) { trimmer.parameter = parameter; }
 
     /** \brief Insert a patch into the grid
-        \param type The GeometryType of the new element
-        \param vertices The vertices of the new element, using the DUNE numbering
-
-        Make sure the inserted element is not inverted (this holds even
-        for simplices).  There are grids that can't handle inverted tets.
+        \param patchData The patch data
+        \param patchTrimData Trimming data for this patch
      */
-    void insertPatch([[maybe_unused]] const NURBSPatchData<dim, dimworld, ctype>& patchData,
+    void insertPatch(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                      const std::optional<PatchTrimData>& patchTrimData = std::nullopt) {
       patchData_     = patchData;
       patchTrimData_ = patchTrimData;
+    }
+
+    /** \brief Insert a patch into the grid
+    \param patchData The patch data
+    \param patchTrimData Trimming data for this patch
+ */
+    void insertJson(const std::string&  filename) {
+      json_     = filename;
     }
 
     /** \brief Finalize grid creation and hand over the grid
@@ -38,13 +46,30 @@ namespace Dune::IGANEW {
        The receiver takes responsibility of the memory allocated for the grid
      */
     std::unique_ptr<GridType> createGrid() {
-      auto elementTrimInfo = trimmer.trimElements(patchData_, patchTrimData_);
+      if (patchTrimData_) {
+        trimmer.trimElements(patchData_, patchTrimData_.value());
+        auto uniqueKnotSpans= Splines::createUniqueKnotSpans(patchData_);
+        //create SubGrid...
+        auto hostGrid =std::make_unique<UntrimmedParameterSpaceGrid>(
+              uniqueKnotSpans);
+
+        ParameterSpaceGrid subGrid(hostGrid);
+        subGrid.createBegin();
+        for (auto hostEntity : elements(hostGrid.leafGridView())) {
+          //if decide which elements are full or trim and add them to the subgrid
+          //subGrid.insert(hostEntity);
+        }
+        subGrid.createEnd();
+
+        return std::make_unique<GridType>(patchData_, patchTrimData_, std::move(trimmer));
+
+      }
       // create Grid and setup Element trimming inf through additional (private) constructor
-      return std::make_unique<GridType>(patchData_, patchTrimData_, trimmer);
     }
 
     NURBSPatchData<dim, dimworld, ctype> patchData_;
     std::optional<PatchTrimData> patchTrimData_;
+    std::string json_;
     TrimmerType trimmer;
   };
 

@@ -151,6 +151,16 @@ namespace Dune::IGANEW {
       patchGeometriesUnElevated = patchGeometries;
     }
 
+    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData, std::unique_ptr<ParameterSpaceGrid>&& hostgrid)
+    : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
+      hostgrid_(hostgrid),
+      leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
+      globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
+      localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
+      setIndices();
+      patchGeometriesUnElevated = patchGeometries;
+    }
+
     PatchGrid& operator=(PatchGrid&& other) noexcept {
       this->hostgrid_           = std::move(other.hostgrid_);
       patchGeometries           = std::move(other.patchGeometries);

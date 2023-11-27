@@ -34,7 +34,11 @@ auto testFactory() {
   auto circle    = makeCircularArc(r);
   gridFactory.insertPatch(circle);
   gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
-  gridFactory.createGrid();
+  auto grid =gridFactory.createGrid();
+
+  auto entity = *grid->leafGridView().begin<0>();
+  auto intersection = *grid->leafGridView().ibegin(entity);
+  std::cout<<intersection.geometryInInside().volume()<<std::endl;
   return t;
 }
 

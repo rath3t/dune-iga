@@ -31,7 +31,6 @@ void checkConcepts() {
   using IndexSet      = typename LeafGridView::IndexSet;
   using TrimmerType   = typename G::TrimmerType;
 
-  std::cout << Dune::className<GridEntity>() << std::endl;
   using GridEntityReferenceType = decltype(referenceElement(GridEntity()));
   if constexpr (TrimmerType::isAlwaysTrivial)
     static_assert(IsDefaultReferenceElement<GridEntityReferenceType>::value);
@@ -66,6 +65,11 @@ int main() {
   checkConcepts<Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::DefaultTrimmer<2>>>();
 
   checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::Trim::DefaultTrimmer<3>>>();
+
+  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::DefaultTrimmer<2>>;
+  std::cout<<Dune::className<typename Grid23::Codim<0>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()<<std::endl;
+  std::cout<<Dune::className<typename Grid23::Codim<1>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()<<std::endl;
+  std::cout<<Dune::className<typename Grid23::Codim<2>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()<<std::endl;
 
   return 0;
 }
