@@ -8,10 +8,10 @@
 #include <ranges>
 
 #include <dune/iga/hierarchicpatch/concepts.hh>
-#include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
-#include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
-#include <dune/iga/hierarchicpatch/utils/mdnet.hh>
-#include <dune/iga/hierarchicpatch/utils/typetraits.hh>
+#include <dune/iga/splines/bsplinealgorithms.hh>
+#include <dune/iga/splines/nurbspatchdata.hh>
+#include <dune/iga/utils/mdnet.hh>
+#include <dune/iga/utils/typetraits.hh>
 namespace Dune::IGANEW::Splines {
 
   namespace Impl {

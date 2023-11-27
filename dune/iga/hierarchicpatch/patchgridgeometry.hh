@@ -14,14 +14,15 @@
 
 #include <dune/grid/common/geometry.hh>
 
-#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometry.hh>
+#include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 namespace Dune::IGANEW {
 
-  template <int mydim, int coorddim, class GridImp>  // requires ( coorddim== GridImp::dimensionworld )
+  template <int mydim, int coorddim, class GridImp>
   class PatchGridGeometry : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridGeometry> {
    public:
     static constexpr int mydimension = mydim;
-    static constexpr Trimming trim   = GridImp::trim;
+    // static constexpr Trimming trim   = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
 
     static constexpr std::integral auto worlddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
@@ -39,19 +40,20 @@ namespace Dune::IGANEW {
     using Volume                    = ctype;
 
     // The codimension of this entitypointer wrt the host grid
-    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - mydim;
+    constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
 
-    using HostGridGeometry = typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Geometry;
+    using HostGridGeometry = typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Geometry;
 
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
-                                                                  ctype>::template GeometryLocalView<codim, trim>;
+    using GeometryLocalView =
+        typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
+                                            ctype>::template GeometryLocalView<codim, TrimmerType>;
 
     /** constructor from host geometry
      */
     PatchGridGeometry(const HostGridGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
         : hostGeometry_(hostGeometry), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
-      geometryLocalView_.bind(hostGeometry_.impl());
+      geometryLocalView_.bind(hostGeometry_);
     }
 
     /** \brief Return the element type identifier

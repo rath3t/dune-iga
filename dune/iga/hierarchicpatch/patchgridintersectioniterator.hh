@@ -4,8 +4,8 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include "hierachicpatchgridentity.hh"
-#include "hierachicpatchgridintersections.hh"
+#include "patchgridentity.hh"
+#include "patchgridintersections.hh"
 
 #include <dune/grid/common/intersection.hh>
 
@@ -32,15 +32,16 @@ namespace Dune::IGANEW {
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::HostGridType::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
+    typedef typename GridImp::ParameterSpaceGrid::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
 
     PatchGridLeafIntersectionIterator() {}
 
-    PatchGridLeafIntersectionIterator(const GridImp* identityGrid, const HostLeafIntersectionIterator& hostIterator)
-        : identityGrid_(identityGrid), hostIterator_(hostIterator) {}
+    PatchGridLeafIntersectionIterator(const GridImp* parameterSpaceGrid,
+                                      const HostLeafIntersectionIterator& hostIterator)
+        : parameterSpaceGrid_(parameterSpaceGrid), hostIterator_(hostIterator) {}
 
     //! equality
     bool equals(const PatchGridLeafIntersectionIterator& other) const { return hostIterator_ == other.hostIterator_; }
@@ -49,14 +50,14 @@ namespace Dune::IGANEW {
     void increment() { ++hostIterator_; }
 
     //! \brief dereferencing
-    Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(identityGrid_, *hostIterator_); }
+    Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_); }
 
    private:
     //**********************************************************
     //  private data
     //**********************************************************
 
-    const GridImp* identityGrid_               = nullptr;
+    const GridImp* parameterSpaceGrid_         = nullptr;
     HostLeafIntersectionIterator hostIterator_ = {};
   };
 
@@ -70,15 +71,16 @@ namespace Dune::IGANEW {
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::HostGridType::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
+    typedef typename GridImp::ParameterSpaceGrid::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
 
     PatchGridLevelIntersectionIterator() {}
 
-    PatchGridLevelIntersectionIterator(const GridImp* identityGrid, const HostLevelIntersectionIterator& hostIterator)
-        : identityGrid_(identityGrid), hostIterator_(hostIterator) {}
+    PatchGridLevelIntersectionIterator(const GridImp* parameterSpaceGrid,
+                                       const HostLevelIntersectionIterator& hostIterator)
+        : parameterSpaceGrid_(parameterSpaceGrid), hostIterator_(hostIterator) {}
 
     //! equality
     bool equals(const PatchGridLevelIntersectionIterator<GridImp>& other) const {
@@ -89,10 +91,12 @@ namespace Dune::IGANEW {
     void increment() { ++hostIterator_; }
 
     //! \brief dereferencing
-    Intersection dereference() const { return PatchGridLevelIntersection<GridImp>(identityGrid_, *hostIterator_); }
+    Intersection dereference() const {
+      return PatchGridLevelIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
+    }
 
    private:
-    const GridImp* identityGrid_                = nullptr;
+    const GridImp* parameterSpaceGrid_          = nullptr;
     HostLevelIntersectionIterator hostIterator_ = {};
   };
 

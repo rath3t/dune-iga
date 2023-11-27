@@ -24,9 +24,9 @@ namespace Dune::IGANEW {
   };
 
   template <class GridImp>
-  struct PatchGridLevelGridView : public DefaultLevelGridView<const GridImp> {
+  struct PatchGridLevelGridView : DefaultLevelGridView<const GridImp> {
     typedef PatchGridLevelGridView ThisType;
-    static constexpr Trimming trim = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
 
     PatchGridLevelGridView(const typename DefaultLevelGridView<const GridImp>::Grid& grid, int level)
         : DefaultLevelGridView<const GridImp>(grid, level) {}
@@ -38,13 +38,7 @@ namespace Dune::IGANEW {
       return this->grid().patchGeometries[this->level_];
     }
 
-    auto untrimmedElementNumbers() const {
-      // TODO Trim this should be the quantity from the untrimmed grid
-      if constexpr (trim == Trimming::Disabled)
-        return this->grid().getHostGrid().levelSize(this->level_);
-      else
-        DUNE_THROW(Dune::NotImplemented, "This needs to be implemented");
-    }
+    auto untrimmedElementNumbers() const { return untrimmedElementNumbers(this->level_); }
 
     const auto& tensorProductCoordinates() const { return this->grid().tensorProductCoordinates(this->level_); }
   };
@@ -61,7 +55,7 @@ namespace Dune::IGANEW {
     PatchGridLeafGridView(const typename DefaultLeafGridView<const GridImp>::Grid& grid)
         : DefaultLeafGridView<const GridImp>(grid) {}
 
-    static constexpr Trimming trim = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
     const auto& patchData() const { return this->grid().patchGeometries[this->grid().maxLevel()].patchData(); }
 
     const auto& unTrimmedPatch() const {
@@ -72,11 +66,8 @@ namespace Dune::IGANEW {
       return this->grid().tensorProductCoordinates(this->grid().maxLevel());
     }
 
-    auto untrimmedElementNumbers() const {
-      if constexpr (trim == Trimming::Disabled)
-        return this->grid().getHostGrid().levelSize(this->grid().maxLevel());
-      else
-        DUNE_THROW(Dune::NotImplemented, "This needs to be implemented");
+    std::array<int, GridImp::dimension> untrimmedElementNumbers() const {
+      return this->grid().untrimmedElementNumbers(this->grid().maxLevel());
     }
   };
 

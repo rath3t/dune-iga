@@ -3,5 +3,5 @@
 
 # install headers
 install(FILES concepts.hh fillquadraturerule.hh igahelpers.hh ../hierarchicpatch/utils/linearalgebra.hh
-              mdnet.hh ../hierarchicpatch/utils/typetraits.hh
+              mdnet.hh ../../utils/typetraits.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/utils)

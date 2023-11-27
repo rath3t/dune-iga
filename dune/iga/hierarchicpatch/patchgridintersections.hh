@@ -4,8 +4,8 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include "hierachicpatchgridentity.hh"
-#include "hierachicpatchgridleafiterator.hh"
+#include "patchgridentity.hh"
+#include "patchgridleafiterator.hh"
 
 /** \file
  * \brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes
@@ -33,13 +33,13 @@ namespace Dune::IGANEW {
 
     constexpr static int dim = GridImp::dimension;
 
-    constexpr static int dimworld  = GridImp::dimensionworld;
-    constexpr static Trimming trim = GridImp::trim;
+    constexpr static int dimworld = GridImp::dimensionworld;
+    using TrimmerType             = typename GridImp::TrimmerType;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::HostGridType::LeafGridView::Intersection HostLeafIntersection;
+    typedef typename GridImp::ParameterSpaceGrid::LeafGridView::Intersection HostLeafIntersection;
 
    public:
     typedef typename GridImp::template Codim<1>::Geometry Geometry;
@@ -49,8 +49,8 @@ namespace Dune::IGANEW {
 
     PatchGridLeafIntersection() {}
 
-    PatchGridLeafIntersection(const GridImp* identityGrid, const HostLeafIntersection& hostIntersection)
-        : patchGrid_(identityGrid), hostIntersection_(hostIntersection) {}
+    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, const HostLeafIntersection& hostIntersection)
+        : patchGrid_(parameterSpaceGrid), hostIntersection_(hostIntersection) {}
 
     PatchGridLeafIntersection(const GridImp* identityGrid, HostLeafIntersection&& hostIntersection)
         : patchGrid_(identityGrid), hostIntersection_(std::move(hostIntersection)) {}
@@ -100,9 +100,9 @@ namespace Dune::IGANEW {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry() const {
-      assert(trim == Trimming::Disabled && "This intersection geometry does not make sense for trimmed elements");
-      auto geo = typename Geometry::Implementation(hostIntersection_.geometry(),
-                                                   patchGrid_->patchGeometries.back().template localView<1, trim>());
+      // TODO trim does this make sense?
+      auto geo = typename Geometry::Implementation(
+          hostIntersection_.geometry(), patchGrid_->patchGeometries.back().template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -163,12 +163,12 @@ namespace Dune::IGANEW {
 
     constexpr static int dimworld = GridImp::dimensionworld;
 
-    constexpr static Trimming trim = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::HostGridType::LevelGridView::Intersection HostLevelIntersection;
+    typedef typename GridImp::ParameterSpaceGrid::LevelGridView::Intersection HostLevelIntersection;
 
     using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
@@ -240,9 +240,9 @@ namespace Dune::IGANEW {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     [[nodiscard]] Geometry geometry() const {
-      assert(trim == Trimming::Disabled && "This intersection geometry does not make sense for trimmed elements");
-      auto geo = typename Geometry::Implementation(hostIntersection_.geometry(),
-                                                   patchGrid_->patchGeometries.back().template localView<1, trim>());
+      // TODO trim does this make sense?
+      auto geo = typename Geometry::Implementation(
+          hostIntersection_.geometry(), patchGrid_->patchGeometries.back().template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 

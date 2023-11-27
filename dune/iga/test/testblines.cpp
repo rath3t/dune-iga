@@ -5,9 +5,9 @@
 #endif
 #include <dune/common/test/testsuite.hh>
 
-#include <dune/iga/hierarchicpatch/splines/bsplinealgorithms.hh>
-#include <dune/iga/hierarchicpatch/splines/nurbsalgorithms.hh>
-#include <dune/iga/hierarchicpatch/utils/mdnet.hh>
+#include <dune/iga/splines/bsplinealgorithms.hh>
+#include <dune/iga/splines/nurbsalgorithms.hh>
+#include <dune/iga/utils/mdnet.hh>
 
 auto testBsplineBasisFunctions() {
   std::vector<double> knots = {0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3};

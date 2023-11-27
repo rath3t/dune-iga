@@ -13,8 +13,8 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
 
-#include <dune/iga/hierarchicpatch/hierachicpatchgrid.hh>
-#include <dune/iga/hierarchicpatch/nurbsbasis.hh>
+#include <dune/iga/hierarchicpatch/patchgrid.hh>
+#include <dune/iga/nurbsbasis.hh>
 
 using namespace Dune;
 

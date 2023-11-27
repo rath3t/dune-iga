@@ -8,8 +8,9 @@
  * \brief The PatchGridEntity class
  */
 
-#include "hierachicpatchgridgeometry.hh"
-#include "referenceelement.hh"
+#include "patchgridgeometry.hh"
+
+#include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 
 namespace Dune::IGANEW {
 
@@ -63,17 +64,16 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
    private:
-
-
     // The codimension of this entity wrt the host grid
-    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - GridImp::dimension + codim;
+    constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
 
     // equivalent entity in the host grid
-    typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Entity HostGridEntity;
+    typedef
+        typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Entity ParameterSpaceGridEntity;
 
    public:
     typedef typename GridImp::ctype ctype;
-    static constexpr Trimming trim = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
     //! The type of the EntitySeed interface class
@@ -81,10 +81,10 @@ namespace Dune::IGANEW {
 
     PatchGridEntity() : patchGrid_(nullptr) {}
 
-    PatchGridEntity(const GridImp* patchGrid, const HostGridEntity& hostEntity)
+    PatchGridEntity(const GridImp* patchGrid, const ParameterSpaceGridEntity& hostEntity)
         : hostEntity_(hostEntity), patchGrid_(patchGrid) {}
 
-    PatchGridEntity(const GridImp* patchGrid, HostGridEntity&& hostEntity)
+    PatchGridEntity(const GridImp* patchGrid, ParameterSpaceGridEntity&& hostEntity)
         : hostEntity_(std::move(hostEntity)), patchGrid_(patchGrid) {}
 
     //! \todo Please doc me !
@@ -134,11 +134,11 @@ namespace Dune::IGANEW {
     //! geometry of this entity
     Geometry geometry() const {
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<codim, trim>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<codim, TrimmerType>());
       return Geometry(geo);
     }
 
-    HostGridEntity hostEntity_;
+    ParameterSpaceGridEntity hostEntity_;
 
    private:
     const GridImp* patchGrid_;
@@ -162,14 +162,15 @@ namespace Dune::IGANEW {
 
    public:
     typedef typename GridImp::ctype ctype;
-    static constexpr Trimming trim = GridImp::trim;
+    using TrimmerType = typename GridImp::TrimmerType;
     // The codimension of this entitypointer wrt the host grid
     constexpr static int dimension       = GridImp::dimension;
-    constexpr static int CodimInHostGrid = GridImp::HostGridType::dimension - dimension;
+    constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - dimension;
     constexpr static int dimworld        = GridImp::dimensionworld;
 
     // equivalent entity in the host grid
-    typedef typename GridImp::HostGridType::Traits::template Codim<CodimInHostGrid>::Entity HostGridEntity;
+    typedef
+        typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Entity ParameterSpaceGridEntity;
 
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
 
@@ -189,10 +190,10 @@ namespace Dune::IGANEW {
 
     PatchGridEntity() : patchGrid_(nullptr) {}
 
-    PatchGridEntity(const GridImp* patchGrid, const HostGridEntity& hostEntity)
+    PatchGridEntity(const GridImp* patchGrid, const ParameterSpaceGridEntity& hostEntity)
         : hostEntity_(hostEntity), patchGrid_(patchGrid) {}
 
-    PatchGridEntity(const GridImp* patchGrid, HostGridEntity&& hostEntity)
+    PatchGridEntity(const GridImp* patchGrid, ParameterSpaceGridEntity&& hostEntity)
         : hostEntity_(std::move(hostEntity)), patchGrid_(patchGrid) {}
 
     //! \todo Please doc me !
@@ -236,11 +237,12 @@ namespace Dune::IGANEW {
 
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry() const {
-      static_assert(std::is_same_v<
-                    decltype(patchGrid_->patchGeometries[this->level()].template localView<0, trim>()),
-                    typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, trim>>);
+      static_assert(
+          std::is_same_v<
+              decltype(patchGrid_->patchGeometries[this->level()].template localView<0, TrimmerType>()),
+              typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, TrimmerType>>);
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<0, trim>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<0, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -325,29 +327,21 @@ namespace Dune::IGANEW {
     //! \todo Please doc me !
     bool mightBeCoarsened() const { return true; }
 
+    auto trimData() const { return patchGrid_->trimData(*this); }
+
     // /////////////////////////////////////////
     //   Internal stuff
     // /////////////////////////////////////////
 
-    HostGridEntity hostEntity_;
+    ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
-
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid>
-  class PatchGrid;
-
-  template <int cd, int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid,
+  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, dimworld, double>,
             template <int, int, class> class PatchGridEntity>
-  auto referenceElement(
-      const Entity<cd, dim, const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>, PatchGridEntity>& entity) {
-    if constexpr (trim == Trimming::Enabled)
-      return Geo::TrimmedReferenceElement(entity);
-    else {
-      typedef typename PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>::template Codim<cd>::Geometry Geo;
-      return referenceElement<typename Geo::ctype, Geo::mydimension>(entity.type());
-    }
+  auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
+    return TrimmerType::referenceElement(entity);
   }
 
 }  // namespace Dune::IGANEW

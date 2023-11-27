@@ -17,8 +17,9 @@ namespace Dune::IGANEW {
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
   class PatchGridLevelIterator {
-    typedef typename GridImp::HostGridType::Traits::template Codim<codim>::template Partition<pitype>::LevelIterator
-        HostGridLevelIterator;
+    typedef
+        typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::template Partition<pitype>::LevelIterator
+            HostGridLevelIterator;
 
    public:
     constexpr static int codimension = codim;
@@ -27,30 +28,30 @@ namespace Dune::IGANEW {
 
     //! Constructor
     PatchGridLevelIterator() = default;
-    explicit PatchGridLevelIterator(const GridImp* identityGrid, int level)
-        : identityGrid_(identityGrid),
-          hostLevelIterator_(identityGrid->hostgrid_->levelGridView(level).template begin<codim, pitype>()) {}
+    explicit PatchGridLevelIterator(const GridImp* parameterSpaceGrid, int level)
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          hostLevelIterator_(parameterSpaceGrid->hostgrid_->levelGridView(level).template begin<codim, pitype>()) {}
 
     /** \brief Constructor which create the end iterator
         \param endDummy      Here only to distinguish it from the other constructor
-        \param identityGrid  pointer to PatchGrid instance
+        \param parameterSpaceGrid  pointer to PatchGrid instance
         \param level         grid level on which the iterator shall be created
      */
-    explicit PatchGridLevelIterator(const GridImp* identityGrid, int level, [[maybe_unused]] bool endDummy)
-        : identityGrid_(identityGrid),
-          hostLevelIterator_(identityGrid->hostgrid_->levelGridView(level).template end<codim, pitype>()) {}
+    explicit PatchGridLevelIterator(const GridImp* parameterSpaceGrid, int level, [[maybe_unused]] bool endDummy)
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          hostLevelIterator_(parameterSpaceGrid->hostgrid_->levelGridView(level).template end<codim, pitype>()) {}
 
     //! prefix increment
     void increment() { ++hostLevelIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{identityGrid_, *hostLevelIterator_}}; }
+    Entity dereference() const { return Entity{{parameterSpaceGrid_, *hostLevelIterator_}}; }
 
     //! equality
     bool equals(const PatchGridLevelIterator& i) const { return hostLevelIterator_ == i.hostLevelIterator_; }
 
    private:
-    const GridImp* identityGrid_;
+    const GridImp* parameterSpaceGrid_;
 
     HostGridLevelIterator hostLevelIterator_;
   };

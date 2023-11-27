@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <dune/iga/hierarchicpatch/geometrykernel/controlpoint.hh>
-#include <dune/iga/hierarchicpatch/utils/mdnet.hh>
+#include <dune/iga/geometrykernel/controlpoint.hh>
+#include <dune/iga/utils/mdnet.hh>
 
 namespace Dune::IGANEW {
 

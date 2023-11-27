@@ -8,7 +8,7 @@
 
 add_subdirectory(test)
 #add_subdirectory(geometry)
-add_subdirectory(io)
-add_subdirectory(trim)
-add_subdirectory(utils)
+add_subdirectory(oldStuff/io)
+add_subdirectory(oldStuff/trim)
+add_subdirectory(oldStuff/utils)
 add_subdirectory(hierarchicpatch)

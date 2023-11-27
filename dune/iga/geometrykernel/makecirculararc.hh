@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-#include <dune/iga/hierarchicpatch/geometrykernel/basealgorithms.hh>
-#include <dune/iga/hierarchicpatch/splines/nurbspatchdata.hh>
+#include <dune/iga/geometrykernel/basealgorithms.hh>
+#include <dune/iga/splines/nurbspatchdata.hh>
 
 namespace Dune::IGANEW {
   // TODO Alex quote algo from NURBS book

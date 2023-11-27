@@ -1,3 +1,3 @@
 
 #pragma once
-enum class Trimming { Enabled, Disabled };
+// enum class Trimming { Enabled, Disabled };

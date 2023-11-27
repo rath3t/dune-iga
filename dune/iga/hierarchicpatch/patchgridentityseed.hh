@@ -20,10 +20,11 @@ namespace Dune::IGANEW {
   class PatchGridEntitySeed {
    protected:
     // Entity type of the hostgrid
-    typedef typename GridImp::HostGridType::Traits::template Codim<codim>::Entity HostEntity;
+    typedef typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::Entity ParameterSpaceGridEntity;
 
     // EntitySeed type of the hostgrid
-    typedef typename GridImp::HostGridType::Traits::template Codim<codim>::EntitySeed HostEntitySeed;
+    typedef
+        typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed ParameterSpaceGridEntitySeed;
 
    public:
     constexpr static int codimension = codim;
@@ -39,12 +40,12 @@ namespace Dune::IGANEW {
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
      */
-    PatchGridEntitySeed(const HostEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
+    PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
 
     /**
-     * \brief Get stored HostEntitySeed
+     * \brief Get stored ParameterSpaceGridEntitySeed
      */
-    const HostEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
+    const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
 
     /**
      * \brief Check whether it is safe to create an Entity from this Seed
@@ -52,7 +53,7 @@ namespace Dune::IGANEW {
     bool isValid() const { return hostEntitySeed_.isValid(); }
 
    private:
-    HostEntitySeed hostEntitySeed_;
+    ParameterSpaceGridEntitySeed hostEntitySeed_;
   };
 
 }  // namespace Dune::IGANEW

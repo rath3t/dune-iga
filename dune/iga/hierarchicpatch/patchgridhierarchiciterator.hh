@@ -22,7 +22,8 @@ namespace Dune::IGANEW {
   template <class GridImp>
   class PatchGridHierarchicIterator {
     // Type of the corresponding HierarchicIterator in the host grid
-    typedef typename GridImp::HostGridType::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
+    typedef
+        typename GridImp::ParameterSpaceGrid::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
 
    public:
     constexpr static int codimension = 0;
@@ -30,19 +31,21 @@ namespace Dune::IGANEW {
     typedef typename GridImp::template Codim<0>::Entity Entity;
 
     //! the default Constructor
-    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel)
-        : identityGrid_(identityGrid), hostHierarchicIterator_(startEntity.impl().hostEntity_.hbegin(maxLevel)) {}
+    explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          hostHierarchicIterator_(startEntity.impl().hostEntity_.hbegin(maxLevel)) {}
 
     //! \todo Please doc me !
-    explicit PatchGridHierarchicIterator(const GridImp* identityGrid, const Entity& startEntity, int maxLevel,
+    explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                          [[maybe_unused]] bool endDummy)
-        : identityGrid_(identityGrid), hostHierarchicIterator_(startEntity.impl().hostEntity_.hend(maxLevel)) {}
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          hostHierarchicIterator_(startEntity.impl().hostEntity_.hend(maxLevel)) {}
 
     //! \todo Please doc me !
     void increment() { ++hostHierarchicIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{identityGrid_, *hostHierarchicIterator_}}; }
+    Entity dereference() const { return Entity{{parameterSpaceGrid_, *hostHierarchicIterator_}}; }
 
     //! equality
     bool equals(const PatchGridHierarchicIterator& i) const {
@@ -50,7 +53,7 @@ namespace Dune::IGANEW {
     }
 
    private:
-    const GridImp* identityGrid_;
+    const GridImp* parameterSpaceGrid_;
 
     HostGridHierarchicIterator hostHierarchicIterator_;
   };

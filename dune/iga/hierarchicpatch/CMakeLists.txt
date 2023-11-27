@@ -2,18 +2,17 @@
 # SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
 
 set(HEADERS
-        hierachicpatchgridentity.hh
-        hierachicpatchgridentityseed.hh
-  hierachicpatchgridhierarchiciterator.hh
-  hierachicpatchgridgeometry.hh
-        hierachicpatchgridlocalgeometry.hh
-        geometrykernel/nurbspatchgeometrylocalview.hh
-  hierachicpatchgridintersectioniterator.hh
-  hierachicpatchgridintersections.hh
-  hierachicpatchgridindexsets.hh
-  hierachicpatchgridleafiterator.hh
-  hierachicpatchgridleveliterator.hh
-        hierarchicpatchgridview.hh
+        patchgridentity.hh
+        patchgridentityseed.hh
+        patchgridhierarchiciterator.hh
+        patchgridgeometry.hh
+        patchgridlocalgeometry.hh
+        patchgridintersectioniterator.hh
+        patchgridintersections.hh
+        patchgridindexsets.hh
+        patchgridleafiterator.hh
+        patchgridleveliterator.hh
+        patchgridview.hh
 )
 
 install(FILES ${HEADERS}

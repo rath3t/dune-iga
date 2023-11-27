@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-#include <dune/iga/hierarchicpatch/geometrykernel/closestpointprojection.hh>
-#include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
+#include <dune/iga/geometrykernel/closestpointprojection.hh>
+#include <dune/iga/geometrykernel/geohelper.hh>
 
 namespace Dune::IGANEW::GeometryKernel {
 

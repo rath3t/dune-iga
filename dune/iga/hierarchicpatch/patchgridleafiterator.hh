@@ -19,7 +19,7 @@ namespace Dune::IGANEW {
   class PatchGridLeafIterator {
    private:
     // LevelIterator to the equivalent entity in the host grid
-    typedef typename GridImp::HostGridType::template Codim<codim>::template Partition<pitype>::LeafIterator
+    typedef typename GridImp::ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator
         HostGridLeafIterator;
 
    public:

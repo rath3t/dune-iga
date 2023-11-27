@@ -17,11 +17,12 @@ namespace Dune::IGANEW {
   /** \todo Take the index types from the host grid */
   template <class GridImp>
   class PatchGridLevelIndexSet
-      : public IndexSet<GridImp, PatchGridLevelIndexSet<GridImp>,
-                        typename std::remove_const<GridImp>::type::HostGridType::LevelGridView::IndexSet::IndexType,
-                        typename std::remove_const<GridImp>::type::HostGridType::LevelGridView::IndexSet::Types> {
+      : public IndexSet<
+            GridImp, PatchGridLevelIndexSet<GridImp>,
+            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::IndexType,
+            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::Types> {
    public:
-    typedef typename std::remove_const<GridImp>::type::HostGridType HostGrid;
+    typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid HostGrid;
     typedef typename HostGrid::LevelGridView::IndexSet::Types Types;
 
     constexpr static int dim = GridImp::dimension;
@@ -67,13 +68,14 @@ namespace Dune::IGANEW {
 
   template <class GridImp>
   class PatchGridLeafIndexSet
-      : public IndexSet<GridImp, PatchGridLeafIndexSet<GridImp>,
-                        typename std::remove_const<GridImp>::type::HostGridType::LeafGridView::IndexSet::IndexType,
-                        typename std::remove_const<GridImp>::type::HostGridType::LeafGridView::IndexSet::Types> {
-    typedef typename std::remove_const<GridImp>::type::HostGridType HostGrid;
+      : public IndexSet<
+            GridImp, PatchGridLeafIndexSet<GridImp>,
+            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LeafGridView::IndexSet::IndexType,
+            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LeafGridView::IndexSet::Types> {
+    typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
    public:
-    typedef typename HostGrid::LevelGridView::IndexSet::Types Types;
+    typedef typename ParameterSpaceGrid::LevelGridView::IndexSet::Types Types;
 
     /*
      * We use the remove_const to extract the Type from the mutable class,
@@ -129,15 +131,15 @@ namespace Dune::IGANEW {
   template <class GridImp>
   class PatchGridGlobalIdSet
       : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
-                     typename std::remove_const<GridImp>::type::HostGridType::Traits::GlobalIdSet::IdType> {
-    typedef typename std::remove_const<GridImp>::type::HostGridType HostGrid;
+                     typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::GlobalIdSet::IdType> {
+    typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
    public:
     //! constructor stores reference to a grid
     PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
 
     //! define the type used for persistent indices
-    typedef typename HostGrid::Traits::GlobalIdSet::IdType IdType;
+    typedef typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType IdType;
 
     //! get id of an entity
     /*
@@ -170,13 +172,13 @@ namespace Dune::IGANEW {
   template <class GridImp>
   class PatchGridLocalIdSet
       : public IdSet<GridImp, PatchGridLocalIdSet<GridImp>,
-                     typename std::remove_const<GridImp>::type::HostGridType::Traits::LocalIdSet::IdType> {
+                     typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::LocalIdSet::IdType> {
    private:
-    typedef typename std::remove_const<GridImp>::type::HostGridType HostGrid;
+    typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
    public:
     //! define the type used for persistent local ids
-    typedef typename HostGrid::Traits::LocalIdSet::IdType IdType;
+    typedef typename ParameterSpaceGrid::Traits::LocalIdSet::IdType IdType;
 
     //! constructor stores reference to a grid
     PatchGridLocalIdSet(const GridImp& g) : grid_(&g) {}

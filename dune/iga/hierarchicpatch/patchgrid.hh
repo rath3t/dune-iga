@@ -11,25 +11,28 @@
 #include <map>
 #include <string>
 
+#include "concepts.hh"
 #include "enums.hh"
-#include "gridcapabilities.hh"
-#include "hierachicpatchgridentity.hh"
-#include "hierachicpatchgridentityseed.hh"
-#include "hierachicpatchgridgeometry.hh"
-#include "hierachicpatchgridhierarchiciterator.hh"
-#include "hierachicpatchgridindexsets.hh"
-#include "hierachicpatchgridintersectioniterator.hh"
-#include "hierachicpatchgridleafiterator.hh"
-#include "hierachicpatchgridleveliterator.hh"
-#include "hierachicpatchgridlocalgeometry.hh"
-#include "hierarchicpatchgridview.hh"
+#include "traits.hh"
+// #include "gridcapabilities.hh"
+#include "patchgridentity.hh"
+#include "patchgridentityseed.hh"
+#include "patchgridfactory.hh"
+#include "patchgridfwd.hh"
+#include "patchgridgeometry.hh"
+#include "patchgridhierarchiciterator.hh"
+#include "patchgridindexsets.hh"
+#include "patchgridintersectioniterator.hh"
+#include "patchgridleafiterator.hh"
+#include "patchgridleveliterator.hh"
+#include "patchgridlocalgeometry.hh"
+#include "patchgridview.hh"
 
 #include <dune/common/parallel/communication.hh>
 
 #include <dune/grid/common/grid.hh>
-#include <dune/grid/yaspgrid.hh>
 
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/iga/trimmer/nooptrimmer/nooptrimmer.hh>
 
 #include <dune/subgrid/subgrid.hh>
 
@@ -44,32 +47,27 @@ namespace Dune::IGANEW {
     class NurbsPreBasisFactoryFromDegreeElevation;
   }
 
-  // Forward declaration
-  template <int dim, int dimworld, Trimming trim, typename ScalarType, typename HostGrid>
-  class PatchGrid;
-
   // External forward declarations
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, Trimming trim_, typename ScalarType,
-            typename HostGrid = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>
+  template <int dim, int dimworld, typename TrimmerType>
   struct PatchGridFamily {
-    static constexpr Trimming trim = trim_;
+    using Grid               = PatchGrid<dim, dimworld, TrimmerType>;
+    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
 
-    typedef GridTraits<
-        dim, dimworld, PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>, PatchGridGeometry, PatchGridEntity,
-        PatchGridLevelIterator, PatchGridLeafIntersection, PatchGridLevelIntersection,
-        PatchGridLeafIntersectionIterator, PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator,
-        PatchGridLeafIterator, PatchGridLevelIndexSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
-        PatchGridLeafIndexSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
-        PatchGridGlobalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
-        typename HostGrid::Traits::GlobalIdSet::IdType,
-        PatchGridLocalIdSet<const PatchGrid<dim, dimworld, trim, ScalarType, HostGrid>>,
-        typename HostGrid::Traits::LocalIdSet::IdType, Communication<No_Comm>, PatchGridLevelGridViewTraits,
-        PatchGridLeafGridViewTraits, PatchGridEntitySeed, PatchGridLocalGeometry,
-        typename HostGrid::Traits::LevelIndexSet::IndexType, typename HostGrid::Traits::LevelIndexSet::Types,
-        typename HostGrid::Traits::LeafIndexSet::IndexType, typename HostGrid::Traits::LeafIndexSet::Types>
+    typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
+                       PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
+                       PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator, PatchGridLeafIterator,
+                       PatchGridLevelIndexSet<const Grid>, PatchGridLeafIndexSet<const Grid>,
+                       PatchGridGlobalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
+                       PatchGridLocalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
+                       Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
+                       PatchGridEntitySeed, PatchGridLocalGeometry,
+                       typename ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
+                       typename ParameterSpaceGrid::Traits::LevelIndexSet::Types,
+                       typename ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
+                       typename ParameterSpaceGrid::Traits::LeafIndexSet::Types>
         Traits;
   };
 
@@ -84,19 +82,9 @@ namespace Dune::IGANEW {
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template <int dim, int dimworld, Trimming trim_ = Trimming::Disabled, typename ScalarType = double,
-            typename HostGrid = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>
-  class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
-                                                     PatchGridFamily<dim, dimworld, trim_, ScalarType, HostGrid>> {
-    using ParameterSpaceUntrimmedGrid = HostGrid;
-
-    using SubGridParameterSpaceGridView
-        = std::conditional_t<trim_ == Trimming::Enabled, SubGrid<dim, ParameterSpaceUntrimmedGrid>,
-                             ParameterSpaceUntrimmedGrid>;
-
-    using TensorProductCoordinatesType =
-        typename GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>::TensorProductCoordinatesType;
-
+  template <int dim, int dimworld, typename TrimmerType_ = Trim::NoOpTrimmer<dim, dimworld, double>>
+  class PatchGrid : public GridDefaultImplementation<dim, dimworld, typename TrimmerType_::ctype,
+                                                     PatchGridFamily<dim, dimworld, TrimmerType_>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
@@ -112,9 +100,15 @@ namespace Dune::IGANEW {
     friend class PatchGridLeafGridView<PatchGrid>;
     friend struct HostGridAccess<PatchGrid>;
 
+   public:
+    using TrimmerType = TrimmerType_;
+    //! The type used to store coordinates, inherited from the Trimmer
+    using ctype = typename TrimmerType::ctype;
+
+   private:
     friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
-    friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView, ScalarType>;
-    friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView, ScalarType>;
+    friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView, ctype>;
+    friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView, ctype>;
 
     template <int codim, PartitionIteratorType pitype, class GridImp_>
     friend class PatchGridLevelIterator;
@@ -126,30 +120,29 @@ namespace Dune::IGANEW {
     friend class PatchGridEntity;
 
    public:
-    static constexpr Trimming trim = trim_;
-
-    typedef HostGrid HostGridType;
+    using PatchTensorProductCoordinatesType =
+        typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::TensorProductCoordinatesType;
 
     //**********************************************************
     // The Interface Methods
     //**********************************************************
 
     //! type of the used GridFamily for this grid
-    using GridFamily = PatchGridFamily<dim, dimworld, trim, ScalarType, HostGrid>;
+    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_>;
 
     //! the Traits
-    using Traits = typename PatchGridFamily<dim, dimworld, trim, ScalarType, HostGrid>::Traits;
+    using Traits = typename GridFamily::Traits;
 
-    //! The type used to store coordinates, inherited from the HostGrid
-    typedef typename ParameterSpaceUntrimmedGrid::ctype ctype;
+    // template< int parameterDim_, typename ScalarType_>
 
+    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
     /** \brief Constructor
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
-        : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData)),
-          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>(
+        : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
+          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ctype, dim>>>(
               patchGeometries[0].uniqueKnotVector())),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
           globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
@@ -260,7 +253,8 @@ namespace Dune::IGANEW {
     /** \brief Create Entity from EntitySeed */
     template <class EntitySeed>
     typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
-      typedef PatchGridEntity<EntitySeed::codimension, HostGrid::dimension, const typename Traits::Grid> EntityImp;
+      typedef PatchGridEntity<EntitySeed::codimension, ParameterSpaceGrid::dimension, const typename Traits::Grid>
+          EntityImp;
 
       return EntityImp(this, hostgrid_->entity(seed.impl().hostEntitySeed()));
     }
@@ -300,7 +294,7 @@ namespace Dune::IGANEW {
      * \param lvl The grid level of the requested coordinates
      * \return the array of the coordinates
      */
-    const TensorProductCoordinatesType& tensorProductCoordinates(int lvl) const {
+    const PatchTensorProductCoordinatesType& tensorProductCoordinates(int lvl) const {
       return patchGeometries[lvl].uniqueKnotVector();
     }
 
@@ -334,7 +328,7 @@ namespace Dune::IGANEW {
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
       if (lvl > maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
       auto& patchData                = patchGeometries[lvl].patchData();
-      patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData);
+      patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
         if (elevatesInDirection == 0) {
           ++dir;
@@ -343,7 +337,7 @@ namespace Dune::IGANEW {
         patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
         ++dir;
       }
-      patchGeometries[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>(patchData);
+      patchGeometries[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
     }
 
     /**
@@ -431,30 +425,35 @@ namespace Dune::IGANEW {
     // **********************************************************
 
     //! Returns the hostgrid this PatchGrid lives in
-    HostGridType& getHostGrid() const { return *hostgrid_; }
+    ParameterSpaceGrid& getHostGrid() const { return *hostgrid_; }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
     template <int codim>
-    const typename HostGrid::Traits::template Codim<codim>::Entity& getHostEntity(
+    const typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity& getHostEntity(
         const typename Traits::template Codim<codim>::Entity& e) const {
       return e.impl().hostEntity_;
     }
 
+    auto untrimmedElementNumbers(int lvl) const { return patchGeometries[lvl].numberOfSpans(); }
+
    private:
-    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometries;
-    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ScalarType>> patchGeometriesUnElevated;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
+
+    const auto& trimData(const typename Traits::template Codim<0>::Entity& element) const {
+      return trimmer.trimDatas_.at(globalIdSet_->template id<0>(element));
+    }
 
     // TODO Trim store triming information here, it should be accessable with a grid entity ID,
     // such that we can hand out if for the elements, thus it should be a map maybe
-    //  auto trimmingInfoOfent = trimminginfo[globalIdSet_.index(ent)];
-    //  the trick with conditional_t,Empty and no_unique_address makes sure that this member variables occupies no
+    //  the trick  no_unique_address makes sure that this member variables occupies no
     //  space, if trimming is disabled
-    // struct Empty{};
-    //[[no_unique_address]] std::conditional_t<trim,TrimmInfos,Empty> trimminginfo;
-    // TODO Trim, we maybe also need global information about the trim
+    using ElementTrimDataContainer = typename TrimmerType::ElementTrimDataContainer;
+    using PatchTrimData            = typename TrimmerType::PatchTrimData;
+    [[no_unique_address]] TrimmerType trimmer;
 
    protected:
-    std::unique_ptr<HostGrid> hostgrid_;
+    std::unique_ptr<ParameterSpaceGrid> hostgrid_;
 
     //! compute the grid indices and ids
     void setIndices() {

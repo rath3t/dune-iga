@@ -15,9 +15,10 @@
 
 #include <dune/grid/yaspgrid/yaspgridgeometry.hh>
 
-#include <dune/iga/hierarchicpatch/geometrykernel/geohelper.hh>
-#include <dune/iga/hierarchicpatch/geometrykernel/higherorderalgorithms.hh>
-#include <dune/iga/hierarchicpatch/geometrykernel/nurbspatchgeometrylocalview.hh>
+#include "dune/iga/hierarchicpatch/patchgridfwd.hh"
+#include <dune/iga/geometrykernel/geohelper.hh>
+#include <dune/iga/geometrykernel/higherorderalgorithms.hh>
+#include <dune/iga/geometrykernel/nurbspatchgeometrylocalview.hh>
 
 namespace Dune {
   template <int dim, class Coordinates>
@@ -64,10 +65,10 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim, Trimming trim>
-    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch>;
+    template <int codim, typename TrimmerType_ = Trim::NoOpTrimmer<mydimension, worlddimension, ctype>>
+    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
 
-    template <int codim, typename NURBSPatch,typename TrimmedLocalParameterSpaceGeometry>
+    template <int codim, typename NURBSPatch, typename TrimmedLocalParameterSpaceGeometry>
     friend struct PatchGeometryLocalView;
 
    private:
@@ -81,12 +82,12 @@ namespace Dune::IGANEW::GeometryKernel {
     /**
      * @brief Get a local view of the NURBS patch.
      * @tparam codim Codimension of the patch.
-     * @tparam trim Trimming flag.
+     * @tparam TrimmerType Type of the trimmer.
      * @return Local view of the patch.
      */
-    template <int codim, Trimming trim>
+    template <int codim, typename TrimmerType = Trim::NoOpTrimmer<mydimension, worlddimension, ctype>>
     auto localView() const {
-      return GeometryLocalView<codim, trim>(*this);
+      return GeometryLocalView<codim, TrimmerType>(*this);
     }
 
     /**
