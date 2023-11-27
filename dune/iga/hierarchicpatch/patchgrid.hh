@@ -99,6 +99,7 @@ namespace Dune::IGANEW {
     friend class PatchGridLevelGridView<PatchGrid>;
     friend class PatchGridLeafGridView<PatchGrid>;
     friend struct HostGridAccess<PatchGrid>;
+    friend class GridFactory<PatchGrid>;
 
    public:
     using TrimmerType = TrimmerType_;
@@ -136,6 +137,7 @@ namespace Dune::IGANEW {
     // template< int parameterDim_, typename ScalarType_>
 
     using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
+    using UntrimmedParameterSpaceGrid = typename TrimmerType::UntrimmedParameterSpaceGrid;
     /** \brief Constructor
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
@@ -447,6 +449,7 @@ namespace Dune::IGANEW {
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries[lvl].numberOfSpans(); }
 
    private:
+    PatchGrid()=default;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
@@ -463,6 +466,8 @@ namespace Dune::IGANEW {
     [[no_unique_address]] TrimmerType trimmer;
 
    protected:
+    struct Empty{};
+    [[no_unique_address]] std::unique_ptr<UntrimmedParameterSpaceGrid> unTrimmedHostgrid_;
     std::unique_ptr<ParameterSpaceGrid> hostgrid_;
 
     //! compute the grid indices and ids

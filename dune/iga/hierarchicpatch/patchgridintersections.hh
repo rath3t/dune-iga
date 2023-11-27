@@ -91,7 +91,16 @@ namespace Dune::IGANEW {
     //! iteration started.
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
-    LocalGeometry geometryInInside() const { return LocalGeometry(hostIntersection_.geometryInInside()); }
+    LocalGeometry geometryInInside() const {
+      // auto patchDataOfIntersection =
+      //TODO Trim richtigen view raussuchen
+      // auto intersectionGeometry= inside().trimData()
+      // auto geometryOfIntersectionInParameterSpace = ... get intersection from trimdata
+        // hostIntersection_.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1, TrimmerType>());
+      auto geo = typename LocalGeometry::Implementation(
+            geometryOfIntersectionInParameterSpace);
+      return LocalGeometry(geo);
+    }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor

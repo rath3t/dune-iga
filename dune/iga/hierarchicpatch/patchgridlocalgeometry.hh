@@ -48,8 +48,7 @@ namespace Dune::IGANEW {
     typedef typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Geometry
         HostGridLocalGeometryType;
 
-    using HostGridGeometry = typename std::conditional<coorddim == DimensionWorldOfHostGrid, HostGridGeometryType,
-                                                       HostGridLocalGeometryType>::type;
+    using LocalNURBSGeometry = GeometryKernel::NURBSPatch<mydim,coorddim,ctype>;
 
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
@@ -58,54 +57,54 @@ namespace Dune::IGANEW {
 
     /** constructor from host geometry
      */
-    PatchGridLocalGeometry(const HostGridGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
-        : hostGeometry_(hostGeometry), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
-      geometryLocalView_.bind(hostGeometry_.impl());
+    PatchGridLocalGeometry(const GeometryKernel::NURBSPatch<mydim,coorddim,ctype>& localPatchGeometry)
+        : localPatchGeometry_(localPatchGeometry) {
+
     }
 
     // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
     /** \brief Return the element type identifier
      */
-    [[nodiscard]] GeometryType type() const { return geometryLocalView_.type(); }
+    [[nodiscard]] GeometryType type() const { return hostGeometry_.type(); }
 
     // return whether we have an affine mapping
-    [[nodiscard]] bool affine() const { return geometryLocalView_.affine(); }
+    [[nodiscard]] bool affine() const { return hostGeometry_.affine(); }
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
-    [[nodiscard]] int corners() const { return geometryLocalView_.corners(); }
+    [[nodiscard]] int corners() const { return hostGeometry_.corners(); }
 
     //! access to coordinates of corners. Index is the number of the corner
-    GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
+    GlobalCoordinate corner(int i) const { return hostGeometry_.corner(i); }
 
     /** \brief Maps a local coordinate within reference element to
      * global coordinate in element  */
-    GlobalCoordinate global(const LocalCoordinate& local) const { return geometryLocalView_.global(local); }
+    GlobalCoordinate global(const LocalCoordinate& local) const { return hostGeometry_.global(local); }
 
     /** \brief Return the transposed of the Jacobian
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-      return geometryLocalView_.jacobianTransposed(local);
+      return hostGeometry_.jacobianTransposed(local);
     }
 
     /** \brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
-    LocalCoordinate local(const GlobalCoordinate& global) const { return geometryLocalView_.local(global); }
+    LocalCoordinate local(const GlobalCoordinate& global) const { return hostGeometry_.local(global); }
 
     //! Returns true if the point is in the current element
-    bool checkInside(const FieldVector<ctype, mydim>& local) const { return geometryLocalView_.checkInside(local); }
+    bool checkInside(const FieldVector<ctype, mydim>& local) const { return hostGeometry_.checkInside(local); }
 
     [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
-      return geometryLocalView_.integrationElement(local);
+      return hostGeometry_.integrationElement(local);
     }
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
-      return geometryLocalView_.jacobianInverseTransposed(local);
+      return hostGeometry_.jacobianInverseTransposed(local);
     }
 
    private:
-    HostGridGeometry hostGeometry_;
+    HostGridGeometry localPatchGeometry_;
     GeometryLocalView geometryLocalView_{};
   };
 

@@ -46,22 +46,23 @@ namespace Dune::IGANEW {
        The receiver takes responsibility of the memory allocated for the grid
      */
     std::unique_ptr<GridType> createGrid() {
+      auto grid = std::unique_ptr<GridType>(new GridType());
       if (patchTrimData_) {
         trimmer.trimElements(patchData_, patchTrimData_.value());
-        auto uniqueKnotSpans= Splines::createUniqueKnotSpans(patchData_);
+        auto uniqueKnotSpans= Splines::createUniqueKnotSpans(patchData_.knotSpans);
         //create SubGrid...
-        auto hostGrid =std::make_unique<UntrimmedParameterSpaceGrid>(
+         grid->unTrimmedHostgrid_ =std::make_unique<UntrimmedParameterSpaceGrid>(
               uniqueKnotSpans);
 
-        ParameterSpaceGrid subGrid(hostGrid);
-        subGrid.createBegin();
-        for (auto hostEntity : elements(hostGrid.leafGridView())) {
+        grid->hostgrid_ = std::make_unique<ParameterSpaceGrid>(*grid->unTrimmedHostgrid_);
+        grid->hostgrid_->createBegin();
+        for (auto hostEntity : elements(grid->hostgrid_->leafGridView())) {
           //if decide which elements are full or trim and add them to the subgrid
           //subGrid.insert(hostEntity);
         }
-        subGrid.createEnd();
+        grid->hostgrid_->createEnd();
 
-        return std::make_unique<GridType>(patchData_, patchTrimData_, std::move(trimmer));
+        return grid;
 
       }
       // create Grid and setup Element trimming inf through additional (private) constructor
