@@ -115,7 +115,7 @@ namespace Dune::IGANEW {
     Geometry geometry() const {
       // TODO trim does this make sense?
       auto geo = typename Geometry::Implementation(
-          hostIntersection_.geometry(), patchGrid_->patchGeometries.back().template localView<1, TrimmerType>());
+          hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -255,7 +255,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] Geometry geometry() const {
       // TODO trim does this make sense?
       auto geo = typename Geometry::Implementation(
-          hostIntersection_.geometry(), patchGrid_->patchGeometries.back().template localView<1, TrimmerType>());
+          hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 

@@ -219,11 +219,14 @@ namespace Dune::IGANEW {
 
     /** \brief Number of grid entities per level and codim
      */
-    [[nodiscard]] int size(int level, int codim) const { return trimmer_.parameterSpaceGrid()->size(level, codim); }
+    [[nodiscard]] int size(int level, int codim) const { return trimmer_.parameterSpaceGrid().size(level, codim); }
 
     /** \brief returns the number of boundary segments within the macro grid
      */
-    [[nodiscard]] size_t numBoundarySegments() const { return trimmer_.parameterSpaceGrid()->numBoundarySegments(); }
+    [[nodiscard]] size_t numBoundarySegments() const {
+//TODO Trim this is wrong another trimmer functionality should care about this
+      return trimmer_.parameterSpaceGrid().numBoundarySegments();
+    }
 
     //! number of leaf entities per codim in this process
     [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
@@ -286,7 +289,7 @@ namespace Dune::IGANEW {
         patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
       }
 
-      trimmer_.paramterSpaceGrid().globalRefine(refCount);
+      trimmer_.parameterSpaceGrid().globalRefine(refCount);
       setIndices();
     }
 
@@ -361,7 +364,8 @@ namespace Dune::IGANEW {
      * </ul>
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-      return trimmer_.paramterSpaceGrid()->mark(refCount, getHostEntity<0>(e));
+      //TODO trim this does not do the right thing! the knotspans should also be aware of this change
+      return false;//trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
     }
 
     /** \brief Return refinement mark for entity
@@ -369,31 +373,35 @@ namespace Dune::IGANEW {
      * \return refinement mark (1,0,-1)
      */
     int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-      return trimmer_.paramterSpaceGrid()->getMark(getHostEntity<0>(e));
+
+      return 0;//trimmer_.parameterSpaceGrid().getMark(getHostEntity<0>(e));
     }
 
     /** \brief returns true, if at least one entity is marked for adaption */
-    bool preAdapt() { return trimmer_.paramterSpaceGrid()->preAdapt(); }
+    bool preAdapt() {
+
+      return trimmer_.paramterSpaceGrid().preAdapt();
+    }
 
     //! Triggers the grid refinement process
-    bool adapt() { return trimmer_.paramterSpaceGrid()->adapt(); }
+    bool adapt() { return trimmer_.paramterSpaceGrid().adapt(); }
 
     /** \brief Clean up refinement markers */
-    void postAdapt() { return trimmer_.paramterSpaceGrid()->postAdapt(); }
+    void postAdapt() { return trimmer_.paramterSpaceGrid().postAdapt(); }
 
     /*@}*/
 
     /** \brief Size of the overlap on the leaf level */
-    unsigned int overlapSize(int codim) const { return trimmer_.paramterSpaceGrid()->leafGridView().overlapSize(codim); }
+    unsigned int overlapSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on the leaf level */
-    unsigned int ghostSize(int codim) const { return trimmer_.paramterSpaceGrid()->leafGridView().ghostSize(codim); }
+    unsigned int ghostSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().ghostSize(codim); }
 
     /** \brief Size of the overlap on a given level */
-    unsigned int overlapSize(int level, int codim) const { return trimmer_.paramterSpaceGrid()->levelGridView(level).overlapSize(codim); }
+    unsigned int overlapSize(int level, int codim) const { return trimmer_.parameterSpaceGrid().levelGridView(level).overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on a given level */
-    unsigned int ghostSize(int level, int codim) const { return trimmer_.paramterSpaceGrid()->levelGridView(level).ghostSize(codim); }
+    unsigned int ghostSize(int level, int codim) const { return trimmer_.parameterSpaceGrid().levelGridView(level).ghostSize(codim); }
 
 #if 0
     /** \brief Distributes this grid over the available nodes in a distributed machine

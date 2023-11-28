@@ -72,6 +72,7 @@ NoOpTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch, const
         }
 
         const ParameterSpaceGrid& parameterSpaceGrid()const {return *parameterSpaceGrid_;}
+         ParameterSpaceGrid& parameterSpaceGrid() {return *parameterSpaceGrid_;}
 
         std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;
 

@@ -47,7 +47,7 @@ namespace Dune::IGANEW {
 
 
       if (patchTrimData_) {
-        auto grid = std::unique_ptr<GridType>(patchData_,patchTrimData_);
+        auto grid = std::make_unique<GridType>(patchData_,patchTrimData_);
 
         return grid;
       }else

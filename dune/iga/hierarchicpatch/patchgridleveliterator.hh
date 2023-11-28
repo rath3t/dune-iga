@@ -28,30 +28,30 @@ namespace Dune::IGANEW {
 
     //! Constructor
     PatchGridLevelIterator() = default;
-    explicit PatchGridLevelIterator(const GridImp* parameterSpaceGrid, int level)
-        : parameterSpaceGrid_(parameterSpaceGrid),
-          hostLevelIterator_(parameterSpaceGrid->hostgrid_->levelGridView(level).template begin<codim, pitype>()) {}
+    explicit PatchGridLevelIterator(const GridImp* patchGrid, int level)
+        : patchGrid_(patchGrid),
+          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template begin<codim, pitype>()) {}
 
     /** \brief Constructor which create the end iterator
         \param endDummy      Here only to distinguish it from the other constructor
-        \param parameterSpaceGrid  pointer to PatchGrid instance
+        \param patchGrid  pointer to PatchGrid instance
         \param level         grid level on which the iterator shall be created
      */
-    explicit PatchGridLevelIterator(const GridImp* parameterSpaceGrid, int level, [[maybe_unused]] bool endDummy)
-        : parameterSpaceGrid_(parameterSpaceGrid),
-          hostLevelIterator_(parameterSpaceGrid->hostgrid_->levelGridView(level).template end<codim, pitype>()) {}
+    explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
+        : patchGrid_(patchGrid),
+          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template end<codim, pitype>()) {}
 
     //! prefix increment
     void increment() { ++hostLevelIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{parameterSpaceGrid_, *hostLevelIterator_}}; }
+    Entity dereference() const { return Entity{{patchGrid_, *hostLevelIterator_}}; }
 
     //! equality
     bool equals(const PatchGridLevelIterator& i) const { return hostLevelIterator_ == i.hostLevelIterator_; }
 
    private:
-    const GridImp* parameterSpaceGrid_;
+    const GridImp* patchGrid_;
 
     HostGridLevelIterator hostLevelIterator_;
   };
