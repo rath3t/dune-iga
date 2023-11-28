@@ -42,8 +42,8 @@ namespace Dune::IGANEW {
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
 
-    using HostGridGeometry = typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Geometry;
-
+    // using ParameterSpaceGeometry = typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Geometry;
+    using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<CodimInHostGrid>;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
@@ -51,7 +51,7 @@ namespace Dune::IGANEW {
 
     /** constructor from host geometry
      */
-    PatchGridGeometry(const HostGridGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
+    PatchGridGeometry(const ParameterSpaceGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
         : hostGeometry_(hostGeometry), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
       geometryLocalView_.bind(hostGeometry_);
     }
@@ -105,7 +105,7 @@ namespace Dune::IGANEW {
     }
 
    private:
-    HostGridGeometry hostGeometry_;
+    ParameterSpaceGeometry hostGeometry_;
     GeometryLocalView geometryLocalView_{};
   };
 

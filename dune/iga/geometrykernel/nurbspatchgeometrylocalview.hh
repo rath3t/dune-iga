@@ -47,7 +47,7 @@ namespace Dune::IGANEW {
      *
      * @tparam codim Codimension of the patch geometry.
      * @tparam PatchGeometry Type of the patch geometry.
-     * @tparam trim_ Trimming flag.
+     * @tparam TrimmerType_ Type of the trimmer.
      */
     template <int codim, typename PatchGeometry, typename TrimmerType_>
     struct PatchGeometryLocalView {

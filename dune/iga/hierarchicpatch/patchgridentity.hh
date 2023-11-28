@@ -239,10 +239,10 @@ namespace Dune::IGANEW {
     [[nodiscard]] Geometry geometry() const {
       static_assert(
           std::is_same_v<
-              decltype(patchGrid_->patchGeometries[this->level()].template localView<0, TrimmerType>()),
+              decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>()),
               typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, TrimmerType>>);
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries[this->level()].template localView<0, TrimmerType>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -261,25 +261,25 @@ namespace Dune::IGANEW {
     //! First level intersection
     [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin() const {
       return PatchGridLevelIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->getHostGrid().levelGridView(level()).ibegin(hostEntity_));
+          patchGrid_, patchGrid_->parameterSpaceGrid().levelGridView(level()).ibegin(hostEntity_));
     }
 
     //! Reference to one past the last neighbor
     PatchGridLevelIntersectionIterator<GridImp> ilevelend() const {
       return PatchGridLevelIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->getHostGrid().levelGridView(level()).iend(hostEntity_));
+          patchGrid_, patchGrid_->parameterSpaceGrid().levelGridView(level()).iend(hostEntity_));
     }
 
     //! First leaf intersection
     PatchGridLeafIntersectionIterator<GridImp> ileafbegin() const {
       return PatchGridLeafIntersectionIterator<GridImp>(patchGrid_,
-                                                        patchGrid_->getHostGrid().leafGridView().ibegin(hostEntity_));
+                                                        patchGrid_->parameterSpaceGrid().leafGridView().ibegin(hostEntity_));
     }
 
     //! Reference to one past the last leaf intersection
     PatchGridLeafIntersectionIterator<GridImp> ileafend() const {
       return PatchGridLeafIntersectionIterator<GridImp>(patchGrid_,
-                                                        patchGrid_->getHostGrid().leafGridView().iend(hostEntity_));
+                                                        patchGrid_->parameterSpaceGrid().leafGridView().iend(hostEntity_));
     }
 
     //! returns true if Entity has NO children
@@ -338,7 +338,7 @@ namespace Dune::IGANEW {
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, dimworld, double>,
+  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, double>,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
     return TrimmerType::referenceElement(entity);

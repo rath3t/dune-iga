@@ -82,7 +82,7 @@ namespace Dune::IGANEW {
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template <int dim, int dimworld, typename TrimmerType_ = Trim::NoOpTrimmer<dim, dimworld, double>>
+  template <int dim, int dimworld, typename TrimmerType_ = Trim::NoOpTrimmer<dim, double>>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, typename TrimmerType_::ctype,
                                                      PatchGridFamily<dim, dimworld, TrimmerType_>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
@@ -136,36 +136,25 @@ namespace Dune::IGANEW {
 
     // template< int parameterDim_, typename ScalarType_>
 
-    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
+    using ParameterSpaceGrid          = typename TrimmerType::ParameterSpaceGrid;
     using UntrimmedParameterSpaceGrid = typename TrimmerType::UntrimmedParameterSpaceGrid;
     /** \brief Constructor
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
-    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData)
-        : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          hostgrid_(std::make_unique<YaspGrid<dim, TensorProductCoordinates<ctype, dim>>>(
-              patchGeometries[0].uniqueKnotVector())),
+    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData, const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData= std::nullopt)
+        : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
+          trimmer_(patchGeometries_[0],patchTrimData),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
           globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
       setIndices();
-      patchGeometriesUnElevated = patchGeometries;
-    }
-
-    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData, std::unique_ptr<ParameterSpaceGrid>&& hostgrid)
-    : patchGeometries(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-      hostgrid_(hostgrid),
-      leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
-      globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
-      localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
-      setIndices();
-      patchGeometriesUnElevated = patchGeometries;
+      patchGeometriesUnElevated = patchGeometries_;
     }
 
     PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->hostgrid_           = std::move(other.hostgrid_);
-      patchGeometries           = std::move(other.patchGeometries);
+      this->trimmer_           = std::move(other.trimmer_);
+      patchGeometries_           = std::move(other.patchGeometries_);
       patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
       leafIndexSet_             = std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
       globalIdSet_              = std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
@@ -178,7 +167,7 @@ namespace Dune::IGANEW {
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
-    int maxLevel() const { return hostgrid_->maxLevel(); }
+    int maxLevel() const { return trimmer_.parameterSpaceGrid().maxLevel(); }
 
     //! Iterator to first entity of given codim on level
     template <int codim>
@@ -230,11 +219,11 @@ namespace Dune::IGANEW {
 
     /** \brief Number of grid entities per level and codim
      */
-    [[nodiscard]] int size(int level, int codim) const { return hostgrid_->size(level, codim); }
+    [[nodiscard]] int size(int level, int codim) const { return trimmer_.parameterSpaceGrid()->size(level, codim); }
 
     /** \brief returns the number of boundary segments within the macro grid
      */
-    [[nodiscard]] size_t numBoundarySegments() const { return hostgrid_->numBoundarySegments(); }
+    [[nodiscard]] size_t numBoundarySegments() const { return trimmer_.parameterSpaceGrid()->numBoundarySegments(); }
 
     //! number of leaf entities per codim in this process
     [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
@@ -268,7 +257,7 @@ namespace Dune::IGANEW {
       typedef PatchGridEntity<EntitySeed::codimension, ParameterSpaceGrid::dimension, const typename Traits::Grid>
           EntityImp;
 
-      return EntityImp(this, hostgrid_->entity(seed.impl().hostEntitySeed()));
+      return EntityImp(this, trimmer_.parameterSpaceGrid().entity(seed.impl().hostEntitySeed()));
     }
 
     /** @name Grid Refinement Methods */
@@ -278,10 +267,10 @@ namespace Dune::IGANEW {
      */
     void globalRefine(int refCount) {
       for (int i = 0; i < refCount; ++i) {
-        const auto& finestPatchData = patchGeometries.back().patchData();
+        const auto& finestPatchData = patchGeometries_.back().patchData();
         auto newfinestPatchData     = finestPatchData;
 
-        auto& olduniqueKnotVector = patchGeometries.back().uniqueKnotVector();
+        auto& olduniqueKnotVector = patchGeometries_.back().uniqueKnotVector();
         std::array<std::vector<ctype>, dim> newUniqueKnotVecs;
         for (int refDirection = 0; refDirection < dim; ++refDirection) {
           auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, refDirection, 1);
@@ -293,11 +282,11 @@ namespace Dune::IGANEW {
           std::ranges::merge(olduniqueKnotVector[refDirection], additionalKnots, std::begin(newKnotVec));
         }
 
-        patchGeometries.emplace_back(newfinestPatchData, newUniqueKnotVecs);
-        patchGeometriesUnElevated.emplace_back(patchGeometries.back());
+        patchGeometries_.emplace_back(newfinestPatchData, newUniqueKnotVecs);
+        patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
       }
 
-      hostgrid_->globalRefine(refCount);
+      trimmer_.paramterSpaceGrid().globalRefine(refCount);
       setIndices();
     }
 
@@ -307,7 +296,7 @@ namespace Dune::IGANEW {
      * \return the array of the coordinates
      */
     const PatchTensorProductCoordinatesType& tensorProductCoordinates(int lvl) const {
-      return patchGeometries[lvl].uniqueKnotVector();
+      return patchGeometries_[lvl].uniqueKnotVector();
     }
 
     /**
@@ -317,7 +306,7 @@ namespace Dune::IGANEW {
      * refined in the given directions. This splits the element in half, quarters ,... in the given direction
      */
     void globalRefineInDirection(const std::array<int, dim>& refines) {
-      const auto& finestPatchData = patchGeometries.back().patchData();
+      const auto& finestPatchData = patchGeometries_.back().patchData();
       auto newfinestPatchData     = finestPatchData;
       for (int dir = 0; auto refinesInDirection : refines) {
         if (refinesInDirection == 0) {
@@ -339,7 +328,7 @@ namespace Dune::IGANEW {
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
       if (lvl > maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
-      auto& patchData                = patchGeometries[lvl].patchData();
+      auto& patchData                = patchGeometries_[lvl].patchData();
       patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
       for (int dir = 0; auto elevatesInDirection : elevationFactors) {
         if (elevatesInDirection == 0) {
@@ -349,7 +338,7 @@ namespace Dune::IGANEW {
         patchData = Splines::degreeElevate(patchData, dir, elevatesInDirection);
         ++dir;
       }
-      patchGeometries[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
+      patchGeometries_[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
     }
 
     /**
@@ -372,7 +361,7 @@ namespace Dune::IGANEW {
      * </ul>
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-      return hostgrid_->mark(refCount, getHostEntity<0>(e));
+      return trimmer_.paramterSpaceGrid()->mark(refCount, getHostEntity<0>(e));
     }
 
     /** \brief Return refinement mark for entity
@@ -380,31 +369,31 @@ namespace Dune::IGANEW {
      * \return refinement mark (1,0,-1)
      */
     int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-      return hostgrid_->getMark(getHostEntity<0>(e));
+      return trimmer_.paramterSpaceGrid()->getMark(getHostEntity<0>(e));
     }
 
     /** \brief returns true, if at least one entity is marked for adaption */
-    bool preAdapt() { return hostgrid_->preAdapt(); }
+    bool preAdapt() { return trimmer_.paramterSpaceGrid()->preAdapt(); }
 
     //! Triggers the grid refinement process
-    bool adapt() { return hostgrid_->adapt(); }
+    bool adapt() { return trimmer_.paramterSpaceGrid()->adapt(); }
 
     /** \brief Clean up refinement markers */
-    void postAdapt() { return hostgrid_->postAdapt(); }
+    void postAdapt() { return trimmer_.paramterSpaceGrid()->postAdapt(); }
 
     /*@}*/
 
     /** \brief Size of the overlap on the leaf level */
-    unsigned int overlapSize(int codim) const { return hostgrid_->leafGridView().overlapSize(codim); }
+    unsigned int overlapSize(int codim) const { return trimmer_.paramterSpaceGrid()->leafGridView().overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on the leaf level */
-    unsigned int ghostSize(int codim) const { return hostgrid_->leafGridView().ghostSize(codim); }
+    unsigned int ghostSize(int codim) const { return trimmer_.paramterSpaceGrid()->leafGridView().ghostSize(codim); }
 
     /** \brief Size of the overlap on a given level */
-    unsigned int overlapSize(int level, int codim) const { return hostgrid_->levelGridView(level).overlapSize(codim); }
+    unsigned int overlapSize(int level, int codim) const { return trimmer_.paramterSpaceGrid()->levelGridView(level).overlapSize(codim); }
 
     /** \brief Size of the ghost cell layer on a given level */
-    unsigned int ghostSize(int level, int codim) const { return hostgrid_->levelGridView(level).ghostSize(codim); }
+    unsigned int ghostSize(int level, int codim) const { return trimmer_.paramterSpaceGrid()->levelGridView(level).ghostSize(codim); }
 
 #if 0
     /** \brief Distributes this grid over the available nodes in a distributed machine
@@ -423,13 +412,13 @@ namespace Dune::IGANEW {
     /** \brief Communicate data of level gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
-      hostgrid_->levelGridView(level).communicate(handle, iftype, dir);
+      trimmer_.parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
     }
 
     /** \brief Communicate data of leaf gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
-      hostgrid_->leafGridView().communicate(handle, iftype, dir);
+      trimmer_.parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
     }
 
     // **********************************************************
@@ -437,7 +426,8 @@ namespace Dune::IGANEW {
     // **********************************************************
 
     //! Returns the hostgrid this PatchGrid lives in
-    ParameterSpaceGrid& getHostGrid() const { return *hostgrid_; }
+    const ParameterSpaceGrid& parameterSpaceGrid() const { return trimmer_.parameterSpaceGrid(); }
+     ParameterSpaceGrid& parameterSpaceGrid()  { return trimmer_.parameterSpaceGrid(); }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
     template <int codim>
@@ -446,29 +436,27 @@ namespace Dune::IGANEW {
       return e.impl().hostEntity_;
     }
 
-    auto untrimmedElementNumbers(int lvl) const { return patchGeometries[lvl].numberOfSpans(); }
+    auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }
 
    private:
-    PatchGrid()=default;
-    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries;
+    PatchGrid() = default;
+    std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
     const auto& trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      return trimmer.trimDatas_.at(globalIdSet_->template id<0>(element));
+      return trimmer_.trimDatas_.at(globalIdSet_->template id<0>(element));
     }
 
     // TODO Trim store triming information here, it should be accessable with a grid entity ID,
     // such that we can hand out if for the elements, thus it should be a map maybe
     //  the trick  no_unique_address makes sure that this member variables occupies no
     //  space, if trimming is disabled
-    using ElementTrimDataContainer = typename TrimmerType::ElementTrimDataContainer;
-    using PatchTrimData            = typename TrimmerType::PatchTrimData;
-    [[no_unique_address]] TrimmerType trimmer;
+
+     TrimmerType trimmer_;
 
    protected:
-    struct Empty{};
-    [[no_unique_address]] std::unique_ptr<UntrimmedParameterSpaceGrid> unTrimmedHostgrid_;
-    std::unique_ptr<ParameterSpaceGrid> hostgrid_;
+
+
 
     //! compute the grid indices and ids
     void setIndices() {

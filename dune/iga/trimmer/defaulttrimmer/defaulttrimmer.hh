@@ -33,9 +33,15 @@ namespace Dune {
        */
       template <int dim, typename ScalarType>
       struct DefaultTrimmer {
+
+
         static constexpr int mydimension = dim;  ///< Dimension of the patch.
 
+
+
         using ctype = ScalarType;  ///< Scalar type for the coordinates.
+
+
 
         /**
          * @brief Boolean for the linearity of the local geometry.
@@ -49,12 +55,13 @@ namespace Dune {
 
         using UntrimmedParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
 
-        using ParameterSpaceGrid
-            = SubGrid<mydimension,   UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
-                                                                                             ///< grid
+        using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
+                                                                                       ///< grid
 
         using ReferenceElementType = DefaultTrimmedReferenceElement<mydimension, ctype>;  ///< Reference element type.
         using ParameterType        = DefaultTrimParameter;  ///< Type for trimming parameters.
+
+
 
         /**
          * @brief Get the reference element for a given entity.
@@ -83,6 +90,12 @@ namespace Dune {
         using ElementTrimDataContainer = std::map<typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
                                                   ElementTrimData>;  ///< Container for element trim data.
 
+        DefaultTrimmer()=default;
+        template<int dimworld>
+DefaultTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData, const std::optional<PatchTrimData>& trimData) {
+          createParameterSpaceGrid(patchData,trimData);
+        }
+
         /**
          * @brief Trim elements based on patch data and trim data.
          * @tparam dimworld Dimension of the world.
@@ -90,11 +103,36 @@ namespace Dune {
          * @param patchTrimData Patch trim data.
          */
         template <int dimworld>
-        auto trimElements(const NURBSPatchData<dim, dimworld, ctype>& patchData, const PatchTrimData& patchTrimData) {
+        auto trimElements(const NURBSPatchData<dim, dimworld, ctype>& patchData, const std::optional<PatchTrimData>& patchTrimData) {
           // fill up container
           // patchTrimData,trimDatas_;
           ;
         }
+
+
+        template<int dimworld>
+        void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch, const std::optional<PatchTrimData>& ) {
+
+          untrimmedParameterSpaceGrid_= std::make_unique<UntrimmedParameterSpaceGrid>(patch.uniqueKnotVector());
+
+          parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(*untrimmedParameterSpaceGrid_);
+          parameterSpaceGrid_->createBegin();
+          for (auto hostEntity : elements(untrimmedParameterSpaceGrid_->leafGridView())) {
+            // if decide which elements are full or trim and add them to the subgrid
+            // subGrid.insert(hostEntity);
+          }
+          parameterSpaceGrid_->createEnd();
+        }
+
+        const ParameterSpaceGrid& parameterSpaceGrid()const {return *parameterSpaceGrid_;}
+         ParameterSpaceGrid& parameterSpaceGrid() {return *parameterSpaceGrid_;}
+        const UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid()const {return *untrimmedParameterSpaceGrid_;}
+         UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() {return *untrimmedParameterSpaceGrid_;}
+
+        std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_;
+        std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;
+
+
 
         ElementTrimDataContainer trimDatas_;  ///< Container for element trim data.
         PatchTrimData patchTrimData;          ///< Patch trim data.

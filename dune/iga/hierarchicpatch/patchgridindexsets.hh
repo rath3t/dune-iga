@@ -30,28 +30,28 @@ namespace Dune::IGANEW {
     //! get index of an entity
     template <int codim>
     int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
-      return grid_->hostgrid_->levelIndexSet(level_).template index<codim>(grid_->template getHostEntity<codim>(e));
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(grid_->template getHostEntity<codim>(e));
     }
 
     //! get index of subEntity of a codim 0 entity
     template <int cc>
     int subIndex(const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const {
-      return grid_->hostgrid_->levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e), i, codim);
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e), i, codim);
     }
 
     //! get number of entities of given codim, type and on this level
-    std::size_t size(int codim) const { return grid_->hostgrid_->levelIndexSet(level_).size(codim); }
+    std::size_t size(int codim) const { return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim); }
 
     //! get number of entities of given codim, type and on this level
-    std::size_t size(GeometryType type) const { return grid_->hostgrid_->levelIndexSet(level_).size(type); }
+    std::size_t size(GeometryType type) const { return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type); }
 
     /** \brief Deliver all geometry types used in this grid */
-    Types types(int codim) const { return grid_->hostgrid_->levelIndexSet(level_).types(codim); }
+    Types types(int codim) const { return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim); }
 
     /** \brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
-      return grid_->hostgrid_->levelIndexSet(level_).contains(
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).contains(
           grid_->template getHostEntity<EntityType::codimension>(e));
     }
 
@@ -93,7 +93,7 @@ namespace Dune::IGANEW {
      */
     template <int codim>
     int index(const typename std::remove_const<GridImp>::type::template Codim<codim>::Entity& e) const {
-      return grid_->hostgrid_->leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e));
+      return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e));
     }
 
     //! get index of subEntity of a codim 0 entity
@@ -104,22 +104,22 @@ namespace Dune::IGANEW {
     template <int cc>
     int subIndex(const typename std::remove_const<GridImp>::type::Traits::template Codim<cc>::Entity& e, int i,
                  int codim) const {
-      return grid_->hostgrid_->leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e), i, codim);
+      return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e), i, codim);
     }
 
     //! get number of entities of given type
-    std::size_t size(GeometryType type) const { return grid_->hostgrid_->leafIndexSet().size(type); }
+    std::size_t size(GeometryType type) const { return grid_->parameterSpaceGrid().leafIndexSet().size(type); }
 
     //! get number of entities of given codim
-    std::size_t size(int codim) const { return grid_->hostgrid_->leafIndexSet().size(codim); }
+    std::size_t size(int codim) const { return grid_->parameterSpaceGrid().leafIndexSet().size(codim); }
 
     /** \brief Deliver all geometry types used in this grid */
-    Types types(int codim) const { return grid_->hostgrid_->leafIndexSet().types(codim); }
+    Types types(int codim) const { return grid_->parameterSpaceGrid().leafIndexSet().types(codim); }
 
     /** \brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
-      return grid_->hostgrid_->leafIndexSet().contains(grid_->template getHostEntity<EntityType::codimension>(e));
+      return grid_->parameterSpaceGrid().leafIndexSet().contains(grid_->template getHostEntity<EntityType::codimension>(e));
     }
 
     /** \todo Currently we support only vertex and element indices */
@@ -149,7 +149,7 @@ namespace Dune::IGANEW {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->hostgrid_->globalIdSet().id(e.impl().hostEntity_);
+      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().hostEntity_);
     }
 
     //! get id of subEntity
@@ -160,7 +160,7 @@ namespace Dune::IGANEW {
     IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
                  int codim) const {
       // Return sub id of the host entity
-      return grid_->hostgrid_->globalIdSet().subId(e.impl().hostEntity_, i, codim);
+      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().hostEntity_, i, codim);
     }
 
     /** \todo Should be private */
@@ -191,7 +191,7 @@ namespace Dune::IGANEW {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->hostgrid_->localIdSet().id(e.impl().hostEntity_);
+      return grid_->parameterSpaceGrid().localIdSet().id(e.impl().hostEntity_);
     }
 
     //! get id of subEntity
@@ -202,7 +202,7 @@ namespace Dune::IGANEW {
     IdType subId(const typename std::remove_const<GridImp>::type::template Codim<0>::Entity& e, int i,
                  int codim) const {
       // Return sub id of the host entity
-      return grid_->hostgrid_->localIdSet().subId(e.impl().hostEntity_, i, codim);
+      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().hostEntity_, i, codim);
     }
 
     /** \todo Should be private */

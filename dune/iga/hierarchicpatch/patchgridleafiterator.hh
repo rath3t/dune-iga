@@ -28,29 +28,29 @@ namespace Dune::IGANEW {
     typedef typename GridImp::template Codim<codim>::Entity Entity;
     PatchGridLeafIterator() = default;
     //! \todo Please doc me !
-    explicit PatchGridLeafIterator(const GridImp* identityGrid)
-        : identityGrid_(identityGrid),
-          hostLeafIterator_(identityGrid->hostgrid_->leafGridView().template begin<codim, pitype>()) {}
+    explicit PatchGridLeafIterator(const GridImp* patchGrid)
+        : patchGrid_(patchGrid),
+          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template begin<codim, pitype>()) {}
 
     /** \brief Constructor which create the end iterator
      *  \param endDummy      Here only to distinguish it from the other constructor
-     *  \param identityGrid  pointer to grid instance
+     *  \param patchGrid  pointer to grid instance
      */
-    explicit PatchGridLeafIterator(const GridImp* identityGrid, [[maybe_unused]] bool endDummy)
-        : identityGrid_(identityGrid),
-          hostLeafIterator_(identityGrid->hostgrid_->leafGridView().template end<codim, pitype>()) {}
+    explicit PatchGridLeafIterator(const GridImp* patchGrid, [[maybe_unused]] bool endDummy)
+        : patchGrid_(patchGrid),
+          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template end<codim, pitype>()) {}
 
     //! prefix increment
     void increment() { ++hostLeafIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{identityGrid_, *hostLeafIterator_}}; }
+    Entity dereference() const { return Entity{{patchGrid_, *hostLeafIterator_}}; }
 
     //! equality
     bool equals(const PatchGridLeafIterator& i) const { return hostLeafIterator_ == i.hostLeafIterator_; }
 
    private:
-    const GridImp* identityGrid_;
+    const GridImp* patchGrid_;
 
     HostGridLeafIterator hostLeafIterator_;
   };

@@ -52,8 +52,8 @@ namespace Dune::IGANEW {
     PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, const HostLeafIntersection& hostIntersection)
         : patchGrid_(parameterSpaceGrid), hostIntersection_(hostIntersection) {}
 
-    PatchGridLeafIntersection(const GridImp* identityGrid, HostLeafIntersection&& hostIntersection)
-        : patchGrid_(identityGrid), hostIntersection_(std::move(hostIntersection)) {}
+    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, HostLeafIntersection&& hostIntersection)
+        : patchGrid_(parameterSpaceGrid), hostIntersection_(std::move(hostIntersection)) {}
 
     bool equals(const PatchGridLeafIntersection& other) const { return hostIntersection_ == other.hostIntersection_; }
 
@@ -93,18 +93,22 @@ namespace Dune::IGANEW {
     //! where iteration started.
     LocalGeometry geometryInInside() const {
       // auto patchDataOfIntersection =
-      //TODO Trim richtigen view raussuchen
+      // TODO Trim richtigen view raussuchen
       // auto intersectionGeometry= inside().trimData()
       // auto geometryOfIntersectionInParameterSpace = ... get intersection from trimdata
-        // hostIntersection_.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1, TrimmerType>());
-      auto geo = typename LocalGeometry::Implementation(
-            geometryOfIntersectionInParameterSpace);
-      return LocalGeometry(geo);
+      // hostIntersection_.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1,
+      // TrimmerType>());
+      // auto geo = typename LocalGeometry::Implementation(geometryOfIntersectionInParameterSpace);
+      // LocalGeometry(hostIntersection_.geometryInOutside());
+      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInInside()));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
-    LocalGeometry geometryInOutside() const { return LocalGeometry(hostIntersection_.geometryInOutside()); }
+    LocalGeometry geometryInOutside() const {
+      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInOutside()));
+
+    }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.

@@ -56,7 +56,7 @@ namespace Dune::IGANEW {
         : DefaultLeafGridView<const GridImp>(grid) {}
 
     using TrimmerType = typename GridImp::TrimmerType;
-    const auto& patchData() const { return this->grid().patchGeometries[this->grid().maxLevel()].patchData(); }
+    const auto& patchData() const { return this->grid().patchGeometries_[this->grid().maxLevel()].patchData(); }
 
     const auto& unTrimmedPatch() const {
       // TODO Trim

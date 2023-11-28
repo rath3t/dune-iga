@@ -8,7 +8,10 @@
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 namespace Dune {
   namespace IGANEW {
-
+    namespace GeometryKernel {
+      template <int dim_, int dimworld_, typename ScalarType>
+  class NURBSPatch ;
+    }
     namespace Trim {
       template <int mydim_, typename ScalarType>
       struct NoOpElementTrimData {
@@ -24,11 +27,12 @@ namespace Dune {
         // inner loops ....
       };
 
-      template <int dim, int dw, typename ScalarType = double>
+      template <int dim, typename ScalarType = double>
       struct NoOpTrimmer {
         static constexpr int mydimension = dim;
-        static constexpr int dimworld    = dw;
         using ctype                      = ScalarType;
+        NoOpTrimmer()=default;
+
 
         // using Grid= PatchGrid<dim, dimworld, NoOpTrimmer,ScalarType>;
 
@@ -39,6 +43,8 @@ namespace Dune {
 
         using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
 
+        using UntrimmedParameterSpaceGrid = Empty;
+
         using ReferenceElementType = typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;
 
         template <Dune::Concept::EntityExtended EntityType>
@@ -47,13 +53,28 @@ namespace Dune {
         }
 
         template <int codim>
-        using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+        using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
         using ElementTrimData = NoOpElementTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
 
         using PatchTrimData = NoOpPatchTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
 
         using ElementTrimDataContainer = NoOpElementTrimDataContainer<ParameterSpaceGrid>;
+
+        template<int dimworld>
+        void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch, const std::optional<PatchTrimData>& ) {
+          parameterSpaceGrid_= std::make_unique<ParameterSpaceGrid>(patch.uniqueKnotVector());
+        }
+
+        template<int dimworld>
+NoOpTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch, const std::optional<PatchTrimData>& trimData) {
+          createParameterSpaceGrid(patch,trimData);
+        }
+
+        const ParameterSpaceGrid& parameterSpaceGrid()const {return *parameterSpaceGrid_;}
+
+        std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;
+
       };
     }  // namespace Trim
   }    // namespace IGANEW
