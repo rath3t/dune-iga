@@ -72,7 +72,8 @@ namespace Dune::IGANEW {
       //     geometry<codim>(0));
 
       using PatchGridType          = PatchGrid<mydimension, worlddimension, TrimmerType>;
-      using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
+      constexpr static int CodimInHostGrid = gridDimension - mydimension;
+      using ParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
 
       //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
       //! and
@@ -135,7 +136,7 @@ namespace Dune::IGANEW {
        * @param lGeo Parameter space geometry.
        */
       void bind(const ParameterSpaceGeometry& lGeo) {
-        parameterSpaceGeometry = std::make_optional<ParameterSpaceGeometry>(lGeo);
+        parameterSpaceGeometry = std::make_shared<ParameterSpaceGeometry>(lGeo);
         std::tie(nurbsLocalView_, localControlPointNet, spanIndices_)
             = patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
       }
@@ -345,11 +346,11 @@ namespace Dune::IGANEW {
         /* if trimming is enabled the parameter space geometry is potentially non-linear,
          * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
         if constexpr (not TrimmerType::template isLocalGeometryLinear<codim>) {
-          const auto dgdtdt = parameterSpaceGeometry.value().hessian(ouInPatch);
-
-          assert(TrimmerType::template isLocalGeometryLinear<
-                     codim> && "This can not be checked yet. Check if this works with trimming and then remove assert");
-          h += transpose(transposedView(dfdg) * dgdtdt);
+          // const auto dgdtdt = parameterSpaceGeometry->hessian(ouInPatch);
+          //
+          // assert(TrimmerType::template isLocalGeometryLinear<
+          //            codim> && "This can not be checked yet. Check if this works with trimming and then remove assert");
+          // h += transpose(transposedView(dfdg) * dgdtdt);
         }
         return h;
       }
@@ -376,20 +377,20 @@ namespace Dune::IGANEW {
       void checkState() const { assert(parameterSpaceGeometry && "Bind the local view first!"); }
       GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {
         checkState();
-        return parameterSpaceGeometry.value().global(local);
+        return parameterSpaceGeometry->global(local);
       }
 
       [[nodiscard]] JacobianTransposedInParameterSpace jacobianTransposedInParameterSpace(
           const LocalCoordinate& u) const {
         checkState();
-        return parameterSpaceGeometry.value().jacobianTransposed(u);
+        return parameterSpaceGeometry->jacobianTransposed(u);
       }
 
       ControlPointCoordinateNetType localControlPointNet;
       NurbsLocalView nurbsLocalView_;
       std::array<int, gridDimension> spanIndices_;
       const PatchGeometry* patchGeometry_;
-      std::optional<ParameterSpaceGeometry> parameterSpaceGeometry;
+      std::shared_ptr<ParameterSpaceGeometry> parameterSpaceGeometry;
     };
   }  // namespace GeometryKernel
 }  // namespace Dune::IGANEW

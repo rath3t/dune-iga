@@ -84,7 +84,7 @@ namespace Dune {
          * local coordinate in its reference element */
         LocalCoordinate local(const GlobalCoordinate& global) const {
           if constexpr (codim == 0) return cubeGeometry.local(global);
-          ;
+
         }
 
         //! Returns true if the point is in the current element

@@ -42,8 +42,9 @@ namespace Dune::IGANEW {
     // The codimension of this entitypointer wrt the host grid
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
 
-    // using ParameterSpaceGeometry = typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Geometry;
-    using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<CodimInHostGrid>;
+    //using ParameterSpaceGeometry = typename GridImp::ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
+    using ReferenceElementType = typename TrimmerType::ReferenceElementType;
+    using ParameterSpaceGeometry = typename ReferenceElementType::template Codim<CodimInHostGrid>;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
@@ -51,9 +52,9 @@ namespace Dune::IGANEW {
 
     /** constructor from host geometry
      */
-    PatchGridGeometry(const ParameterSpaceGeometry& hostGeometry, GeometryLocalView&& geometryLocalView)
-        : hostGeometry_(hostGeometry), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
-      geometryLocalView_.bind(hostGeometry_);
+    PatchGridGeometry(const ReferenceElementType& reference_element, GeometryLocalView&& geometryLocalView)
+        : reference_element_(reference_element), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
+      geometryLocalView_.bind(reference_element_.template geometry<CodimInHostGrid>());
     }
 
     /** \brief Return the element type identifier
@@ -64,7 +65,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] bool affine() const { return geometryLocalView_.affine(); }
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
-    [[nodiscard]] int corners() const { return hostGeometry_.corners(); }
+    [[nodiscard]] int corners() const { return geometryLocalView_.corners(); }
 
     //! access to coordinates of corners. Index is the number of the corner
     [[nodiscard]] GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
@@ -106,7 +107,7 @@ namespace Dune::IGANEW {
     }
 
    private:
-    ParameterSpaceGeometry hostGeometry_;
+    ReferenceElementType reference_element_;
     GeometryLocalView geometryLocalView_{};
   };
 

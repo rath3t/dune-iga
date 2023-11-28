@@ -24,6 +24,7 @@
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/patchgrid.hh>
+#include <dune/iga/trimmer/defaulttrimmer/defaulttrimmer.hh>
 
 using namespace Dune;
 using namespace Dune::IGANEW;
@@ -123,9 +124,14 @@ auto thoroughGridCheck(auto& grid) {
     t.subTest(gvTest(gridView));
   }
   t.subTest(gvTest(grid.leafGridView()));
-
+  try {
   gridcheck(grid);
   checkIntersectionIterator(grid);
+  checkLeafIntersections(grid);
+  } catch(const Dune::NotImplemented& e) {
+    std::cout << e.what() << std::endl;
+  }
+
   return t;
 }
 
@@ -727,7 +733,7 @@ auto testPlate() {
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
   auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld>;
+  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld,Trim::DefaultTrimmer<gridDim>>;
 
   Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;

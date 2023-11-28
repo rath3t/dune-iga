@@ -133,8 +133,9 @@ namespace Dune::IGANEW {
 
     //! geometry of this entity
     Geometry geometry() const {
+      auto referenceEle= referenceElement(*this);
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
+          referenceEle, patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
       return Geometry(geo);
     }
 

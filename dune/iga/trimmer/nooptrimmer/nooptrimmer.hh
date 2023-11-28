@@ -55,8 +55,8 @@
         template <int codim>
         using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
-        template <int codim>
-        using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+        // template <int codim>
+        // using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
 
         using ElementTrimData = NoOpElementTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;

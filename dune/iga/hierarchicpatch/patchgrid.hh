@@ -451,14 +451,15 @@ namespace Dune::IGANEW {
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-    const auto& trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      return trimmer_.trimDatas_.at(globalIdSet_->template id<0>(element));
+    std::optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>
+    trimData(const typename Traits::template Codim<0>::Entity& element) const {
+      auto iter= trimmer_.trimDatas_.find(globalIdSet_->template id<0>(element));
+      if(iter!= trimmer_.trimDatas_.end())
+        return std::make_optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>(std::cref(iter->second));
+
+      return std::nullopt;
     }
 
-    // TODO Trim store triming information here, it should be accessable with a grid entity ID,
-    // such that we can hand out if for the elements, thus it should be a map maybe
-    //  the trick  no_unique_address makes sure that this member variables occupies no
-    //  space, if trimming is disabled
 
      TrimmerType trimmer_;
 

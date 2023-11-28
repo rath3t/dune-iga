@@ -12,6 +12,7 @@
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 
 #include <dune/subgrid/subgrid.hh>
+#include <dune/subgrid/test/common.hh>
 
 namespace Dune {
   namespace IGANEW {
@@ -34,14 +35,9 @@ namespace Dune {
       template <int dim, typename ScalarType>
       struct DefaultTrimmer {
 
-
         static constexpr int mydimension = dim;  ///< Dimension of the patch.
 
-
-
         using ctype = ScalarType;  ///< Scalar type for the coordinates.
-
-
 
         /**
          * @brief Boolean for the linearity of the local geometry.
@@ -61,8 +57,6 @@ namespace Dune {
         using ReferenceElementType = DefaultTrimmedReferenceElement<mydimension, ctype>;  ///< Reference element type.
         using ParameterType        = DefaultTrimParameter;  ///< Type for trimming parameters.
 
-
-
         /**
          * @brief Get the reference element for a given entity.
          * @tparam EntityType Type of the entity.
@@ -80,6 +74,9 @@ namespace Dune {
          */
         template <int codim>
         using LocalGeometry = typename ReferenceElementType::template Codim<codim>::Geometry;
+
+        // template <int codim>
+        //  using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
         using ElementTrimData
             = DefaultElementTrimData<ParameterSpaceGrid::dimension,
@@ -121,6 +118,7 @@ DefaultTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData
             // if decide which elements are full or trim and add them to the subgrid
             // subGrid.insert(hostEntity);
           }
+          parameterSpaceGrid_->insertLeaf();
           parameterSpaceGrid_->createEnd();
         }
 
@@ -131,8 +129,6 @@ DefaultTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData
 
         std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_;
         std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;
-
-
 
         ElementTrimDataContainer trimDatas_;  ///< Container for element trim data.
         PatchTrimData patchTrimData;          ///< Patch trim data.
