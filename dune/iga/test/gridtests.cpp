@@ -18,6 +18,7 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
+#include <dune/grid/test/checkintersectionit.hh>
 
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
@@ -124,6 +125,7 @@ auto thoroughGridCheck(auto& grid) {
   t.subTest(gvTest(grid.leafGridView()));
 
   gridcheck(grid);
+  checkIntersectionIterator(grid);
   return t;
 }
 

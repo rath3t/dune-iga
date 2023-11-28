@@ -73,7 +73,9 @@ namespace Dune::IGANEW {
      *   The returned vector is the normal at the center() of the
      *     intersection's geometry.
      *       It is scaled to have unit length. */
-    NormalVector centerUnitOuterNormal() const { return hostIntersection_.centerUnitOuterNormal(); }
+    NormalVector centerUnitOuterNormal() const {
+      return this->unitOuterNormal({0.5});
+    }
 
     //! return true if across the edge an neighbor on this level exists
     bool neighbor() const { return hostIntersection_.neighbor(); }
@@ -224,7 +226,10 @@ namespace Dune::IGANEW {
      *   The returned vector is the normal at the center() of the
      *     intersection's geometry.
      *       It is scaled to have unit length. */
-    NormalVector centerUnitOuterNormal() const { return hostIntersection_.centerUnitOuterNormal(); }
+    NormalVector centerUnitOuterNormal() const {
+
+      return this->unitOuterNormal({0.5});
+    }
 
     //! return true if across the edge an neighbor on this level exists
     [[nodiscard]] bool neighbor() const { return hostIntersection_.neighbor(); }
