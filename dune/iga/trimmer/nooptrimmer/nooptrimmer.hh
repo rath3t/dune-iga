@@ -45,15 +45,22 @@
 
         using UntrimmedParameterSpaceGrid = Empty;
 
-        using ReferenceElementType = typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;
 
-        template <Dune::Concept::EntityExtended EntityType>
+        using ReferenceElementType = typename Dune::Geo::ReferenceElements<ctype, mydim>::ReferenceElement;
+
+        template<int codim>
+        using LocalGeometry= typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+
+        template<int codim>
+        using LocalLocalGeometry= typename ReferenceElementType::template Codim<codim>::Geometry;
+
+        template </* Dune::Concept::EntityExtended */ typename EntityType>
         static auto referenceElement(const EntityType& entity) {
-          return Dune::referenceElement<ctype, mydimension>(entity.type());
+          return Dune::referenceElement<ctype, EntityType::mydimension>(entity.type());
         }
 
-        template <int codim>
-        using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+        // template <int codim>
+        // using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
         // template <int codim>
         // using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;

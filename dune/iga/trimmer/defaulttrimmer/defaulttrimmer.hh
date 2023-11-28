@@ -54,7 +54,8 @@ namespace Dune {
         using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
                                                                                        ///< grid
 
-        using ReferenceElementType = DefaultTrimmedReferenceElement<mydimension, ctype>;  ///< Reference element type.
+        template<int mydim>
+        using ReferenceElementType = DefaultTrimmedReferenceElement<mydim, ctype>;  ///< Reference element type.
         using ParameterType        = DefaultTrimParameter;  ///< Type for trimming parameters.
 
         /**
@@ -63,17 +64,17 @@ namespace Dune {
          * @param entity The entity for which the reference element is requested.
          * @return Reference element for the entity.
          */
-        template <Dune::Concept::EntityExtended EntityType>
+        template </* Dune::Concept::EntityExtended */ typename EntityType>
         static auto referenceElement(const EntityType& entity) {
-          return ReferenceElementType(entity.impl().trimData());
+          return ReferenceElementType<EntityType::mydimension>(entity.impl().trimData());
         }
 
         /**
          * @brief Type alias for local geometry of a specified codimension.
          * @tparam codim Codimension of the local geometry.
          */
-        template <int codim>
-        using LocalGeometry = typename ReferenceElementType::template Codim<codim>::Geometry;
+        // template <int codim>
+        // using LocalGeometry = typename ReferenceElementType::template Codim<codim>::Geometry;
 
         // template <int codim>
         //  using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;

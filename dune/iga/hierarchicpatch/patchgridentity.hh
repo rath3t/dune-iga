@@ -133,9 +133,10 @@ namespace Dune::IGANEW {
 
     //! geometry of this entity
     Geometry geometry() const {
-      auto referenceEle= referenceElement(*this);
+      auto refEle= referenceElement(*this);
+
       auto geo = typename Geometry::Implementation(
-          referenceEle, patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -242,8 +243,9 @@ namespace Dune::IGANEW {
           std::is_same_v<
               decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>()),
               typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, TrimmerType>>);
+      // auto referenceEle= referenceElement(*this);
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
+            hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -340,9 +342,16 @@ namespace Dune::IGANEW {
   };  // end of PatchGridEntity codim = 0
 
   template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, double>,
+        template <int, int, class> class PatchGridEntity>
+auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
+    return referenceElement(entity.impl());
+  }
+
+  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, double>,
             template <int, int, class> class PatchGridEntity>
-  auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
+  auto referenceElement(const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>>& entity) {
     return TrimmerType::referenceElement(entity);
   }
+
 
 }  // namespace Dune::IGANEW

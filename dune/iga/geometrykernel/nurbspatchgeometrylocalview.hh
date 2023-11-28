@@ -73,7 +73,8 @@ namespace Dune::IGANEW {
 
       using PatchGridType          = PatchGrid<mydimension, worlddimension, TrimmerType>;
       constexpr static int CodimInHostGrid = gridDimension - mydimension;
-      using ParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
+      // using ParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
+      using ParameterSpaceGeometry = typename TrimmerType::template ReferenceElementType<gridDimension>::template Codim<CodimInHostGrid>::Geometry;
 
       //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
       //! and
@@ -136,9 +137,11 @@ namespace Dune::IGANEW {
        * @param lGeo Parameter space geometry.
        */
       void bind(const ParameterSpaceGeometry& lGeo) {
+        static_assert(std::is_same_v<GlobalInParameterSpace,FieldVector<ctype,gridDimension>>);
         parameterSpaceGeometry = std::make_shared<ParameterSpaceGeometry>(lGeo);
+        auto global = globalInParameterSpace(lGeo.center());
         std::tie(nurbsLocalView_, localControlPointNet, spanIndices_)
-            = patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
+            = patchGeometry_->calculateNurbsAndControlPointNet(global);
       }
 
       /**

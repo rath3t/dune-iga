@@ -43,8 +43,8 @@ namespace Dune::IGANEW {
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
 
     //using ParameterSpaceGeometry = typename GridImp::ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
-    using ReferenceElementType = typename TrimmerType::ReferenceElementType;
-    using ParameterSpaceGeometry = typename ReferenceElementType::template Codim<CodimInHostGrid>;
+    using ReferenceElementType = typename TrimmerType::template ReferenceElementType<griddim>;
+    using ParameterSpaceGeometry = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
@@ -52,9 +52,9 @@ namespace Dune::IGANEW {
 
     /** constructor from host geometry
      */
-    PatchGridGeometry(const ReferenceElementType& reference_element, GeometryLocalView&& geometryLocalView)
-        : reference_element_(reference_element), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
-      geometryLocalView_.bind(reference_element_.template geometry<CodimInHostGrid>());
+    PatchGridGeometry(const ParameterSpaceGeometry& localGeometry, GeometryLocalView&& geometryLocalView)
+        : localGeometry_(localGeometry), geometryLocalView_(std::forward<GeometryLocalView>(geometryLocalView)) {
+      geometryLocalView_.bind(localGeometry);
     }
 
     /** \brief Return the element type identifier
@@ -107,7 +107,7 @@ namespace Dune::IGANEW {
     }
 
    private:
-    ReferenceElementType reference_element_;
+    ParameterSpaceGeometry localGeometry_;
     GeometryLocalView geometryLocalView_{};
   };
 
