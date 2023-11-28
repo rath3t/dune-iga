@@ -42,7 +42,7 @@ namespace Dune {
 
         /** \brief Return the element type identifier
          */
-        [[nodiscard]] GeometryType type() const { return trimData_->type(); }
+        [[nodiscard]] GeometryType type() const { return GeometryTypes::none(mydimension); }
 
         // return whether we have an affine mapping
         [[nodiscard]] bool affine() const {
@@ -54,54 +54,36 @@ namespace Dune {
         }
 
         //! return the number of corners of this element. Corners are numbered 0...n-1
-        [[nodiscard]] int corners() const {
-          // TODO
-          //  return hostGeometry_.corners();
-          return {};
-        }
+        [[nodiscard]] int corners() const { return 0; }
+
+        GlobalCoordinate center() const { return {}; }
 
         //! access to coordinates of corners. Index is the number of the corner
-        GlobalCoordinate corner(int i) const {
-          if constexpr (codim == 0)
-            return cubeGeometry.corner(i);
-          else
-            return GlobalCoordinate{};  // get corner at trimdata intersections
-        }
+        GlobalCoordinate corner(int i) const { return GlobalCoordinate{}; }
 
         /** \brief Maps a local coordinate within reference element to
          * global coordinate in element  */
-        GlobalCoordinate global(const LocalCoordinate& local) const {
-          if constexpr (codim == 0) return cubeGeometry.global(local);
-        }
+        GlobalCoordinate global(const LocalCoordinate& local) const { return GlobalCoordinate{}; }
 
         /** \brief Return the transposed of the Jacobian
          */
-        JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-          if constexpr (codim == 0) return cubeGeometry.jacobianTransposed(local);
-        }
+        JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const { return JacobianTransposed{}; }
 
         /** \brief Maps a global coordinate within the element to a
          * local coordinate in its reference element */
-        LocalCoordinate local(const GlobalCoordinate& global) const {
-          if constexpr (codim == 0) return cubeGeometry.local(global);
-
-        }
+        LocalCoordinate local(const GlobalCoordinate& global) const { return LocalCoordinate{}; }
 
         //! Returns true if the point is in the current element
-        bool checkInside(const LocalCoordinate& local) const { return trimData_->checkInside(local); }
+        bool checkInside(const LocalCoordinate& local) const { return true; }
 
-        [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
-          if constexpr (codim == 0) return cubeGeometry.integrationElement(local);
-        }
+        [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const { return Volume{}; }
 
         //! The Jacobian matrix of the mapping from the reference element to this element
         [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
-          if constexpr (codim == 0) return cubeGeometry.jacobianInverseTransposed(local);
+          return JacobianInverseTransposed{};
         }
 
        private:
-        const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
-            ReferenceElements<ctype, mydimension>::cube()};
         const TrimDataType* trimData_{nullptr};
       };
     }  // namespace Trim

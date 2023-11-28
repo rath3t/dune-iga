@@ -47,7 +47,7 @@ namespace Dune::IGANEW {
         HostGridLocalGeometryType;
 
     // using LocalNURBSGeometry = GeometryKernel::NURBSPatch<mydim, coorddim, ctype>;
-    using LocalHostGeometry =  HostGridLocalGeometryType;
+    using LocalHostGeometry = HostGridLocalGeometryType;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension,
@@ -58,9 +58,7 @@ namespace Dune::IGANEW {
     // PatchGridLocalGeometry(const GeometryKernel::NURBSPatch<mydim, coorddim, ctype>& localPatchGeometry)
     //     : localPatchGeometry_(localPatchGeometry) {}
 
-    explicit PatchGridLocalGeometry(const LocalHostGeometry& hostGeometry)
-    : hostGeometry_(hostGeometry) {
-    }
+    explicit PatchGridLocalGeometry(const LocalHostGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
     // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 

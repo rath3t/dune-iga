@@ -44,13 +44,11 @@ namespace Dune::IGANEW {
        The receiver takes responsibility of the memory allocated for the grid
      */
     std::unique_ptr<GridType> createGrid() {
-
-
       if (patchTrimData_) {
-        auto grid = std::make_unique<GridType>(patchData_,patchTrimData_);
+        auto grid = std::make_unique<GridType>(patchData_, patchTrimData_);
 
         return grid;
-      }else
+      } else
         return std::make_unique<GridType>(patchData_);
       // create Grid and setup Element trimming inf through additional (private) constructor
     }

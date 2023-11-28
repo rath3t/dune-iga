@@ -40,11 +40,10 @@ namespace Dune::IGANEW {
     using Volume                    = ctype;
 
     // The codimension of this entitypointer wrt the host grid
-    constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
+    // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
 
-    //using ParameterSpaceGeometry = typename GridImp::ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
-    using ReferenceElementType = typename TrimmerType::template ReferenceElementType<griddim>;
-    using ParameterSpaceGeometry = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
+    using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
+    // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,

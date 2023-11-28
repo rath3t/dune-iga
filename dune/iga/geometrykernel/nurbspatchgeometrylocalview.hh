@@ -71,10 +71,10 @@ namespace Dune::IGANEW {
       //     = decltype(referenceElement<ctype, gridDimension>(GeometryTypes::cube(mydimension)).template
       //     geometry<codim>(0));
 
-      using PatchGridType          = PatchGrid<mydimension, worlddimension, TrimmerType>;
+      using PatchGridType                  = PatchGrid<mydimension, worlddimension, TrimmerType>;
       constexpr static int CodimInHostGrid = gridDimension - mydimension;
       // using ParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
-      using ParameterSpaceGeometry = typename TrimmerType::template ReferenceElementType<gridDimension>::template Codim<CodimInHostGrid>::Geometry;
+      using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
 
       //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
       //! and
@@ -137,11 +137,10 @@ namespace Dune::IGANEW {
        * @param lGeo Parameter space geometry.
        */
       void bind(const ParameterSpaceGeometry& lGeo) {
-        static_assert(std::is_same_v<GlobalInParameterSpace,FieldVector<ctype,gridDimension>>);
+        // static_assert(std::is_same_v<GlobalInParameterSpace,FieldVector<ctype,gridDimension>>);
         parameterSpaceGeometry = std::make_shared<ParameterSpaceGeometry>(lGeo);
-        auto global = globalInParameterSpace(lGeo.center());
         std::tie(nurbsLocalView_, localControlPointNet, spanIndices_)
-            = patchGeometry_->calculateNurbsAndControlPointNet(global);
+            = patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
       }
 
       /**
@@ -314,26 +313,26 @@ namespace Dune::IGANEW {
         static_assert(JacobianTransposedInParameterSpace::cols == gridDimension);
         // dgdt (1x2, curve on surface), (2x2 surface in surface), (2x3 surface in 3D), (3x3 volume in 3D)
         FieldMatrix<ctype, patchNumberOfSecondDerivatives, numberOfSecondDerivatives> dgdtSquared(0);
-
         for (int patchIndex = 0; auto [patchRow, patchCol] : Impl::voigtIndices<gridDimension>()) {
           for (int myIndex = 0; auto [myRow, myCol] : Impl::voigtIndices<mydimension>()) {
             if constexpr (not std::is_same_v<JacobianTransposedInParameterSpace, DiagonalMatrix<ctype, gridDimension>>)
-              dgdtSquared[patchIndex++][myIndex++]
+              dgdtSquared[patchIndex][myIndex]
                   = (dgdt[myRow][patchRow] * dgdt[myCol][patchCol] + dgdt[myCol][patchRow] * dgdt[myRow][patchCol])
                     * ((patchRow == patchCol) ? 0.5 : 1.0);
             else {
               const auto dgdtmyRowpatchRow = (myRow == patchRow) ? dgdt[myRow][patchRow] : 0;
               const auto dgdtmyColpatchCol = (myCol == patchCol) ? dgdt[myCol][patchCol] : 0;
-              const auto dgdtmyColpatchRow = (myRow == patchCol) ? dgdt[myCol][patchRow] : 0;
-              const auto dgdtmyRowpatchCol = (myCol == patchRow) ? dgdt[myRow][patchCol] : 0;
-              dgdtSquared[patchIndex++][myIndex++]
+              const auto dgdtmyColpatchRow = (myCol == patchRow) ? dgdt[myCol][patchRow] : 0;
+              const auto dgdtmyRowpatchCol = (myRow == patchCol) ? dgdt[myRow][patchCol] : 0;
+              dgdtSquared[patchIndex][myIndex]
                   = (dgdtmyRowpatchRow * dgdtmyColpatchCol + dgdtmyColpatchRow * dgdtmyRowpatchCol)
                     * ((patchRow == patchCol) ? 0.5 : 1.0);
             }
+            ++myIndex;
           }
+          ++patchIndex;
         }
 
-        Hessian h;
         // h = mydimension * (mydimension + 1) / 2 X worlddimension = 1x2 (curve in 2D), 1x3 (curve in 3D), (3x2 surface
         // in 2D), (3x3 surface in 3D), (6x3 volume in 3D)
         //
@@ -344,7 +343,7 @@ namespace Dune::IGANEW {
         // dgdtSquared = gridDimension * (gridDimension + 1) / 2 X mydimension * (mydimension +
         // 1) / 2 = 3x1 (curve on surface), 6x1 (curve in volume), 6x3 (surface in volume), 3x3 ( surface in surface),
         // 6x6 ( volume in volume)
-        h = transposedView(dgdtSquared) * dfdgdg;
+        Hessian h = transposedView(dgdtSquared) * dfdgdg;
 
         /* if trimming is enabled the parameter space geometry is potentially non-linear,
          * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
@@ -352,7 +351,8 @@ namespace Dune::IGANEW {
           // const auto dgdtdt = parameterSpaceGeometry->hessian(ouInPatch);
           //
           // assert(TrimmerType::template isLocalGeometryLinear<
-          //            codim> && "This can not be checked yet. Check if this works with trimming and then remove assert");
+          //            codim> && "This can not be checked yet. Check if this works with trimming and then remove
+          //            assert");
           // h += transpose(transposedView(dfdg) * dgdtdt);
         }
         return h;
@@ -372,7 +372,7 @@ namespace Dune::IGANEW {
       [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
       [[nodiscard]] bool affine() const {
-//TODO check when this is true
+        // TODO check when this is true
         return false;
       }
 

@@ -154,7 +154,8 @@ struct EnableLevelIntersectionIteratorCheck;
 
 template <int dim, int dimworld, typename TrimmerType>
 struct Dune::EnableBoundarySegmentIndexCheck<Dune::IGANEW::PatchGrid<dim, dimworld, TrimmerType>>
-  : Dune::EnableBoundarySegmentIndexCheck<typename Dune::IGANEW::PatchGrid<dim, dimworld, TrimmerType>::ParameterSpaceGrid> {};
+    : Dune::EnableBoundarySegmentIndexCheck<
+          typename Dune::IGANEW::PatchGrid<dim, dimworld, TrimmerType>::ParameterSpaceGrid> {};
 
 template <int dim, int dimworld, typename TrimmerType>
 struct EnableLevelIntersectionIteratorCheck<Dune::IGANEW::PatchGrid<dim, dimworld, TrimmerType>> {

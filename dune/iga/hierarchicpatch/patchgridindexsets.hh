@@ -30,7 +30,8 @@ namespace Dune::IGANEW {
     //! get index of an entity
     template <int codim>
     int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(grid_->template getHostEntity<codim>(e));
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
+          grid_->template getHostEntity<codim>(e));
     }
 
     //! get index of subEntity of a codim 0 entity
@@ -119,7 +120,8 @@ namespace Dune::IGANEW {
     /** \brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
-      return grid_->parameterSpaceGrid().leafIndexSet().contains(grid_->template getHostEntity<EntityType::codimension>(e));
+      return grid_->parameterSpaceGrid().leafIndexSet().contains(
+          grid_->template getHostEntity<EntityType::codimension>(e));
     }
 
     /** \todo Currently we support only vertex and element indices */

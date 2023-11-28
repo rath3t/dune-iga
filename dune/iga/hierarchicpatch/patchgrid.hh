@@ -142,9 +142,10 @@ namespace Dune::IGANEW {
      *
      * \param hostgrid The host grid wrapped by the PatchGrid
      */
-    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData, const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData= std::nullopt)
+    explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
+                       const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(patchGeometries_[0],patchTrimData),
+          trimmer_(patchGeometries_[0], patchTrimData),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
           globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
@@ -153,8 +154,8 @@ namespace Dune::IGANEW {
     }
 
     PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->trimmer_           = std::move(other.trimmer_);
-      patchGeometries_           = std::move(other.patchGeometries_);
+      this->trimmer_            = std::move(other.trimmer_);
+      patchGeometries_          = std::move(other.patchGeometries_);
       patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
       leafIndexSet_             = std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
       globalIdSet_              = std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
@@ -224,7 +225,7 @@ namespace Dune::IGANEW {
     /** \brief returns the number of boundary segments within the macro grid
      */
     [[nodiscard]] size_t numBoundarySegments() const {
-//TODO Trim this is wrong another trimmer functionality should care about this
+      // TODO Trim this is wrong another trimmer functionality should care about this
       return trimmer_.parameterSpaceGrid().numBoundarySegments();
     }
 
@@ -364,8 +365,8 @@ namespace Dune::IGANEW {
      * </ul>
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-      //TODO trim this does not do the right thing! the knotspans should also be aware of this change
-      return false;//trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
+      // TODO trim this does not do the right thing! the knotspans should also be aware of this change
+      return false;  // trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
     }
 
     /** \brief Return refinement mark for entity
@@ -373,15 +374,11 @@ namespace Dune::IGANEW {
      * \return refinement mark (1,0,-1)
      */
     int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-
-      return 0;//trimmer_.parameterSpaceGrid().getMark(getHostEntity<0>(e));
+      return 0;  // trimmer_.parameterSpaceGrid().getMark(getHostEntity<0>(e));
     }
 
     /** \brief returns true, if at least one entity is marked for adaption */
-    bool preAdapt() {
-
-      return trimmer_.paramterSpaceGrid().preAdapt();
-    }
+    bool preAdapt() { return trimmer_.paramterSpaceGrid().preAdapt(); }
 
     //! Triggers the grid refinement process
     bool adapt() { return trimmer_.paramterSpaceGrid().adapt(); }
@@ -392,16 +389,22 @@ namespace Dune::IGANEW {
     /*@}*/
 
     /** \brief Size of the overlap on the leaf level */
-    unsigned int overlapSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().overlapSize(codim); }
+    unsigned int overlapSize(int codim) const {
+      return trimmer_.parameterSpaceGrid().leafGridView().overlapSize(codim);
+    }
 
     /** \brief Size of the ghost cell layer on the leaf level */
     unsigned int ghostSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().ghostSize(codim); }
 
     /** \brief Size of the overlap on a given level */
-    unsigned int overlapSize(int level, int codim) const { return trimmer_.parameterSpaceGrid().levelGridView(level).overlapSize(codim); }
+    unsigned int overlapSize(int level, int codim) const {
+      return trimmer_.parameterSpaceGrid().levelGridView(level).overlapSize(codim);
+    }
 
     /** \brief Size of the ghost cell layer on a given level */
-    unsigned int ghostSize(int level, int codim) const { return trimmer_.parameterSpaceGrid().levelGridView(level).ghostSize(codim); }
+    unsigned int ghostSize(int level, int codim) const {
+      return trimmer_.parameterSpaceGrid().levelGridView(level).ghostSize(codim);
+    }
 
 #if 0
     /** \brief Distributes this grid over the available nodes in a distributed machine
@@ -435,7 +438,7 @@ namespace Dune::IGANEW {
 
     //! Returns the hostgrid this PatchGrid lives in
     const ParameterSpaceGrid& parameterSpaceGrid() const { return trimmer_.parameterSpaceGrid(); }
-     ParameterSpaceGrid& parameterSpaceGrid()  { return trimmer_.parameterSpaceGrid(); }
+    ParameterSpaceGrid& parameterSpaceGrid() { return trimmer_.parameterSpaceGrid(); }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
     template <int codim>
@@ -451,22 +454,19 @@ namespace Dune::IGANEW {
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-    std::optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>
-    trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      auto iter= trimmer_.trimDatas_.find(globalIdSet_->template id<0>(element));
-      if(iter!= trimmer_.trimDatas_.end())
-        return std::make_optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>(std::cref(iter->second));
+    std::optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>> trimData(
+        const typename Traits::template Codim<0>::Entity& element) const {
+      auto iter = trimmer_.trimDatas_.find(globalIdSet_->template id<0>(element));
+      if (iter != trimmer_.trimDatas_.end())
+        return std::make_optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>(
+            std::cref(iter->second));
 
       return std::nullopt;
     }
 
-
-     TrimmerType trimmer_;
+    TrimmerType trimmer_;
 
    protected:
-
-
-
     //! compute the grid indices and ids
     void setIndices() {
       localIdSet_->update();

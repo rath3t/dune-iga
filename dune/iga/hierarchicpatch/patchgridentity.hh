@@ -133,8 +133,6 @@ namespace Dune::IGANEW {
 
     //! geometry of this entity
     Geometry geometry() const {
-      auto refEle= referenceElement(*this);
-
       auto geo = typename Geometry::Implementation(
           hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
       return Geometry(geo);
@@ -245,7 +243,7 @@ namespace Dune::IGANEW {
               typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, TrimmerType>>);
       // auto referenceEle= referenceElement(*this);
       auto geo = typename Geometry::Implementation(
-            hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -275,14 +273,14 @@ namespace Dune::IGANEW {
 
     //! First leaf intersection
     PatchGridLeafIntersectionIterator<GridImp> ileafbegin() const {
-      return PatchGridLeafIntersectionIterator<GridImp>(patchGrid_,
-                                                        patchGrid_->parameterSpaceGrid().leafGridView().ibegin(hostEntity_));
+      return PatchGridLeafIntersectionIterator<GridImp>(
+          patchGrid_, patchGrid_->parameterSpaceGrid().leafGridView().ibegin(hostEntity_));
     }
 
     //! Reference to one past the last leaf intersection
     PatchGridLeafIntersectionIterator<GridImp> ileafend() const {
-      return PatchGridLeafIntersectionIterator<GridImp>(patchGrid_,
-                                                        patchGrid_->parameterSpaceGrid().leafGridView().iend(hostEntity_));
+      return PatchGridLeafIntersectionIterator<GridImp>(
+          patchGrid_, patchGrid_->parameterSpaceGrid().leafGridView().iend(hostEntity_));
     }
 
     //! returns true if Entity has NO children
@@ -303,7 +301,9 @@ namespace Dune::IGANEW {
      * implementation of numerical algorithms is only done for simple discretizations.
      * Assumes that meshes are nested.
      */
-    LocalGeometry geometryInFather() const { return LocalGeometry(typename LocalGeometry::Implementation(hostEntity_.geometryInFather())); }
+    LocalGeometry geometryInFather() const {
+      return LocalGeometry(typename LocalGeometry::Implementation(hostEntity_.geometryInFather()));
+    }
 
     /** \brief Inter-level access to son elements on higher levels<=maxlevel.
      * This is provided for sparsely stored nested unstructured meshes.
@@ -341,17 +341,14 @@ namespace Dune::IGANEW {
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, double>,
-        template <int, int, class> class PatchGridEntity>
-auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
-    return referenceElement(entity.impl());
-  }
-
-  template <int cd, int dim, int dimworld, typename TrimmerType = Trim::NoOpTrimmer<dim, double>,
-            template <int, int, class> class PatchGridEntity>
+  template <int cd, int dim, int dimworld, typename TrimmerType, template <int, int, class> class PatchGridEntity>
   auto referenceElement(const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>>& entity) {
     return TrimmerType::referenceElement(entity);
   }
 
+  template <int cd, int dim, int dimworld, typename TrimmerType, template <int, int, class> class PatchGridEntity>
+  auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
+    return referenceElement(entity.impl());
+  }
 
 }  // namespace Dune::IGANEW

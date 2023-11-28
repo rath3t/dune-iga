@@ -37,10 +37,10 @@ namespace Dune {
         //! The dimension of the reference element.
         static constexpr int mydimension = dim;
         //! The coordinate field type.
-        using ctype              = ct;
-        using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
-        using TrimDataType       = DefaultElementTrimData<mydimension, ctype>;
-        using TrimDataTypeOptionalReference       = std::optional<std::reference_wrapper<const TrimDataType>>;
+        using ctype                         = ct;
+        using ParameterSpaceGrid            = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
+        using TrimDataType                  = DefaultElementTrimData<mydimension, ctype>;
+        using TrimDataTypeOptionalReference = std::optional<std::reference_wrapper<const TrimDataType>>;
 
         /** \brief Collection of types depending on the codimension */
         template <int codim>
@@ -66,8 +66,7 @@ namespace Dune {
          */
         int size(int c) const {
           // TODO Trim
-          if(not trimData_)
-            return cubeGeometry.size(c);
+          if (not trimData_) return cubeGeometry.size(c);
           assert(false);
         }
 
@@ -84,8 +83,7 @@ namespace Dune {
          */
         int size(int i, int c, int cc) const {
           // TODO Trim
-          if(not trimData_)
-            return cubeGeometry.size(i,c,cc);
+          if (not trimData_) return cubeGeometry.size(i, c, cc);
           assert(false);
         }
 
@@ -104,8 +102,7 @@ namespace Dune {
          */
         int subEntity(int i, int c, int ii, int cc) const {
           // TODO Trim
-          if(not trimData_)
-            return cubeGeometry.subEntity(i,c,ii,cc);
+          if (not trimData_) return cubeGeometry.subEntity(i, c, ii, cc);
           assert(false);
         }
 
@@ -129,8 +126,7 @@ namespace Dune {
          */
         auto subEntities(int i, int c, int cc) const {
           // TODO TRIM this should return something usefull
-          if(not trimData_)
-          return cubeGeometry.subEntities(i,c,cc);
+          if (not trimData_) return cubeGeometry.subEntities(i, c, cc);
           assert(false);
         }
 
@@ -147,8 +143,7 @@ namespace Dune {
           // be none
           if (c == 0 and not trimData_) return GeometryTypes::none(mydimension);
 
-          if(trimData_)
-            assert(false);
+          if (trimData_) assert(false);
 
           return GeometryTypes::cube(mydimension);
         }
@@ -159,10 +154,9 @@ namespace Dune {
         GeometryType type() const {
           // TODO for some cases we could also return triangle or something else, but im not sure if
           //  this is too complicated and also unnecessary
-          if(not trimData_)
-            return GeometryTypes::cube(mydimension);
+          if (not trimData_) return GeometryTypes::cube(mydimension);
 
-            assert(false);
+          assert(false);
           return GeometryTypes::none(mydimension);
         }
 
@@ -179,8 +173,7 @@ namespace Dune {
           // TODO this functions could be a bit complicated
           //  we have to implement https://en.wikipedia.org/wiki/Center_of_mass#A_continuous_volume
           //  M as the volume and rho(R)=1
-          if(not trimData_)
-          return cubeGeometry.position(i,c);
+          if (not trimData_) return cubeGeometry.position(i, c);
           assert(false);
         }
 
@@ -192,8 +185,7 @@ namespace Dune {
          *  \param[in]  local  coordinates of the point
          */
         bool checkInside(const Coordinate& local) const {
-          if(not trimData_)
-            cubeGeometry.checkInside(local);
+          if (not trimData_) cubeGeometry.checkInside(local);
           return trimData_->checkInside(local);
         }
 
@@ -222,8 +214,7 @@ namespace Dune {
         /** \brief obtain the volume of the reference element */
         CoordinateField volume() const {
           // TODO trim, integrate on the trimmed patch
-          if(not trimData_)
-          return cubeGeometry.volume();
+          if (not trimData_) return cubeGeometry.volume();
         }
 
         /** \brief obtain the integration outer normal of the reference element
@@ -247,7 +238,7 @@ namespace Dune {
          */
         DefaultTrimmedReferenceElement() = default;
 
-        explicit DefaultTrimmedReferenceElement( TrimDataTypeOptionalReference trimData) : trimData_{trimData} {}
+        explicit DefaultTrimmedReferenceElement(TrimDataTypeOptionalReference trimData) : trimData_{trimData} {}
 
         //! Compares for equality with another reference element.
         bool operator==(const DefaultTrimmedReferenceElement& r) const {
@@ -268,7 +259,7 @@ namespace Dune {
        private:
         TrimDataTypeOptionalReference trimData_;
         const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
-          ReferenceElements<ctype, mydimension>::cube()};
+            ReferenceElements<ctype, mydimension>::cube()};
         // TODO mayby store here all the trimming information anyway?
         // But this should have value semantics and therefore it should be cheap to copy, thus maybe store it at the
         // entity
