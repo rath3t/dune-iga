@@ -47,14 +47,39 @@ namespace Dune {
         static constexpr bool isAlwaysTrivial = false;  ///< Boolean indicating if the trimming is always trivial, no
         ///< trimming or simple deletion of element.
 
+        DefaultTrimmer() = default;
+
+        template <int dimworld>
+        DefaultTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData,
+                       const std::optional<PatchTrimData>& trimData) {
+          createParameterSpaceGrid(patchData, trimData);
+        }
+
+       private:
         using UntrimmedParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
 
+       public:
         using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
                                                                                        ///< grid
-
         template <int mydim>
         using ReferenceElementType = DefaultTrimmedReferenceElement<mydim, ctype>;  ///< Reference element type.
-        using ParameterType        = DefaultTrimParameter;                          ///< Type for trimming parameters.
+
+       private:
+        template <int codim>
+        using MyLocalGeometry = DefaultTrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
+        template <int codim>
+        using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+
+       public:
+        /**
+         * @brief Type alias for local geometry of a specified codimension.
+         * @tparam codim Codimension of the local geometry.
+         */
+        template <int codim>
+        using LocalGeometry
+            = LocalGeometryVariant<DefaultTrimmer, UntrimmedLocalGeometry<codim>, MyLocalGeometry<codim>>;
+
+        using ParameterType = DefaultTrimParameter;  ///< Type for trimming parameters.
 
         /**
          * @brief Get the reference element for a given entity.
@@ -67,22 +92,6 @@ namespace Dune {
           return ReferenceElementType<EntityType::mydimension>(entity.trimData());
         }
 
-        template <int codim>
-        using MyLocalGeometry = DefaultTrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
-        template <int codim>
-        using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
-        /**
-         * @brief Type alias for local geometry of a specified codimension.
-         * @tparam codim Codimension of the local geometry.
-         */
-        template <int codim>
-        using LocalGeometry
-            = LocalGeometryVariant<DefaultTrimmer, UntrimmedLocalGeometry<codim>, MyLocalGeometry<codim>>;
-
-        // static_assert(std::is_same_v<typename UntrimmedLocalGeometry<0>::JacobianTransposed,typename
-        // MyLocalGeometry<0>::JacobianTransposed>); template <int codim>
-        //  using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
-
         using ElementTrimData
             = DefaultElementTrimData<ParameterSpaceGrid::dimension,
                                      typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
@@ -92,27 +101,34 @@ namespace Dune {
         using ElementTrimDataContainer = std::map<typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
                                                   ElementTrimData>;  ///< Container for element trim data.
 
-        DefaultTrimmer() = default;
-        template <int dimworld>
-        DefaultTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData,
-                       const std::optional<PatchTrimData>& trimData) {
-          createParameterSpaceGrid(patchData, trimData);
+        template </* Dune::Concept::EntityExtended */ typename EntityType, typename GlobalIdSet>
+        std::optional<std::reference_wrapper<const ElementTrimData>> trimData(const EntityType& element,
+                                                                              const GlobalIdSet& globalIdSet) const {
+          auto iter = trimDatas_.find(globalIdSet.template id<0>(element));
+          if (iter != trimDatas_.end())
+            return std::make_optional<std::reference_wrapper<const ElementTrimData>>(std::cref(iter->second));
+
+          return std::nullopt;
         }
 
         /**
-         * @brief Trim elements based on patch data and trim data.
+         * @brief Refine grid and create new trim
          * @tparam dimworld Dimension of the world.
          * @param patchData NURBS patch data.
          * @param patchTrimData Patch trim data.
          */
-        template <int dimworld>
-        auto trimElements(const NURBSPatchData<dim, dimworld, ctype>& patchData,
-                          const std::optional<PatchTrimData>& patchTrimData) {
+        auto globalRefine(int ref) {
           // fill up container
           // patchTrimData,trimDatas_;
           ;
         }
 
+        const ParameterSpaceGrid& parameterSpaceGrid() const { return *parameterSpaceGrid_; }
+        ParameterSpaceGrid& parameterSpaceGrid() { return *parameterSpaceGrid_; }
+        const UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() const { return *untrimmedParameterSpaceGrid_; }
+        UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() { return *untrimmedParameterSpaceGrid_; }
+
+       private:
         template <int dimworld>
         void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
                                       const std::optional<PatchTrimData>&) {
@@ -127,11 +143,6 @@ namespace Dune {
           parameterSpaceGrid_->insertLeaf();
           parameterSpaceGrid_->createEnd();
         }
-
-        const ParameterSpaceGrid& parameterSpaceGrid() const { return *parameterSpaceGrid_; }
-        ParameterSpaceGrid& parameterSpaceGrid() { return *parameterSpaceGrid_; }
-        const UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() const { return *untrimmedParameterSpaceGrid_; }
-        UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() { return *untrimmedParameterSpaceGrid_; }
 
         std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_;
         std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;

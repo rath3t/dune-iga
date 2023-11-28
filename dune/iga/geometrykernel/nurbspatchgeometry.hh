@@ -65,7 +65,7 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim, typename TrimmerType_ = Trim::NoOpTrimmer<mydimension, ctype>>
+    template <int codim, typename TrimmerType_ = Trim::IdentityTrimmer<mydimension, ctype>>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
 
     template <int codim, typename NURBSPatch, typename TrimmedLocalParameterSpaceGeometry>
@@ -85,7 +85,7 @@ namespace Dune::IGANEW::GeometryKernel {
      * @tparam TrimmerType Type of the trimmer.
      * @return Local view of the patch.
      */
-    template <int codim, typename TrimmerType = Trim::NoOpTrimmer<mydimension, ctype>>
+    template <int codim, typename TrimmerType = Trim::IdentityTrimmer<mydimension, ctype>>
     auto localView() const {
       return GeometryLocalView<codim, TrimmerType>(*this);
     }

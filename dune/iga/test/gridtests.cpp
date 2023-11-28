@@ -24,7 +24,7 @@
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/defaulttrimmer.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 
 using namespace Dune;
 using namespace Dune::IGANEW;
@@ -794,7 +794,7 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
   t.subTest(testGrids<Trim::DefaultTrimmer>());
-  t.subTest(testGrids<Trim::NoOpTrimmer>());
+  t.subTest(testGrids<Trim::IdentityTrimmer>());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

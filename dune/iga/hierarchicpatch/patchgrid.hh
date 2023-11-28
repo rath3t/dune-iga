@@ -32,7 +32,7 @@
 
 #include <dune/grid/common/grid.hh>
 
-#include <dune/iga/trimmer/nooptrimmer/nooptrimmer.hh>
+#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 #include <dune/subgrid/subgrid.hh>
 
@@ -82,7 +82,7 @@ namespace Dune::IGANEW {
    *
    * \tparam HostGrid The host grid type wrapped by the PatchGrid
    */
-  template <int dim, int dimworld, typename TrimmerType_ = Trim::NoOpTrimmer<dim, double>>
+  template <int dim, int dimworld, typename TrimmerType_ = Trim::IdentityTrimmer<dim, double>>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, typename TrimmerType_::ctype,
                                                      PatchGridFamily<dim, dimworld, TrimmerType_>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
@@ -454,14 +454,8 @@ namespace Dune::IGANEW {
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-    std::optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>> trimData(
-        const typename Traits::template Codim<0>::Entity& element) const {
-      auto iter = trimmer_.trimDatas_.find(globalIdSet_->template id<0>(element));
-      if (iter != trimmer_.trimDatas_.end())
-        return std::make_optional<std::reference_wrapper<const typename TrimmerType::ElementTrimData>>(
-            std::cref(iter->second));
-
-      return std::nullopt;
+    auto trimData(const typename Traits::template Codim<0>::Entity& element) const {
+      return trimmer_.trimData(element, *globalIdSet_);
     }
 
     TrimmerType trimmer_;

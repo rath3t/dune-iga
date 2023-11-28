@@ -3,8 +3,8 @@
 #pragma once
 #include <ranges>
 
-#include "defaulttrimmer.hh"
 #include "trimmedlocalgeometry.hh"
+#include "trimmer.hh"
 
 namespace Dune {
   namespace IGANEW {

@@ -13,22 +13,25 @@ namespace Dune::IGANEW {
     class NURBSPatch;
   }
   namespace Trim {
+
+    struct IdentityTrimParameter {};
+
     template <int mydim_, typename ScalarType>
-    struct NoOpElementTrimData {
+    struct IdentityElementTrimData {
       // outer loops
       // inner loops ....
     };
 
     template <typename ParameterSpaceGrid>
-    struct NoOpElementTrimDataContainer {};
+    struct IdentityElementTrimDataContainer {};
     template <int mydim_, typename ScalarType>
-    struct NoOpPatchTrimData {
+    struct IdentityPatchTrimData {
       // outer loops
       // inner loops ....
     };
 
     template <int dim, typename ScalarType = double>
-    struct NoOpTrimmer {
+    struct IdentityTrimmer {
       static constexpr int mydimension = dim;         ///< Dimension of the patch.
       using ctype                      = ScalarType;  ///< Scalar type for the coordinates.
 
@@ -38,9 +41,9 @@ namespace Dune::IGANEW {
       static constexpr bool isAlwaysTrivial = true;  ///< Boolean indicating if the trimming is always trivial, no
       ///< trimming or simple deletion of element.
 
-      NoOpTrimmer() = default;
+      IdentityTrimmer() = default;
 
-      // using Grid= PatchGrid<dim, dimworld, NoOpTrimmer,ScalarType>;
+      // using Grid= PatchGrid<dim, dimworld, IdentityTrimmer,ScalarType>;
 
       using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
 
@@ -51,19 +54,19 @@ namespace Dune::IGANEW {
       template <int codim>
       using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
 
+      using ParameterType = IdentityTrimParameter;  ///< Type for trimming parameters.
+
       template </* Dune::Concept::EntityExtended */ typename EntityType>
       static auto referenceElement(const EntityType& entity) {
         return Dune::referenceElement<ctype, EntityType::mydimension>(entity.type());
       }
 
-      // template <int codim>
-      // using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+      using ElementTrimData
+          = IdentityElementTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
 
-      using ElementTrimData = NoOpElementTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
+      using PatchTrimData = IdentityPatchTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
 
-      using PatchTrimData = NoOpPatchTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
-
-      using ElementTrimDataContainer = NoOpElementTrimDataContainer<ParameterSpaceGrid>;
+      using ElementTrimDataContainer = IdentityElementTrimDataContainer<ParameterSpaceGrid>;
 
       template <int dimworld>
       void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
@@ -72,8 +75,8 @@ namespace Dune::IGANEW {
       }
 
       template <int dimworld>
-      NoOpTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
-                  const std::optional<PatchTrimData>& trimData) {
+      IdentityTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
+                      const std::optional<PatchTrimData>& trimData) {
         createParameterSpaceGrid(patch, trimData);
       }
 

@@ -66,7 +66,7 @@ int main() {
 
   checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::Trim::DefaultTrimmer<3>>>();
 
-  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::NoOpTrimmer<2>>;
+  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::IdentityTrimmer<2>>;
   std::cout << Dune::className<
       typename Grid23::Codim<0>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()
             << std::endl;
