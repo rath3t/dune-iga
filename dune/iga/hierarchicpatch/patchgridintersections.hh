@@ -32,6 +32,7 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
     constexpr static int dim = GridImp::dimension;
+    constexpr static int mydim = GridImp::dimension-1;
 
     constexpr static int dimworld = GridImp::dimensionworld;
     using TrimmerType             = typename GridImp::TrimmerType;
@@ -40,6 +41,7 @@ namespace Dune::IGANEW {
     typedef typename GridImp::ctype ctype;
 
     typedef typename GridImp::ParameterSpaceGrid::LeafGridView::Intersection HostLeafIntersection;
+    using LocalCoordinate           = FieldVector<ctype, mydim>;
 
    public:
     typedef typename GridImp::template Codim<1>::Geometry Geometry;
@@ -74,7 +76,9 @@ namespace Dune::IGANEW {
      *     intersection's geometry.
      *       It is scaled to have unit length. */
     NormalVector centerUnitOuterNormal() const {
-      return this->unitOuterNormal({0.5});
+      LocalCoordinate localcenter;
+      localcenter=0.5;
+      return this->unitOuterNormal(localcenter);
     }
 
     //! return true if across the edge an neighbor on this level exists
@@ -115,7 +119,7 @@ namespace Dune::IGANEW {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry() const {
-      // TODO trim does this make sense?
+      // TODO trim this will be wrong as soon as the intersection geometry has a special geoemtry
       auto geo = typename Geometry::Implementation(
           hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
       return Geometry(geo);
@@ -129,9 +133,9 @@ namespace Dune::IGANEW {
 
     //! return outer normal
     FieldVector<ctype, GridImp::dimensionworld> outerNormal(
-        const FieldVector<ctype, GridImp::dimension - 1>& local) const {
+        const LocalCoordinate& local) const {
       FieldMatrix<ctype, dimworld, dim> J
-          = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+          = inside().geometry().jacobianInverseTransposed(geometryInInside().global(local));
       FieldVector<ctype, dimworld> res;
       J.mv(hostIntersection_.outerNormal(local), res);
       return res;
@@ -139,19 +143,17 @@ namespace Dune::IGANEW {
 
     //! return outer normal multiplied by the integration element
     FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal(
-        const FieldVector<ctype, GridImp::dimension - 1>& local) const {
-      auto Jinv        = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
-      const ctype detJ = outside().geometry().integrationElement(geometryInOutside().global(local));
-      FieldVector<ctype, dimworld> res;
-      Jinv.mv(hostIntersection_.integrationOuterNormal(local), res);
+        const LocalCoordinate& local) const {
+      const ctype detJ = this->geometry().integrationElement(local);
+      FieldVector<ctype, dimworld> res=unitOuterNormal(local);
       res *= detJ;
       return res;
     }
 
     //! return unit outer normal
     FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal(
-        const FieldVector<ctype, GridImp::dimension - 1>& local) const {
-      auto Jinv = outside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
+        const LocalCoordinate& local) const {
+      auto Jinv = inside().geometry().jacobianInverseTransposed(geometryInInside().global(local));
       FieldVector<ctype, dimworld> res;
       Jinv.mv(hostIntersection_.unitOuterNormal(local), res);
       res /= res.two_norm();
@@ -175,6 +177,7 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
     constexpr static int dim = GridImp::dimension;
+    constexpr static int mydim = GridImp::dimension-1;
 
     constexpr static int dimworld = GridImp::dimensionworld;
 
@@ -185,6 +188,8 @@ namespace Dune::IGANEW {
 
     typedef typename GridImp::ParameterSpaceGrid::LevelGridView::Intersection HostLevelIntersection;
 
+    using LocalCoordinate           = FieldVector<ctype, mydim>;
+
     using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
    public:
@@ -193,7 +198,7 @@ namespace Dune::IGANEW {
     typedef typename GridImp::template Codim<0>::Entity Entity;
     typedef FieldVector<ctype, dimworld> NormalVector;
 
-    PatchGridLevelIntersection() {}
+    PatchGridLevelIntersection() = default;
 
     PatchGridLevelIntersection(const GridImp* identityGrid, const HostLevelIntersection& hostIntersection)
         : patchGrid_(identityGrid), hostIntersection_(hostIntersection) {}
@@ -227,8 +232,9 @@ namespace Dune::IGANEW {
      *     intersection's geometry.
      *       It is scaled to have unit length. */
     NormalVector centerUnitOuterNormal() const {
-
-      return this->unitOuterNormal({0.5});
+      LocalCoordinate localcenter;
+      localcenter=0.5;
+      return this->unitOuterNormal(localcenter);
     }
 
     //! return true if across the edge an neighbor on this level exists
@@ -247,12 +253,16 @@ namespace Dune::IGANEW {
     //! iteration started.
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
-    [[nodiscard]] LocalGeometry geometryInInside() const { return LocalGeometry(hostIntersection_.geometryInInside()); }
+    [[nodiscard]] LocalGeometry geometryInInside() const {
+      auto localGeometry = hostIntersection_.geometryInInside();
+      static_assert( std::is_same_v<decltype(localGeometry),typename LocalGeometry::Implementation::LocalHostGeometry>);
+      return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
+    }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     [[nodiscard]] LocalGeometry geometryInOutside() const {
-      return LocalGeometry(hostIntersection_.geometryInOutside());
+      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInOutside()));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
@@ -260,7 +270,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] Geometry geometry() const {
       // TODO trim does this make sense?
       auto geo = typename Geometry::Implementation(
-          hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
+          hostIntersection_.geometry(), patchGrid_->patchGeometries_[inside().level()].template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 
@@ -271,29 +281,33 @@ namespace Dune::IGANEW {
     [[nodiscard]] int indexInOutside() const { return hostIntersection_.indexInOutside(); }
 
     //! return outer normal
-    [[nodiscard]] FieldVector<ctype, dimworld> outerNormal(const FieldVector<ctype, dim - 1>& local) const {
+    [[nodiscard]] FieldVector<ctype, dimworld> outerNormal(const LocalCoordinate& local) const {
       const auto globalInPatch            = geometryInInside().global(local);
       FieldMatrix<ctype, dimworld, dim> J = inside().geometry().jacobianInverseTransposed(globalInPatch);
       FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.outerNormal(local), res);
+      auto refElement = referenceElement( inside().geometry() );
+      const int indexInInside = this->indexInInside();
+      const typename LocalGeometry::GlobalCoordinate &refNormal = refElement.integrationOuterNormal( indexInInside );
+      const auto refNormal2= hostIntersection_.outerNormal(local);
+      // std::cout<<"refNormal"<<refNormal2<<"refNormal"<<refNormal<<std::endl;
+      // std::cout<<"J"<<J<<std::endl;
+      J.mv(refNormal, res);
+      // std::cout<<"res"<<res<<std::endl;
       return res;
     }
 
     //! return outer normal multiplied by the integration element
-    [[nodiscard]] FieldVector<ctype, dimworld> integrationOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
-      auto J           = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
-      const ctype detJ = inside().geometry().integrationElement(geometryInOutside().global(local));
-      FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.integrationOuterNormal(local), res);
+    [[nodiscard]] FieldVector<ctype, dimworld> integrationOuterNormal(const LocalCoordinate& local) const {
+      const ctype detJ = this->geometry().integrationElement(local);
+      FieldVector<ctype, dimworld> res= unitOuterNormal(local);
+
       res *= detJ;
       return res;
     }
 
     //! return unit outer normal
-    [[nodiscard]] FieldVector<ctype, dimworld> unitOuterNormal(const FieldVector<ctype, dim - 1>& local) const {
-      auto J = inside().geometry().jacobianInverseTransposed(geometryInOutside().global(local));
-      FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.unitOuterNormal(local), res);
+    [[nodiscard]] FieldVector<ctype, dimworld> unitOuterNormal(const LocalCoordinate& local) const {
+      FieldVector<ctype, dimworld> res= outerNormal(local);
       res /= res.two_norm();
       return res;
     }

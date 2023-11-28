@@ -709,6 +709,37 @@ auto testNURBSSurface() {
   return testSuite;
 }
 
+auto testPlate() {
+  constexpr int gridDim                = 2;
+  constexpr auto dimworld              = 2;
+  const std::array<int, gridDim> order = {2, 2};
+  TestSuite t;
+
+  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+
+  const std::vector<std::vector<ControlPoint>> controlPoints
+      = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
+         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+
+  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
+
+  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld>;
+
+  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+  auto grid               = std::make_shared<Grid>(patchData);
+  grid->globalRefine(3);
+  t.subTest(thoroughGridCheck(*grid));
+
+  return t;
+}
+
 int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
@@ -729,7 +760,10 @@ int main(int argc, char** argv) try {
   t.subTest(testNurbsGridCylinder());
   std::cout << "testNURBSGridSurface" << std::endl;
   t.subTest(testNURBSGridSurface());
-  // t.subTest(testPlate());
+  std::cout << "testPlate==============================================" << std::endl;
+  t.subTest(testPlate());
+  std::cout << "testPlateEND==============================================" << std::endl;
+
   // testNurbsGridCylinder();
   std::cout << "testTorusGeometry" << std::endl;
   t.subTest(testTorusGeometry());

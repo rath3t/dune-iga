@@ -6,8 +6,8 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
-namespace Dune {
-  namespace IGANEW {
+
+  namespace Dune::IGANEW {
     namespace GeometryKernel {
       template <int dim_, int dimworld_, typename ScalarType>
   class NURBSPatch ;
@@ -55,6 +55,10 @@ namespace Dune {
         template <int codim>
         using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
+        template <int codim>
+        using LocalHostGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+
+
         using ElementTrimData = NoOpElementTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
 
         using PatchTrimData = NoOpPatchTrimData<ParameterSpaceGrid::dimension, typename ParameterSpaceGrid::ctype>;
@@ -78,5 +82,5 @@ NoOpTrimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch, const
 
       };
     }  // namespace Trim
-  }    // namespace IGANEW
-}  // namespace Dune
+  } // namespace Dune::IGANEW
+

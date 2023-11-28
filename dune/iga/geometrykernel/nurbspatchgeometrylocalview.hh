@@ -367,7 +367,10 @@ namespace Dune::IGANEW {
       /* @brief returns the domain, i.e. [0,1] */
       [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
-      [[nodiscard]] bool affine() const { return false; }
+      [[nodiscard]] bool affine() const {
+//TODO check when this is true
+        return false;
+      }
 
      private:
       void checkState() const { assert(parameterSpaceGeometry && "Bind the local view first!"); }

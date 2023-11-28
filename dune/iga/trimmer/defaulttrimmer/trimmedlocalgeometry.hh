@@ -38,7 +38,7 @@ namespace Dune {
 
         /** constructor from host geometry
          */
-        DefaultTrimmedPatchLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
+        explicit DefaultTrimmedPatchLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
 
         /** \brief Return the element type identifier
          */

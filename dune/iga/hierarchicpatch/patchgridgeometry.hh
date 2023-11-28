@@ -101,6 +101,7 @@ namespace Dune::IGANEW {
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
+      // std::cout<<"jacobianInverseTransposed(local)\n"<<geometryLocalView_.jacobianInverseTransposed(local)<<std::endl;
       return geometryLocalView_.jacobianInverseTransposed(local);
     }
 

@@ -300,7 +300,7 @@ namespace Dune::IGANEW {
      * implementation of numerical algorithms is only done for simple discretizations.
      * Assumes that meshes are nested.
      */
-    LocalGeometry geometryInFather() const { return LocalGeometry(hostEntity_.geometryInFather()); }
+    LocalGeometry geometryInFather() const { return LocalGeometry(typename LocalGeometry::Implementation(hostEntity_.geometryInFather())); }
 
     /** \brief Inter-level access to son elements on higher levels<=maxlevel.
      * This is provided for sparsely stored nested unstructured meshes.
