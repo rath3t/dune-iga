@@ -10,12 +10,12 @@
 #include <dune/grid/common/intersection.hh>
 
 /** \file
- * \brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
+ * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
 namespace Dune::IGANEW {
 
-  /** \brief Iterator over all element neighbors
+  /** @brief Iterator over all element neighbors
    * \ingroup PatchGrid
    * Mesh entities of codimension 0 ("elements") allow to visit all neighbors, where
    * a neighbor is an entity of codimension 0 which has a common entity of codimension 1
@@ -49,7 +49,7 @@ namespace Dune::IGANEW {
     //! prefix increment
     void increment() { ++hostIterator_; }
 
-    //! \brief dereferencing
+    //! @brief dereferencing
     Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_); }
 
    private:
@@ -90,7 +90,7 @@ namespace Dune::IGANEW {
     //! prefix increment
     void increment() { ++hostIterator_; }
 
-    //! \brief dereferencing
+    //! @brief dereferencing
     Intersection dereference() const {
       return PatchGridLevelIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
     }

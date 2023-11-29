@@ -4,7 +4,7 @@
 #pragma once
 
 /** \file
- * \brief The B-spline global function space basis
+ * @brief The B-spline global function space basis
  */
 
 #include <array>
@@ -44,13 +44,13 @@ namespace Dune::Functions {
   template <typename GV, typename ScalarType = double>
   class NurbsPreBasis;
 
-  /** \brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
+  /** @brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
    * of a B-spline patch to a knot span
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * \tparam GV Grid view that the basis is defined on
-   * \tparam R Number type used for spline function values
+   * @tparam GV Grid view that the basis is defined on
+   * @tparam R Number type used for spline function values
    */
   template <class GV, class R>
   class NurbsLocalBasis {
@@ -60,18 +60,18 @@ namespace Dune::Functions {
     enum { dim = GV::dimension };
 
    public:
-    //! \brief export type traits for function signature
+    //! @brief export type traits for function signature
     using Traits = LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>>;
 
-    /** \brief Constructor with a given B-spline patch
+    /** @brief Constructor with a given B-spline patch
      *
      * The patch object does all the work.
      */
     NurbsLocalBasis(const NurbsPreBasis<GV>& preBasis, const NurbsLocalFiniteElement<GV, R>& lFE)
         : preBasis_(preBasis), lFE_(lFE) {}
 
-    /** \brief Evaluate all shape functions
-     * \param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
+    /** @brief Evaluate all shape functions
+     * @param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
      */
     void evaluateFunction(const FieldVector<D, dim>& in, std::vector<FieldVector<R, 1>>& out) const {
       FieldVector<D, dim> globalIn = offset_;
@@ -80,8 +80,8 @@ namespace Dune::Functions {
       preBasis_.evaluateFunction(globalIn, out, lFE_.currentKnotSpan_);
     }
 
-    /** \brief Evaluate Jacobian of all shape functions
-     * \param in Coordinates where to evaluate the Jacobian, in local coordinates of the current knot span
+    /** @brief Evaluate Jacobian of all shape functions
+     * @param in Coordinates where to evaluate the Jacobian, in local coordinates of the current knot span
      */
     void evaluateJacobian(const FieldVector<D, dim>& in, std::vector<FieldMatrix<D, 1, dim>>& out) const {
       FieldVector<D, dim> globalIn = offset_;
@@ -94,7 +94,7 @@ namespace Dune::Functions {
           out[i][0][j] *= scaling_[j][j];
     }
 
-    //! \brief Evaluate all shape functions and derivatives of any degree
+    //! @brief Evaluate all shape functions and derivatives of any degree
     inline void partial(const typename std::array<unsigned int, dim>& order, const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const {
       FieldVector<D, dim> globalIn = offset_;
@@ -107,7 +107,7 @@ namespace Dune::Functions {
             out[i][0] *= scaling_[d][d];
     }
 
-    /** \brief Polynomial degree of the shape functions
+    /** @brief Polynomial degree of the shape functions
      *
      * Unfortunately, the general interface of the LocalBasis class mandates that the 'degree' method
      * takes no arguments, and returns a single integer.  It therefore cannot reflect that fact that
@@ -118,7 +118,7 @@ namespace Dune::Functions {
       return *std::max_element(preBasis_.patchData_.degree.begin(), preBasis_.patchData_.degree.end());
     }
 
-    /** \brief Return the number of basis functions on the current knot span
+    /** @brief Return the number of basis functions on the current knot span
      */
     [[nodiscard]] std::size_t size() const { return lFE_.size(); }
 
@@ -133,7 +133,7 @@ namespace Dune::Functions {
     DiagonalMatrix<D, dim> scaling_;
   };
 
-  /** \brief Attaches a shape function to an entity
+  /** @brief Attaches a shape function to an entity
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
@@ -144,7 +144,7 @@ namespace Dune::Functions {
    * \note Currently only implemented for 1d and 2d grids.  For higher dimensions you can still use
    *   the BSplineBasis, but you won't be able to find the degrees of freedom on the grid boundary.
    *
-   * \tparam dim Dimension of the reference cube
+   * @tparam dim Dimension of the reference cube
    */
   template <int dim>
   class NurbsLocalCoefficients {
@@ -158,7 +158,7 @@ namespace Dune::Functions {
       return alpha;
     }
 
-    /** \brief Set the 'subentity' field for each dof for a 1d element */
+    /** @brief Set the 'subentity' field for each dof for a 1d element */
     void setup1d(std::vector<unsigned int>& subEntity) {
       if (sizes_[0] == 1) {
         subEntity[0] = 0;
@@ -282,29 +282,29 @@ namespace Dune::Functions {
     std::vector<LocalKey> li_;
   };
 
-  /** \brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+  /** @brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
    *
    * \ingroup FunctionSpaceBasesImplementations
    */
   template <int dim, class LB>
   class NurbsLocalInterpolation {
    public:
-    //! \brief Local interpolation of a function
+    //! @brief Local interpolation of a function
     template <typename F, typename C>
     void interpolate(const F& f, std::vector<C>& out) const {
       DUNE_THROW(NotImplemented, "NurbsLocalInterpolation::interpolate");
     }
   };
 
-  /** \brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
+  /** @brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
    * This class ties together the implementation classes NurbsLocalBasis, NurbsLocalCoefficients, and
    * NurbsLocalInterpolation
    *
-   * \tparam D Number type used for domain coordinates
-   * \tparam R Number type used for spline function values
+   * @tparam D Number type used for domain coordinates
+   * @tparam R Number type used for spline function values
    */
   template <class GV, class R>
   class NurbsLocalFiniteElement {
@@ -313,18 +313,18 @@ namespace Dune::Functions {
     friend class NurbsLocalBasis<GV, R>;
 
    public:
-    /** \brief Export various types related to this LocalFiniteElement
+    /** @brief Export various types related to this LocalFiniteElement
      */
     typedef LocalFiniteElementTraits<NurbsLocalBasis<GV, R>, NurbsLocalCoefficients<dim>,
                                      NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>>>
         Traits;
 
-    /** \brief Constructor with a given B-spline basis
+    /** @brief Constructor with a given B-spline basis
      */
     explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, R>& preBasis)
         : preBasis_(preBasis), localBasis_(preBasis, *this) {}
 
-    /** \brief Copy constructor
+    /** @brief Copy constructor
      */
     NurbsLocalFiniteElement(const NurbsLocalFiniteElement& other)
         : preBasis_(other.preBasis_), localBasis_(preBasis_, *this) {
@@ -334,11 +334,11 @@ namespace Dune::Functions {
       }
     }
 
-    /** \brief Bind LocalFiniteElement to a specific knot span of the spline patch
+    /** @brief Bind LocalFiniteElement to a specific knot span of the spline patch
      *
      * Elements are the non-empty knot spans, here we do the renumbering
      *
-     * \param elementIdx Integer coordinates in the tensor product patch
+     * @param elementIdx Integer coordinates in the tensor product patch
      */
 
     // TODO save correct element info
@@ -364,25 +364,25 @@ namespace Dune::Functions {
       elementIdx_ = elementIdx;
     }
 
-    /** \brief Hand out a LocalBasis object */
+    /** @brief Hand out a LocalBasis object */
     const NurbsLocalBasis<GV, R>& localBasis() const {
       assert(isBound && "This element is not bound!");
       return localBasis_;
     }
 
-    /** \brief Hand out a LocalCoefficients object */
+    /** @brief Hand out a LocalCoefficients object */
     const NurbsLocalCoefficients<dim>& localCoefficients() const {
       assert(isBound && "This element is not bound!");
       return localCoefficients_;
     }
 
-    /** \brief Hand out a LocalInterpolation object */
+    /** @brief Hand out a LocalInterpolation object */
     const NurbsLocalInterpolation<dim, NurbsLocalBasis<GV, R>>& localInterpolation() const {
       assert(isBound && "This element is not bound!");
       return localInterpolation_;
     }
 
-    /** \brief Number of shape functions in this finite element */
+    /** @brief Number of shape functions in this finite element */
     [[nodiscard]] unsigned size() const {
       std::size_t r = 1;
       for (int i = 0; i < dim; i++)
@@ -390,11 +390,11 @@ namespace Dune::Functions {
       return r;
     }
 
-    /** \brief Return the reference element that the local finite element is defined on (here, a hypercube)
+    /** @brief Return the reference element that the local finite element is defined on (here, a hypercube)
      */
     [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(dim); }
 
-    /** \brief Number of degrees of freedom for one coordinate direction */
+    /** @brief Number of degrees of freedom for one coordinate direction */
     [[nodiscard]] unsigned int oneDimensionalSize(int i) const { return preBasis_.patchData_.degree[i] + 1; }
 
     const NurbsPreBasis<GV, R>& preBasis_;
@@ -412,11 +412,11 @@ namespace Dune::Functions {
   template <typename GV>
   class NurbsNode;
 
-  /** \brief Pre-basis for B-spline basis
+  /** @brief Pre-basis for B-spline basis
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * \tparam GV The GridView that the space is defined on
+   * @tparam GV The GridView that the space is defined on
    *
    * The BSplinePreBasis can be used to embed a BSplineBasis
    * in a larger basis for the construction of product spaces.
@@ -429,17 +429,17 @@ namespace Dune::Functions {
     using DirectIndex = unsigned int;
     using RealIndex   = unsigned int;
 
-    /** \brief Simple dim-dimensional multi-index class */
+    /** @brief Simple dim-dimensional multi-index class */
     class MultiDigitCounter {
      public:
-      /** \brief Constructs a new multi-index, and sets all digits to zero
-       *  \param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
+      /** @brief Constructs a new multi-index, and sets all digits to zero
+       *  @param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
        */
       explicit MultiDigitCounter(const std::array<unsigned int, dim>& limits) : limits_(limits) {
         std::fill(counter_.begin(), counter_.end(), 0);
       }
 
-      /** \brief Increment the multi-index */
+      /** @brief Increment the multi-index */
       MultiDigitCounter& operator++() {
         for (int i = 0; i < dim; i++) {
           ++counter_[i];
@@ -452,10 +452,10 @@ namespace Dune::Functions {
         return *this;
       }
 
-      /** \brief Access the i-th digit of the multi-index */
+      /** @brief Access the i-th digit of the multi-index */
       const unsigned int& operator[](int i) const { return counter_[i]; }
 
-      /** \brief How many times can you increment this multi-index before it overflows? */
+      /** @brief How many times can you increment this multi-index before it overflows? */
       [[nodiscard]] unsigned int cycle() const {
         unsigned int r = 1;
         for (int i = 0; i < dim; i++)
@@ -464,15 +464,15 @@ namespace Dune::Functions {
       }
 
      private:
-      /** \brief The number of different digit values for each place */
+      /** @brief The number of different digit values for each place */
       const std::array<unsigned int, dim> limits_;
 
-      /** \brief The values of the multi-index.  Each array entry is one digit */
+      /** @brief The values of the multi-index.  Each array entry is one digit */
       std::array<unsigned int, dim> counter_;
     };
 
    public:
-    /** \brief The grid view that the FE space is defined on */
+    /** @brief The grid view that the FE space is defined on */
     using GridView  = GV;
     using size_type = std::size_t;
 
@@ -513,7 +513,7 @@ namespace Dune::Functions {
     void update(const GridView& gv) { gridView_ = gv; }
 
     /**
-     * \brief Create tree node
+     * @brief Create tree node
      */
     Node makeNode() const { return Node{this}; }
 
@@ -572,7 +572,7 @@ namespace Dune::Functions {
       }
     }
 
-    /// \brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
+    /// @brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
     template <typename It>
     It indices(const Node& node, It it) const {
       const auto eleIdx = node.element_.impl().getDirectIndexInPatch();
@@ -606,18 +606,18 @@ namespace Dune::Functions {
       return result;
     }
 
-    //! \brief Total number of B-spline basis functions
+    //! @brief Total number of B-spline basis functions
     [[nodiscard]] unsigned int size() const {
       assert(!std::isnan(cachedSize_));
       return cachedSize_;
     }
 
-    //! \brief Number of shape functions in one direction
+    //! @brief Number of shape functions in one direction
     [[nodiscard]] unsigned int sizePerDirection(size_t d) const {
       return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1;
     }
 
-    /** \brief Evaluate all B-spline basis functions at a given point
+    /** @brief Evaluate all B-spline basis functions at a given point
      */
     void evaluateFunction(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
                           const std::array<int, dim>& currentKnotSpan) const {
@@ -627,7 +627,7 @@ namespace Dune::Functions {
       std::ranges::copy(N.directGetAll(), out.begin());
     }
 
-    /** \brief Evaluate Jacobian of all B-spline basis functions
+    /** @brief Evaluate Jacobian of all B-spline basis functions
      *
      * In theory this is easy: just look up the formula in a B-spline text of your choice.
      * The challenge is compute only the values needed for the current knot span.
@@ -647,7 +647,7 @@ namespace Dune::Functions {
       }
     }
 
-    //! \brief Evaluate Derivatives of all B-spline basis functions
+    //! @brief Evaluate Derivatives of all B-spline basis functions
 
     void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
                  std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
@@ -661,7 +661,7 @@ namespace Dune::Functions {
       std::ranges::copy(std::move(dNpart), std::back_inserter(out));
     }
 
-    /** \brief Compute integer element coordinates from the element index
+    /** @brief Compute integer element coordinates from the element index
      * \warning This method makes strong assumptions about the grid, namely that it is
      *   structured, and that indices are given in a x-fastest fashion.
      */
@@ -678,10 +678,10 @@ namespace Dune::Functions {
     GridView gridView_;
     std::array<std::vector<double>, dim> uniqueKnotVector_;
 
-    /** \brief Order of the B-spline for each space dimension */
+    /** @brief Order of the B-spline for each space dimension */
     Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;
 
-    /** \brief Number of grid elements in the different coordinate directions */
+    /** @brief Number of grid elements in the different coordinate directions */
     std::array<unsigned, dim> elements_;
 
     unsigned int cachedSize_ = std::numeric_limits<unsigned int>::signaling_NaN();
@@ -703,7 +703,7 @@ namespace Dune::Functions {
     //! Return current element, throw if unbound
     const Element& element() const { return element_; }
 
-    /** \brief Return the LocalFiniteElement for the element we are bound to
+    /** @brief Return the LocalFiniteElement for the element we are bound to
      *
      * The LocalFiniteElement implements the corresponding interfaces of the dune-localfunctions module
      */
@@ -749,7 +749,7 @@ namespace Dune::Functions {
     }  // namespace Impl
 
     /**
-     * \brief Create a pre-basis factory that can create a B-spline pre-basis
+     * @brief Create a pre-basis factory that can create a B-spline pre-basis
      *
      * \ingroup FunctionSpaceBasesImplementations
      *
@@ -769,11 +769,11 @@ namespace Dune::Functions {
   // This is the actual global basis implementation based on the reusable parts.
   // *****************************************************************************
 
-  /** \brief A global B-spline basis
+  /** @brief A global B-spline basis
    *
    * \ingroup FunctionSpaceBasesImplementations
    *
-   * \tparam GV The GridView that the space is defined on
+   * @tparam GV The GridView that the space is defined on
    */
   template <typename GV>
   using NurbsBasis = DefaultGlobalBasis<NurbsPreBasis<GV>>;

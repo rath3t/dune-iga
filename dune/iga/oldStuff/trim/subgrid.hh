@@ -18,7 +18,7 @@
 
 namespace Dune::IGA {
 
-  /** \brief representation of the subgrid of trimmed elements in the reference space */
+  /** @brief representation of the subgrid of trimmed elements in the reference space */
   template <int dim>
   class TrimmedSubGrid {
    public:
@@ -66,7 +66,7 @@ namespace Dune::IGA {
             std::vector<FieldVector<double, dim>>{vertices_[*it], vertices_[*(it + 1)], vertices_[*(it + 2)]});
     }
 
-    /// \brief This is necessary for loops with only one or 2 boundaries (e.g. circles)
+    /// @brief This is necessary for loops with only one or 2 boundaries (e.g. circles)
     void checkAndDivideSmallLoops() {
       auto partsForSize = [](std::size_t size) -> int { return size == 1 ? 4 : 2; };
 
@@ -89,7 +89,7 @@ namespace Dune::IGA {
     }
 
    public:
-    /// \brief Calculates the area from the simplex elements in the current grid
+    /// @brief Calculates the area from the simplex elements in the current grid
     [[nodiscard]] double calculateArea() const {
       return std::accumulate(elements_.begin(), elements_.end(), 0.0,
                              [](double rhs, const auto& element) { return rhs + element.volume(); });

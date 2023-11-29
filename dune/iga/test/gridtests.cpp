@@ -172,7 +172,7 @@ auto testNurbsGridCylinder() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<2, 3, TrimmerType<2, double>> grid(patchData);
+  IGANEW::PatchGrid<2, 3, TrimmerType> grid(patchData);
 
   grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
@@ -199,7 +199,7 @@ auto testHierarchicPatch() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  Dune::IGANEW::PatchGrid<2, 3, TrimmerType<2, double>> patch(nurbsPatchData);
+  Dune::IGANEW::PatchGrid<2, 3, TrimmerType> patch(nurbsPatchData);
 
   t.subTest(thoroughGridCheck(patch));
 
@@ -220,7 +220,7 @@ auto testTorusGeometry() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  IGANEW::PatchGrid<2, 3, TrimmerType<2, double>> grid(nurbsPatchData);
+  IGANEW::PatchGrid<2, 3, TrimmerType> grid(nurbsPatchData);
   grid.globalRefine(1);
   // grid.globalRefineInDirection(1, 1);
   // grid.globalRefineInDirection(0, 2);
@@ -318,7 +318,7 @@ auto testNURBSGridCurve() {
   patchData               = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 1);
 
   TestSuite t;
-  IGANEW::PatchGrid<dim, dimworld, TrimmerType<dim, double>> grid(patchData);
+  IGANEW::PatchGrid<dim, dimworld, TrimmerType> grid(patchData);
   grid.globalRefine(3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -377,7 +377,7 @@ auto testNURBSGridSurface() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<dim, dimworld, TrimmerType<dim, double>> grid(patchData);
+  IGANEW::PatchGrid<dim, dimworld, TrimmerType> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -430,7 +430,7 @@ auto test3DGrid() {
   //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   //  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
   //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
-  IGANEW::PatchGrid<3, 3, TrimmerType<dim, double>> grid(nurbsPatchData);
+  IGANEW::PatchGrid<3, 3, TrimmerType> grid(nurbsPatchData);
   //  grid.globalRefine(1);
   //  gridcheck(grid);
   //  grid.globalRefineInDirection(0,1);
@@ -739,7 +739,7 @@ auto testPlate() {
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
   auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld, TrimmerType<gridDim, double>>;
+  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld, TrimmerType>;
 
   Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
@@ -793,8 +793,8 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
-  t.subTest(testGrids<Trim::DefaultTrimmer>());
-  t.subTest(testGrids<Trim::IdentityTrimmer>());
+  t.subTest(testGrids<DefaultTrim::Trimmer>());
+  t.subTest(testGrids<IdentityTrim::Trimmer>());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

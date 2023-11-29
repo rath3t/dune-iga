@@ -9,11 +9,11 @@
 namespace Dune::IGANEW {
 
   /**
-   * \brief Struct that holds all data regarding the NURBS geometric structure
+   * @brief Struct that holds all data regarding the NURBS geometric structure
    *
-   * \tparam dim Dimension of the patch
-   * \tparam dimworld Dimension of the control point coordinates, i.e., where the patch lives in
-   * \tparam ScalarType The type for the functions values and arguments, defaults to double
+   * @tparam dim Dimension of the patch
+   * @tparam dimworld Dimension of the control point coordinates, i.e., where the patch lives in
+   * @tparam ScalarType The type for the functions values and arguments, defaults to double
    */
   template <int dim, int dimworld_, typename ScalarType = double>
   struct NURBSPatchData {
@@ -23,15 +23,15 @@ namespace Dune::IGANEW {
     using ControlPointType        = ControlPoint<GlobalCoordinateType>;  ///< Type for control points
     using ControlPointNetType     = MultiDimensionalNet<dim, ControlPointType>;  ///< Type for the net of control points
 
-    /* \brief Default constructor */
+    /* @brief Default constructor */
     NURBSPatchData() = default;
 
     /**
-     * \brief Constructor with explicit initialization
+     * @brief Constructor with explicit initialization
      *
-     * \param knotSpansI Knot spans for each dimension
-     * \param controlPointsI Net of control points
-     * \param degreeInput Degree of the NURBS patch in each dimension
+     * @param knotSpansI Knot spans for each dimension
+     * @param controlPointsI Net of control points
+     * @param degreeInput Degree of the NURBS patch in each dimension
      */
     NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI, const ControlPointNetType& controlPointsI,
                    const std::array<int, dim>& degreeInput)
@@ -43,7 +43,7 @@ namespace Dune::IGANEW {
   };
 
   /**
-   * \brief Deduction guide for creating NURBSPatchData instances without explicitly specifying template arguments
+   * @brief Deduction guide for creating NURBSPatchData instances without explicitly specifying template arguments
    */
   template <std::size_t dim, std::size_t dimworld_, typename ScalarType = double>
   NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI,

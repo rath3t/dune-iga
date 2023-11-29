@@ -7,12 +7,12 @@
 #include <dune/grid/common/gridenums.hh>
 
 /** \file
- * \brief The PatchGridLevelIterator class
+ * @brief The PatchGridLevelIterator class
  */
 
 namespace Dune::IGANEW {
 
-  /** \brief Iterator over all entities of a given codimension and level of a grid.
+  /** @brief Iterator over all entities of a given codimension and level of a grid.
    * \ingroup PatchGrid
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
@@ -32,10 +32,10 @@ namespace Dune::IGANEW {
         : patchGrid_(patchGrid),
           hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template begin<codim, pitype>()) {}
 
-    /** \brief Constructor which create the end iterator
-        \param endDummy      Here only to distinguish it from the other constructor
-        \param patchGrid  pointer to PatchGrid instance
-        \param level         grid level on which the iterator shall be created
+    /** @brief Constructor which create the end iterator
+        @param endDummy      Here only to distinguish it from the other constructor
+        @param patchGrid  pointer to PatchGrid instance
+        @param level         grid level on which the iterator shall be created
      */
     explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
         : patchGrid_(patchGrid),

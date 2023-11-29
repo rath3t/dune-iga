@@ -79,7 +79,7 @@ namespace Dune::IGANEW::Splines {
     return additionalKnots;
   }
 
-  /** \brief Function return a copy of the subNet of a knotspan, i.e. it is used to return the weights or controlpoints
+  /** @brief Function return a copy of the subNet of a knotspan, i.e. it is used to return the weights or controlpoints
    * defined on one element
    *
    * @tparam dim dimension of the patch/net
@@ -103,7 +103,7 @@ namespace Dune::IGANEW::Splines {
     return net.subNet(subNetStart, order);
   }
 
-  /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
+  /** @brief Same as netOfSpan above but the start is searched for using the knotvector value   */
   template <std::floating_point ScalarType, std::integral auto dim, std::integral auto dim2, typename NetValueType>
   requires(
       (std::floating_point<
@@ -151,7 +151,7 @@ namespace Dune::IGANEW::Splines {
     return MultiDimensionalNet<dim, typename ValueType::VectorType>(cpsandWeight.strideSizes(), viewOverCps);
   }
 
-  /** \brief A `dim` dimensional NURBS class
+  /** @brief A `dim` dimensional NURBS class
    *
    * \note This class explicitly does not rely on some control points but only on the weights
    * @tparam dim The dimension of the domain of the function
@@ -314,7 +314,7 @@ namespace Dune::IGANEW::Splines {
       return Nnet;
     }
 
-    /** \brief This function returns the basis function and the corresponding derivatives.
+    /** @brief This function returns the basis function and the corresponding derivatives.
      *
      * @param u Dim-dimensional position in the current span.
      * @param knots Dim-dimensional array of knot vectors.

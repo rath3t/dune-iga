@@ -15,12 +15,12 @@ class BoundaryPatchEnclosingVerticesPropertyTrimmed {
  public:
   typedef typename GridView::Intersection Intersection;
 
-  /** \brief Create property from a marker vector
+  /** @brief Create property from a marker vector
    */
   BoundaryPatchEnclosingVerticesPropertyTrimmed(const GridView& gridView, const Dune::BitSetVector<ncomp>& vertices)
       : indexSet_(gridView.indexSet()), vertices_(vertices) {}
 
-  /** \brief Check if intersection is enclosed by vertices in the vector
+  /** @brief Check if intersection is enclosed by vertices in the vector
    */
   bool operator()(const Intersection& i) const {
     const auto inside  = i.inside();

@@ -98,7 +98,7 @@ namespace Dune::Vtk {
     /// Return number of grid cells
     [[nodiscard]] std::uint64_t numCellsImpl() const { return numCells_; }
 
-    /// \brief Return cell types, offsets, and connectivity. \see Cells
+    /// @brief Return cell types, offsets, and connectivity. \see Cells
     /**
      * The cell connectivity is composed of cell vertices
      **/

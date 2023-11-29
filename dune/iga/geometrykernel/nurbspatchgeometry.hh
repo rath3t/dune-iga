@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2022 Alexander Müller mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 /**
  * @file nurbspatchgeometry.hh
  * @brief Definition of the NURBSPatch class.
@@ -65,10 +66,10 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim, typename TrimmerType_ = Trim::IdentityTrimmer<mydimension, ctype>>
+    template <int codim,  typename TrimmerType_ = IdentityTrim::Trimmer<mydimension,ctype>>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
 
-    template <int codim, typename NURBSPatch, typename TrimmedLocalParameterSpaceGeometry>
+    template <int codim, typename NURBSPatch,  typename TrimmerType_>
     friend struct PatchGeometryLocalView;
 
    private:
@@ -85,7 +86,7 @@ namespace Dune::IGANEW::GeometryKernel {
      * @tparam TrimmerType Type of the trimmer.
      * @return Local view of the patch.
      */
-    template <int codim, typename TrimmerType = Trim::IdentityTrimmer<mydimension, ctype>>
+    template <int codim,  typename TrimmerType = IdentityTrim::Trimmer<mydimension,ctype>>
     auto localView() const {
       return GeometryLocalView<codim, TrimmerType>(*this);
     }

@@ -5,14 +5,14 @@
 #pragma once
 
 /** \file
- * \brief The PatchGridHierarchicIterator class
+ * @brief The PatchGridHierarchicIterator class
  */
 
 namespace Dune::IGANEW {
 
   //**********************************************************************
   //
-  /** \brief Iterator over the descendants of an entity.
+  /** @brief Iterator over the descendants of an entity.
    * \ingroup PatchGrid
      Mesh entities of codimension 0 ("elements") allow to visit all entities of
      codimension 0 obtained through nested, hierarchic refinement of the entity.

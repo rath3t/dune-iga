@@ -6,13 +6,13 @@
 
 /**
  * \file
- * \brief The PatchGridEntitySeed class
+ * @brief The PatchGridEntitySeed class
  */
 
 namespace Dune::IGANEW {
 
   /**
-   * \brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
+   * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
    * \ingroup PatchGrid
    *
    */
@@ -30,12 +30,12 @@ namespace Dune::IGANEW {
     constexpr static int codimension = codim;
 
     /**
-     * \brief Construct an empty (i.e. isValid() == false) seed.
+     * @brief Construct an empty (i.e. isValid() == false) seed.
      */
     PatchGridEntitySeed() = default;
 
     /**
-     * \brief Create EntitySeed from hostgrid Entity
+     * @brief Create EntitySeed from hostgrid Entity
      *
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
@@ -43,12 +43,12 @@ namespace Dune::IGANEW {
     PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
 
     /**
-     * \brief Get stored ParameterSpaceGridEntitySeed
+     * @brief Get stored ParameterSpaceGridEntitySeed
      */
     const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
 
     /**
-     * \brief Check whether it is safe to create an Entity from this Seed
+     * @brief Check whether it is safe to create an Entity from this Seed
      */
     bool isValid() const { return hostEntitySeed_.isValid(); }
 

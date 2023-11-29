@@ -379,7 +379,7 @@ double calculateArea(const auto& gridView, std::optional<int> order = std::nullo
   return area;
 }
 
-/// \brief Test if sum of the weights is the ratio of trimmed to untrimmed surface in parameterspace * A ref (= 1)
+/// @brief Test if sum of the weights is the ratio of trimmed to untrimmed surface in parameterspace * A ref (= 1)
 void checkSumWeights(const auto& gridView, auto& t) {
   Dune::QuadratureRule<double, 2> rule;
 

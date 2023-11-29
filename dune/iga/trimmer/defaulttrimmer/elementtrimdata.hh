@@ -3,10 +3,10 @@
 
 namespace Dune {
   namespace IGANEW {
-    namespace Trim {
+    namespace DefaultTrim {
 
       template <int mydim_, typename ScalarType>
-      struct DefaultElementTrimData {
+      struct ElementTrimData {
         using ctype = ScalarType;
 
         static constexpr int mydimension = mydim_;

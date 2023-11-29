@@ -20,7 +20,7 @@ namespace Dune::IGANEW::Concept {
   };
 
   /// \concept ControlPoint
-  /// \tparam ControlPointType
+  /// @tparam ControlPointType
   template <typename ControlPointType>
   concept ControlPoint = Vector<typename ControlPointType::VectorType> && requires(ControlPointType cp) {
     typename ControlPointType::VectorType;

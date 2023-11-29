@@ -7,7 +7,7 @@
 namespace Dune::IGANEW {
 
   namespace Impl {
-    /** \brief Free cross product function it calls the member function cross of VectorType if it exists and falls back
+    /** @brief Free cross product function it calls the member function cross of VectorType if it exists and falls back
      * to an implementation by hand otherwise
      */
     template <Concept::Vector VectorType>

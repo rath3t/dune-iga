@@ -26,14 +26,14 @@ namespace Dune::IGANEW {
   }  // namespace Impl
 
   /**
-   * \brief This is a condensed version of the proposal
+   * @brief This is a condensed version of the proposal
    * https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p1684r2.html It is a container with multidimensional
    * accessors. \details It has less features and only allows runtime size values but the rank is given at compile time.
    * Furthermore, there are specific constructors to have a convenient construction for NURBS controlpoints
    * It also has several overloaded operators to do linear algebra with it such as operator*
-   * \tparam ElementType The type of the stored values
-   * \tparam netdim The rank of the array (How many dimensions it has)
-   * \tparam Container The type of storage
+   * @tparam ElementType The type of the stored values
+   * @tparam netdim The rank of the array (How many dimensions it has)
+   * @tparam Container The type of storage
    */
   template <int netdim, class ElementType, class Container = std::vector<ElementType>>
   class MultiDimensionalNet {
@@ -76,9 +76,9 @@ namespace Dune::IGANEW {
       *this                      = MultiDimensionalNet{dimsize, vals};
     }
 
-    /** \brief constructor for a net of a certain strideSizes with values unknown.
+    /** @brief constructor for a net of a certain strideSizes with values unknown.
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] dimSize array of the strideSizes of each dimension
      */
     explicit MultiDimensionalNet(const std::array<int, netdim>& dimSize) : dimSize_(dimSize) {
       int size_ = 1;
@@ -107,9 +107,9 @@ namespace Dune::IGANEW {
       values_.resize(size);
     }
 
-    /** \brief constructor for a net from outerproduct of vectors
+    /** @brief constructor for a net from outerproduct of vectors
      *
-     *  \param[in] values netdim vectors of values
+     *  @param[in] values netdim vectors of values
      */
     template <std::ranges::sized_range V>
     explicit MultiDimensionalNet(const std::array<V, netdim>& values) {
@@ -129,11 +129,11 @@ namespace Dune::IGANEW {
           }
     }
 
-    /** \brief constructor intended for the 1-D, or if the values are already in a vector
+    /** @brief constructor intended for the 1-D, or if the values are already in a vector
      *  \note can also be used if the values are already mapped
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values vector with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values vector with values
      */
     MultiDimensionalNet(std::array<int, netdim> dimSize, const container_type& values)
         : values_(values), dimSize_{dimSize} {}
@@ -141,10 +141,10 @@ namespace Dune::IGANEW {
     MultiDimensionalNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
         : values_(values.begin(), values.end()), dimSize_{dimSize} {}
 
-    /** \brief constructor intended for the 2-D if the values are already in a matrix
+    /** @brief constructor intended for the 2-D if the values are already in a matrix
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values matrix with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values matrix with values
      */
     MultiDimensionalNet(std::array<int, netdim> dimSize,
                         const std::vector<std::vector<value_type>>& values) requires(netdim == 2)
@@ -155,10 +155,10 @@ namespace Dune::IGANEW {
           this->set({i, j}, values[i][j]);
     }
 
-    /** \brief constructor intended for the 3-D
+    /** @brief constructor intended for the 3-D
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values matrix with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values matrix with values
      */
     MultiDimensionalNet(std::array<int, netdim> dimSize,
                         const std::vector<std::vector<std::vector<value_type>>>& values) requires(netdim == 3)
@@ -171,10 +171,10 @@ namespace Dune::IGANEW {
             this->set({i, j, k}, values[i][j][k]);
     }
 
-    /** \brief constructor for a grid of the same value
+    /** @brief constructor for a grid of the same value
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] value a common value to fill the grid
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] value a common value to fill the grid
      */
     MultiDimensionalNet(std::array<int, netdim> dimSize, const value_type& value) : dimSize_(dimSize) {
       int size = 1;
@@ -185,13 +185,13 @@ namespace Dune::IGANEW {
       std::fill(values_.begin(), values_.end(), value);
     }
 
-    /** \brief sets a value at the multiindex */
+    /** @brief sets a value at the multiindex */
     void set(std::array<int, netdim> multiIndex, const value_type& value) {
       int index      = this->index(multiIndex);
       values_[index] = value;
     }
 
-    /** \brief sets a value at the multiindex */
+    /** @brief sets a value at the multiindex */
     void directSet(int index, const value_type& value) { values_[index] = value; }
 
     void directSet(int index, value_type&& value) { values_[index] = std::move(value); }
@@ -206,13 +206,13 @@ namespace Dune::IGANEW {
       return get({args...});
     }
 
-    /** \brief returns the value at the multiindex */
+    /** @brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
     value_type& get(const ArrayType& multiIndex) {
       return values_[this->index(multiIndex)];
     }
 
-    /** \brief returns the value at the multiindex */
+    /** @brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
     const value_type& get(const ArrayType& multiIndex) const {
       return values_[this->index(multiIndex)];
@@ -237,7 +237,7 @@ namespace Dune::IGANEW {
       return MultiDimensionalNet<netdim, value_type>(size, subValues);
     }
 
-    /** \brief returns a value at an index (unmapped)
+    /** @brief returns a value at an index (unmapped)
      * \note only to be used when the mapping is known
      */
     value_type& directGet(const int index) { return values_[index]; }
@@ -248,7 +248,7 @@ namespace Dune::IGANEW {
 
     const auto& directGetAll() const { return values_; }
 
-    /** \brief returns a multiindex for a scalar index */
+    /** @brief returns a multiindex for a scalar index */
     template <typename ReturnType = std::array<int, netdim>>
     ReturnType directToMultiIndex(const int index) const {
       return directToMultiIndex<ReturnType>(dimSize_, index);
@@ -268,10 +268,10 @@ namespace Dune::IGANEW {
       return multiIndex;
     }
 
-    /** \brief returns an array with the strideSizes of each dimension */
+    /** @brief returns an array with the strideSizes of each dimension */
     std::array<int, netdim> strideSizes() const { return dimSize_; }
 
-    /** \brief returns an array with the strideSizes of each dimension */
+    /** @brief returns an array with the strideSizes of each dimension */
     template <std::integral T>
     std::array<T, netdim> sizeAsT() const {
       std::array<T, netdim> sizeUI;
@@ -526,7 +526,7 @@ namespace Dune::IGANEW {
   requires Concept::DivideAble<lValueType, rValueType> MultiDimensionalNet<netdim, lValueType>
   operator*(const rValueType& fac, const MultiDimensionalNet<netdim, lValueType>& lnet) { return lnet * fac; }
 
-  /** \brief class holds a n-dim net */
+  /** @brief class holds a n-dim net */
   template <std::size_t netdim>
   class MultiDimensionalNetIndex  // FIXME merge with Net
   {
@@ -537,7 +537,7 @@ namespace Dune::IGANEW {
       for (auto ds : dimSize_)
         size_ *= ds;
     }
-    /** \brief returns a multiindex for a scalar index */
+    /** @brief returns a multiindex for a scalar index */
     template <typename ReturnType = std::array<int, netdim>>
     ReturnType directToMultiIndex(const int index) const {
       return directToMultiIndex<ReturnType>(dimSize_, index);

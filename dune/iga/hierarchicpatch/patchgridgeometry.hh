@@ -5,7 +5,7 @@
 #pragma once
 
 /** \file
- * \brief The PatchGridGeometry class and its specializations
+ * @brief The PatchGridGeometry class and its specializations
  */
 
 #include "enums.hh"
@@ -56,7 +56,7 @@ namespace Dune::IGANEW {
       geometryLocalView_.bind(localGeometry);
     }
 
-    /** \brief Return the element type identifier
+    /** @brief Return the element type identifier
      */
     [[nodiscard]] GeometryType type() const { return geometryLocalView_.type(); }
 
@@ -69,22 +69,22 @@ namespace Dune::IGANEW {
     //! access to coordinates of corners. Index is the number of the corner
     [[nodiscard]] GlobalCoordinate corner(int i) const { return geometryLocalView_.corner(i); }
 
-    /** \brief Maps a local coordinate within reference element to
+    /** @brief Maps a local coordinate within reference element to
      * global coordinate in element  */
     [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
       return geometryLocalView_.global(local);
     }
 
-    /** \brief Return the transposed of the Jacobian
+    /** @brief Return the transposed of the Jacobian
      */
     [[nodiscard]] JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       return geometryLocalView_.jacobianTransposed(local);
     }
 
-    /** \brief Return the Hessian */
+    /** @brief Return the Hessian */
     [[nodiscard]] Hessian hessian(const LocalCoordinate& local) const { return geometryLocalView_.hessian(local); }
 
-    /** \brief Maps a global coordinate to a
+    /** @brief Maps a global coordinate to a
      * local coordinate in its reference element */
     [[nodiscard]] LocalCoordinate local(const GlobalCoordinate& global) const {
       return geometryLocalView_.local(global);

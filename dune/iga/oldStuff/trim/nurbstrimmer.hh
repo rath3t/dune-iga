@@ -750,7 +750,7 @@ namespace Dune::IGA::Trim {
       });
     }
 
-    /// \brief Checks if a point p is on the line spanned by the points a and b within a given tolerance
+    /// @brief Checks if a point p is on the line spanned by the points a and b within a given tolerance
     static bool pointOnLine(const ClipperPoint& p, const ClipperPoint& a, const ClipperPoint& b,
                             const double tol = tolerance) {
       return distance(a, p) + distance(b, p) == distance(a, b);

@@ -5,7 +5,7 @@
 #pragma once
 
 /** \file
- * \brief The index and id sets for the PatchGrid class
+ * @brief The index and id sets for the PatchGrid class
  */
 
 #include <vector>
@@ -55,21 +55,21 @@ namespace Dune::IGANEW {
       return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
     }
 
-    /** \brief Deliver all geometry types used in this grid */
+    /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
       // TODO Trim, this should return none and cube for trimmed geometries
 
       return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
     }
 
-    /** \brief Return true if the given entity is contained in the index set */
+    /** @brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
       return grid_->parameterSpaceGrid().levelIndexSet(level_).contains(
           grid_->template getHostEntity<EntityType::codimension>(e));
     }
 
-    /** \brief Set up the index set */
+    /** @brief Set up the index set */
     void update(const GridImp& grid, int level) {
       grid_  = &grid;
       level_ = level;
@@ -131,13 +131,13 @@ namespace Dune::IGANEW {
     //! get number of entities of given codim
     std::size_t size(int codim) const { return grid_->parameterSpaceGrid().leafIndexSet().size(codim); }
 
-    /** \brief Deliver all geometry types used in this grid */
+    /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
       // TODO Trim, this should provide cube and none!
       return grid_->parameterSpaceGrid().leafIndexSet().types(codim);
     }
 
-    /** \brief Return true if the given entity is contained in the index set */
+    /** @brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
       return grid_->parameterSpaceGrid().leafIndexSet().contains(

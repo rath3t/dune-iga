@@ -4,7 +4,7 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 /** \file
- * \brief The PatchGridLocalGeometry class and its specializations
+ * @brief The PatchGridLocalGeometry class and its specializations
  */
 
 #include <dune/common/fmatrix.hh>
@@ -62,7 +62,7 @@ namespace Dune::IGANEW {
 
     // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
-    /** \brief Return the element type identifier
+    /** @brief Return the element type identifier
      */
     [[nodiscard]] GeometryType type() const { return hostGeometry_.type(); }
 
@@ -75,17 +75,17 @@ namespace Dune::IGANEW {
     //! access to coordinates of corners. Index is the number of the corner
     GlobalCoordinate corner(int i) const { return hostGeometry_.corner(i); }
 
-    /** \brief Maps a local coordinate within reference element to
+    /** @brief Maps a local coordinate within reference element to
      * global coordinate in element  */
     GlobalCoordinate global(const LocalCoordinate& local) const { return hostGeometry_.global(local); }
 
-    /** \brief Return the transposed of the Jacobian
+    /** @brief Return the transposed of the Jacobian
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
       return hostGeometry_.jacobianTransposed(local);
     }
 
-    /** \brief Maps a global coordinate within the element to a
+    /** @brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
     LocalCoordinate local(const GlobalCoordinate& global) const { return hostGeometry_.local(global); }
 

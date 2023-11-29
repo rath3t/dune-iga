@@ -59,7 +59,7 @@ namespace Dune::IGA {
       return Geometry(PatchData(knotSpans, controlNet, std::array<int, 1>{_curve.degree}));
     }
 
-    /** \brief creates a line geometry from a to b */
+    /** @brief creates a line geometry from a to b */
     static Geometry lineGeometryFromPoints(const Point& a, const Point b) {
       std::vector<Point> _controlPoints{a, b};
       std::array<ControlPointType, worldDim> _cp{ControlPointType{.p{_controlPoints.front()}, .w = 1},

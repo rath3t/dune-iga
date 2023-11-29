@@ -5,7 +5,7 @@
 #pragma once
 
 /** \file
- * \brief The PatchGridEntity class
+ * @brief The PatchGridEntity class
  */
 
 #include "patchgridgeometry.hh"
@@ -40,7 +40,7 @@ namespace Dune::IGANEW {
   // --PatchGridEntity
   // --Entity
   //
-  /** \brief The implementation of entities in a PatchGrid
+  /** @brief The implementation of entities in a PatchGrid
    *   \ingroup PatchGrid
    *
    *  A Grid is a container of grid entities. An entity is parametrized by the codimension.
@@ -123,11 +123,11 @@ namespace Dune::IGANEW {
     //! level of this element
     int level() const { return hostEntity_.level(); }
 
-    /** \brief The partition type for parallel computing
+    /** @brief The partition type for parallel computing
      */
     PartitionType partitionType() const { return hostEntity_.partitionType(); }
 
-    /** \brief Return the number of subEntities of codimension codim.
+    /** @brief Return the number of subEntities of codimension codim.
      */
     unsigned int subEntities(unsigned int cc) const { return hostEntity_.subEntities(cc); }
 
@@ -149,7 +149,7 @@ namespace Dune::IGANEW {
   //  --PatchGridEntity
   //
   //***********************
-  /** \brief Specialization for codim-0-entities.
+  /** @brief Specialization for codim-0-entities.
    * \ingroup PatchGrid
    *
    * This class embodies the topological parts of elements of the grid.
@@ -232,7 +232,7 @@ namespace Dune::IGANEW {
     //! Level of this element
     [[nodiscard]] int level() const { return hostEntity_.level(); }
 
-    /** \brief The partition type for parallel computing */
+    /** @brief The partition type for parallel computing */
     [[nodiscard]] PartitionType partitionType() const { return hostEntity_.partitionType(); }
 
     //! Geometry of this entity
@@ -247,11 +247,11 @@ namespace Dune::IGANEW {
       return Geometry(geo);
     }
 
-    /** \brief Return the number of subEntities of codimension codim.
+    /** @brief Return the number of subEntities of codimension codim.
      */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const { return hostEntity_.subEntities(codim); }
 
-    /** \brief Provide access to sub entity i of given codimension. Entities
+    /** @brief Provide access to sub entity i of given codimension. Entities
      *  are numbered 0 ... subEntities(cc)-1
      */
     template <int cc>
@@ -292,7 +292,7 @@ namespace Dune::IGANEW {
       return PatchGridEntity(patchGrid_, hostEntity_.father());
     }
 
-    /** \brief Location of this element relative to the reference element element of the father.
+    /** @brief Location of this element relative to the reference element element of the father.
      * This is sufficient to interpolate all dofs in conforming case.
      * Nonconforming may require access to neighbors of father and
      * computations with local coordinates.
@@ -305,7 +305,7 @@ namespace Dune::IGANEW {
       return LocalGeometry(typename LocalGeometry::Implementation(hostEntity_.geometryInFather()));
     }
 
-    /** \brief Inter-level access to son elements on higher levels<=maxlevel.
+    /** @brief Inter-level access to son elements on higher levels<=maxlevel.
      * This is provided for sparsely stored nested unstructured meshes.
      * Returns iterator to first son.
      */
@@ -341,13 +341,13 @@ namespace Dune::IGANEW {
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename TrimmerType, template <int, int, class> class PatchGridEntity>
-  auto referenceElement(const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>>& entity) {
-    return TrimmerType::referenceElement(entity);
+  template <int cd, int dim, int dimworld,typename ScalarType, template<int,typename > typename TrimmerType, template <int, int, class> class PatchGridEntity>
+  auto referenceElement(const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType,ScalarType>>& entity) {
+    return TrimmerType<dim,ScalarType>::referenceElement(entity);
   }
 
-  template <int cd, int dim, int dimworld, typename TrimmerType, template <int, int, class> class PatchGridEntity>
-  auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType>, PatchGridEntity>& entity) {
+  template <int cd, int dim, int dimworld,typename ScalarType, template<int,typename > typename TrimmerType, template <int, int, class> class PatchGridEntity>
+  auto referenceElement(const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType,ScalarType>, PatchGridEntity>& entity) {
     return referenceElement(entity.impl());
   }
 

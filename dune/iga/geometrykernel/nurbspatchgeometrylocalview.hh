@@ -49,7 +49,7 @@ namespace Dune::IGANEW {
      * @tparam PatchGeometry Type of the patch geometry.
      * @tparam TrimmerType_ Type of the trimmer.
      */
-    template <int codim, typename PatchGeometry, typename TrimmerType_>
+    template <int codim, typename PatchGeometry,  typename TrimmerType_>
     struct PatchGeometryLocalView {
       using ctype                                         = typename PatchGeometry::ctype;
       static constexpr int gridDimension                  = PatchGeometry::mydimension;
@@ -71,7 +71,6 @@ namespace Dune::IGANEW {
       //     = decltype(referenceElement<ctype, gridDimension>(GeometryTypes::cube(mydimension)).template
       //     geometry<codim>(0));
 
-      using PatchGridType                  = PatchGrid<mydimension, worlddimension, TrimmerType>;
       constexpr static int CodimInHostGrid = gridDimension - mydimension;
       // using ParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<CodimInHostGrid>::Geometry;
       using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
@@ -206,13 +205,13 @@ namespace Dune::IGANEW {
         }
       }
 
-      /** \brief Type of the type of the parameter space element */
+      /** @brief Type of the type of the parameter space element */
       [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
 
-      /** \brief Return the number of corners of the element */
+      /** @brief Return the number of corners of the element */
       [[nodiscard]] int corners() const { return 1 << mydimension; }
 
-      /** \brief Return world coordinates of the k-th corner of the element */
+      /** @brief Return world coordinates of the k-th corner of the element */
       [[nodiscard]] GlobalCoordinate corner(int k) const {
         LocalCoordinate localcorner;
         for (size_t i = 0; i < mydimension; i++)

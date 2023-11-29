@@ -5,7 +5,7 @@
 #pragma once
 
 /** \file
- * \brief The PatchGrid class
+ * @brief The PatchGrid class
  */
 
 #include <map>
@@ -51,10 +51,10 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, typename TrimmerType>
+  template <int dim, int dimworld, template<int,typename > typename TrimmerType, typename ScalarType>
   struct PatchGridFamily {
-    using Grid               = PatchGrid<dim, dimworld, TrimmerType>;
-    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
+    using Grid               = PatchGrid<dim, dimworld, TrimmerType,ScalarType>;
+    using ParameterSpaceGrid = typename TrimmerType<dim,ScalarType>::ParameterSpaceGrid;
 
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
                        PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
@@ -77,14 +77,17 @@ namespace Dune::IGANEW {
   //
   //************************************************************************
   /*!
-   * \brief Provides a NURBS grid based on a single NURBS patch
+   * @brief Provides a NURBS grid based on a single NURBS patch
    * \ingroup PatchGrid
    *
-   * \tparam HostGrid The host grid type wrapped by the PatchGrid
+   * @tparam dim The dimension of the grid
+   * @tparam dimworld The dimension of the embedding space
+   * @tparam TrimmerType_ The trimmer of the trimmer
+   * @tparam ScalarType The type for the coordinates
    */
-  template <int dim, int dimworld, typename TrimmerType_ = Trim::IdentityTrimmer<dim, double>>
-  class PatchGrid : public GridDefaultImplementation<dim, dimworld, typename TrimmerType_::ctype,
-                                                     PatchGridFamily<dim, dimworld, TrimmerType_>> {
+  template <int dim, int dimworld, template<int,typename > typename TrimmerType_=IdentityTrim::Trimmer, typename ScalarType=double>
+  class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
+                                                     PatchGridFamily<dim, dimworld, TrimmerType_,ScalarType>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
@@ -102,7 +105,7 @@ namespace Dune::IGANEW {
     friend class GridFactory<PatchGrid>;
 
    public:
-    using TrimmerType = TrimmerType_;
+    using TrimmerType = TrimmerType_<dim,ScalarType>;
     //! The type used to store coordinates, inherited from the Trimmer
     using ctype = typename TrimmerType::ctype;
 
@@ -129,18 +132,16 @@ namespace Dune::IGANEW {
     //**********************************************************
 
     //! type of the used GridFamily for this grid
-    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_>;
+    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_,ScalarType>;
 
     //! the Traits
     using Traits = typename GridFamily::Traits;
 
-    // template< int parameterDim_, typename ScalarType_>
-
     using ParameterSpaceGrid          = typename TrimmerType::ParameterSpaceGrid;
-    using UntrimmedParameterSpaceGrid = typename TrimmerType::UntrimmedParameterSpaceGrid;
-    /** \brief Constructor
+
+    /** @brief Constructor
      *
-     * \param hostgrid The host grid wrapped by the PatchGrid
+     * @param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData = std::nullopt)
@@ -164,7 +165,7 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    /** \brief Return maximum level defined in this grid.
+    /** @brief Return maximum level defined in this grid.
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
@@ -218,11 +219,11 @@ namespace Dune::IGANEW {
       return PatchGridLeafIterator<codim, PiType, const PatchGrid>(this, true);
     }
 
-    /** \brief Number of grid entities per level and codim
+    /** @brief Number of grid entities per level and codim
      */
     [[nodiscard]] int size(int level, int codim) const { return trimmer_.parameterSpaceGrid().size(level, codim); }
 
-    /** \brief returns the number of boundary segments within the macro grid
+    /** @brief returns the number of boundary segments within the macro grid
      */
     [[nodiscard]] size_t numBoundarySegments() const {
       // TODO Trim this is wrong another trimmer functionality should care about this
@@ -238,13 +239,13 @@ namespace Dune::IGANEW {
     //! number of leaf entities per codim and geometry type in this process
     int size(GeometryType type) const { return leafIndexSet().size(type); }
 
-    /** \brief Access to the GlobalIdSet */
+    /** @brief Access to the GlobalIdSet */
     const typename Traits::GlobalIdSet& globalIdSet() const { return *globalIdSet_; }
 
-    /** \brief Access to the LocalIdSet */
+    /** @brief Access to the LocalIdSet */
     const typename Traits::LocalIdSet& localIdSet() const { return *localIdSet_; }
 
-    /** \brief Access to the LevelIndexSets */
+    /** @brief Access to the LevelIndexSets */
     const typename Traits::LevelIndexSet& levelIndexSet(int level) const {
       if (level < 0 || level > maxLevel()) {
         DUNE_THROW(GridError, "levelIndexSet of nonexisting level " << level << " requested!");
@@ -252,10 +253,10 @@ namespace Dune::IGANEW {
       return *levelIndexSets_[level];
     }
 
-    /** \brief Access to the LeafIndexSet */
+    /** @brief Access to the LeafIndexSet */
     const typename Traits::LeafIndexSet& leafIndexSet() const { return *leafIndexSet_; }
 
-    /** \brief Create Entity from EntitySeed */
+    /** @brief Create Entity from EntitySeed */
     template <class EntitySeed>
     typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
       typedef PatchGridEntity<EntitySeed::codimension, ParameterSpaceGrid::dimension, const typename Traits::Grid>
@@ -295,8 +296,8 @@ namespace Dune::IGANEW {
     }
 
     /**
-     * \brief Returns the coordinates of the untrimmed tensor product grid
-     * \param lvl The grid level of the requested coordinates
+     * @brief Returns the coordinates of the untrimmed tensor product grid
+     * @param lvl The grid level of the requested coordinates
      * \return the array of the coordinates
      */
     const PatchTensorProductCoordinatesType& tensorProductCoordinates(int lvl) const {
@@ -304,9 +305,9 @@ namespace Dune::IGANEW {
     }
 
     /**
-     * \brief This refines the grid in one specific direction, this resets all multilevel structure, since YaspGrid does
+     * @brief This refines the grid in one specific direction, this resets all multilevel structure, since YaspGrid does
      * not support this!
-     * \param refines how often should the element be
+     * @param refines how often should the element be
      * refined in the given directions. This splits the element in half, quarters ,... in the given direction
      */
     void globalRefineInDirection(const std::array<int, dim>& refines) {
@@ -326,9 +327,9 @@ namespace Dune::IGANEW {
     }
 
     /**
-     * \brief Increases the polynomial degree of the NURBS geometry of the given level
-     * \param elevationFactors the increase in polynomial degree of the underlying NURBS
-     * \param lvl the level where the degree elevation should be performed
+     * @brief Increases the polynomial degree of the NURBS geometry of the given level
+     * @param elevationFactors the increase in polynomial degree of the underlying NURBS
+     * @param lvl the level where the degree elevation should be performed
      */
     void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
       if (lvl > maxLevel() and lvl >= 0) DUNE_THROW(Dune : RangeError, "This level does not exist");
@@ -346,15 +347,15 @@ namespace Dune::IGANEW {
     }
 
     /**
-     * \brief Increases the polynomial degree of the NURBS geometry of the given level
-     * \param elevationFactors the increase in polynomial degree of the underlying NURBS
+     * @brief Increases the polynomial degree of the NURBS geometry of the given level
+     * @param elevationFactors the increase in polynomial degree of the underlying NURBS
      */
     void degreeElevateOnAllLevels(const std::array<int, dim>& elevationFactors) {
       for (int lvl = 0; lvl < maxLevel() + 1; ++lvl)
         degreeElevate(elevationFactors, lvl);
     }
 
-    /** \brief Mark entity for refinement
+    /** @brief Mark entity for refinement
      *
      * This only works for entities of codim 0.
      * The parameter is currently ignored
@@ -369,7 +370,7 @@ namespace Dune::IGANEW {
       return false;  // trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
     }
 
-    /** \brief Return refinement mark for entity
+    /** @brief Return refinement mark for entity
      *
      * \return refinement mark (1,0,-1)
      */
@@ -377,56 +378,56 @@ namespace Dune::IGANEW {
       return 0;  // trimmer_.parameterSpaceGrid().getMark(getHostEntity<0>(e));
     }
 
-    /** \brief returns true, if at least one entity is marked for adaption */
+    /** @brief returns true, if at least one entity is marked for adaption */
     bool preAdapt() { return trimmer_.paramterSpaceGrid().preAdapt(); }
 
     //! Triggers the grid refinement process
     bool adapt() { return trimmer_.paramterSpaceGrid().adapt(); }
 
-    /** \brief Clean up refinement markers */
+    /** @brief Clean up refinement markers */
     void postAdapt() { return trimmer_.paramterSpaceGrid().postAdapt(); }
 
     /*@}*/
 
-    /** \brief Size of the overlap on the leaf level */
+    /** @brief Size of the overlap on the leaf level */
     unsigned int overlapSize(int codim) const {
       return trimmer_.parameterSpaceGrid().leafGridView().overlapSize(codim);
     }
 
-    /** \brief Size of the ghost cell layer on the leaf level */
+    /** @brief Size of the ghost cell layer on the leaf level */
     unsigned int ghostSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().ghostSize(codim); }
 
-    /** \brief Size of the overlap on a given level */
+    /** @brief Size of the overlap on a given level */
     unsigned int overlapSize(int level, int codim) const {
       return trimmer_.parameterSpaceGrid().levelGridView(level).overlapSize(codim);
     }
 
-    /** \brief Size of the ghost cell layer on a given level */
+    /** @brief Size of the ghost cell layer on a given level */
     unsigned int ghostSize(int level, int codim) const {
       return trimmer_.parameterSpaceGrid().levelGridView(level).ghostSize(codim);
     }
 
 #if 0
-    /** \brief Distributes this grid over the available nodes in a distributed machine
+    /** @brief Distributes this grid over the available nodes in a distributed machine
      *
-     * \param minlevel The coarsest grid level that gets distributed
-     * \param maxlevel does currently get ignored
+     * @param minlevel The coarsest grid level that gets distributed
+     * @param maxlevel does currently get ignored
      */
     void loadBalance(int strategy, int minlevel, int depth, int maxlevel, int minelement){
       DUNE_THROW(NotImplemented, "PatchGrid::loadBalance()");
     }
 #endif
 
-    /** \brief dummy communication */
+    /** @brief dummy communication */
     const Communication<No_Comm>& comm() const { return ccobj; }
 
-    /** \brief Communicate data of level gridView */
+    /** @brief Communicate data of level gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
       trimmer_.parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
     }
 
-    /** \brief Communicate data of leaf gridView */
+    /** @brief Communicate data of leaf gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
       trimmer_.parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);

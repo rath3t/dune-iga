@@ -3,7 +3,7 @@
 
 namespace Dune {
   namespace IGANEW {
-    namespace Trim {
+    namespace DefaultTrim {
 
       template <int mydim_, typename ScalarType>
       struct PatchTrimData {

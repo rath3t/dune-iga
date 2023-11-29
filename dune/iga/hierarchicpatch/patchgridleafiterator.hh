@@ -7,12 +7,12 @@
 #include <dune/grid/common/gridenums.hh>
 
 /** \file
- * \brief The PatchGridLeafIterator class
+ * @brief The PatchGridLeafIterator class
  */
 
 namespace Dune::IGANEW {
 
-  /** \brief Iterator over all entities of a given codimension and level of a grid.
+  /** @brief Iterator over all entities of a given codimension and level of a grid.
    *  \ingroup PatchGrid
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
@@ -32,9 +32,9 @@ namespace Dune::IGANEW {
         : patchGrid_(patchGrid),
           hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template begin<codim, pitype>()) {}
 
-    /** \brief Constructor which create the end iterator
-     *  \param endDummy      Here only to distinguish it from the other constructor
-     *  \param patchGrid  pointer to grid instance
+    /** @brief Constructor which create the end iterator
+     *  @param endDummy      Here only to distinguish it from the other constructor
+     *  @param patchGrid  pointer to grid instance
      */
     explicit PatchGridLeafIterator(const GridImp* patchGrid, [[maybe_unused]] bool endDummy)
         : patchGrid_(patchGrid),

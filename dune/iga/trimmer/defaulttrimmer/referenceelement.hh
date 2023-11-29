@@ -8,14 +8,14 @@
 
 namespace Dune {
   namespace IGANEW {
-    namespace Trim {
+    namespace DefaultTrim {
 
       template <int mydim_, typename ScalarType>
-      struct DefaultElementTrimData;
+      struct ElementTrimData;
 
       /** \class DefaultTrimmedReferenceElement
        *  \ingroup GeometryTrimmedReferenceElements
-       *  \brief This class provides access to geometric and topological
+       *  @brief This class provides access to geometric and topological
        *  properties of a reference element.
        *
        *  This includes its type,
@@ -39,16 +39,16 @@ namespace Dune {
         //! The coordinate field type.
         using ctype                         = ct;
         using ParameterSpaceGrid            = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
-        using TrimDataType                  = DefaultElementTrimData<mydimension, ctype>;
+        using TrimDataType                  = ElementTrimData<mydimension, ctype>;
         using TrimDataTypeOptionalReference = std::optional<std::reference_wrapper<const TrimDataType>>;
 
-        /** \brief Collection of types depending on the codimension */
+        /** @brief Collection of types depending on the codimension */
         template <int codim>
         struct Codim {
           //! type of geometry embedding a subentity into the reference element
 
           using UnTrimmedGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
-          using Geometry          = DefaultTrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
+          using Geometry          = TrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
         };
 
         //! The coordinate field type.
@@ -57,12 +57,12 @@ namespace Dune {
         //! The coordinate type.
         using Coordinate = Dune::FieldVector<ctype, mydimension>;
 
-        /** \brief Type used for volume */
+        /** @brief Type used for volume */
         typedef ctype Volume;
 
-        /** \brief number of subentities of codimension c
+        /** @brief number of subentities of codimension c
          *
-         *  \param[in]  c  codimension whose size is desired
+         *  @param[in]  c  codimension whose size is desired
          */
         int size(int c) const {
           // TODO Trim
@@ -70,16 +70,16 @@ namespace Dune {
           assert(false);
         }
 
-        /** \brief number of subentities of codimension cc of subentity (i,c)
+        /** @brief number of subentities of codimension cc of subentity (i,c)
          *
          *  Denote by E the i-th subentity of codimension c of the current
          *  reference element. This method returns the number of subentities
          *  of codimension cc of the current reference element, that are also
          *  a subentity of E. If cc<c this number is zero.
          *
-         *  \param[in]  i   number of subentity E (0 <= i < size( c ))
-         *  \param[in]  c   codimension of subentity E (0 <= c <= dim)
-         *  \param[in]  cc  codimension whose size is desired (0 <= cc <= dim)
+         *  @param[in]  i   number of subentity E (0 <= i < size( c ))
+         *  @param[in]  c   codimension of subentity E (0 <= c <= dim)
+         *  @param[in]  cc  codimension whose size is desired (0 <= cc <= dim)
          */
         int size(int i, int c, int cc) const {
           // TODO Trim
@@ -87,7 +87,7 @@ namespace Dune {
           assert(false);
         }
 
-        /** \brief obtain number of ii-th subentity with codim cc of (i,c)
+        /** @brief obtain number of ii-th subentity with codim cc of (i,c)
          *
          *  Denote by E the i-th subentity of codimension c of the current
          *  reference element. And denote by S the ii-th subentity of codimension
@@ -95,10 +95,10 @@ namespace Dune {
          *  reference element. This method returns the number of S with respect
          *  to the current reference element.
          *
-         *  \param[in]  i   number of subentity E (0 <= i < size( c ))
-         *  \param[in]  c   codimension of subentity E
-         *  \param[in]  ii  number of subentity S (with respect to E)
-         *  \param[in]  cc  codimension of subentity S (c <= cc <= dim)
+         *  @param[in]  i   number of subentity E (0 <= i < size( c ))
+         *  @param[in]  c   codimension of subentity E
+         *  @param[in]  ii  number of subentity S (with respect to E)
+         *  @param[in]  cc  codimension of subentity S (c <= cc <= dim)
          */
         int subEntity(int i, int c, int ii, int cc) const {
           // TODO Trim
@@ -106,7 +106,7 @@ namespace Dune {
           assert(false);
         }
 
-        /** \brief Obtain the range of numbers of subentities with codim cc of (i,c)
+        /** @brief Obtain the range of numbers of subentities with codim cc of (i,c)
          *
          *  Denote by E the i-th subentity of codimension c of the current
          *  reference element. This method returns a range of numbers of
@@ -118,9 +118,9 @@ namespace Dune {
          *  r.contains(std::size_t) and r.size() mimicking an immutable
          *  iterable set.
          *
-         *  \param[in]  i   number of subentity E (0 <= i < size( c ))
-         *  \param[in]  c   codimension of subentity E
-         *  \param[in]  cc  codimension of subentity S (0 <= cc <= dim)
+         *  @param[in]  i   number of subentity E (0 <= i < size( c ))
+         *  @param[in]  c   codimension of subentity E
+         *  @param[in]  cc  codimension of subentity S (0 <= cc <= dim)
          *
          *  \returns An iterable range of numbers of the sub-subentities.
          */
@@ -130,13 +130,13 @@ namespace Dune {
           assert(false);
         }
 
-        /** \brief obtain the type of subentity (i,c)
+        /** @brief obtain the type of subentity (i,c)
          *
          *  Denote by E the i-th subentity of codimension c of the current
          *  reference element. This method returns the GeometryType of E.
          *
-         *  \param[in]  i      number of subentity E (0 <= i < size( c ))
-         *  \param[in]  c      codimension of subentity E
+         *  @param[in]  i      number of subentity E (0 <= i < size( c ))
+         *  @param[in]  c      codimension of subentity E
          */
         GeometryType type(int i, int c) const {
           // TODO This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
@@ -148,7 +148,7 @@ namespace Dune {
           return GeometryTypes::cube(mydimension);
         }
 
-        /** \brief obtain the type of this reference element
+        /** @brief obtain the type of this reference element
         Since it is a trimmed element we basically only return none here as the most general case
          */
         GeometryType type() const {
@@ -160,14 +160,14 @@ namespace Dune {
           return GeometryTypes::none(mydimension);
         }
 
-        /** \brief position of the barycenter of entity (i,c)
+        /** @brief position of the barycenter of entity (i,c)
          *
          *  Denote by E the i-th subentity of codimension c of the current
          *  reference element. This method returns the coordinates of
          *  the center of gravity of E within the current reference element.
          *
-         *  \param[in]  i   number of subentity E (0 <= i < size( c ))
-         *  \param[in]  c   codimension of subentity E
+         *  @param[in]  i   number of subentity E (0 <= i < size( c ))
+         *  @param[in]  c   codimension of subentity E
          */
         Coordinate position(int i, int c) const {
           // TODO this functions could be a bit complicated
@@ -177,28 +177,28 @@ namespace Dune {
           assert(false);
         }
 
-        /** \brief check if a coordinate is in the reference element
+        /** @brief check if a coordinate is in the reference element
          *
          *  This method returns true if the given local coordinate is within this
          *  reference element.
          *
-         *  \param[in]  local  coordinates of the point
+         *  @param[in]  local  coordinates of the point
          */
         bool checkInside(const Coordinate& local) const {
           if (not trimData_) cubeGeometry.checkInside(local);
           return trimData_->checkInside(local);
         }
 
-        /** \brief obtain the embedding of subentity (i,codim) into the reference
+        /** @brief obtain the embedding of subentity (i,codim) into the reference
          *         element
          *
          *  Denote by E the i-th subentity of codimension codim of the current
          *  reference element. This method returns a \ref Dune::AffineGeometry
          *  that maps the reference element of E into the current reference element.
          *
-         *  \tparam     codim  codimension of subentity E
+         *  @tparam     codim  codimension of subentity E
          *
-         *  \param[in]  i      number of subentity E (0 <= i < size( codim ))
+         *  @param[in]  i      number of subentity E (0 <= i < size( codim ))
          */
         template <int codim>
         typename Codim<codim>::Geometry geometry(int i) const {
@@ -211,25 +211,25 @@ namespace Dune {
           return typename Codim<codim>::Geometry(trimData_);
         }
 
-        /** \brief obtain the volume of the reference element */
+        /** @brief obtain the volume of the reference element */
         CoordinateField volume() const {
           // TODO trim, integrate on the trimmed patch
           if (not trimData_) return cubeGeometry.volume();
         }
 
-        /** \brief obtain the integration outer normal of the reference element
+        /** @brief obtain the integration outer normal of the reference element
          *
          *  The integration outer normal is the outer normal whose length coincides
          *  with the face's integration element.
          *
-         *  \param[in]  face  index of the face, whose normal is desired
+         *  @param[in]  face  index of the face, whose normal is desired
          */
         Coordinate integrationOuterNormal(int face) const {
           // TODO compute tangent of the curve and compute by cross-product the outword normal, only 2D
           return cubeGeometry.integrationOuterNormal(face);
         }
 
-        /** \brief Constructs an empty reference element.
+        /** @brief Constructs an empty reference element.
          *
          * This constructor creates an empty (invalid) reference element. This element may not be
          * used in any way except for assigning other reference elements to it. After

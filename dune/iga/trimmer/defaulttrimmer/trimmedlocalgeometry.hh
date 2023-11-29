@@ -4,19 +4,19 @@
 #include "elementtrimdata.hh"
 namespace Dune {
   namespace IGANEW {
-    namespace Trim {
+    namespace DefaultTrim {
 
       template <int dim, typename ScalarType = double>
-      struct DefaultTrimmer;
+      struct Trimmer;
 
       template <int mydim_, int coorddim, typename ScalarType>
-      class DefaultTrimmedPatchLocalGeometry {
+      class TrimmedPatchLocalGeometry {
        public:
         using ctype = ScalarType;
 
         static constexpr int mydimension = mydim_;
-        using TrimmerType                = DefaultTrimmer<mydimension, ctype>;
-        using TrimDataType               = DefaultElementTrimData<mydimension, ctype>;
+        using TrimmerType                = Trimmer<mydimension, ctype>;
+        using TrimDataType               = ElementTrimData<mydimension, ctype>;
 
         static constexpr int coorddimension = coorddim;
         static constexpr int codim          = coorddim - mydimension;
@@ -38,9 +38,9 @@ namespace Dune {
 
         /** constructor from host geometry
          */
-        explicit DefaultTrimmedPatchLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
+        explicit TrimmedPatchLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
 
-        /** \brief Return the element type identifier
+        /** @brief Return the element type identifier
          */
         [[nodiscard]] GeometryType type() const { return GeometryTypes::none(mydimension); }
 
@@ -61,15 +61,15 @@ namespace Dune {
         //! access to coordinates of corners. Index is the number of the corner
         GlobalCoordinate corner(int i) const { return GlobalCoordinate{}; }
 
-        /** \brief Maps a local coordinate within reference element to
+        /** @brief Maps a local coordinate within reference element to
          * global coordinate in element  */
         GlobalCoordinate global(const LocalCoordinate& local) const { return GlobalCoordinate{}; }
 
-        /** \brief Return the transposed of the Jacobian
+        /** @brief Return the transposed of the Jacobian
          */
         JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const { return JacobianTransposed{}; }
 
-        /** \brief Maps a global coordinate within the element to a
+        /** @brief Maps a global coordinate within the element to a
          * local coordinate in its reference element */
         LocalCoordinate local(const GlobalCoordinate& global) const { return LocalCoordinate{}; }
 

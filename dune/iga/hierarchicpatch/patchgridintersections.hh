@@ -8,7 +8,7 @@
 #include "patchgridleafiterator.hh"
 
 /** \file
- * \brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes
+ * @brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes
  */
 
 namespace Dune::IGANEW {
@@ -17,7 +17,7 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  /** \brief An intersection with a leaf neighbor element
+  /** @brief An intersection with a leaf neighbor element
    * \ingroup PatchGrid
    * Mesh entities of codimension 0 ("elements") allow to visit all neighbors, where
    * a neighbor is an entity of codimension 0 which has a common entity of codimension 1
@@ -70,7 +70,7 @@ namespace Dune::IGANEW {
     //! return true if intersection is with boundary.
     bool boundary() const { return hostIntersection_.boundary(); }
 
-    /** \brief Return unit outer normal (length == 1)
+    /** @brief Return unit outer normal (length == 1)
      *
      *   The returned vector is the normal at the center() of the
      *     intersection's geometry.
@@ -218,11 +218,11 @@ namespace Dune::IGANEW {
       return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside());
     }
 
-    /** \brief return true if intersection is with boundary.
+    /** @brief return true if intersection is with boundary.
      */
     [[nodiscard]] bool boundary() const { return hostIntersection_.boundary(); }
 
-    /** \brief Return unit outer normal (length == 1)
+    /** @brief Return unit outer normal (length == 1)
      *
      *   The returned vector is the normal at the center() of the
      *     intersection's geometry.

@@ -42,7 +42,7 @@ namespace Dune {
         LocalGeometryVariant& operator=(const LocalGeometryVariant& other) = default;
         LocalGeometryVariant& operator=(LocalGeometryVariant&& other) noexcept = default;
 
-        /** \brief Return the element type identifier
+        /** @brief Return the element type identifier
          */
         [[nodiscard]] GeometryType type() const {
           return visit([](const auto& impl) { return impl.type(); });
@@ -63,7 +63,7 @@ namespace Dune {
           return visit([&](const auto& impl) { return impl.corner(i); });
         }
 
-        /** \brief Maps a local coordinate within reference element to
+        /** @brief Maps a local coordinate within reference element to
          * global coordinate in element  */
         auto global(const auto& local) const {
           return visit([&](const auto& impl) { return impl.global(local); });
@@ -73,13 +73,13 @@ namespace Dune {
           return visit([](const auto& impl) { return impl.center(); });
         }
 
-        /** \brief Return the transposed of the Jacobian
+        /** @brief Return the transposed of the Jacobian
          */
         JacobianTransposed jacobianTransposed(const auto& local) const {
           return (visit([&](const auto& impl) -> JacobianTransposed { return impl.jacobianTransposed(local); }));
         }
 
-        /** \brief Maps a global coordinate within the element to a
+        /** @brief Maps a global coordinate within the element to a
          * local coordinate in its reference element */
         auto local(const auto& global) const {
           return visit([&](const auto& impl) { return impl.local(global); });

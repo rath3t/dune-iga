@@ -14,6 +14,7 @@
 #include <dune/iga/hierarchicpatch/concepts.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/defaulttrimmer.hh>
+#include <dune/iga/trimmer/defaulttrimmer/referenceelement.hh>
 template <typename>
 struct IsDefaultReferenceElement : std::false_type {};
 
@@ -57,25 +58,18 @@ int main() {
   checkConcepts<Dune::IGANEW::PatchGrid<3, 3>>();
 
   // Check concepts with trim
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 1, Dune::IGANEW::Trim::DefaultTrimmer<1>>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 2, Dune::IGANEW::Trim::DefaultTrimmer<1>>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 3, Dune::IGANEW::Trim::DefaultTrimmer<1>>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 1, Dune::IGANEW::DefaultTrim::Trimmer>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 2, Dune::IGANEW::DefaultTrim::Trimmer>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<1, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
 
-  checkConcepts<Dune::IGANEW::PatchGrid<2, 2, Dune::IGANEW::Trim::DefaultTrimmer<2>>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::DefaultTrimmer<2>>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 2, Dune::IGANEW::DefaultTrim::Trimmer>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
 
-  checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::Trim::DefaultTrimmer<3>>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
 
-  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::Trim::IdentityTrimmer<2>>;
-  std::cout << Dune::className<
-      typename Grid23::Codim<0>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()
-            << std::endl;
-  std::cout << Dune::className<
-      typename Grid23::Codim<1>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()
-            << std::endl;
-  std::cout << Dune::className<
-      typename Grid23::Codim<2>::LocalGeometry::Implementation::GeometryLocalView::ParameterSpaceGeometry>()
-            << std::endl;
+  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::IdentityTrim::Trimmer>;
+
+  checkConcepts<Grid23>();
 
   return 0;
 }
