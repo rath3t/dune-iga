@@ -117,8 +117,7 @@ friend class TrimmedParameterSpaceGridEntity;
 
        public:
         template <int codim, class GridImp>
-using ParameterSpaceGridEntity
-= Trim::ParameterSpaceGridEntityVariant<codim,Trimmer, UntrimmedParameterSpaceGridEntity<codim>, TrimmedParameterSpaceGridEntity<codim,GridImp>>;
+using ParameterSpaceGridEntity=  TrimmedParameterSpaceGridEntity<codim,GridImp>;
         /**
          * @brief Type alias for local geometry of a specified codimension.
          * @tparam codim Codimension of the local geometry.

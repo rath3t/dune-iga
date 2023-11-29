@@ -16,7 +16,7 @@ namespace Dune {
     using TrimmerType= typename GridImp::TrimmerType;
     using UntrimmedParameterSpaceGridEntity= typename TrimmerType::template UntrimmedParameterSpaceGridEntity<codim_>;
     using LocalParameterSpaceGeometry= typename TrimmerType::template LocalParameterSpaceGeometry<codim_>;
-
+  public:
     TrimmedParameterSpaceGridEntity(const UntrimmedParameterSpaceGridEntity& untrimmedElement) :hostEntity_{untrimmedElement}{
     }
   private:
@@ -27,7 +27,7 @@ namespace Dune {
     //! returns true if father entity exists
     [[nodiscard]] bool hasFather() const {
       //@todo Trim this is crasy
-      return {};
+      return hostEntity_.hasFather();
     }
 
     //! Create EntitySeed
