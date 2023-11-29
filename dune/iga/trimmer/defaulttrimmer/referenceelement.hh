@@ -46,8 +46,7 @@ namespace Dune {
         struct Codim {
           //! type of geometry embedding a subentity into the reference element
 
-          using UnTrimmedGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
-          using Geometry          = TrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
+          using Geometry          = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InReferenceElement>;
         };
 
         //! The coordinate field type.

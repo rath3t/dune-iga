@@ -96,18 +96,25 @@ namespace Dune {
 
        private:
         template <int codim>
-        using MyLocalGeometry = TrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
+        using TrimmedLocalParameterSpaceGeometry = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InParameterSpace>;
         template <int codim>
-        using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
-
+        using TrimmedLocalGeometry = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InReferenceElement>;
+        template <int codim>
+        using UntrimmedLocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+        template <int codim>
+        using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
        public:
         /**
          * @brief Type alias for local geometry of a specified codimension.
          * @tparam codim Codimension of the local geometry.
          */
         template <int codim>
+        using LocalParameterSpaceGeometry
+            = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalParameterSpaceGeometry<codim>, TrimmedLocalParameterSpaceGeometry<codim>>;
+
+        template <int codim>
         using LocalGeometry
-            = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalGeometry<codim>, MyLocalGeometry<codim>>;
+            = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalGeometry<codim>, TrimmedLocalGeometry<codim>>;
 
         using ParameterType = Parameter;  ///< Type for trimming parameters.
 

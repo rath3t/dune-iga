@@ -51,10 +51,11 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template <int, typename> typename TrimmerType, typename ScalarType>
+  template <int dim, int dimworld, template <int, typename> typename TrimmerType_, typename ScalarType>
   struct PatchGridFamily {
-    using Grid               = PatchGrid<dim, dimworld, TrimmerType, ScalarType>;
-    using ParameterSpaceGrid = typename TrimmerType<dim, ScalarType>::ParameterSpaceGrid;
+    using Grid               = PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
+    using TrimmerType = TrimmerType_<dim, ScalarType>;
+    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
 
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
                        PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,

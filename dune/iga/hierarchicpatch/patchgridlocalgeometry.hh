@@ -49,60 +49,62 @@ namespace Dune::IGANEW {
     // using LocalNURBSGeometry = GeometryKernel::NURBSPatch<mydim, coorddim, ctype>;
     using LocalHostGeometry = HostGridLocalGeometryType;
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView =
-        typename GeometryKernel::NURBSPatch<GridImp::dimension, coorddimension,
-                                            ctype>::template GeometryLocalView<codim, TrimmerType>;
+    // using LocalGeometry =
+    //     typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
+    //                                         ctype>::template GeometryLocalView<codim, TrimmerType>;
 
     /** constructor from host geometry
      */
     // PatchGridLocalGeometry(const GeometryKernel::NURBSPatch<mydim, coorddim, ctype>& localPatchGeometry)
     //     : localPatchGeometry_(localPatchGeometry) {}
+    using LocalGeometry = typename TrimmerType::template LocalGeometry<codim>;
+    // using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
 
-    explicit PatchGridLocalGeometry(const LocalHostGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
+    explicit PatchGridLocalGeometry(const LocalGeometry& localGeometry) : localGeometry_(localGeometry) {}
 
     // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
     /** @brief Return the element type identifier
      */
-    [[nodiscard]] GeometryType type() const { return hostGeometry_.type(); }
+    [[nodiscard]] GeometryType type() const { return localGeometry_.type(); }
 
     // return whether we have an affine mapping
-    [[nodiscard]] bool affine() const { return hostGeometry_.affine(); }
+    [[nodiscard]] bool affine() const { return localGeometry_.affine(); }
 
     //! return the number of corners of this element. Corners are numbered 0...n-1
-    [[nodiscard]] int corners() const { return hostGeometry_.corners(); }
+    [[nodiscard]] int corners() const { return localGeometry_.corners(); }
 
     //! access to coordinates of corners. Index is the number of the corner
-    GlobalCoordinate corner(int i) const { return hostGeometry_.corner(i); }
+    GlobalCoordinate corner(int i) const { return localGeometry_.corner(i); }
 
     /** @brief Maps a local coordinate within reference element to
      * global coordinate in element  */
-    GlobalCoordinate global(const LocalCoordinate& local) const { return hostGeometry_.global(local); }
+    GlobalCoordinate global(const LocalCoordinate& local) const { return localGeometry_.global(local); }
 
     /** @brief Return the transposed of the Jacobian
      */
     JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-      return hostGeometry_.jacobianTransposed(local);
+      return localGeometry_.jacobianTransposed(local);
     }
 
     /** @brief Maps a global coordinate within the element to a
      * local coordinate in its reference element */
-    LocalCoordinate local(const GlobalCoordinate& global) const { return hostGeometry_.local(global); }
+    LocalCoordinate local(const GlobalCoordinate& global) const { return localGeometry_.local(global); }
 
     //! Returns true if the point is in the current element
-    bool checkInside(const FieldVector<ctype, mydim>& local) const { return hostGeometry_.checkInside(local); }
+    bool checkInside(const FieldVector<ctype, mydim>& local) const { return localGeometry_.checkInside(local); }
 
     [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
-      return hostGeometry_.integrationElement(local);
+      return localGeometry_.integrationElement(local);
     }
 
     //! The Jacobian matrix of the mapping from the reference element to this element
     [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
-      return hostGeometry_.jacobianInverseTransposed(local);
+      return localGeometry_.jacobianInverseTransposed(local);
     }
 
    private:
-    LocalHostGeometry hostGeometry_;
+    LocalGeometry localGeometry_;
     // GeometryLocalView geometryLocalView_{};
   };
 

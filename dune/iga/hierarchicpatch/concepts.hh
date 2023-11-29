@@ -59,19 +59,5 @@ namespace Dune::IGANEW::Concept {
     x / y;
   };
 
-  /** \concept This concepts extends the geometry of DUNE grid entities
-   *
-   * @tparam G
-   */
-  template <typename G>
-  concept NurbsGeometry = Dune::Concept::Geometry<G> && requires(const G g, typename G::GlobalCoordinate global,
-                                                                 typename G::LocalCoordinate local) {
-    {
-      g.zeroFirstAndSecondDerivativeOfPosition(local)
-      } -> std::convertible_to<
-          std::tuple<typename G::GlobalCoordinate, typename G::JacobianTransposed, typename G::Hessian>>;
-    { g.domainMidPoint() } -> std::convertible_to<typename G::LocalCoordinate>;
-    { g.domain() } -> std::convertible_to<std::array<Utilities::Domain<double>, G::mydimension>>;
-  };
 
 }  // namespace Dune::IGANEW::Concept

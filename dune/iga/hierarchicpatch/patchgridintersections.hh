@@ -250,15 +250,15 @@ namespace Dune::IGANEW {
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
     [[nodiscard]] LocalGeometry geometryInInside() const {
-      auto localGeometry = hostIntersection_.geometryInInside();
-      static_assert(std::is_same_v<decltype(localGeometry), typename LocalGeometry::Implementation::LocalHostGeometry>);
+      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(hostIntersection_.geometryInInside());
       return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     [[nodiscard]] LocalGeometry geometryInOutside() const {
-      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInOutside()));
+      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(hostIntersection_.geometryInOutside());
+      return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.

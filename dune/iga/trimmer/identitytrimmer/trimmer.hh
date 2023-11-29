@@ -90,7 +90,10 @@ namespace Dune::IGANEW {
           = ElementTrimDataContainer<ParameterSpaceGrid>;  ///< Container for element trim data.
 
       template <int codim>
-      using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+      using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+
+      template <int codim>
+      using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 
