@@ -85,8 +85,7 @@ namespace Dune::IGANEW {
     return NURBSPatchData<1, 3, ScalarType>(knotVec, circleCPs, {2});
   }
 
-
-    /**
+  /**
    * @brief Create a circular arc as a NURBS patch with customizable options.
    *
    * This function generates a circular arc with specified customization options, including radius, start and end
@@ -109,20 +108,21 @@ namespace Dune::IGANEW {
    */
   template <std::floating_point ScalarType = double>
   NURBSPatchData<1, 2, ScalarType> makeCircularArc2D(const ScalarType radius = 1.0, const ScalarType startAngle = 0.0,
-                                                   ScalarType endAngle                            = 360.0,
-                                                   const Dune::FieldVector<ScalarType, 2>& origin = {0, 0}) {
+                                                     ScalarType endAngle                            = 360.0,
+                                                     const Dune::FieldVector<ScalarType, 2>& origin = {0, 0}) {
     using GlobalCoordinateType = typename NURBSPatchData<1, 2, ScalarType>::GlobalCoordinateType;
     const auto pi              = std::numbers::pi_v<ScalarType>;
     Dune::FieldVector<ScalarType, 3> origin3D;
-    origin3D[0]=origin[0];
-    origin3D[1]=origin[1];
-    auto arc3D = makeCircularArc(radius,startAngle,endAngle,origin3D) ;
+    origin3D[0] = origin[0];
+    origin3D[1] = origin[1];
+    auto arc3D  = makeCircularArc(radius, startAngle, endAngle, origin3D);
 
     typename NURBSPatchData<1, 2, ScalarType>::ControlPointNetType arc2DCPs(arc3D.controlPoints.size());
-    using ControlPoint                                      = typename Dune::IGANEW::NURBSPatchData<1, 2,ScalarType>::ControlPointType;
+    using ControlPoint = typename Dune::IGANEW::NURBSPatchData<1, 2, ScalarType>::ControlPointType;
 
-    std::ranges::transform(arc3D.controlPoints.directGetAll(),std::begin(arc2DCPs.directGetAll()),[](auto& cp3d){return ControlPoint({.p={cp3d.p[0],cp3d.p[1]},.w=cp3d.w});});
-
+    std::ranges::transform(arc3D.controlPoints.directGetAll(), std::begin(arc2DCPs.directGetAll()), [](auto& cp3d) {
+      return ControlPoint({.p = {cp3d.p[0], cp3d.p[1]}, .w = cp3d.w});
+    });
 
     return NURBSPatchData<1, 2, ScalarType>(arc3D.knotSpans, arc2DCPs, {2});
   }

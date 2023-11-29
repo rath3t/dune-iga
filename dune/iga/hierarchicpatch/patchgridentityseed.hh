@@ -13,7 +13,7 @@ namespace Dune::IGANEW {
 
   /**
    * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
-   * \ingroup PatchGrid
+   * @ingroup PatchGrid
    *
    */
   template <int codim, class GridImp>

@@ -41,7 +41,7 @@ namespace Dune::IGANEW {
   // --Entity
   //
   /** @brief The implementation of entities in a PatchGrid
-   *   \ingroup PatchGrid
+   *   @ingroup PatchGrid
    *
    *  A Grid is a container of grid entities. An entity is parametrized by the codimension.
    *  An entity of codimension c in dimension d is a d-c dimensional object.
@@ -150,7 +150,7 @@ namespace Dune::IGANEW {
   //
   //***********************
   /** @brief Specialization for codim-0-entities.
-   * \ingroup PatchGrid
+   * @ingroup PatchGrid
    *
    * This class embodies the topological parts of elements of the grid.
    * It has an extended interface compared to the general entity class.

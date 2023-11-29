@@ -51,21 +51,25 @@ namespace Dune::IGANEW {
      */
     template <int codim, typename PatchGeometry, typename TrimmerType_>
     struct PatchGeometryLocalView {
-      using ctype                                         = typename PatchGeometry::ctype; ///< Scalar type for coordinates.
-      static constexpr int gridDimension                  = PatchGeometry::mydimension; ///< Dimension of the underlying geometry grid.
-      static constexpr int mydimension                    = gridDimension - codim; ///< Effective dimension of the local geometry.
-      static constexpr int numberOfSecondDerivatives      = mydimension * (mydimension + 1) / 2; ///< Number of second derivatives of the local view.
-      static constexpr int patchNumberOfSecondDerivatives = gridDimension * (gridDimension + 1) / 2; ///< Number of second derivatives for the patch.
-      using TrimmerType                                   = TrimmerType_; ///< Type of the associated trimmer.
-      using ParameterSpaceGrid                            = typename TrimmerType::ParameterSpaceGrid; ///< Type of the parameter space grid.
+      using ctype                        = typename PatchGeometry::ctype;  ///< Scalar type for coordinates.
+      static constexpr int gridDimension = PatchGeometry::mydimension;  ///< Dimension of the underlying geometry grid.
+      static constexpr int mydimension   = gridDimension - codim;       ///< Effective dimension of the local geometry.
+      static constexpr int numberOfSecondDerivatives
+          = mydimension * (mydimension + 1) / 2;  ///< Number of second derivatives of the local view.
+      static constexpr int patchNumberOfSecondDerivatives
+          = gridDimension * (gridDimension + 1) / 2;  ///< Number of second derivatives for the patch.
+      using TrimmerType        = TrimmerType_;        ///< Type of the associated trimmer.
+      using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;  ///< Type of the parameter space grid.
 
-      static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension; ///< Dimension of the world.
+      static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;  ///< Dimension of the world.
 
-      using LocalCoordinate         = FieldVector<ctype, mydimension>; ///< Type for local coordinates.
-      using GlobalCoordinate        = typename PatchGeometry::GlobalCoordinate; ///< Type for global coordinates.
-      using JacobianTransposed      = FieldMatrix<ctype, mydimension, worlddimension>; ///< Type for the transposed Jacobian matrix.
-      using PatchJacobianTransposed = typename PatchGeometry::JacobianTransposed; ///< Type for the transposed Jacobian matrix of the patch.
-      using PatchHessian            = typename PatchGeometry::Hessian; ///< Type for the Hessian matrix of the patch.
+      using LocalCoordinate  = FieldVector<ctype, mydimension>;           ///< Type for local coordinates.
+      using GlobalCoordinate = typename PatchGeometry::GlobalCoordinate;  ///< Type for global coordinates.
+      using JacobianTransposed
+          = FieldMatrix<ctype, mydimension, worlddimension>;  ///< Type for the transposed Jacobian matrix.
+      using PatchJacobianTransposed =
+          typename PatchGeometry::JacobianTransposed;        ///< Type for the transposed Jacobian matrix of the patch.
+      using PatchHessian = typename PatchGeometry::Hessian;  ///< Type for the Hessian matrix of the patch.
 
       using ParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim>;
 

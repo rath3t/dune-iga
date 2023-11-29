@@ -47,7 +47,7 @@ namespace Dune::Functions {
   /** @brief LocalBasis class in the sense of dune-localfunctions, presenting the restriction
    * of a B-spline patch to a knot span
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    *
    * @tparam GV Grid view that the basis is defined on
    * @tparam R Number type used for spline function values
@@ -135,7 +135,7 @@ namespace Dune::Functions {
 
   /** @brief Attaches a shape function to an entity
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    *
    * The attachment uses the same degree as for Qk elements.  This does *not* provide sufficient information
    * to compute global indices for the shape functions.  However, it does allow to find all degrees of freedom
@@ -284,7 +284,7 @@ namespace Dune::Functions {
 
   /** @brief Local interpolation in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    */
   template <int dim, class LB>
   class NurbsLocalInterpolation {
@@ -298,7 +298,7 @@ namespace Dune::Functions {
 
   /** @brief LocalFiniteElement in the sense of dune-localfunctions, for the B-spline basis on tensor-product grids
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    *
    * This class ties together the implementation classes NurbsLocalBasis, NurbsLocalCoefficients, and
    * NurbsLocalInterpolation
@@ -414,7 +414,7 @@ namespace Dune::Functions {
 
   /** @brief Pre-basis for B-spline basis
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    *
    * @tparam GV The GridView that the space is defined on
    *
@@ -796,7 +796,7 @@ namespace Dune::Functions {
     /**
      * @brief Create a pre-basis factory that can create a B-spline pre-basis
      *
-     * \ingroup FunctionSpaceBasesImplementations
+     * @ingroup FunctionSpaceBasesImplementations
      *
      */
     template <std::integral auto dim, std::integral auto dimworld>
@@ -826,7 +826,7 @@ namespace Dune::Functions {
 
   /** @brief A global B-spline basis
    *
-   * \ingroup FunctionSpaceBasesImplementations
+   * @ingroup FunctionSpaceBasesImplementations
    *
    * @tparam GV The GridView that the space is defined on
    */

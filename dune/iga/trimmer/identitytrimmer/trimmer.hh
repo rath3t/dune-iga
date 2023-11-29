@@ -61,7 +61,8 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int dim, typename ScalarType = double>
-    struct Trimmer {
+    class Trimmer {
+    public:
       static constexpr int mydimension = dim;         ///< Dimension of the patch.
       using ctype                      = ScalarType;  ///< Scalar type for the coordinates.
 
@@ -158,7 +159,7 @@ namespace Dune::IGANEW {
         // fill up container
         // patchTrimData,trimDatas_;
 
-//TODO Trim move the refine here from the grid
+        // TODO Trim move the refine here from the grid
         ;
       }
 
@@ -168,3 +169,4 @@ namespace Dune::IGANEW {
 
   }  // namespace IdentityTrim
 }  // namespace Dune::IGANEW
+

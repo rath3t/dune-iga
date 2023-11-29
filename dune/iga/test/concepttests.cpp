@@ -13,9 +13,9 @@
 
 #include <dune/iga/hierarchicpatch/concepts.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
+#include <dune/iga/trimmer/concepts.hh>
 #include <dune/iga/trimmer/defaulttrimmer/referenceelement.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/concepts.hh>
 template <typename>
 struct IsDefaultReferenceElement : std::false_type {};
 
@@ -72,11 +72,11 @@ int main() {
 
   checkConcepts<Grid23>();
 
-   static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<1>>);
-   static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
-   static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<1>>);
-   static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<2>>);
-   static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<1>>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<1>>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<2>>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
 
   return 0;
 }

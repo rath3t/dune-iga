@@ -8,12 +8,12 @@
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                 += @top_srcdir@/dune/
-# see e.g. dune-grid for the examples of mainpage and modules
-INPUT                 += @srcdir@/mainpage.hh
-#                          @srcdir@/modules
+INPUT                 += @top_srcdir@/dune/ \
+                     @top_srcdir@/python/ \
+                    @srcdir@/mainpage.txt \
+                          @srcdir@/modules.txt
 
-FILE_PATTERNS       += *.hh *.dist *.dev *.page
+FILE_PATTERNS       += *.hh *.dist *.dev *.page *.py
 
 # The EXCLUDE tag can be used to specify files and/or directories that should
 # be excluded from the INPUT source files. This way you can easily exclude a

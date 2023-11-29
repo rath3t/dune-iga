@@ -16,7 +16,7 @@
 namespace Dune::IGANEW {
 
   /** @brief Iterator over all element neighbors
-   * \ingroup PatchGrid
+   * @ingroup PatchGrid
    * Mesh entities of codimension 0 ("elements") allow to visit all neighbors, where
    * a neighbor is an entity of codimension 0 which has a common entity of codimension 1
    * These neighbors are accessed via a IntersectionIterator. This allows the implement

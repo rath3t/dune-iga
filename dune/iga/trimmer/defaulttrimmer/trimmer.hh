@@ -27,7 +27,6 @@
 
 namespace Dune {
   namespace IGANEW {
-
     namespace DefaultTrim {
 
       /**
@@ -96,13 +95,16 @@ namespace Dune {
 
        private:
         template <int codim>
-        using TrimmedLocalParameterSpaceGeometry = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InParameterSpace>;
+        using TrimmedLocalParameterSpaceGeometry
+            = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype, LocalGeometryTag::InParameterSpace>;
         template <int codim>
-        using TrimmedLocalGeometry = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InReferenceElement>;
+        using TrimmedLocalGeometry
+            = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype, LocalGeometryTag::InReferenceElement>;
         template <int codim>
         using UntrimmedLocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
         template <int codim>
         using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+
        public:
         /**
          * @brief Type alias for local geometry of a specified codimension.
@@ -110,7 +112,8 @@ namespace Dune {
          */
         template <int codim>
         using LocalParameterSpaceGeometry
-            = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalParameterSpaceGeometry<codim>, TrimmedLocalParameterSpaceGeometry<codim>>;
+            = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalParameterSpaceGeometry<codim>,
+                                         TrimmedLocalParameterSpaceGeometry<codim>>;
 
         template <int codim>
         using LocalGeometry
@@ -192,8 +195,8 @@ namespace Dune {
         /**
          * @brief Create the parameter space grid based on the patch and trim data.
          * @tparam dimworld Dimension of the world.
-         * @param patchData NURBS patch data.
-         * @param trimData Optional patch trim data.
+         * @param patch NURBS patch.
+         * @param patchTrimData Optional patch trim data.
          */
         template <int dimworld>
         void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
@@ -222,3 +225,4 @@ namespace Dune {
     }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune
+

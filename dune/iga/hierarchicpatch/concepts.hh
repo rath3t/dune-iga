@@ -59,5 +59,4 @@ namespace Dune::IGANEW::Concept {
     x / y;
   };
 
-
 }  // namespace Dune::IGANEW::Concept

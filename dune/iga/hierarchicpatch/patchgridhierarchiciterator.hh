@@ -13,7 +13,7 @@ namespace Dune::IGANEW {
   //**********************************************************************
   //
   /** @brief Iterator over the descendants of an entity.
-   * \ingroup PatchGrid
+   * @ingroup PatchGrid
      Mesh entities of codimension 0 ("elements") allow to visit all entities of
      codimension 0 obtained through nested, hierarchic refinement of the entity.
      Iteration over this set of entities is provided by the HierarchicIterator,

@@ -13,7 +13,7 @@
 namespace Dune::IGANEW {
 
   /** @brief Iterator over all entities of a given codimension and level of a grid.
-   *  \ingroup PatchGrid
+   *  @ingroup PatchGrid
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
   class PatchGridLeafIterator {

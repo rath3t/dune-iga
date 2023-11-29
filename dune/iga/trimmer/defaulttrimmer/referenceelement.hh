@@ -13,7 +13,7 @@ namespace Dune {
       struct ElementTrimData;
 
       /** \class TrimmedReferenceElement
-       *  \ingroup GeometryTrimmedReferenceElements
+       *  @ingroup GeometryTrimmedReferenceElements
        *  @brief This class provides access to geometric and topological
        *  properties of a reference element.
        *
@@ -46,7 +46,8 @@ namespace Dune {
         struct Codim {
           //! type of geometry embedding a subentity into the reference element
 
-          using Geometry          = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype,LocalGeometryTag::InReferenceElement>;
+          using Geometry
+              = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype, LocalGeometryTag::InReferenceElement>;
         };
 
         //! The coordinate field type.

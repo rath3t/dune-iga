@@ -209,17 +209,16 @@ auto testFactoryWithPlateWithCircularTrim3D() {
   for (auto edgegeo : edges(grid->leafGridView()) | extractGeo)
     circumference += edgegeo.volume();
 
-  const auto pi              = std::numbers::pi_v<double>;
+  const auto pi = std::numbers::pi_v<double>;
 
   // we created a rectangle with an ellipse therfore the area should be a rectangle-ellipse
-  const double expectedVolume= Lx*Ly- pi*Lx/2*Ly/2;
-  t.check(FloatCmp::eq(volume,  expectedVolume), "rectangle-ellipse volume in 3D")
+  const double expectedVolume = Lx * Ly - pi * Lx / 2 * Ly / 2;
+  t.check(FloatCmp::eq(volume, expectedVolume), "rectangle-ellipse volume in 3D")
       << "The volume is " << volume << " but should be " << expectedVolume;
 
+  double expectedCircumference = 2 * Lx + 2 * Ly;
 
-  double expectedCircumference = 2*Lx + 2*Ly ;
-
-  //since we ignore inner trims within one element the circumference should be that of the rectangle
+  // since we ignore inner trims within one element the circumference should be that of the rectangle
   t.check(FloatCmp::eq(circumference, expectedCircumference), "rectangle circumference in 3D")
       << "The circumference is " << circumference << " but should be " << expectedCircumference;
 

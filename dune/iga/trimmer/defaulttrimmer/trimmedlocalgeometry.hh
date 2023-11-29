@@ -6,15 +6,12 @@ namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
 
-      enum class LocalGeometryTag {
-        InParameterSpace,
-        InReferenceElement
-      };
+      enum class LocalGeometryTag { InParameterSpace, InReferenceElement };
 
       template <int dim, typename ScalarType = double>
       struct Trimmer;
 
-      template <int mydim_, int coorddim, typename ScalarType,LocalGeometryTag localGeometryTag>
+      template <int mydim_, int coorddim, typename ScalarType, LocalGeometryTag localGeometryTag>
       class TrimmedLocalGeometry {
        public:
         using ctype = ScalarType;

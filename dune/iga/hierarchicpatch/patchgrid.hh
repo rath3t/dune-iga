@@ -54,7 +54,7 @@ namespace Dune::IGANEW {
   template <int dim, int dimworld, template <int, typename> typename TrimmerType_, typename ScalarType>
   struct PatchGridFamily {
     using Grid               = PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-    using TrimmerType = TrimmerType_<dim, ScalarType>;
+    using TrimmerType        = TrimmerType_<dim, ScalarType>;
     using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
 
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
@@ -72,19 +72,40 @@ namespace Dune::IGANEW {
         Traits;
   };
 
-  //**********************************************************************
-  //
-  // --PatchGrid
-  //
-  //************************************************************************
-  /*!
+  /**
    * @brief Provides a NURBS grid based on a single NURBS patch
-   * \ingroup PatchGrid
-   *
-   * @tparam dim The dimension of the grid
+   * @ingroup PatchGrid
+    * @tparam dim The dimension of the grid
    * @tparam dimworld The dimension of the embedding space
    * @tparam TrimmerType_ The trimmer of the trimmer
    * @tparam ScalarType The type for the coordinates
+   * Example Create surface in 3D space:
+   * @code
+   * using namespace Dune::IGANEW;
+   *
+   * // Define a NURBS patch data
+   * const int dim = 2;
+   * const int dimworld = 3;
+   * const std::array<int, dim> order = {2, 2};
+   * const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+   *
+   * using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
+   * const std::vector<std::vector<ControlPoint>> controlPoints = {
+   *     {{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
+   *     {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
+   *     {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}
+   * };
+   * std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
+   * auto controlNet = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+   *
+   * // Create a PatchGrid from the NURBS patch data
+   * using TrimmerType = IdentityTrim::Trimmer; // use the Identity trimmer which does no trimming at all
+   * PatchGrid<dim, dimworld, TrimmerType> grid({knotSpans, controlNet, order});
+   *
+   * // Perform global refinement
+   * grid.globalRefine(2);
+   *
+   * @endcode
    */
   template <int dim, int dimworld, template <int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
             typename ScalarType = double>
