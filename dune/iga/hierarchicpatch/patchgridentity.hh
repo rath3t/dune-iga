@@ -68,12 +68,14 @@ namespace Dune::IGANEW {
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
 
     // equivalent entity in the host grid
-    typedef
-        typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Entity ParameterSpaceGridEntity;
+    //@todo Trimmer should also provide a
+
 
    public:
     typedef typename GridImp::ctype ctype;
     using TrimmerType = typename GridImp::TrimmerType;
+
+    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<codim>;
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
     //! The type of the EntitySeed interface class
@@ -87,14 +89,14 @@ namespace Dune::IGANEW {
     PatchGridEntity(const GridImp* patchGrid, ParameterSpaceGridEntity&& hostEntity)
         : hostEntity_(std::move(hostEntity)), patchGrid_(patchGrid) {}
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity(const PatchGridEntity& original)
         : hostEntity_(original.hostEntity_), patchGrid_(original.patchGrid_) {}
 
     PatchGridEntity(PatchGridEntity&& original) noexcept
         : hostEntity_(std::move(original.hostEntity_)), patchGrid_(original.patchGrid_) {}
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity& operator=(const PatchGridEntity& original) {
       if (this != &original) {
         patchGrid_  = original.patchGrid_;
@@ -103,7 +105,7 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity& operator=(PatchGridEntity&& original) noexcept {
       if (this != &original) {
         patchGrid_  = original.patchGrid_;
@@ -131,8 +133,16 @@ namespace Dune::IGANEW {
      */
     unsigned int subEntities(unsigned int cc) const { return hostEntity_.subEntities(cc); }
 
+      using ParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim>;
+
+
     //! geometry of this entity
     Geometry geometry() const {
+
+      if (trimmed)
+        auto geo = typename Geometry::Implementation(
+    LocalParameterSpaceGeometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
+      return Geometry(geo);
       auto geo = typename Geometry::Implementation(
           hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
       return Geometry(geo);
@@ -169,8 +179,8 @@ namespace Dune::IGANEW {
     constexpr static int dimworld        = GridImp::dimensionworld;
 
     // equivalent entity in the host grid
-    typedef
-        typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::Entity ParameterSpaceGridEntity;
+    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<0>;
+
 
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
 
@@ -196,14 +206,14 @@ namespace Dune::IGANEW {
     PatchGridEntity(const GridImp* patchGrid, ParameterSpaceGridEntity&& hostEntity)
         : hostEntity_(std::move(hostEntity)), patchGrid_(patchGrid) {}
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity(const PatchGridEntity& original)
         : hostEntity_(original.hostEntity_), patchGrid_(original.patchGrid_) {}
 
     PatchGridEntity(PatchGridEntity&& original) noexcept
         : hostEntity_(std::move(original.hostEntity_)), patchGrid_(original.patchGrid_) {}
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity& operator=(const PatchGridEntity& original) {
       if (this != &original) {
         patchGrid_  = original.patchGrid_;
@@ -212,7 +222,7 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     PatchGridEntity& operator=(PatchGridEntity&& original) noexcept {
       if (this != &original) {
         patchGrid_  = original.patchGrid_;
@@ -237,6 +247,7 @@ namespace Dune::IGANEW {
 
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry() const {
+      //@todo Trim not hostEntity_
       static_assert(
           std::is_same_v<
               decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>()),
@@ -256,6 +267,8 @@ namespace Dune::IGANEW {
      */
     template <int cc>
     [[nodiscard]] typename GridImp::template Codim<cc>::Entity subEntity(int i) const {
+      //@todo how to handout vertices and edges?
+      //trimData().subEntity(int i)
       return PatchGridEntity<cc, dim, GridImp>(patchGrid_, hostEntity_.template subEntity<cc>(i));
     }
 
@@ -318,7 +331,7 @@ namespace Dune::IGANEW {
       return PatchGridHierarchicIterator<const GridImp>(patchGrid_, *this, maxLevel, true);
     }
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     bool wasRefined() const {
       if (patchGrid_->adaptationStep != GridImp::adaptDone) return false;
 
@@ -327,7 +340,7 @@ namespace Dune::IGANEW {
       return patchGrid_->refinementMark_[level][index];
     }
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     bool mightBeCoarsened() const { return true; }
 
     auto trimData() const { return patchGrid_->trimData(*this); }

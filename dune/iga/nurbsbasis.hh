@@ -341,7 +341,7 @@ namespace Dune::Functions {
      * @param elementIdx Integer coordinates in the tensor product patch
      */
 
-    // TODO save correct element info
+    // @todo save correct element info
     void bind(const std::array<int, dim>& elementIdx) {
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
@@ -587,7 +587,7 @@ namespace Dune::Functions {
     It indices(const Node& node, It it) const {
       const auto eleIdx = gridView_.indexSet().index(node.element_);
       for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
-        auto globalIndex = originalIndices_.at(eleIdx)[i];  // TODO this should is the trimmed indices
+        auto globalIndex = originalIndices_.at(eleIdx)[i];  // @todo this should is the trimmed indices
         *it              = {{globalIndex}};
       }
       return it;
@@ -678,7 +678,7 @@ namespace Dune::Functions {
      * \warning This method makes strong assumptions about the grid, namely that it is
      *   structured, and that indices are given in a x-fastest fashion.
      */
-    // TODO Alex Trim this function should be unneccesary
+    // @todo Alex Trim this function should be unneccesary
     static std::array<int, dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<int, dim> elements) {
       std::array<int, dim> result;
       for (int i = 0; i < dim; i++) {

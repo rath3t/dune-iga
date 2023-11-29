@@ -36,7 +36,7 @@ auto testFactoryWithTorus() {
   gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
   auto grid = gridFactory.createGrid();
 
-  // TODO Trim add tests
+  // @todo Trim add tests
 
   return t;
 }

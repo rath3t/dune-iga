@@ -192,7 +192,7 @@ namespace Dune::IGANEW {
        */
       [[nodiscard]] double volume() const {
         if constexpr (not TrimmerType::Triangulation::isAlwaysTrivial) {
-          // TODO: Implement integration of trimmed quantities and new edge geometries.
+          // @todo: Implement integration of trimmed quantities and new edge geometries.
         } else {
           const auto& rule = QuadratureRules<ctype, mydimension>::rule(
               GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchGeometry_->patchData_.degree)));
@@ -369,7 +369,7 @@ namespace Dune::IGANEW {
       [[nodiscard]] std::array<Utilities::Domain<double>, mydimension> domain() const { return {}; }
 
       [[nodiscard]] bool affine() const {
-        // TODO check when this is true
+        // @todo check when this is true
         return false;
       }
 

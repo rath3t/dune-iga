@@ -34,7 +34,6 @@
 
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
-#include <dune/subgrid/subgrid.hh>
 
 namespace Dune::Functions {
   template <typename GV, typename ScalarType>
@@ -249,7 +248,7 @@ namespace Dune::IGANEW {
     /** @brief returns the number of boundary segments within the macro grid
      */
     [[nodiscard]] size_t numBoundarySegments() const {
-      // TODO Trim this is wrong another trimmer functionality should care about this
+      // @todo Trim this is wrong another trimmer functionality should care about this
       return trimmer_.parameterSpaceGrid().numBoundarySegments();
     }
 
@@ -257,7 +256,10 @@ namespace Dune::IGANEW {
     [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
 
     //! number of entities per level, codim and geometry type in this process
-    int size(int level, GeometryType type) const { return {}; }
+    int size(int level, GeometryType type) const {
+//@todo Trim
+      return {};
+    }
 
     //! number of leaf entities per codim and geometry type in this process
     int size(GeometryType type) const { return leafIndexSet().size(type); }
@@ -389,7 +391,7 @@ namespace Dune::IGANEW {
      * </ul>
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-      // TODO trim this does not do the right thing! the knotspans should also be aware of this change
+      // @todo trim this does not do the right thing! the knotspans should also be aware of this change
       return false;  // trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
     }
 
@@ -505,19 +507,19 @@ namespace Dune::IGANEW {
       leafIndexSet_->update(*this);
     }
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     Communication<No_Comm> ccobj;
 
     //! Our set of level indices
     std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
 
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
 
   };  // end Class PatchGrid

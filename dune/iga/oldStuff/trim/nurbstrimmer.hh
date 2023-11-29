@@ -265,7 +265,7 @@ namespace Dune::IGA::Trim {
       return std::make_optional(innerBoundaries);
     }
 
-    // TODO Get rid of weird and redundant naming of outer-loop variables
+    // @todo Get rid of weird and redundant naming of outer-loop variables
     bool findNextBoundary(FindNextBoundaryLoopState* state, std::vector<Boundary>& elementBoundaries) {
       int node       = state->currentNode;
       int nextEntity = node;
@@ -297,7 +297,7 @@ namespace Dune::IGA::Trim {
             break;
           }
         }
-        // TODO Assert if nextEntity was found or not
+        // @todo Assert if nextEntity was found or not
 
         // Set node for the next step
         state->currentNode      = node;
@@ -475,7 +475,7 @@ namespace Dune::IGA::Trim {
       }
       return std::nullopt;
     }
-    // TODO: Get rid of initializer lists
+    // @todo: Get rid of initializer lists
     std::optional<std::vector<TraceCurveOutput>> traceCurve(FindNextBoundaryLoopState* state,
                                                             TraceCurveInput traceCurveInput) {
       CurveGeometry curveToTrace  = globalBoundaries_[traceCurveInput.boundaryIdx].nurbsGeometry;

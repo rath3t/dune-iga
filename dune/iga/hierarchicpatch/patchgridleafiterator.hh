@@ -27,7 +27,7 @@ namespace Dune::IGANEW {
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
     PatchGridLeafIterator() = default;
-    //! \todo Please doc me !
+    //! @todo Please doc me !
     explicit PatchGridLeafIterator(const GridImp* patchGrid)
         : patchGrid_(patchGrid),
           hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template begin<codim, pitype>()) {}

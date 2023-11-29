@@ -99,7 +99,7 @@ namespace Dune::IGANEW {
     //! where iteration started.
     LocalGeometry geometryInInside() const {
       // auto patchDataOfIntersection =
-      // TODO Trim richtigen view raussuchen
+      // @todo Trim richtigen view raussuchen
       // auto intersectionGeometry= inside().trimData()
       // auto geometryOfIntersectionInParameterSpace = ... get intersection from trimdata
       // hostIntersection_.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1,
@@ -118,7 +118,7 @@ namespace Dune::IGANEW {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry() const {
-      // TODO trim this will be wrong as soon as the intersection geometry has a special geoemtry
+      // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
       auto geo = typename Geometry::Implementation(
           hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
       return Geometry(geo);
@@ -264,7 +264,7 @@ namespace Dune::IGANEW {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     [[nodiscard]] Geometry geometry() const {
-      // TODO trim does this make sense?
+      // @todo trim does this make sense?
       auto geo = typename Geometry::Implementation(
           hostIntersection_.geometry(),
           patchGrid_->patchGeometries_[inside().level()].template localView<1, TrimmerType>());

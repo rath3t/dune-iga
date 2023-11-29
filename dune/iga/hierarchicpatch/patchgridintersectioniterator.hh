@@ -61,7 +61,7 @@ namespace Dune::IGANEW {
     HostLeafIntersectionIterator hostIterator_ = {};
   };
 
-  //! \todo Please doc me !
+  //! @todo Please doc me !
   template <class GridImp>
   class PatchGridLevelIntersectionIterator {
     constexpr static int dim = GridImp::dimension;

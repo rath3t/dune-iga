@@ -124,7 +124,7 @@ namespace Dune::IGANEW {
       /**
        * @brief Constructor for Trimmer with patch and trim data.
        * @tparam dimworld Dimension of the world.
-       * @param patchData NURBS patch data.
+       * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
       template <int dimworld>
@@ -159,7 +159,7 @@ namespace Dune::IGANEW {
         // fill up container
         // patchTrimData,trimDatas_;
 
-        // TODO Trim move the refine here from the grid
+        // @todo Trim move the refine here from the grid
         ;
       }
 

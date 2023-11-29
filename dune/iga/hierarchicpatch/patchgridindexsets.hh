@@ -14,7 +14,7 @@
 
 namespace Dune::IGANEW {
 
-  /** \todo Take the index types from the host grid */
+  /** @todo Take the index types from the host grid */
   template <class GridImp>
   class PatchGridLevelIndexSet
       : public IndexSet<
@@ -37,27 +37,27 @@ namespace Dune::IGANEW {
     //! get index of subEntity of a codim 0 entity
     template <int cc>
     int subIndex(const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const {
-      // TODO Trim, the subindeces are wrong!
+      // @todo Trim, the subindeces are wrong!
       return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e), i, codim);
     }
 
     //! get number of entities of given codim, type and on this level
     std::size_t size(int codim) const {
-      // TODO Trim,coun trimmed elements!
+      // @todo Trim,coun trimmed elements!
 
       return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
     }
 
     //! get number of entities of given codim, type and on this level
     std::size_t size(GeometryType type) const {
-      // TODO Trim, count cube and none types i.e. full and trimmed elements
+      // @todo Trim, count cube and none types i.e. full and trimmed elements
 
       return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
     }
 
     /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
-      // TODO Trim, this should return none and cube for trimmed geometries
+      // @todo Trim, this should return none and cube for trimmed geometries
 
       return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
     }
@@ -118,13 +118,13 @@ namespace Dune::IGANEW {
     template <int cc>
     int subIndex(const typename std::remove_const<GridImp>::type::Traits::template Codim<cc>::Entity& e, int i,
                  int codim) const {
-      // TODO Trim, this is wrong for the trimmed case
+      // @todo Trim, this is wrong for the trimmed case
       return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e), i, codim);
     }
 
     //! get number of entities of given type
     std::size_t size(GeometryType type) const {
-      // TODO Trim, count cube and none types i.e. full and trimmed elements
+      // @todo Trim, count cube and none types i.e. full and trimmed elements
       return grid_->parameterSpaceGrid().leafIndexSet().size(type);
     }
 
@@ -133,7 +133,7 @@ namespace Dune::IGANEW {
 
     /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
-      // TODO Trim, this should provide cube and none!
+      // @todo Trim, this should provide cube and none!
       return grid_->parameterSpaceGrid().leafIndexSet().types(codim);
     }
 
@@ -144,7 +144,7 @@ namespace Dune::IGANEW {
           grid_->template getHostEntity<EntityType::codimension>(e));
     }
 
-    /** \todo Currently we support only vertex and element indices */
+    /** @todo Currently we support only vertex and element indices */
     void update(const GridImp& grid) { grid_ = &grid; }
 
     GridImp* grid_;
@@ -181,12 +181,12 @@ namespace Dune::IGANEW {
      */
     IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
                  int codim) const {
-      // TODO Trim, the sub indeces are wrong!!!
+      // @todo Trim, the sub indeces are wrong!!!
       //  Return sub id of the host entity
       return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().hostEntity_, i, codim);
     }
 
-    /** \todo Should be private */
+    /** @todo Should be private */
     void update() {}
 
     const GridImp* grid_;
@@ -225,12 +225,12 @@ namespace Dune::IGANEW {
     IdType subId(const typename std::remove_const<GridImp>::type::template Codim<0>::Entity& e, int i,
                  int codim) const {
       // Return sub id of the host entity
-      // TODO Trim, the sub indices are wrong!!!
+      // @todo Trim, the sub indices are wrong!!!
 
       return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().hostEntity_, i, codim);
     }
 
-    /** \todo Should be private */
+    /** @todo Should be private */
     void update() {}
 
     const GridImp* grid_;

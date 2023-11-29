@@ -64,7 +64,7 @@ namespace Dune {
          *  @param[in]  c  codimension whose size is desired
          */
         int size(int c) const {
-          // TODO Trim
+          // @todo Trim
           if (not trimData_) return cubeGeometry.size(c);
           assert(false);
         }
@@ -81,7 +81,7 @@ namespace Dune {
          *  @param[in]  cc  codimension whose size is desired (0 <= cc <= dim)
          */
         int size(int i, int c, int cc) const {
-          // TODO Trim
+          // @todo Trim
           if (not trimData_) return cubeGeometry.size(i, c, cc);
           assert(false);
         }
@@ -100,7 +100,7 @@ namespace Dune {
          *  @param[in]  cc  codimension of subentity S (c <= cc <= dim)
          */
         int subEntity(int i, int c, int ii, int cc) const {
-          // TODO Trim
+          // @todo Trim
           if (not trimData_) return cubeGeometry.subEntity(i, c, ii, cc);
           assert(false);
         }
@@ -124,7 +124,7 @@ namespace Dune {
          *  \returns An iterable range of numbers of the sub-subentities.
          */
         auto subEntities(int i, int c, int cc) const {
-          // TODO TRIM this should return something usefull
+          // @todo TRIM this should return something usefull
           if (not trimData_) return cubeGeometry.subEntities(i, c, cc);
           assert(false);
         }
@@ -138,7 +138,7 @@ namespace Dune {
          *  @param[in]  c      codimension of subentity E
          */
         GeometryType type(int i, int c) const {
-          // TODO This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
+          // @todo This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
           // be none
           if (c == 0 and not trimData_) return GeometryTypes::none(mydimension);
 
@@ -151,7 +151,7 @@ namespace Dune {
         Since it is a trimmed element we basically only return none here as the most general case
          */
         GeometryType type() const {
-          // TODO for some cases we could also return triangle or something else, but im not sure if
+          // @todo for some cases we could also return triangle or something else, but im not sure if
           //  this is too complicated and also unnecessary
           if (not trimData_) return GeometryTypes::cube(mydimension);
 
@@ -169,7 +169,7 @@ namespace Dune {
          *  @param[in]  c   codimension of subentity E
          */
         Coordinate position(int i, int c) const {
-          // TODO this functions could be a bit complicated
+          // @todo this functions could be a bit complicated
           //  we have to implement https://en.wikipedia.org/wiki/Center_of_mass#A_continuous_volume
           //  M as the volume and rho(R)=1
           if (not trimData_) return cubeGeometry.position(i, c);
@@ -201,7 +201,7 @@ namespace Dune {
          */
         template <int codim>
         typename Codim<codim>::Geometry geometry(int i) const {
-          // TODO trim returns the reference element in geometry space
+          // @todo trim returns the reference element in geometry space
           //  return _impl->template geometry<codim>(i);
           //  if constexpr (codim==0)
           //    return IGANEW::TrimmedPatchGridLocalGeometry();
@@ -212,7 +212,7 @@ namespace Dune {
 
         /** @brief obtain the volume of the reference element */
         CoordinateField volume() const {
-          // TODO trim, integrate on the trimmed patch
+          // @todo trim, integrate on the trimmed patch
           if (not trimData_) return cubeGeometry.volume();
         }
 
@@ -224,7 +224,7 @@ namespace Dune {
          *  @param[in]  face  index of the face, whose normal is desired
          */
         Coordinate integrationOuterNormal(int face) const {
-          // TODO compute tangent of the curve and compute by cross-product the outword normal, only 2D
+          // @todo compute tangent of the curve and compute by cross-product the outword normal, only 2D
           return cubeGeometry.integrationOuterNormal(face);
         }
 
@@ -241,7 +241,7 @@ namespace Dune {
 
         //! Compares for equality with another reference element.
         bool operator==(const TrimmedReferenceElement& r) const {
-          // TODO, just check if the triangulations cooincide
+          // @todo, just check if the triangulations cooincide
           return trimData_ == r.trimData_;
         }
 
@@ -250,7 +250,7 @@ namespace Dune {
 
         //! Yields a hash value suitable for storing the reference element a in hash table
         friend std::size_t hash_value(const TrimmedReferenceElement& r) {
-          // TODO, this is not needed maybe
+          // @todo, this is not needed maybe
           return hash_value(ReferenceElements<ctype, mydimension>::cube());
           return {};
         }
@@ -259,7 +259,7 @@ namespace Dune {
         TrimDataTypeOptionalReference trimData_;
         const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
             ReferenceElements<ctype, mydimension>::cube()};
-        // TODO mayby store here all the trimming information anyway?
+        // @todo mayby store here all the trimming information anyway?
         // But this should have value semantics and therefore it should be cheap to copy, thus maybe store it at the
         // entity
       };

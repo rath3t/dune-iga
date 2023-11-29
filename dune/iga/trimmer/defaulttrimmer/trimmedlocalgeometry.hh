@@ -52,7 +52,7 @@ namespace Dune {
           if constexpr (codim == 0)
             return true;
           else
-            return false;  // TODO for straight lines this should return true
+            return false;  // @todo for straight lines this should return true
         }
 
         //! return the number of corners of this element. Corners are numbered 0...n-1

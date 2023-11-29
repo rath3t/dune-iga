@@ -25,7 +25,7 @@ namespace Dune::IGANEW {
    * @throws Dune::MathError if the trust region method fails to find an energy-decreasing direction.
    *
    */
-  template <typename Geo>  // TODO add concept
+  template <typename Geo>  // @todo add concept
   auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
                                            const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
       -> std::tuple<typename Geo::LocalCoordinate, typename Geo::ctype, typename Geo::ctype, typename Geo::ctype>

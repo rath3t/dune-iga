@@ -341,7 +341,7 @@ namespace Dune::Functions {
      * @param elementIdx Integer coordinates in the tensor product patch
      */
 
-    // TODO save correct element info
+    // @todo save correct element info
     void bind(const std::array<unsigned, dim>& elementIdx) {
       const auto& patchData = preBasis_.patchData_;
       for (size_t i = 0; i < elementIdx.size(); i++) {
@@ -716,7 +716,7 @@ namespace Dune::Functions {
       finiteElement_.bind(preBasis_->getIJK(elementIndex, preBasis_->elements_));
       this->setSize(finiteElement_.size());
     }
-    // TODO Set back to protected
+    // @todo Set back to protected
    public:
     const NurbsPreBasis<GV>* preBasis_;
 

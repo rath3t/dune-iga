@@ -305,7 +305,7 @@ namespace Dune::IGANEW::Splines {
         bSplines[i] = BsplineBasis<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
       auto Nnet = MultiDimensionalNet<dim, ScalarType>(bSplines);
-      // TODO Alex this should also be cached when called with a localView
+      // @todo Alex this should also be cached when called with a localView
       const auto subNetWeights = netOfSpan(spIndex, degree, weights);
 
       const ScalarType invSumWeight = dot(Nnet, subNetWeights);
@@ -418,7 +418,7 @@ namespace Dune::IGANEW::Splines {
   ->Nurbs<dim, ScalarType_>;
 #endif
 
-  // TODO Add Algo ref from NURBS book
+  // @todo Add Algo ref from NURBS book
   /**
    * @brief Perform degree elevation on a NURBS patch.
    *

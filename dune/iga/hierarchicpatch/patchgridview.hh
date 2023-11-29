@@ -34,7 +34,7 @@ namespace Dune::IGANEW {
     const auto& patchData() const { return this->grid().patchGeometries[this->level_].patchData(); }
 
     const auto& unTrimmedPatch() const {
-      // TODO Trim
+      // @todo Trim
       return this->grid().patchGeometries[this->level_];
     }
 
@@ -59,7 +59,7 @@ namespace Dune::IGANEW {
     const auto& patchData() const { return this->grid().patchGeometries_[this->grid().maxLevel()].patchData(); }
 
     const auto& unTrimmedPatch() const {
-      // TODO Trim
+      // @todo Trim
       return this->grid().patchGeometries[this->grid().maxLevel()];
     }
     const auto& tensorProductCoordinates() const {

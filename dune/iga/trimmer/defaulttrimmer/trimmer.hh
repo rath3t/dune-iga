@@ -105,6 +105,15 @@ namespace Dune {
         template <int codim>
         using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
+        using TrimmedEntityInParameterSpace
+            = TrimmedParameterSpaceGridEntity<mydimension - codim, mydimension>;
+        template <int codim>
+        using UntrimmedEntityInParameterSpace = typename ParameterSpaceGrid::template Codim<codim>::Entity;
+
+        template <int codim>
+using ParameterSpaceGridEntity
+    = Trim::EntityVariant<Trimmer, UntrimmedLocalGeometry<codim>, TrimmedLocalGeometry<codim>>;
+
        public:
         /**
          * @brief Type alias for local geometry of a specified codimension.
@@ -207,7 +216,7 @@ namespace Dune {
           parameterSpaceGrid_->createBegin();
           for (auto hostEntity : elements(untrimmedParameterSpaceGrid_->leafGridView())) {
             // if decide which elements are full or trim and add them to the subgrid
-            // subGrid.insert(hostEntity);
+             parameterSpaceGrid_.insert(hostEntity);
           }
           parameterSpaceGrid_->insertLeaf();
           parameterSpaceGrid_->createEnd();
