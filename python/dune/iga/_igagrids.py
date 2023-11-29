@@ -1,7 +1,11 @@
 # SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+"""@package dune-iga
+Documentation for this module.
 
+More details.
+"""
 def IGAGrid(constructor, dimgrid=None, dimworld=None):
     """
     Create an IGAGrid instance.

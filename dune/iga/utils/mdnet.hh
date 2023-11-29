@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "concepts.hh"
-
 #include <concepts>
 #include <functional>
 #include <iterator>
@@ -13,7 +11,9 @@
 
 #include <dune/common/fvector.hh>
 
-namespace Dune::IGA {
+#include <dune/iga/hierarchicpatch/concepts.hh>
+
+namespace Dune::IGANEW {
 
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
@@ -25,38 +25,62 @@ namespace Dune::IGA {
     HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
   }  // namespace Impl
 
-  /** \brief class holds a n-dim net */
-  template <std::size_t netdim, typename ValueType>
-  class MultiDimensionNet {
+  /**
+   * @brief This is a condensed version of the proposal
+   * https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p1684r2.html It is a container with multidimensional
+   * accessors. \details It has less features and only allows runtime size values but the rank is given at compile time.
+   * Furthermore, there are specific constructors to have a convenient construction for NURBS controlpoints
+   * It also has several overloaded operators to do linear algebra with it such as operator*
+   * @tparam ElementType The type of the stored values
+   * @tparam netdim The rank of the array (How many dimensions it has)
+   * @tparam Container The type of storage
+   */
+  template <int netdim, class ElementType, class Container = std::vector<ElementType>>
+  class MultiDimensionalNet {
    public:
-    using value_type = ValueType;
-
     static constexpr std::size_t netDim = netdim;
-    MultiDimensionNet()                 = default;
 
-    MultiDimensionNet(std::initializer_list<std::initializer_list<ValueType>> values) {
-      std::vector<std::vector<ValueType>> vals;
+    constexpr MultiDimensionalNet()                           = default;
+    constexpr MultiDimensionalNet(const MultiDimensionalNet&) = default;
+    constexpr MultiDimensionalNet(MultiDimensionalNet&&)      = default;
+    constexpr MultiDimensionalNet& operator=(const MultiDimensionalNet&) = default;
+    constexpr MultiDimensionalNet& operator=(MultiDimensionalNet&&) = default;
+    ~MultiDimensionalNet()                                          = default;
+
+    using container_type  = Container;
+    using element_type    = ElementType;
+    using value_type      = std::remove_cv_t<element_type>;
+    using index_type      = typename Container::size_type;
+    using size_type       = index_type;
+    using rank_type       = int;
+    using pointer         = typename container_type::pointer;
+    using reference       = typename container_type::reference;
+    using const_pointer   = typename container_type::const_pointer;
+    using const_reference = typename container_type::const_reference;
+
+    MultiDimensionalNet(std::initializer_list<std::initializer_list<element_type>> values) requires(netdim == 2) {
+      std::vector<std::vector<element_type>> vals;
       for (auto&& val : values)
         vals.push_back(val);
       std::array<int, netdim> dimsize = {static_cast<int>(vals.size()), static_cast<int>(values.begin()->size())};
-      *this                           = MultiDimensionNet{dimsize, vals};
+      *this                           = MultiDimensionalNet{dimsize, vals};
     }
 
-    explicit MultiDimensionNet(const std::vector<std::vector<ValueType>>& vals) {
+    explicit MultiDimensionalNet(const std::vector<std::vector<element_type>>& vals) requires(netdim == 2) {
       std::array<int, netdim> dimsize = {static_cast<int>(vals.size()), static_cast<int>(vals.begin()->size())};
-      *this                           = MultiDimensionNet{dimsize, vals};
+      *this                           = MultiDimensionalNet{dimsize, vals};
     }
 
-    explicit MultiDimensionNet(const std::vector<ValueType>& vals) {
+    explicit MultiDimensionalNet(const std::vector<element_type>& vals) requires(netdim == 1) {
       std::array<int, 1> dimsize = {static_cast<int>(vals.size())};
-      *this                      = MultiDimensionNet{dimsize, vals};
+      *this                      = MultiDimensionalNet{dimsize, vals};
     }
 
-    /** \brief constructor for a net of a certain strideSizes with values unknown.
+    /** @brief constructor for a net of a certain strideSizes with values unknown.
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] dimSize array of the strideSizes of each dimension
      */
-    explicit MultiDimensionNet(const std::array<int, netdim>& dimSize) : dimSize_(dimSize) {
+    explicit MultiDimensionalNet(const std::array<int, netdim>& dimSize) : dimSize_(dimSize) {
       int size_ = 1;
       for (auto ds : dimSize)
         size_ *= ds;
@@ -65,7 +89,8 @@ namespace Dune::IGA {
     }
 
     template <typename... Args>
-    explicit MultiDimensionNet(int dimSize0, Args&&... dimSize) : dimSize_({dimSize0, std::forward<Args>(dimSize)...}) {
+    explicit MultiDimensionalNet(int dimSize0, Args&&... dimSize)
+        : dimSize_({dimSize0, std::forward<Args>(dimSize)...}) {
       int size = 1;
       for (auto ds : dimSize_)
         size *= ds;
@@ -73,7 +98,7 @@ namespace Dune::IGA {
       values_.resize(size);
     }
 
-    explicit MultiDimensionNet(const FieldVector<int, netdim>& dimSize) {
+    explicit MultiDimensionalNet(const FieldVector<int, netdim>& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       int size = 1;
       for (auto ds : dimSize_)
@@ -82,21 +107,12 @@ namespace Dune::IGA {
       values_.resize(size);
     }
 
-    explicit MultiDimensionNet(FieldVector<int, netdim>&& dimSize) {
-      std::ranges::copy(dimSize, dimSize_.begin());
-      int size = 1;
-      for (auto ds : dimSize_)
-        size *= ds;
-
-      values_.resize(size);
-    }
-
-    /** \brief constructor for a net from outerproduct of vectors
+    /** @brief constructor for a net from outerproduct of vectors
      *
-     *  \param[in] values netdim vectors of values
+     *  @param[in] values netdim vectors of values
      */
     template <std::ranges::sized_range V>
-    explicit MultiDimensionNet(const std::array<V, netdim>& values) {
+    explicit MultiDimensionalNet(const std::array<V, netdim>& values) {
       for (int i = 0; i < netdim; ++i)
         dimSize_[i] = values[i].size();
 
@@ -113,24 +129,25 @@ namespace Dune::IGA {
           }
     }
 
-    /** \brief constructor intended for the 1-D if the values are already in a vector
+    /** @brief constructor intended for the 1-D, or if the values are already in a vector
      *  \note can also be used if the values are already mapped
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values vector with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values vector with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<ValueType>& values)
+    MultiDimensionalNet(std::array<int, netdim> dimSize, const container_type& values)
         : values_(values), dimSize_{dimSize} {}
 
-    MultiDimensionNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
+    MultiDimensionalNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
         : values_(values.begin(), values.end()), dimSize_{dimSize} {}
 
-    /** \brief constructor intended for the 2-D if the values are already in a matrix
+    /** @brief constructor intended for the 2-D if the values are already in a matrix
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values matrix with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<ValueType>>& values)
+    MultiDimensionalNet(std::array<int, netdim> dimSize,
+                        const std::vector<std::vector<value_type>>& values) requires(netdim == 2)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size());
       for (int i = 0; i < values.size(); ++i)
@@ -138,12 +155,13 @@ namespace Dune::IGA {
           this->set({i, j}, values[i][j]);
     }
 
-    /** \brief constructor intended for the 3-D
+    /** @brief constructor intended for the 3-D
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] values matrix with values
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] values matrix with values
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<ValueType>>>& values)
+    MultiDimensionalNet(std::array<int, netdim> dimSize,
+                        const std::vector<std::vector<std::vector<value_type>>>& values) requires(netdim == 3)
         : dimSize_(dimSize) {
       values_.resize(values.size() * values[0].size() * values[0][0].size());
 
@@ -153,12 +171,12 @@ namespace Dune::IGA {
             this->set({i, j, k}, values[i][j][k]);
     }
 
-    /** \brief constructor for a grid of the same value
+    /** @brief constructor for a grid of the same value
      *
-     *  \param[in] dimSize array of the strideSizes of each dimension
-     *  \param[in] value a common value to fill the grid
+     *  @param[in] dimSize array of the strideSizes of each dimension
+     *  @param[in] value a common value to fill the grid
      */
-    MultiDimensionNet(std::array<int, netdim> dimSize, const ValueType& value) : dimSize_(dimSize) {
+    MultiDimensionalNet(std::array<int, netdim> dimSize, const value_type& value) : dimSize_(dimSize) {
       int size = 1;
       for (auto ds : dimSize_)
         size *= ds;
@@ -167,16 +185,16 @@ namespace Dune::IGA {
       std::fill(values_.begin(), values_.end(), value);
     }
 
-    /** \brief sets a value at the multiindex */
-    void set(std::array<int, netdim> multiIndex, const ValueType& value) {
+    /** @brief sets a value at the multiindex */
+    void set(std::array<int, netdim> multiIndex, const value_type& value) {
       int index      = this->index(multiIndex);
       values_[index] = value;
     }
 
-    /** \brief sets a value at the multiindex */
-    void directSet(int index, const ValueType& value) { values_[index] = value; }
+    /** @brief sets a value at the multiindex */
+    void directSet(int index, const value_type& value) { values_[index] = value; }
 
-    void directSet(int index, ValueType&& value) { values_[index] = std::move(value); }
+    void directSet(int index, value_type&& value) { values_[index] = std::move(value); }
 
     template <typename... Args>
     auto& operator()(const Args... args) {
@@ -188,20 +206,20 @@ namespace Dune::IGA {
       return get({args...});
     }
 
-    /** \brief returns the value at the multiindex */
+    /** @brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
-    ValueType& get(const ArrayType& multiIndex) {
+    value_type& get(const ArrayType& multiIndex) {
       return values_[this->index(multiIndex)];
     }
 
-    /** \brief returns the value at the multiindex */
+    /** @brief returns the value at the multiindex */
     template <typename ArrayType = std::array<int, netdim>>
-    const ValueType& get(const ArrayType& multiIndex) const {
+    const value_type& get(const ArrayType& multiIndex) const {
       return values_[this->index(multiIndex)];
     }
 
     auto subNet(const std::array<int, netdim>& start, const std::array<int, netdim>& size) const {
-      std::vector<ValueType> subValues;
+      std::vector<value_type> subValues;
       subValues.reserve(std::accumulate(size.begin(), size.end(), 1, std::multiplies{}));
       if constexpr (netdim == 1)
         for (int i = 0; i < size[0]; ++i)
@@ -211,26 +229,26 @@ namespace Dune::IGA {
           for (int i = 0; i < size[0]; ++i)
             subValues.push_back(get({start[0] + i, start[1] + j}));
       else if constexpr (netdim == 3)
-        for (int k = 0; k < size[2]; ++k)  // TODO generalize
+        for (int k = 0; k < size[2]; ++k)  // @todo generalize
           for (int j = 0; j < size[1]; ++j)
             for (int i = 0; i < size[0]; ++i)
               subValues.push_back(get({start[0] + i, start[1] + j, start[2] + k}));
 
-      return MultiDimensionNet<netdim, ValueType>(size, subValues);
+      return MultiDimensionalNet<netdim, value_type>(size, subValues);
     }
 
-    /** \brief returns a value at an index (unmapped)
+    /** @brief returns a value at an index (unmapped)
      * \note only to be used when the mapping is known
      */
-    ValueType& directGet(const int index) { return values_[index]; }
+    value_type& directGet(const int index) { return values_[index]; }
 
-    const ValueType& directGet(const int index) const { return values_[index]; }
+    const value_type& directGet(const int index) const { return values_[index]; }
 
     auto& directGetAll() { return values_; }
 
     const auto& directGetAll() const { return values_; }
 
-    /** \brief returns a multiindex for a scalar index */
+    /** @brief returns a multiindex for a scalar index */
     template <typename ReturnType = std::array<int, netdim>>
     ReturnType directToMultiIndex(const int index) const {
       return directToMultiIndex<ReturnType>(dimSize_, index);
@@ -250,10 +268,10 @@ namespace Dune::IGA {
       return multiIndex;
     }
 
-    /** \brief returns an array with the strideSizes of each dimension */
+    /** @brief returns an array with the strideSizes of each dimension */
     std::array<int, netdim> strideSizes() const { return dimSize_; }
 
-    /** \brief returns an array with the strideSizes of each dimension */
+    /** @brief returns an array with the strideSizes of each dimension */
     template <std::integral T>
     std::array<T, netdim> sizeAsT() const {
       std::array<T, netdim> sizeUI;
@@ -274,23 +292,23 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires Concept::MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
-    &operator*=(const MultiDimensionNet<netdim, rValueType>& rnet) {
+    requires Concept::MultiplyAssignAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
+    &operator*=(const MultiDimensionalNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::multiplies{});
       return *this;
     }
 
     template <typename rValueType>
-    requires Concept::DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::DivideAssignAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
     &operator/=(const rValueType& div) {
       std::ranges::transform(values_, values_.begin(), [&div](auto& val) { return val / div; });
       return *this;
     }
 
     template <typename rValueType>
-    requires Concept::DivideAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
-    &operator/=(const MultiDimensionNet<netdim, rValueType>& rnet) {
+    requires Concept::DivideAssignAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
+    &operator/=(const MultiDimensionalNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(),
                              [](const auto& lval, const auto& rval) { return lval / rval; });
@@ -298,23 +316,23 @@ namespace Dune::IGA {
     }
 
     template <typename rValueType>
-    requires Concept::MultiplyAssignAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
+    requires Concept::MultiplyAssignAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
     &operator*=(const rValueType& fac) {
       std::ranges::transform(values_, values_.begin(), [&fac](const auto& val) { return val * fac; });
       return *this;
     }
 
     template <typename rValueType>
-    requires Concept::AddAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
-    &operator+=(const MultiDimensionNet<netdim, rValueType>& rnet) {
+    requires Concept::AddAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
+    &operator+=(const MultiDimensionalNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::plus{});
       return *this;
     }
 
     template <typename rValueType>
-    requires Concept::SubstractAble<ValueType, rValueType> MultiDimensionNet<netdim, ValueType>
-    &operator-=(const MultiDimensionNet<netdim, rValueType>& rnet) {
+    requires Concept::SubstractAble<value_type, rValueType> MultiDimensionalNet<netdim, value_type>
+    &operator-=(const MultiDimensionalNet<netdim, rValueType>& rnet) {
       assert(this->strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
       std::ranges::transform(values_, rnet.directGetAll(), values_.begin(), std::minus{});
       return *this;
@@ -346,11 +364,11 @@ namespace Dune::IGA {
       return true;
     }
 
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfBegin(
+    Impl::HyperSurfaceIterator<netdim, value_type> hyperSurfBegin(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
-      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, 0);
+      return Impl::HyperSurfaceIterator(*this, direction, 0);
     }
-    Impl::HyperSurfaceIterator<netdim, ValueType> hyperSurfEnd(
+    Impl::HyperSurfaceIterator<netdim, value_type> hyperSurfEnd(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       int directionEnd;
       if constexpr (netdim != 0) {
@@ -362,19 +380,23 @@ namespace Dune::IGA {
       } else
         directionEnd = this->strideSizes()[0];
 
-      return Dune::IGA::Impl::HyperSurfaceIterator(*this, direction, directionEnd);
+      return Impl::HyperSurfaceIterator(*this, direction, directionEnd);
     }
 
    private:
     std::array<int, netdim> dimSize_;
-    std::vector<ValueType> values_;
+    Container values_;
   };
+
+  template <size_t netdim, typename value_type>
+  MultiDimensionalNet(std::array<int, netdim> dimSize, const std::vector<std::vector<std::vector<value_type>>>& values)
+      -> MultiDimensionalNet<netdim, value_type>;
 
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
     class HyperSurfaceIterator {
      public:
-      HyperSurfaceIterator(MultiDimensionNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction,
+      HyperSurfaceIterator(MultiDimensionalNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction,
                            int at)
           : net_{&net}, direction_{direction}, at_{at} {
         std::array<int, netdim - 1> indicesSurface;
@@ -383,7 +405,7 @@ namespace Dune::IGA {
 
         const int cpSize = std::accumulate(indicesSurface.begin(), indicesSurface.end(), 1, std::multiplies{});
         std::function<std::array<int, netdim - 1>(int)> func = [indicesSurface](auto i) {
-          return MultiDimensionNet<netdim - 1, int>::template directToMultiIndex<std::array<int, netdim - 1>>(
+          return MultiDimensionalNet<netdim - 1, int>::template directToMultiIndex<std::array<int, netdim - 1>>(
               indicesSurface, i);
         };
         viewOverIndices_ = std::ranges::iota_view(0, cpSize) | std::views::transform(func);
@@ -445,7 +467,7 @@ namespace Dune::IGA {
       auto operator->() { return *this; }
 
      private:
-      MultiDimensionNet<netdim, ValueType>* net_;
+      MultiDimensionalNet<netdim, ValueType>* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
       template <std::integral auto netdim1, typename ValueType1>
@@ -467,7 +489,7 @@ namespace Dune::IGA {
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
   requires Concept::MultiplyAble<lValueType, rValueType>
-  auto dot(const MultiDimensionNet<netdim, lValueType>& lnet, const MultiDimensionNet<netdim, rValueType>& rnet) {
+  auto dot(const MultiDimensionalNet<netdim, lValueType>& lnet, const MultiDimensionalNet<netdim, rValueType>& rnet) {
     using ResultType = decltype(lnet.directGetAll()[0] * rnet.directGetAll()[0]);
     assert(lnet.strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
     return std::inner_product(lnet.directGetAll().begin(), lnet.directGetAll().end(), rnet.directGetAll().begin(),
@@ -476,45 +498,46 @@ namespace Dune::IGA {
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
   requires Concept::MultiplyAble<lValueType, rValueType>
-  auto operator-(const MultiDimensionNet<netdim, lValueType>& lnet, const MultiDimensionNet<netdim, rValueType>& rnet) {
+  auto operator-(const MultiDimensionalNet<netdim, lValueType>& lnet,
+                 const MultiDimensionalNet<netdim, rValueType>& rnet) {
     assert(lnet.strideSizes() == rnet.strideSizes() && "The net dimensions need to match in each direction!");
-    MultiDimensionNet<netdim, lValueType> res = lnet;
+    MultiDimensionalNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), rnet.directGetAll(), res.directGetAll().begin(), std::minus{});
     return res;
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
-  operator/(const MultiDimensionNet<netdim, lValueType>& lnet, const rValueType& div) {
-    MultiDimensionNet<netdim, lValueType> res = lnet;
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionalNet<netdim, lValueType>
+  operator/(const MultiDimensionalNet<netdim, lValueType>& lnet, const rValueType& div) {
+    MultiDimensionalNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), res.directGetAll().begin(), [&div](auto& val) { return val / div; });
     return res;
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
-  operator*(const MultiDimensionNet<netdim, lValueType>& lnet, const rValueType& fac) {
-    MultiDimensionNet<netdim, lValueType> res = lnet;
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionalNet<netdim, lValueType>
+  operator*(const MultiDimensionalNet<netdim, lValueType>& lnet, const rValueType& fac) {
+    MultiDimensionalNet<netdim, lValueType> res = lnet;
     std::ranges::transform(res.directGetAll(), res.directGetAll().begin(), [&fac](auto& val) { return val * fac; });
     return res;
   }
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>
-  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionNet<netdim, lValueType>
-  operator*(const rValueType& fac, const MultiDimensionNet<netdim, lValueType>& lnet) { return lnet * fac; }
+  requires Concept::DivideAble<lValueType, rValueType> MultiDimensionalNet<netdim, lValueType>
+  operator*(const rValueType& fac, const MultiDimensionalNet<netdim, lValueType>& lnet) { return lnet * fac; }
 
-  /** \brief class holds a n-dim net */
+  /** @brief class holds a n-dim net */
   template <std::size_t netdim>
-  class MultiDimensionNetIndex  // FIXME merge with Net
+  class MultiDimensionalNetIndex  // FIXME merge with Net
   {
    public:
-    explicit MultiDimensionNetIndex(const FieldVector<int, netdim>& dimSize) {
+    explicit MultiDimensionalNetIndex(const FieldVector<int, netdim>& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       size_ = 1;
       for (auto ds : dimSize_)
         size_ *= ds;
     }
-    /** \brief returns a multiindex for a scalar index */
+    /** @brief returns a multiindex for a scalar index */
     template <typename ReturnType = std::array<int, netdim>>
     ReturnType directToMultiIndex(const int index) const {
       return directToMultiIndex<ReturnType>(dimSize_, index);
@@ -559,4 +582,5 @@ namespace Dune::IGA {
     std::array<int, netdim> dimSize_;
     int size_;
   };
-}  // namespace Dune::IGA
+
+}  // namespace Dune::IGANEW
