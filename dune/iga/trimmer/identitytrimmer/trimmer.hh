@@ -147,6 +147,18 @@ namespace Dune::IGANEW {
        */
       ParameterSpaceGrid& parameterSpaceGrid() { return *parameterSpaceGrid_; }
 
+      /**
+       * @brief Refine the grid globally.
+       * @param ref Number of refinement levels.
+       */
+      auto globalRefine(int ref) {
+        // fill up container
+        // patchTrimData,trimDatas_;
+
+//TODO Trim move the refine here from the grid
+        ;
+      }
+
      private:
       std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;  ///< The parameter space grid.
     };
