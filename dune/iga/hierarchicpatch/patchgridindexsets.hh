@@ -171,19 +171,18 @@ namespace Dune::IGANEW {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().hostEntity_);
+      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().untrimmedHostEntity());
     }
 
     //! get id of subEntity
     /*
-        We use the remove_const to extract the Type from the mutable class,
-        because the const class is not instantiated yet.
+
      */
     IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
                  int codim) const {
       // @todo Trim, the sub indeces are wrong!!!
       //  Return sub id of the host entity
-      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().hostEntity_, i, codim);
+      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
     }
 
     /** @todo Should be private */
@@ -214,7 +213,7 @@ namespace Dune::IGANEW {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->parameterSpaceGrid().localIdSet().id(e.impl().hostEntity_);
+      return grid_->parameterSpaceGrid().localIdSet().id(e.impl().untrimmedHostEntity());
     }
 
     //! get id of subEntity
@@ -225,9 +224,9 @@ namespace Dune::IGANEW {
     IdType subId(const typename std::remove_const<GridImp>::type::template Codim<0>::Entity& e, int i,
                  int codim) const {
       // Return sub id of the host entity
-      // @todo Trim, the sub indices are wrong!!!
+      /* @todo Trim, the sub indices are wrong!!! */
 
-      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().hostEntity_, i, codim);
+      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
     }
 
     /** @todo Should be private */

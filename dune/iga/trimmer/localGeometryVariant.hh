@@ -1,6 +1,6 @@
 
 #pragma once
-
+#include <variant>
 namespace Dune {
   namespace IGANEW {
     namespace Trim {

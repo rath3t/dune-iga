@@ -96,6 +96,9 @@ namespace Dune::IGANEW {
       template <int codim>
       using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
+      template <int codim, class GridImp>
+       using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
+
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 
       /**

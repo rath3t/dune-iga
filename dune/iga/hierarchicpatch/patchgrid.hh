@@ -470,7 +470,7 @@ namespace Dune::IGANEW {
     template <int codim>
     const typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity& getHostEntity(
         const typename Traits::template Codim<codim>::Entity& e) const {
-      return e.impl().hostEntity_;
+      return e.impl().untrimmedHostEntity();
     }
 
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }

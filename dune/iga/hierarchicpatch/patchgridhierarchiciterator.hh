@@ -33,13 +33,13 @@ namespace Dune::IGANEW {
     //! the default Constructor
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
         : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().hostEntity_.hbegin(maxLevel)) {}
+          hostHierarchicIterator_(startEntity.impl().untrimmedHostEntity().hbegin(maxLevel)) {}
 
     //! @todo Please doc me !
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                          [[maybe_unused]] bool endDummy)
         : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().hostEntity_.hend(maxLevel)) {}
+          hostHierarchicIterator_(startEntity.impl().untrimmedHostEntity().hend(maxLevel)) {}
 
     //! @todo Please doc me !
     void increment() { ++hostHierarchicIterator_; }

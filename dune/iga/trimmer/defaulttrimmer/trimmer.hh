@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "trimmedentity.hh"
 #include "elementtrimdata.hh"
 #include "patchtrimdata.hh"
 #include "referenceelement.hh"
@@ -21,6 +22,7 @@
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include "dune/iga/trimmer/localGeometryVariant.hh"
+#include "dune/iga/trimmer/entityvariant.hh"
 
 #include <dune/subgrid/subgrid.hh>
 #include <dune/subgrid/test/common.hh>
@@ -94,6 +96,8 @@ namespace Dune {
         }
 
        private:
+        template <int codim_, int dim_, class GridImp_>
+friend class TrimmedParameterSpaceGridEntity;
         template <int codim>
         using TrimmedLocalParameterSpaceGeometry
             = TrimmedLocalGeometry<mydimension - codim, mydimension, ctype, LocalGeometryTag::InParameterSpace>;
@@ -104,17 +108,17 @@ namespace Dune {
         using UntrimmedLocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
         template <int codim>
         using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
-
-        using TrimmedEntityInParameterSpace
-            = TrimmedParameterSpaceGridEntity<mydimension - codim, mydimension>;
+        template <int codim, class GridImp>
+        using TrimmedParameterSpaceGridEntity
+            = TrimmedParameterSpaceGridEntity<codim, mydimension,GridImp>;
         template <int codim>
-        using UntrimmedEntityInParameterSpace = typename ParameterSpaceGrid::template Codim<codim>::Entity;
+        using UntrimmedParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
-        template <int codim>
-using ParameterSpaceGridEntity
-    = Trim::EntityVariant<Trimmer, UntrimmedLocalGeometry<codim>, TrimmedLocalGeometry<codim>>;
 
        public:
+        template <int codim, class GridImp>
+using ParameterSpaceGridEntity
+= Trim::ParameterSpaceGridEntityVariant<codim,Trimmer, UntrimmedParameterSpaceGridEntity<codim>, TrimmedParameterSpaceGridEntity<codim,GridImp>>;
         /**
          * @brief Type alias for local geometry of a specified codimension.
          * @tparam codim Codimension of the local geometry.
@@ -216,7 +220,7 @@ using ParameterSpaceGridEntity
           parameterSpaceGrid_->createBegin();
           for (auto hostEntity : elements(untrimmedParameterSpaceGrid_->leafGridView())) {
             // if decide which elements are full or trim and add them to the subgrid
-             parameterSpaceGrid_.insert(hostEntity);
+             // parameterSpaceGrid_->insert(hostEntity);
           }
           parameterSpaceGrid_->insertLeaf();
           parameterSpaceGrid_->createEnd();

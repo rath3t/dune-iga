@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include "elementtrimdata.hh"
 namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
@@ -18,7 +17,6 @@ namespace Dune {
 
         static constexpr int mydimension = mydim_;
         using TrimmerType                = Trimmer<mydimension, ctype>;
-        using TrimDataType               = ElementTrimData<mydimension, ctype>;
 
         static constexpr int coorddimension = coorddim;
         static constexpr int codim          = coorddim - mydimension;
@@ -38,9 +36,8 @@ namespace Dune {
             typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
                                                 ctype>::template GeometryLocalView<codim, TrimmerType>;
 
-        /** constructor from host geometry
-         */
-        explicit TrimmedLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
+        /** constructor from host geometry  */
+        explicit TrimmedLocalGeometry(const GeometryKernel::NURBSPatch<mydimension,coorddim,ctype>& trimData) : trimData_{&trimData} {}
 
         /** @brief Return the element type identifier
          */
@@ -86,7 +83,7 @@ namespace Dune {
         }
 
        private:
-        const TrimDataType* trimData_{nullptr};
+        const GeometryKernel::NURBSPatch<mydimension,coorddim,ctype>* trimData_{nullptr};
       };
     }  // namespace DefaultTrim
   }    // namespace IGANEW
