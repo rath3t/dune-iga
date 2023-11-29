@@ -4,7 +4,6 @@
 #include <ranges>
 
 #include "trimmedlocalgeometry.hh"
-#include "trimmer.hh"
 
 namespace Dune {
   namespace IGANEW {
@@ -13,7 +12,7 @@ namespace Dune {
       template <int mydim_, typename ScalarType>
       struct ElementTrimData;
 
-      /** \class DefaultTrimmedReferenceElement
+      /** \class TrimmedReferenceElement
        *  \ingroup GeometryTrimmedReferenceElements
        *  @brief This class provides access to geometric and topological
        *  properties of a reference element.
@@ -32,7 +31,7 @@ namespace Dune {
        *
        */
       template <int dim, typename ct>
-      class DefaultTrimmedReferenceElement {
+      class TrimmedReferenceElement {
        public:
         //! The dimension of the reference element.
         static constexpr int mydimension = dim;
@@ -236,21 +235,21 @@ namespace Dune {
          * assigning a valid reference element (obtained from TrimmedReferenceElements), it may
          * be used without restrictions.
          */
-        DefaultTrimmedReferenceElement() = default;
+        TrimmedReferenceElement() = default;
 
-        explicit DefaultTrimmedReferenceElement(TrimDataTypeOptionalReference trimData) : trimData_{trimData} {}
+        explicit TrimmedReferenceElement(TrimDataTypeOptionalReference trimData) : trimData_{trimData} {}
 
         //! Compares for equality with another reference element.
-        bool operator==(const DefaultTrimmedReferenceElement& r) const {
+        bool operator==(const TrimmedReferenceElement& r) const {
           // TODO, just check if the triangulations cooincide
           return trimData_ == r.trimData_;
         }
 
         //! Compares for inequality with another reference element.
-        bool operator!=(const DefaultTrimmedReferenceElement& r) const { return not(*this == r); }
+        bool operator!=(const TrimmedReferenceElement& r) const { return not(*this == r); }
 
         //! Yields a hash value suitable for storing the reference element a in hash table
-        friend std::size_t hash_value(const DefaultTrimmedReferenceElement& r) {
+        friend std::size_t hash_value(const TrimmedReferenceElement& r) {
           // TODO, this is not needed maybe
           return hash_value(ReferenceElements<ctype, mydimension>::cube());
           return {};

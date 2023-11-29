@@ -67,7 +67,7 @@ namespace Dune {
        public:
         using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric grid
         template <int mydim>
-        using ReferenceElementType = DefaultTrimmedReferenceElement<mydim, ctype>;  ///< Reference element type.
+        using ReferenceElementType = TrimmedReferenceElement<mydim, ctype>;  ///< Reference element type.
 
         using ElementTrimData = ElementTrimData<ParameterSpaceGrid::dimension,
                                                 typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.

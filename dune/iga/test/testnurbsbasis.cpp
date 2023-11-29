@@ -107,6 +107,16 @@ auto testNurbsBasis() {
     Functions::NurbsBasis<GridView> basis2(gridViewNew, nurbs(degreeElevate(1, 1)));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
+
+  {
+    grid.degreeElevateOnAllLevels({0, 1});
+    auto gridViewNew = grid.leafGridView();
+    // Check lower order basis created via its constructor
+    using namespace Functions::BasisFactory;
+    Functions::NurbsBasis<GridView> basis2(gridViewNew, nurbs(degreeElevate(1, 0)));
+    test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
+  }
+
   return test;
 }
 
