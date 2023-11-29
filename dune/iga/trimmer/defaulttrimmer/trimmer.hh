@@ -31,6 +31,15 @@ namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
 
+      template<typename  ParameterSpaceGrid,typename ElementTrimData>
+      struct ElementTrimDataContainer {
+
+        trimData()
+
+        using ElementTrimDataContainer = std::map<typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
+                                          ElementTrimData>;  ///< Container for element trim data.
+      };
+
       /**
        * @brief DefaultTrimParameter struct representing parameters for the trimming operation.
        */
@@ -75,8 +84,7 @@ namespace Dune {
         using PatchTrimData   = PatchTrimData<ParameterSpaceGrid::dimension,
                                             typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
 
-        using ElementTrimDataContainer = std::map<typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
-                                                  ElementTrimData>;  ///< Container for element trim data.
+        using ElementTrimDataContainer = ElementTrimDataContainer<ParameterSpaceGrid,ElementTrimData>; ///< Container for element trim data.
 
         /**
          * @brief Default constructor for Trimmer.

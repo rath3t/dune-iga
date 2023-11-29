@@ -14,13 +14,17 @@ namespace Dune {
         using LocalCoordinate = FieldVector<ctype, mydimension>;
 
     using TrimmerType= typename GridImp::TrimmerType;
+    using ElementTrimData= typename TrimmerType::ElementTrimData;
     using UntrimmedParameterSpaceGridEntity= typename TrimmerType::template UntrimmedParameterSpaceGridEntity<codim_>;
     using LocalParameterSpaceGeometry= typename TrimmerType::template LocalParameterSpaceGeometry<codim_>;
   public:
-    TrimmedParameterSpaceGridEntity(const UntrimmedParameterSpaceGridEntity& untrimmedElement) :hostEntity_{untrimmedElement}{
+    TrimmedParameterSpaceGridEntity(const UntrimmedParameterSpaceGridEntity& untrimmedElement, size_t localId,
+      const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData) :hostEntity_{untrimmedElement},trimData_{trimData},localId_{localId}{
     }
   private:
     UntrimmedParameterSpaceGridEntity hostEntity_;
+    std::optional<std::reference_wrapper<const ElementTrimData>> trimData_;
+    size_t localId_;
   public:
     [[nodiscard]] bool equals(const TrimmedParameterSpaceGridEntity& other) const { return hostEntity_== other.hostEntity_; }
 
@@ -50,7 +54,8 @@ namespace Dune {
     //! Geometry of this entity
     [[nodiscard]] decltype(auto) geometry() const {
       //@todo Trim this is crasy
-
+      if(trimData_)
+        return trimData_.template geometry<codim_>(localId_);
       return hostEntity_.geometry();
     }
 
@@ -58,8 +63,9 @@ namespace Dune {
      */
     [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
       //@todo Trim this is crasy
+      if(trimData_)
+        return trimData_. subEntities(codim,localId_);
       return hostEntity_.subEntities(codim);
-    // return {};
     }
 
     /** @brief Provide access to sub entity i of given codimension. Entities
@@ -67,12 +73,16 @@ namespace Dune {
      */
     template <int cc> requires (codim_==0)
     [[nodiscard]] decltype(auto) subEntity(int i) const {
+      if(trimData_)
+        return trimData_.template subEntity<codim_,cc>(i,localId_);
       return hostEntity_.template subEntity<cc>(i);
     }
 
     //! First level intersection
     template <typename =void> requires (codim_==0)
     [[nodiscard]] decltype(auto) ilevelbegin()  const {
+      if(trimData_)
+        return trimData_.template ilevelbegin<codim_>(localId_);
       return hostEntity_.ilevelbegin();
     }
 
