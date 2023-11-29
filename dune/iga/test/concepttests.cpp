@@ -13,8 +13,8 @@
 
 #include <dune/iga/hierarchicpatch/concepts.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/defaulttrimmer.hh>
 #include <dune/iga/trimmer/defaulttrimmer/referenceelement.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 template <typename>
 struct IsDefaultReferenceElement : std::false_type {};
 

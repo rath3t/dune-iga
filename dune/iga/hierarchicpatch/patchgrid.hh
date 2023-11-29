@@ -51,10 +51,10 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template<int,typename > typename TrimmerType, typename ScalarType>
+  template <int dim, int dimworld, template <int, typename> typename TrimmerType, typename ScalarType>
   struct PatchGridFamily {
-    using Grid               = PatchGrid<dim, dimworld, TrimmerType,ScalarType>;
-    using ParameterSpaceGrid = typename TrimmerType<dim,ScalarType>::ParameterSpaceGrid;
+    using Grid               = PatchGrid<dim, dimworld, TrimmerType, ScalarType>;
+    using ParameterSpaceGrid = typename TrimmerType<dim, ScalarType>::ParameterSpaceGrid;
 
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
                        PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
@@ -85,9 +85,10 @@ namespace Dune::IGANEW {
    * @tparam TrimmerType_ The trimmer of the trimmer
    * @tparam ScalarType The type for the coordinates
    */
-  template <int dim, int dimworld, template<int,typename > typename TrimmerType_=IdentityTrim::Trimmer, typename ScalarType=double>
+  template <int dim, int dimworld, template <int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
+            typename ScalarType = double>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
-                                                     PatchGridFamily<dim, dimworld, TrimmerType_,ScalarType>> {
+                                                     PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
@@ -105,7 +106,7 @@ namespace Dune::IGANEW {
     friend class GridFactory<PatchGrid>;
 
    public:
-    using TrimmerType = TrimmerType_<dim,ScalarType>;
+    using TrimmerType = TrimmerType_<dim, ScalarType>;
     //! The type used to store coordinates, inherited from the Trimmer
     using ctype = typename TrimmerType::ctype;
 
@@ -132,12 +133,12 @@ namespace Dune::IGANEW {
     //**********************************************************
 
     //! type of the used GridFamily for this grid
-    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_,ScalarType>;
+    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>;
 
     //! the Traits
     using Traits = typename GridFamily::Traits;
 
-    using ParameterSpaceGrid          = typename TrimmerType::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
 
     /** @brief Constructor
      *

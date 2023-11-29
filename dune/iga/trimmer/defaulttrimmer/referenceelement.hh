@@ -264,6 +264,6 @@ namespace Dune {
         // But this should have value semantics and therefore it should be cheap to copy, thus maybe store it at the
         // entity
       };
-    }  // namespace Trim
+    }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune

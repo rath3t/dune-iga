@@ -86,6 +86,6 @@ namespace Dune {
        private:
         const TrimDataType* trimData_{nullptr};
       };
-    }  // namespace Trim
+    }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune

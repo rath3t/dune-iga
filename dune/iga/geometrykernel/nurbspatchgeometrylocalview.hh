@@ -49,7 +49,7 @@ namespace Dune::IGANEW {
      * @tparam PatchGeometry Type of the patch geometry.
      * @tparam TrimmerType_ Type of the trimmer.
      */
-    template <int codim, typename PatchGeometry,  typename TrimmerType_>
+    template <int codim, typename PatchGeometry, typename TrimmerType_>
     struct PatchGeometryLocalView {
       using ctype                                         = typename PatchGeometry::ctype;
       static constexpr int gridDimension                  = PatchGeometry::mydimension;

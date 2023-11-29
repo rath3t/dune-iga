@@ -27,6 +27,6 @@ namespace Dune {
         // triangulation...
       };
 
-    }  // namespace Trim
+    }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune

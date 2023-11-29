@@ -10,6 +10,6 @@ namespace Dune {
         //???
       };
 
-    }  // namespace Trim
+    }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune

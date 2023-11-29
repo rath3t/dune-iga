@@ -3,7 +3,7 @@
 
 /**
  * @file trimmer.hh
- * @brief Definition of the DefaulTrimmer class.
+ * @brief Definition of the default trimmer class.
  * @author Alexander Müller <mueller@ibb.uni-stuttgart.de>
  * @date 2023
  */
@@ -27,27 +27,26 @@
 
 namespace Dune {
   namespace IGANEW {
-  namespace GeometryKernel {
-    template <int dim_, int dimworld_, typename ScalarType>
-    class NURBSPatch;
-  }
 
     namespace DefaultTrim {
 
-      /* @brief DefaultTrimParameter struct representing parameters for the trimming operation.  */
+      /**
+       * @brief DefaultTrimParameter struct representing parameters for the trimming operation.
+       */
       struct Parameter {
         int dummy            = 7;      ///< Dummy variable.
         double trimPrecision = 1e-10;  ///< Precision for trimming.
       };
 
       /**
-       * @brief DefaultTrimmer Trimmer with reasonable defaults.
+       * @brief DefaultTrimmer class representing a trimmer with reasonable defaults.
+       * @ingroup Trimmer
        * @tparam dim Dimension of the patch.
        * @tparam ScalarType Scalar type for geometric calculations.
        */
       template <int dim, typename ScalarType>
       class Trimmer {
-  public:
+       public:
         static constexpr int mydimension = dim;         ///< Dimension of the patch.
         using ctype                      = ScalarType;  ///< Scalar type for the coordinates.
 
@@ -60,41 +59,42 @@ namespace Dune {
         static constexpr bool isAlwaysTrivial = false;  ///< Boolean indicating if the trimming is always trivial, no
                                                         ///< trimming or simple deletion of element.
 
-          private:
-        using UntrimmedParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
-public:
-        using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric
-                                                                                       ///< grid
+       private:
+        using UntrimmedParameterSpaceGrid
+            = YaspGrid<mydimension,
+                       TensorProductCoordinates<ctype, mydimension>>;  ///< Type of the untrimmed Parametric grid
+
+       public:
+        using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric grid
         template <int mydim>
         using ReferenceElementType = DefaultTrimmedReferenceElement<mydim, ctype>;  ///< Reference element type.
 
-        using ElementTrimData
-            = ElementTrimData<ParameterSpaceGrid::dimension,
-                                     typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-        using PatchTrimData = PatchTrimData<ParameterSpaceGrid::dimension,
+        using ElementTrimData = ElementTrimData<ParameterSpaceGrid::dimension,
+                                                typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
+        using PatchTrimData   = PatchTrimData<ParameterSpaceGrid::dimension,
                                             typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
 
         using ElementTrimDataContainer = std::map<typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
                                                   ElementTrimData>;  ///< Container for element trim data.
 
-
         /**
-         * @brief Constructor for Trimmer.
+         * @brief Default constructor for Trimmer.
          */
         Trimmer() = default;
 
         /**
-         * @brief Constructor for DefaultTrimmer with patch and trim data.
+         * @brief Constructor for Trimmer with patch and trim data.
          * @tparam dimworld Dimension of the world.
          * @param patchData NURBS patch data.
          * @param trimData Optional patch trim data.
          */
         template <int dimworld>
         Trimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patchData,
-                       const std::optional<PatchTrimData>& trimData) {
+                const std::optional<PatchTrimData>& trimData) {
           createParameterSpaceGrid(patchData, trimData);
         }
 
+       private:
         template <int codim>
         using MyLocalGeometry = TrimmedPatchLocalGeometry<mydimension - codim, mydimension, ctype>;
         template <int codim>
@@ -121,7 +121,6 @@ public:
         static auto referenceElement(const EntityType& entity) {
           return ReferenceElementType<EntityType::mydimension>(entity.trimData());
         }
-
 
         /**
          * @brief Get the trim data for a given element and global ID set.
@@ -167,16 +166,20 @@ public:
          * @brief Get a const reference to the untrimmed parameter space grid.
          * @return Const reference to the untrimmed parameter space grid.
          */
-        const UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() const { return *untrimmedParameterSpaceGrid_; }
+        // const UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() const { return
+        // *untrimmedParameterSpaceGrid_; }
 
         /**
          * @brief Get a reference to the untrimmed parameter space grid.
          * @return Reference to the untrimmed parameter space grid.
          */
-        UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() { return *untrimmedParameterSpaceGrid_; }
+        // UntrimmedParameterSpaceGrid& unTrimmedParameterSpaceGrid() { return *untrimmedParameterSpaceGrid_; }
 
-       /* @brief Set the parameters. */
-        void setup(const ParameterType& par){parameter=par;}
+        /**
+         * @brief Pass parameters to the trimmer.
+         * @param par The parameters.
+         */
+        void setup(const ParameterType& par) { parameter = par; }
 
        private:
         /**
@@ -200,14 +203,15 @@ public:
           parameterSpaceGrid_->createEnd();
         }
 
-        std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_; ///< The untrimmed parameter space grid.
-        std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_; ///< The trimmed parameter space grid.
+        std::unique_ptr<UntrimmedParameterSpaceGrid>
+            untrimmedParameterSpaceGrid_;                         ///< The untrimmed parameter space grid.
+        std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;  ///< The trimmed parameter space grid.
 
         ElementTrimDataContainer trimDatas_;  ///< Container for element trim data.
         PatchTrimData patchTrimData;          ///< Patch trim data.
-        ParameterType parameter;       ///< Trimming parameters.
+        ParameterType parameter;              ///< Trimming parameters.
       };
 
-    }  // namespace Trim
+    }  // namespace DefaultTrim
   }    // namespace IGANEW
 }  // namespace Dune
