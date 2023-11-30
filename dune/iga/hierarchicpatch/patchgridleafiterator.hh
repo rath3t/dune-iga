@@ -43,6 +43,8 @@ namespace Dune::IGANEW {
     //! prefix increment
     void increment() { ++hostLeafIterator_; }
 
+    using ParameterSpaceGridEntity = typename GridImp::TrimmerType::template ParameterSpaceGridEntity<codimension,GridImp>;
+
     //! dereferencing
     Entity dereference() const { return Entity{{patchGrid_, *hostLeafIterator_}}; }
 
