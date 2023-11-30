@@ -18,6 +18,8 @@
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
 
+#include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
+
 #include <dune/iga/geometrykernel/geohelper.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
@@ -41,7 +43,7 @@ auto diagonalTrimmingCurve(double offset) {
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
   patchDataCurve.controlPoints = controlNetCurve;
-  return patchDataCurve;
+  return Dune::IGANEW::GeometryKernel::NURBSPatch(patchDataCurve);
 }
 
 using UntrimmedParameterSpaceGrid
@@ -109,7 +111,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   grid.globalRefine(1);
   auto& parameterGrid = grid.parameterSpaceGrid();
   auto gv =parameterGrid.leafGridView();
-  const auto trimCurve = diagonalTrimmingCurve(0);
+  const auto trimCurve = diagonalTrimmingCurve(0.5);
   auto& globalIdSet = parameterGrid.globalIdSet();
 
   struct TrimData {
@@ -148,11 +150,19 @@ auto indexMapper = [](int i) {
     std::map<IndexType, std::string> myMap;
     std::map<IndexVariant, IndexType> myIndexMapping;
 
-PathsD clipCurve;
- for(auto v: linspace(trimCurve.domain.left(),trimCurve.domain.right(),10)
- std::cout<<v<<std::endl;
+PathsD clipCurve(1);
+ for(auto v: Utilities::linspace(trimCurve.domain()[0],10))
+{ std::cout<<v<<std::endl;
+auto point = trimCurve.global(v);
+clipCurve[0].emplace_back(point[0], point[1]);
+}
+std::cout<<"clipCurve[0]"<<clipCurve[0].size()<<std::endl;
+for(int i =0;i<clipCurve[0].size();++i)
+{
+std::cout<<clipCurve[0][i]<<std::endl;
+}
   PathsD edges(1);
-  edges[0].resize(4);
+  edges[0].resize(5);
   auto trimCubeReferenceElement=[&](const auto& element, const auto& clip) {
 
     auto geo  = element.geometry();
@@ -160,15 +170,21 @@ PathsD clipCurve;
     auto pos1 = geo.corner(1);
     auto pos2 = geo.corner(3);  // see dune book page 127 Figure 5.12
     auto pos3 = geo.corner(2);
+    std::cout<<"C0"<<pos0<<std::endl;
+    std::cout<<"C1"<<pos1<<std::endl;
+    std::cout<<"C2"<<pos2<<std::endl;
+    std::cout<<"C3"<<pos3<<std::endl;
     edges.front()[0]={pos0[0], pos0[1]};
     edges.front()[1]={pos1[0], pos1[1]};
     edges.front()[2]={pos2[0], pos2[1]}; //swap order of 2 and 3
     edges.front()[3]={pos3[0], pos3[1]};
+      edges.front()[4]={pos0[0], pos0[1]};
     Clipper2Lib::ClipperD clipper(5);
     Clipper2Lib::PathsD clippedEdges;
     clipper.AddSubject(edges);
     clipper.AddClip(clip);
     clipper.Execute(ClipType::Intersection, FillRule::NonZero, clippedEdges);
+    return clippedEdges;
   };
 
     // Function to get or generate a stable index for the own ids and host grid ids
@@ -179,10 +195,9 @@ PathsD clipCurve;
             IndexType newIndex{myIndexMapping.size()};
             myIndexMapping[thirdPartyIndex] = newIndex;
             return myIndexMapping[thirdPartyIndex];
-        } else {
+        }
             // If found, return the existing index
             return it->second;
-        }
     };
 
 
@@ -197,9 +212,11 @@ PathsD clipCurve;
   IndexType myTrimmedEdgeIndex;
   myTrimmedEdgeIndex.id=0;
 
-
-
   for (const auto& ele: elements(gv)) {
+  auto trimedEdges= trimCubeReferenceElement(ele,clipCurve);
+  std::cout<<"T"<<trimedEdges.size()<<std::endl;
+  for(auto v: trimedEdges)
+  std::cout<<v<<std::endl;
   std::cout<<"Element"<<std::endl;
     auto elementId = globalIdSet.id(ele);
     auto& elementEdgeIndices= globalEdgesIdOfElementsMap[elementId];
