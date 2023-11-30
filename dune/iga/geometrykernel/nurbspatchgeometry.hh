@@ -95,7 +95,7 @@ namespace Dune::IGANEW::GeometryKernel {
      * @brief Explicit constructor for NURBSPatch.
      * @param patchData Patch data for the NURBS patch.
      */
-    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
+    explicit NURBSPatch(const NURBSPatchData<dim_, dimworld_, ScalarType>& patchData)
         : patchData_(patchData),
           uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
           nurbs_{patchData_} {}
@@ -105,8 +105,8 @@ namespace Dune::IGANEW::GeometryKernel {
      * @param patchData Patch data for the NURBS patch.
      * @param uniqueKnotSpans Unique knot spans for the NURBS patch.
      */
-    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData,
-                        const std::array<std::vector<ctype>, mydimension>& uniqueKnotSpans)
+    explicit NURBSPatch(const NURBSPatchData<dim_, dimworld_, ScalarType>& patchData,
+                        const std::array<std::vector<ctype>, dim_>& uniqueKnotSpans)
         : patchData_(patchData), uniqueKnotSpans_{uniqueKnotSpans}, nurbs_{patchData_} {}
 
     /**

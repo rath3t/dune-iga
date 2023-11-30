@@ -15,7 +15,7 @@
 #include <dune/iga/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
-#include <dune/iga/hierarchicpatch/patchgridentity.hh>
+// #include <dune/iga/hierarchicpatch/patchgridentity.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 

@@ -124,6 +124,7 @@ auto thoroughGridCheck(auto& grid) {
     t.subTest(gvTest(gridView));
   }
   t.subTest(gvTest(grid.leafGridView()));
+
   try {
     gridcheck(grid);
     checkIntersectionIterator(grid);
@@ -131,6 +132,9 @@ auto thoroughGridCheck(auto& grid) {
   } catch (const Dune::NotImplemented& e) {
     std::cout << e.what() << std::endl;
   }
+
+
+
 
   return t;
 }
