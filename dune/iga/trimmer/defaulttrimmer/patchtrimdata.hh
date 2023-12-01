@@ -5,8 +5,17 @@ namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
 
-      template <int mydim_, typename ScalarType>
+      template <typename TrimmerType_>
       struct PatchTrimData {
+
+        using TrimmingCurve = typename TrimmerType_::TrimmingCurve;
+
+        void insertTrimCurve(const TrimmingCurve& curve) {
+          curves.push_back(curve);
+        }
+
+        std::vector<TrimmingCurve> curves;
+
 
         //???
       };

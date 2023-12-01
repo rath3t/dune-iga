@@ -7,19 +7,19 @@ namespace Dune {
 
       enum class LocalGeometryTag { InParameterSpace, InReferenceElement };
 
-      template <int dim, typename ScalarType = double>
+      template <int dim, int dimworld,typename ScalarType = double>
       struct Trimmer;
 
-      template <int mydim_, int coorddim, typename ScalarType, LocalGeometryTag localGeometryTag>
+      template <int mydim_, typename TrimmerType_, LocalGeometryTag localGeometryTag>
       class TrimmedLocalGeometry {
        public:
-        using ctype = ScalarType;
+        using ctype = typename TrimmerType_::ctype;
 
         static constexpr int mydimension = mydim_;
-        using TrimmerType                = Trimmer<mydimension, ctype>;
+        using TrimmerType                = TrimmerType_;
 
-        static constexpr int coorddimension = coorddim;
-        static constexpr int codim          = coorddim - mydimension;
+        static constexpr int coorddimension = TrimmerType_::mydimension;
+        static constexpr int codim          = coorddimension - mydimension;
         using PatchGeometry                 = GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>;
         using LocalCoordinateInPatch        = typename PatchGeometry::LocalCoordinate;
         using LocalCoordinate               = FieldVector<ctype, mydimension>;
@@ -37,7 +37,7 @@ namespace Dune {
                                                 ctype>::template GeometryLocalView<codim, TrimmerType>;
 
         /** constructor from host geometry  */
-        explicit TrimmedLocalGeometry(const GeometryKernel::NURBSPatch<mydimension,coorddim,ctype>& trimData) : trimData_{&trimData} {}
+        explicit TrimmedLocalGeometry(const GeometryKernel::NURBSPatch<mydimension,coorddimension,ctype>& trimData) : trimData_{&trimData} {}
 
         /** @brief Return the element type identifier
          */
@@ -83,7 +83,7 @@ namespace Dune {
         }
 
        private:
-        const GeometryKernel::NURBSPatch<mydimension,coorddim,ctype>* trimData_{nullptr};
+        const GeometryKernel::NURBSPatch<mydimension,coorddimension,ctype>* trimData_{nullptr};
       };
     }  // namespace DefaultTrim
   }    // namespace IGANEW

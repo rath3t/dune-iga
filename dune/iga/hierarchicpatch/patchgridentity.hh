@@ -366,14 +366,14 @@ namespace Dune::IGANEW {
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int, typename> typename TrimmerType,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename TrimmerType,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
       const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType, ScalarType>>& entity) {
-    return TrimmerType<dim, ScalarType>::referenceElement(entity);
+    return TrimmerType<dim,dimworld, ScalarType>::referenceElement(entity);
   }
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int, typename> typename TrimmerType,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename TrimmerType,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
       const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType, ScalarType>, PatchGridEntity>& entity) {

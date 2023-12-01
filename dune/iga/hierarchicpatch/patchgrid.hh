@@ -50,17 +50,17 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template <int, typename> typename TrimmerType_, typename ScalarType>
+  template <int dim, int dimworld, template <int,int, typename> typename TrimmerType_, typename ScalarType>
   struct PatchGridFamily {
     using Grid               = PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-    using TrimmerType        = TrimmerType_<dim, ScalarType>;
+    using TrimmerType        = TrimmerType_<dim,dimworld, ScalarType>;
     using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
 
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
                        PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
                        PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator, PatchGridLeafIterator,
                        PatchGridLevelIndexSet<const Grid>, PatchGridLeafIndexSet<const Grid>,
-                       PatchGridGlobalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
+                       typename  TrimmerType::template GlobalIdSet<const Grid>, typename TrimmerType::GlobalIdSetIdType,
                        PatchGridLocalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
                        Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
                        PatchGridEntitySeed, PatchGridLocalGeometry,
@@ -106,7 +106,7 @@ namespace Dune::IGANEW {
    *
    * @endcode
    */
-  template <int dim, int dimworld, template <int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
+  template <int dim, int dimworld, template <int,int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
             typename ScalarType = double>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
                                                      PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>> {
@@ -114,7 +114,7 @@ namespace Dune::IGANEW {
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend class PatchGridLevelIndexSet<const PatchGrid>;
     friend class PatchGridLeafIndexSet<const PatchGrid>;
-    friend class PatchGridGlobalIdSet<const PatchGrid>;
+    friend class TrimmerType_<dim,dimworld, ScalarType>::template GlobalIdSet<const PatchGrid>;
     friend class PatchGridLocalIdSet<const PatchGrid>;
     friend class PatchGridHierarchicIterator<const PatchGrid>;
     friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
@@ -126,10 +126,13 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<PatchGrid>;
     friend class GridFactory<PatchGrid>;
 
+    using GlobalIdSetType = typename TrimmerType_<dim,dimworld, ScalarType>::template GlobalIdSet<const PatchGrid>;
    public:
-    using TrimmerType = TrimmerType_<dim, ScalarType>;
+    using TrimmerType = TrimmerType_<dim,dimworld, ScalarType>;
     //! The type used to store coordinates, inherited from the Trimmer
     using ctype = typename TrimmerType::ctype;
+    friend class TrimmerType_<dim,dimworld, ScalarType>;
+
 
    private:
     friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
@@ -170,10 +173,12 @@ namespace Dune::IGANEW {
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
           trimmer_(patchGeometries_[0], patchTrimData),
           leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
-          globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
+          globalIdSet_(std::make_unique<GlobalIdSetType>(*this)),
           localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
+      trimmer_.createIdSetAndParameterGrid(*this);
       setIndices();
       patchGeometriesUnElevated = patchGeometries_;
+
     }
 
     PatchGrid& operator=(PatchGrid&& other) noexcept {
@@ -181,9 +186,11 @@ namespace Dune::IGANEW {
       patchGeometries_          = std::move(other.patchGeometries_);
       patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
       leafIndexSet_             = std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
-      globalIdSet_              = std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
+      globalIdSet_              = std::make_unique<GlobalIdSetType>(*this);
       localIdSet_               = std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this);
+      trimmer_.createIdSetAndParameterGrid(*this);
       setIndices();
+
       return *this;
     }
 
@@ -517,10 +524,14 @@ namespace Dune::IGANEW {
     std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
 
     //! @todo Please doc me !
-    std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
+    std::unique_ptr<GlobalIdSetType> globalIdSet_;
 
     //! @todo Please doc me !
     std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
+
+    using EntityContainer = typename TrimmerType::template EntityContainer<const PatchGrid>;
+    [[no_unique_address]] EntityContainer entityContainer_;
+
 
   };  // end Class PatchGrid
 

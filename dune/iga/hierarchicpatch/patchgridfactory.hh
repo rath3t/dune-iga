@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 namespace Dune {
 
-  template <int dim_, int dimworld_, template <int, typename> typename TrimmerType_, typename ScalarType>
+  template <int dim_, int dimworld_, template <int,int, typename> typename TrimmerType_, typename ScalarType>
   class GridFactory<IGANEW::PatchGrid<dim_, dimworld_, TrimmerType_, ScalarType>> {
     /** @brief The grid world dimension */
     constexpr static int dimworld = dimworld_;
