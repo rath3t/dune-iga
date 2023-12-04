@@ -797,7 +797,7 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
   // t.subTest(testGrids<DefaultTrim::Trimmer>());
-  t.subTest(testGrids<IdentityTrim::TrimmerTraits>());
+  t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

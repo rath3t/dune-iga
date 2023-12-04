@@ -168,7 +168,7 @@ friend class TrimmedParameterSpaceGridEntity;
 
 
 
-        using GlobalIdSetIdType=IdType<HostIdType>;
+
 
         template < class GridImp>
         friend class DefaultTrim::PatchGridGlobalIdSet;
@@ -304,7 +304,7 @@ friend class TrimmedParameterSpaceGridEntity;
 
         template<typename GridImp>
        void createLevel( GridImp& grid) {
-          using IdType = GlobalIdSetIdType;
+          using IdType = typename GridImp::Traits::GlobalIdSet::IdType;
           using EdgeHostType = typename UntrimmedParameterSpaceGrid::template Codim<1>::Entity;
           using EdgeGridType = typename GridImp::template Codim<1>::Entity;
           using EleGridType = typename GridImp::template Codim<0>::Entity;

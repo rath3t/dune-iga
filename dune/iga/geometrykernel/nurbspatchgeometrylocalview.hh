@@ -17,7 +17,7 @@
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
 // #include <dune/iga/hierarchicpatch/patchgridentity.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+// #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 namespace Dune::IGANEW {
   namespace GeometryKernel {

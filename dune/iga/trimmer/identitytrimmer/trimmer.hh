@@ -18,6 +18,13 @@
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include "patchgridleafiterator.hh"
 #include "patchgridindexsets.hh"
+#include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
+#include <dune/iga/hierarchicpatch/patchgridleveliterator.hh>
+#include <dune/iga/hierarchicpatch/patchgridentityseed.hh>
+#include <dune/iga/hierarchicpatch/patchgridlocalgeometry.hh>
+#include <dune/iga/hierarchicpatch/patchgridintersectioniterator.hh>
+#include <dune/iga/hierarchicpatch/patchgridview.hh>
+
 
 namespace Dune::IGANEW {
 
@@ -57,20 +64,45 @@ namespace Dune::IGANEW {
     struct PatchTrimData {};
     template <int dim, int dimworld, typename ScalarType>
 class Trimmer;
+  template <int dim, int dimworld, typename ScalarType>
+  struct PatchGridFamily {
+    using ctype =ScalarType;
+    using Grid               = PatchGrid<dim, dimworld, PatchGridFamily,ScalarType>;
+    // using TrimmerType        = typename TrimmerTraits::TrimmerType;
+    using ParameterSpaceGrid
+= YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
+    using GlobalIdSetType = PatchGridGlobalIdSet<const Grid>;
+    using LocalIdSetType = PatchGridLocalIdSet<const Grid>;
+    using LevelIndexSet = PatchGridLevelIndexSet<const Grid>;
+    using LeafIndexSet = PatchGridLeafIndexSet<const Grid>;
+    // using LeafIterator = typename TrimmerTraits::template LeafIterator<const Grid>;
+    // using GlobalIdSetIdType = typename GlobalIdSetType<const Grid>;
 
-    template <int dim, int dimworld, typename ScalarType>
-    struct TrimmerTraits {
-      using Traits = typename PatchGridFamily<dim,dimworld,TrimmerTraits,ScalarType>::Traits;  ///< Scalar type for the coordinates.
-      using GridImp= typename Traits::Grid;
 
-      using ParameterSpaceGrid
-    = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
+
+
+
+    typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
+                       PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
+                       PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator,
+                      PatchGridLeafIterator,
+                       LevelIndexSet, LeafIndexSet,
+                       GlobalIdSetType, typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
+                       LocalIdSetType, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
+                       Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
+                       PatchGridEntitySeed, PatchGridLocalGeometry,
+                       typename ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
+                       typename ParameterSpaceGrid::Traits::LevelIndexSet::Types,
+                       typename ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
+                       typename ParameterSpaceGrid::Traits::LeafIndexSet::Types>
+        Traits;
+
+
       using TrimmerType = Trimmer<dim,dimworld,ScalarType>;
-      using GlobalIdSetType =  PatchGridGlobalIdSet<GridImp>;
+      // using GlobalIdSetType =  PatchGridGlobalIdSet<const Grid>;
 
-      template <int codim, PartitionIteratorType pitype>
-          using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
-      using GlobalIdSetIdType =  typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType;
+      // template <int codim, PartitionIteratorType pitype>
+          // using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
 
     };
 
@@ -83,9 +115,8 @@ class Trimmer;
     template <int dim, int dimworld, typename ScalarType>
     class Trimmer {
     public:
-      using Traits = typename PatchGridFamily<dim,dimworld,TrimmerTraits,ScalarType>::Traits;  ///< Scalar type for the coordinates.
+      using Traits = typename PatchGridFamily<dim,dimworld,ScalarType>::Traits;  ///< Scalar type for the coordinates.
 
-      using TrimmerTraits = TrimmerTraits<dim,dimworld,ScalarType>;
 using GridImp= typename Traits::Grid;
       static constexpr int mydimension = Traits::mydimension;         ///< Dimension of the patch.
       static constexpr int dimensionworld = Traits::dimensionworld;         ///< Dimension of the patch.
@@ -103,7 +134,7 @@ using GridImp= typename Traits::Grid;
       Trimmer() = default;
 
       using ParameterSpaceGrid
-          = typename TrimmerTraits::ParameterSpaceGrid;  ///< Type of the Parametric grid
+          = typename Traits::ParameterSpaceGrid;  ///< Type of the Parametric grid
       template <int mydim>
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.

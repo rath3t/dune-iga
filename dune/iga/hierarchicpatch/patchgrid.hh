@@ -48,39 +48,7 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template <int,int,typename> typename TrimmerTraits_, typename ScalarType>
-  struct PatchGridFamily {
-    using ctype =ScalarType;
-    using Grid               = PatchGrid<dim, dimworld, TrimmerTraits_, ScalarType>;
-    using TrimmerTraits = TrimmerTraits_<dim,dimworld,ScalarType>;
-    // using TrimmerType        = typename TrimmerTraits::TrimmerType;
-    using ParameterSpaceGrid = typename TrimmerTraits::ParameterSpaceGrid;
-    using GlobalIdSetType = typename TrimmerTraits::template GlobalIdSetType<const Grid>;
-    using LocalIdSetType = typename TrimmerTraits::template LocalIdSetType<const Grid>;
-    using LevelIndexSet = typename TrimmerTraits::template LevelIndexSet<const Grid>;
-    using LeafIndexSet = typename TrimmerTraits::template LeafIndexSet<const Grid>;
-    // using LeafIterator = typename TrimmerTraits::template LeafIterator<const Grid>;
-    using GlobalIdSetIdType = typename TrimmerTraits::template GlobalIdSetIdType<const Grid>;
 
-
-
-
-
-    typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
-                       PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
-                       PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator,
-                      TrimmerTraits::template LeafIterator,
-                       LevelIndexSet, LeafIndexSet,
-                       GlobalIdSetType, GlobalIdSetIdType,
-                       LocalIdSetType, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
-                       Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
-                       PatchGridEntitySeed, PatchGridLocalGeometry,
-                       typename ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
-                       typename ParameterSpaceGrid::Traits::LevelIndexSet::Types,
-                       typename ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
-                       typename ParameterSpaceGrid::Traits::LeafIndexSet::Types>
-        Traits;
-  };
 
   /**
    * @brief Provides a NURBS grid based on a single NURBS patch
@@ -117,23 +85,28 @@ namespace Dune::IGANEW {
    *
    * @endcode
    */
-  template <int dim, int dimworld, template <int,int, typename> typename GridFamily = IdentityTrim::TrimmerTraits,
+  template <int dim, int dimworld, template <int,int, typename> typename GridFamily_ = IdentityTrim::PatchGridFamily,
             typename ScalarType = double>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
-                                                     PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>> {
+                                                     GridFamily_<dim, dimworld, ScalarType>> {
+
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
-    friend class TrimmerType_<dim,dimworld, ScalarType>::template LevelIndexSet<const PatchGrid>;
-    friend class TrimmerType_<dim,dimworld, ScalarType>::template LeafIndexSet<const PatchGrid>;
-    friend class TrimmerType_<dim,dimworld, ScalarType>::template GlobalIdSetType<const PatchGrid>;
-    friend class TrimmerType_<dim,dimworld, ScalarType>::template LocalIdSetType<const PatchGrid>;
+    friend class GridFamily_<dim,dimworld, ScalarType>::LevelIndexSet;
+    friend class GridFamily_<dim,dimworld, ScalarType>::LeafIndexSet;
+    friend class GridFamily_<dim,dimworld, ScalarType>::GlobalIdSetType;
+    friend class GridFamily_<dim,dimworld, ScalarType>::LocalIdSetType;
 
-    using LevelIndexSetImpl= TrimmerType_<dim,dimworld, ScalarType>::template LevelIndexSet<const PatchGrid>;
-    using LeafIndexSetImpl= TrimmerType_<dim,dimworld, ScalarType>::template LeafIndexSet<const PatchGrid>;
-    using GlobalIdSetImpl= TrimmerType_<dim,dimworld, ScalarType>::template GlobalIdSetType<const PatchGrid>;
-    using LocalIdSetImpl= TrimmerType_<dim,dimworld, ScalarType>::template LocalIdSetType<const PatchGrid>;
+
+    //! type of the used GridFamily for this grid
+    using GridFamily = GridFamily_<dim, dimworld, ScalarType>;
+
+    using LevelIndexSetImpl= GridFamily_<dim,dimworld, ScalarType>::template LevelIndexSet<const PatchGrid>;
+    using LeafIndexSetImpl= GridFamily_<dim,dimworld, ScalarType>::template LeafIndexSet<const PatchGrid>;
+    using GlobalIdSetImpl= GridFamily_<dim,dimworld, ScalarType>::template GlobalIdSetType<const PatchGrid>;
+    using LocalIdSetImpl= GridFamily_<dim,dimworld, ScalarType>::template LocalIdSetType<const PatchGrid>;
   template <int codim, PartitionIteratorType pitype>
-    using LeafIteratorImpl= TrimmerType_<dim,dimworld, ScalarType>::template LeafIterator<codim,pitype,const PatchGrid>;
+    using LeafIteratorImpl= GridFamily_<dim,dimworld, ScalarType>::template LeafIterator<codim,pitype,const PatchGrid>;
     friend class PatchGridHierarchicIterator<const PatchGrid>;
     friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
     friend class PatchGridLevelIntersection<const PatchGrid>;
@@ -144,13 +117,11 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<PatchGrid>;
     friend class GridFactory<PatchGrid>;
 
-    using GlobalIdSetType = typename TrimmerType_<dim,dimworld, ScalarType>::template GlobalIdSetType<const PatchGrid>;
-
   public:
-    using TrimmerType = TrimmerType_<dim,dimworld, ScalarType>;
+    using TrimmerType = typename  GridFamily::TrimmerType;
     //! The type used to store coordinates, inherited from the Trimmer
     using ctype = typename TrimmerType::ctype;
-    friend class TrimmerType_<dim,dimworld, ScalarType>;
+    friend class GridFamily_<dim,dimworld, ScalarType>::TrimmerType;
 
 
    private:
@@ -175,8 +146,6 @@ namespace Dune::IGANEW {
     // The Interface Methods
     //**********************************************************
 
-    //! type of the used GridFamily for this grid
-    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>;
 
     //! the Traits
     using Traits = typename GridFamily::Traits;
@@ -190,9 +159,9 @@ namespace Dune::IGANEW {
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(std::make_unique<TrimmerType_>(patchGeometries_[0], patchTrimData)),
+          trimmer_(std::make_unique<TrimmerType>(patchGeometries_[0], patchTrimData)),
           leafIndexSet_(std::make_unique<LeafIndexSetImpl>(*this)),
-          globalIdSet_(std::make_unique<GlobalIdSetType>(*this)),
+          globalIdSet_(std::make_unique<GlobalIdSetImpl>(*this)),
           localIdSet_(std::make_unique<LocalIdSetImpl>(*this)) {
       // trimmer_.createIdSetAndParameterGrid(*this);
       setIndices();
