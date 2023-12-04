@@ -48,15 +48,19 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template <int,int, typename> typename TrimmerType_, typename ScalarType>
+  template <int dim, int dimworld, template <int,int,typename> typename TrimmerTraits_, typename ScalarType>
   struct PatchGridFamily {
-    using Grid               = PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-    using TrimmerType        = TrimmerType_<dim,dimworld, ScalarType>;
-    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
-    using GlobalIdSetType = typename TrimmerType::template GlobalIdSetType<const Grid>;
-    using LocalIdSetType = typename TrimmerType::template LocalIdSetType<const Grid>;
-    using LevelIndexSet = typename TrimmerType::template LevelIndexSet<const Grid>;
-    using LeafIndexSet = typename TrimmerType::template LeafIndexSet<const Grid>;
+    using ctype =ScalarType;
+    using Grid               = PatchGrid<dim, dimworld, TrimmerTraits_, ScalarType>;
+    using TrimmerTraits = TrimmerTraits_<dim,dimworld,ScalarType>;
+    // using TrimmerType        = typename TrimmerTraits::TrimmerType;
+    using ParameterSpaceGrid = typename TrimmerTraits::ParameterSpaceGrid;
+    using GlobalIdSetType = typename TrimmerTraits::template GlobalIdSetType<const Grid>;
+    using LocalIdSetType = typename TrimmerTraits::template LocalIdSetType<const Grid>;
+    using LevelIndexSet = typename TrimmerTraits::template LevelIndexSet<const Grid>;
+    using LeafIndexSet = typename TrimmerTraits::template LeafIndexSet<const Grid>;
+    // using LeafIterator = typename TrimmerTraits::template LeafIterator<const Grid>;
+    using GlobalIdSetIdType = typename TrimmerTraits::template GlobalIdSetIdType<const Grid>;
 
 
 
@@ -65,9 +69,9 @@ namespace Dune::IGANEW {
     typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
                        PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
                        PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator,
-                       TrimmerType::template LeafIterator,
+                      TrimmerTraits::template LeafIterator,
                        LevelIndexSet, LeafIndexSet,
-                       GlobalIdSetType, typename TrimmerType::template GlobalIdSetIdType<const Grid>,
+                       GlobalIdSetType, GlobalIdSetIdType,
                        LocalIdSetType, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
                        Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
                        PatchGridEntitySeed, PatchGridLocalGeometry,
@@ -113,7 +117,7 @@ namespace Dune::IGANEW {
    *
    * @endcode
    */
-  template <int dim, int dimworld, template <int,int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
+  template <int dim, int dimworld, template <int,int, typename> typename GridFamily = IdentityTrim::TrimmerTraits,
             typename ScalarType = double>
   class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
                                                      PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>> {
@@ -186,7 +190,7 @@ namespace Dune::IGANEW {
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(patchGeometries_[0], patchTrimData),
+          trimmer_(std::make_unique<TrimmerType_>(patchGeometries_[0], patchTrimData)),
           leafIndexSet_(std::make_unique<LeafIndexSetImpl>(*this)),
           globalIdSet_(std::make_unique<GlobalIdSetType>(*this)),
           localIdSet_(std::make_unique<LocalIdSetImpl>(*this)) {
@@ -505,10 +509,10 @@ namespace Dune::IGANEW {
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
     auto trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      return trimmer_.trimData(element, *globalIdSet_);
+      return trimmer_->trimData(element, *globalIdSet_);
     }
 
-    TrimmerType trimmer_;
+    std::unique_ptr<TrimmerType> trimmer_;
 
 
 

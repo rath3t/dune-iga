@@ -758,9 +758,8 @@ auto testPlate() {
 
 template <template <int, int,typename> typename TrimmerType>
 auto testGrids() {
-  std::cout << "Tests with " << Dune::className<TrimmerType<0, 0,double>>()
-            << "==========================================" << std::endl;
-  TestSuite t("testGrids" + Dune::className<TrimmerType<0,0, double>>());
+
+  TestSuite t("testGrids");
   std::cout << "testHierarchicPatch" << std::endl;
   t.subTest(testHierarchicPatch<TrimmerType>());
   std::cout << "testNURBSCurve" << std::endl;
@@ -798,7 +797,7 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
   // t.subTest(testGrids<DefaultTrim::Trimmer>());
-  t.subTest(testGrids<IdentityTrim::Trimmer>());
+  t.subTest(testGrids<IdentityTrim::TrimmerTraits>());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

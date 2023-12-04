@@ -55,6 +55,24 @@ namespace Dune::IGANEW {
      */
     template <int dim, typename ScalarType>
     struct PatchTrimData {};
+    template <int dim, int dimworld, typename ScalarType>
+class Trimmer;
+
+    template <int dim, int dimworld, typename ScalarType>
+    struct TrimmerTraits {
+      using Traits = typename PatchGridFamily<dim,dimworld,TrimmerTraits,ScalarType>::Traits;  ///< Scalar type for the coordinates.
+      using GridImp= typename Traits::Grid;
+
+      using ParameterSpaceGrid
+    = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
+      using TrimmerType = Trimmer<dim,dimworld,ScalarType>;
+      using GlobalIdSetType =  PatchGridGlobalIdSet<GridImp>;
+
+      template <int codim, PartitionIteratorType pitype>
+          using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
+      using GlobalIdSetIdType =  typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType;
+
+    };
 
     /**
      * @brief Trimmer struct representing a trimmer with identity trimming (no trimming at all).
@@ -62,11 +80,16 @@ namespace Dune::IGANEW {
      * @tparam dim Dimension of the patch.
      * @tparam ScalarType Scalar type for the coordinates.
      */
-    template <int dim, int dimworld,typename ScalarType = double>
+    template <int dim, int dimworld, typename ScalarType>
     class Trimmer {
     public:
-      static constexpr int mydimension = dim;         ///< Dimension of the patch.
-      using ctype                      = ScalarType;  ///< Scalar type for the coordinates.
+      using Traits = typename PatchGridFamily<dim,dimworld,TrimmerTraits,ScalarType>::Traits;  ///< Scalar type for the coordinates.
+
+      using TrimmerTraits = TrimmerTraits<dim,dimworld,ScalarType>;
+using GridImp= typename Traits::Grid;
+      static constexpr int mydimension = Traits::mydimension;         ///< Dimension of the patch.
+      static constexpr int dimensionworld = Traits::dimensionworld;         ///< Dimension of the patch.
+      using ctype = typename Traits::ctype;
 
       template <int codim>
       static constexpr bool isLocalGeometryLinear
@@ -80,7 +103,7 @@ namespace Dune::IGANEW {
       Trimmer() = default;
 
       using ParameterSpaceGrid
-          = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;  ///< Type of the Parametric grid
+          = typename TrimmerTraits::ParameterSpaceGrid;  ///< Type of the Parametric grid
       template <int mydim>
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
@@ -95,30 +118,21 @@ namespace Dune::IGANEW {
       template <int codim>
       using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
 
-  template <int codim, PartitionIteratorType pitype, class GridImp>
-      using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
 
       template <int codim, PartitionIteratorType pitype>
     using ParameterSpaceLeafIterator =  typename ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator;
-template<class GridImp>
-      using GlobalIdSetType =  PatchGridGlobalIdSet<GridImp>;
 
-      template<class GridImp>
+
       using LocalIdSetType =  PatchGridLocalIdSet<GridImp>;
-      template<class GridImp>
       using LeafIndexSet =  PatchGridLeafIndexSet<GridImp>;
-      template<class GridImp>
 using LevelIndexSet =  PatchGridLevelIndexSet<GridImp>;
-      template<class GridImp>
-      using GlobalIdSetIdType =  typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType;
 
-         template<class GridImp>
       using EntityContainerType =  Empty;
 
       template <int codim>
       using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
-      template <int codim, class GridImp>
+      template <int codim>
        using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
@@ -140,7 +154,7 @@ using LevelIndexSet =  PatchGridLevelIndexSet<GridImp>;
        * @param patchData NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
+      void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<mydimension, dimensionworld, ctype>& patch,
                                     const std::optional<PatchTrimData>& trimData) {
         parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(patch.uniqueKnotVector());
       }
@@ -151,7 +165,7 @@ using LevelIndexSet =  PatchGridLevelIndexSet<GridImp>;
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      Trimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
+      Trimmer(const GeometryKernel::NURBSPatch<mydimension, dimensionworld, ctype>& patch,
               const std::optional<PatchTrimData>& trimData) {
         createParameterSpaceGrid(patch, trimData);
       }
