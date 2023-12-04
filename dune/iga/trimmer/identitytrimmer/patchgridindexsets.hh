@@ -12,7 +12,7 @@
 
 #include <dune/grid/common/indexidset.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::IdentityTrim {
 
   /** @todo Take the index types from the host grid */
   template <class GridImp>
@@ -158,7 +158,7 @@ namespace Dune::IGANEW {
 
    public:
     //! constructor stores reference to a grid
-    PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
+    explicit PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
 
     //! define the type used for persistent indices
     typedef typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType IdType;

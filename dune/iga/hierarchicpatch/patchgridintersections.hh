@@ -5,7 +5,6 @@
 #pragma once
 
 #include "patchgridentity.hh"
-#include "patchgridleafiterator.hh"
 
 /** \file
  * @brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes

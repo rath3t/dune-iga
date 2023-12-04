@@ -115,15 +115,41 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
+  patchData = Splines::knotRefinement(patchData,{0.5},0);
+  patchData = Splines::knotRefinement(patchData,{0.5},1);
   Grid grid(patchData,patchTrimData);
-  grid.globalRefine(1);
+  // grid.globalRefine(1);
   auto& parameterGrid = grid.parameterSpaceGrid();
   auto gv =parameterGrid.leafGridView();
 
   auto& globalIdSet = parameterGrid.globalIdSet();
+  auto& indexSet = grid.leafIndexSet();
   auto& globalIdSetNURBS = grid.globalIdSet();
 
-  
+  for (auto ele : elements(grid.leafGridView())) {
+    std::cout<<"Center: "<<ele.geometry().center()<<std::endl;
+
+    std::cout<<"Ele ID "<<globalIdSetNURBS.id(ele)<<std::endl;
+    std::cout<<"Ele Index "<<indexSet.index(ele)<<std::endl;
+    std::cout<<"Edges"<<std::endl;
+    for(int edgeI=0; edgeI< ele.subEntities(1); ++edgeI) {
+      std::cout<<"Edge Index "<<indexSet.index(ele.subEntity<1>(edgeI))<<std::endl;
+
+      std::cout<<globalIdSetNURBS.subId(ele,edgeI,1)<<std::endl;
+      std::cout<<ele.subEntity<1>(edgeI).geometry().center()<<std::endl;
+    }
+    std::cout<<"Vertices"<<std::endl;
+
+    for(int vertI=0; vertI< ele.subEntities(2); ++vertI) {
+      std::cout<<"Vertex Index "<<indexSet.index(ele.subEntity<2>(vertI))<<std::endl;
+
+      std::cout<<globalIdSetNURBS.subId(ele,vertI,1)<<std::endl;
+      std::cout<<ele.subEntity<2>(vertI).geometry().center()<<std::endl;
+
+    }
+
+
+  }
 
 //   using namespace Clipper2Lib;
 //

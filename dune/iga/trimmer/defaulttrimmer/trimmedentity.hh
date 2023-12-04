@@ -14,15 +14,23 @@ namespace Dune {
         using LocalCoordinate = FieldVector<ctype, mydimension>;
 
     using TrimmerType= typename GridImp::TrimmerType;
+    using GlobalIdSetIdType= typename TrimmerType::GlobalIdSetIdType;
     using ElementTrimData= typename TrimmerType::ElementTrimData;
-    using UntrimmedParameterSpaceGridEntity= typename TrimmerType::template UntrimmedParameterSpaceGridEntity<codim_>;
+    using HostParameterSpaceGridEntity= typename TrimmerType::template HostParameterSpaceGridEntity<codim_>;
     using LocalParameterSpaceGeometry= typename TrimmerType::template LocalParameterSpaceGeometry<codim_>;
   public:
-    TrimmedParameterSpaceGridEntity(const UntrimmedParameterSpaceGridEntity& untrimmedElement,
-      const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData=std::nullopt) :hostEntity_{untrimmedElement},trimData_{trimData},localId_{0}{
+    TrimmedParameterSpaceGridEntity(const GridImp* grid,const HostParameterSpaceGridEntity& untrimmedElement, GlobalIdSetIdType id,
+      const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData=std::nullopt) :grid_{grid},hostEntity_{untrimmedElement},id_{id},trimData_{trimData},localId_{0}{
     }
+
+    auto & id() const  {
+      return id_;
+    }
+
+
   private:
-    UntrimmedParameterSpaceGridEntity hostEntity_;
+    HostParameterSpaceGridEntity hostEntity_;
+    GlobalIdSetIdType id_;
     std::optional<std::reference_wrapper<const ElementTrimData>> trimData_;
     size_t localId_;
   public:
@@ -75,7 +83,8 @@ namespace Dune {
     [[nodiscard]] decltype(auto) subEntity(int i) const {
       // if(trimData_)
       //   return trimData_.template subEntity<codim_,cc>(i,localId_);
-      return hostEntity_.template subEntity<cc>(i);
+      auto id = grid_->entityContainer().subId(id_,i,cc);
+      return TrimmedParameterSpaceGridEntity<cc,mydimension,GridImp>(grid_,hostEntity_.template subEntity<cc>(i),id);
     }
 
     //! First level intersection
@@ -159,9 +168,11 @@ namespace Dune {
       return hostEntity_.mightBeCoarsened();
     }
 
-    const auto& untrimmedHostEntity()const  {
+    const auto& hostEntity()const  {
       return hostEntity_;
     }
+
+    const GridImp* grid_;
 
 
       };

@@ -16,6 +16,8 @@
 #include <dune/grid/yaspgrid.hh>
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
+#include "patchgridleafiterator.hh"
+#include "patchgridindexsets.hh"
 
 namespace Dune::IGANEW {
 
@@ -60,7 +62,7 @@ namespace Dune::IGANEW {
      * @tparam dim Dimension of the patch.
      * @tparam ScalarType Scalar type for the coordinates.
      */
-    template <int dim, typename ScalarType = double>
+    template <int dim, int dimworld,typename ScalarType = double>
     class Trimmer {
     public:
       static constexpr int mydimension = dim;         ///< Dimension of the patch.
@@ -93,6 +95,26 @@ namespace Dune::IGANEW {
       template <int codim>
       using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
 
+  template <int codim, PartitionIteratorType pitype, class GridImp>
+      using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
+
+      template <int codim, PartitionIteratorType pitype>
+    using ParameterSpaceLeafIterator =  typename ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator;
+template<class GridImp>
+      using GlobalIdSetType =  PatchGridGlobalIdSet<GridImp>;
+
+      template<class GridImp>
+      using LocalIdSetType =  PatchGridLocalIdSet<GridImp>;
+      template<class GridImp>
+      using LeafIndexSet =  PatchGridLeafIndexSet<GridImp>;
+      template<class GridImp>
+using LevelIndexSet =  PatchGridLevelIndexSet<GridImp>;
+      template<class GridImp>
+      using GlobalIdSetIdType =  typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType;
+
+         template<class GridImp>
+      using EntityContainerType =  Empty;
+
       template <int codim>
       using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
@@ -118,7 +140,6 @@ namespace Dune::IGANEW {
        * @param patchData NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      template <int dimworld>
       void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
                                     const std::optional<PatchTrimData>& trimData) {
         parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(patch.uniqueKnotVector());
@@ -130,7 +151,6 @@ namespace Dune::IGANEW {
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      template <int dimworld>
       Trimmer(const GeometryKernel::NURBSPatch<dim, dimworld, ctype>& patch,
               const std::optional<PatchTrimData>& trimData) {
         createParameterSpaceGrid(patch, trimData);

@@ -153,7 +153,12 @@ namespace Dune::IGANEW {
       else
       return hostEntity_;
     }
+
+    const auto& hostEntity()const {
+        return hostEntity_;
+    }
   private:
+
     ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
   };
@@ -359,6 +364,19 @@ namespace Dune::IGANEW {
         return hostEntity_.untrimmedHostEntity();
       else
       return hostEntity_;
+    }
+    const auto& hostEntity()const {
+      return hostEntity_;
+    }
+
+    auto& subId(int i, int codim)const  {
+      if (codim==0)
+        return hostEntity_.id();
+      else if (codim==1)
+      return patchGrid_->entityContainer_.globalEdgesIdOfElementsMap_.at(hostEntity_.id())[i];
+      else if (codim==2)
+        return patchGrid_->entityContainer_.globalVerticesIdOfElementsMap.at(hostEntity_.id())[i];
+assert(codim>=0 and codim<3);
     }
   private:
     ParameterSpaceGridEntity hostEntity_;

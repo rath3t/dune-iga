@@ -10,7 +10,7 @@
  * @brief The PatchGridLeafIterator class
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::IdentityTrim {
 
   /** @brief Iterator over all entities of a given codimension and level of a grid.
    *  @ingroup PatchGrid
@@ -19,8 +19,7 @@ namespace Dune::IGANEW {
   class PatchGridLeafIterator {
    private:
     // LevelIterator to the equivalent entity in the host grid
-    typedef typename GridImp::ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator
-        HostGridLeafIterator;
+    using IteratorImpl=typename GridImp::TrimmerType::template ParameterSpaceLeafIterator<codim,pitype>;
 
    public:
     constexpr static int codimension = codim;
@@ -54,7 +53,7 @@ namespace Dune::IGANEW {
    private:
     const GridImp* patchGrid_;
 
-    HostGridLeafIterator hostLeafIterator_;
+    IteratorImpl hostLeafIterator_;
   };
 
 }  // namespace Dune::IGANEW
