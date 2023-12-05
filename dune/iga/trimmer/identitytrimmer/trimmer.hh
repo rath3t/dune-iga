@@ -80,6 +80,7 @@ namespace Dune::IGANEW {
       template <int codim, PartitionIteratorType pitype>
       using LevelIterator = PatchGridLevelIterator<codim, pitype, const Grid>;
       using LeafIntersection= PatchGridLeafIntersection<const Grid>;
+      using LevelIntersection= PatchGridLevelIntersection<const Grid>;
       using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
       using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
 

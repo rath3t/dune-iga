@@ -110,6 +110,8 @@ namespace Dune::IGANEW {
       template <int codim, PartitionIteratorType pitype>
       using LevelIterator = PatchGridLevelIterator<codim, pitype, const Grid>;
        using LeafIntersection= PatchGridLeafIntersection<const Grid>;
+      using LevelIntersection= PatchGridLevelIntersection<const Grid>;
+
       using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
       using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
 
@@ -217,7 +219,7 @@ static const bool hasHostEntity = codim==0;
             template<int codim>
       using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
       //! First level intersection
-      [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin(const Entity<0>& ent) const {
+      [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
 
                 DUNE_THROW(NotImplemented,"ilevelbegin");
 
@@ -226,7 +228,7 @@ static const bool hasHostEntity = codim==0;
       }
 
       //! Reference to one past the last neighbor
-      PatchGridLevelIntersectionIterator<GridImp> ilevelend(const Entity<0>& ent) const {
+      PatchGridLevelIntersectionIterator<constGridImp> ilevelend(const Entity<0>& ent) const {
 
         DUNE_THROW(NotImplemented,"ilevelend");
 
