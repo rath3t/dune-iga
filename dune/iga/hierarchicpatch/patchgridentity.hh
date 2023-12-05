@@ -73,9 +73,9 @@ namespace Dune::IGANEW {
 
    public:
     typedef typename GridImp::ctype ctype;
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
 
-    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<codim,GridImp>;
+    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<codim>;
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
     //! The type of the EntitySeed interface class
@@ -182,14 +182,14 @@ namespace Dune::IGANEW {
 
    public:
     typedef typename GridImp::ctype ctype;
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
     // The codimension of this entitypointer wrt the host grid
     constexpr static int dimension       = GridImp::dimension;
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - dimension;
     constexpr static int dimworld        = GridImp::dimensionworld;
 
     // equivalent entity in the host grid
-    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<0,GridImp>;
+    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<0>;
 
 
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
@@ -384,17 +384,17 @@ assert(codim>=0 and codim<3);
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename TrimmerType,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename GridFamily,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
-      const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType, ScalarType>>& entity) {
-    return TrimmerType<dim,dimworld, ScalarType>::referenceElement(entity);
+      const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, GridFamily, ScalarType>>& entity) {
+    return GridFamily<dim,dimworld, ScalarType>::Trimmer::referenceElement(entity);
   }
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename TrimmerType,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename GridFamily,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
-      const Entity<cd, dim, const PatchGrid<dim, dimworld, TrimmerType, ScalarType>, PatchGridEntity>& entity) {
+      const Entity<cd, dim, const PatchGrid<dim, dimworld, GridFamily, ScalarType>, PatchGridEntity>& entity) {
     return referenceElement(entity.impl());
   }
 

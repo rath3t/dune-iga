@@ -22,7 +22,7 @@ namespace Dune::IGANEW {
    public:
     static constexpr int mydimension = mydim;
     // static constexpr Trimming trim   = GridImp::trim;
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
 
     static constexpr std::integral auto worlddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;

@@ -34,7 +34,7 @@ namespace Dune::IGANEW {
     constexpr static int mydim = GridImp::dimension - 1;
 
     constexpr static int dimworld = GridImp::dimensionworld;
-    using TrimmerType             = typename GridImp::TrimmerType;
+    using TrimmerType             = typename GridImp::Trimmer;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
@@ -176,7 +176,7 @@ namespace Dune::IGANEW {
 
     constexpr static int dimworld = GridImp::dimensionworld;
 
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;

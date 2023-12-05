@@ -21,7 +21,7 @@ namespace Dune::IGANEW {
       : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridLocalGeometry> {
    public:
     static constexpr int mydimension = mydim;
-    using TrimmerType                = typename GridImp::TrimmerType;
+    using TrimmerType                = typename GridImp::Trimmer;
 
     static constexpr std::integral auto coorddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;

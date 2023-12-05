@@ -19,7 +19,7 @@ namespace Dune::IGANEW::IdentityTrim {
   class PatchGridLeafIterator {
    private:
     // LevelIterator to the equivalent entity in the host grid
-    using IteratorImpl=typename GridImp::TrimmerType::template ParameterSpaceLeafIterator<codim,pitype>;
+    using IteratorImpl=typename GridImp::Trimmer::template ParameterSpaceLeafIterator<codim,pitype>;
 
    public:
     constexpr static int codimension = codim;
@@ -41,8 +41,6 @@ namespace Dune::IGANEW::IdentityTrim {
 
     //! prefix increment
     void increment() { ++hostLeafIterator_; }
-
-    using ParameterSpaceGridEntity = typename GridImp::TrimmerType::template ParameterSpaceGridEntity<codimension,GridImp>;
 
     //! dereferencing
     Entity dereference() const { return Entity{{patchGrid_, *hostLeafIterator_}}; }
