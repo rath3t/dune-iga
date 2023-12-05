@@ -176,27 +176,27 @@ static const bool hasHostEntity = true;
       template<int codim>
       using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
       //! First level intersection
-      [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin(const Entity<0>& ent) const {
-        return PatchGridLevelIntersectionIterator<GridImp>(
-            grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.untrimmedHostEntity()));
+      [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
+        return PatchGridLevelIntersectionIterator<const GridImp>(
+            grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().untrimmedHostEntity()));
       }
 
       //! Reference to one past the last neighbor
-      PatchGridLevelIntersectionIterator<GridImp> ilevelend(const Entity<0>& ent) const {
-        return PatchGridLevelIntersectionIterator<GridImp>(
-            grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.untrimmedHostEntity()));
+      PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {
+        return PatchGridLevelIntersectionIterator<const GridImp>(
+            grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.impl().untrimmedHostEntity()));
       }
 
       //! First leaf intersection
-      PatchGridLeafIntersectionIterator<GridImp> ileafbegin(const Entity<0>& ent) const {
-        return PatchGridLeafIntersectionIterator<GridImp>(
-            grid_, parameterSpaceGrid().leafGridView().ibegin(ent.untrimmedHostEntity()));
+      PatchGridLeafIntersectionIterator<const GridImp> ileafbegin(const Entity<0>& ent) const {
+        return PatchGridLeafIntersectionIterator<const GridImp>(
+            grid_, parameterSpaceGrid().leafGridView().ibegin(ent.impl().untrimmedHostEntity()));
       }
 
       //! Reference to one past the last leaf intersection
-      PatchGridLeafIntersectionIterator<GridImp> ileafend(const Entity<0>& ent) const {
-        return PatchGridLeafIntersectionIterator<GridImp>(
-            grid_, parameterSpaceGrid().leafGridView().iend(ent.untrimmedHostEntity()));
+      PatchGridLeafIntersectionIterator<const GridImp> ileafend(const Entity<0>& ent) const {
+        return PatchGridLeafIntersectionIterator<const GridImp>(
+            grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().untrimmedHostEntity()));
       }
 
       /**

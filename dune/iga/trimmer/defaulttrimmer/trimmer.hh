@@ -228,7 +228,7 @@ static const bool hasHostEntity = codim==0;
       }
 
       //! Reference to one past the last neighbor
-      PatchGridLevelIntersectionIterator<constGridImp> ilevelend(const Entity<0>& ent) const {
+      PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {
 
         DUNE_THROW(NotImplemented,"ilevelend");
 
@@ -237,7 +237,7 @@ static const bool hasHostEntity = codim==0;
       }
 
       //! First leaf intersection
-      PatchGridLeafIntersectionIterator<GridImp> ileafbegin(const Entity<0>& ent) const {
+      PatchGridLeafIntersectionIterator<const GridImp> ileafbegin(const Entity<0>& ent) const {
 
                 DUNE_THROW(NotImplemented,"ileafbeginileafbegin");
 
@@ -246,7 +246,7 @@ static const bool hasHostEntity = codim==0;
       }
 
       //! Reference to one past the last leaf intersection
-      PatchGridLeafIntersectionIterator<GridImp> ileafend(const Entity<0>& ent) const {
+      PatchGridLeafIntersectionIterator<const GridImp> ileafend(const Entity<0>& ent) const {
 
                 DUNE_THROW(NotImplemented,"ileafendileafend");
 
