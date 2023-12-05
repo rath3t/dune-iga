@@ -7,47 +7,48 @@
 #include <dune/grid/common/gridenums.hh>
 
 /** \file
- * @brief The PatchGridLeafIterator class
+ * @brief The PatchGridLevelIterator class
  */
 
 namespace Dune::IGANEW::DefaultTrim {
 
   /** @brief Iterator over all entities of a given codimension and level of a grid.
-   *  @ingroup PatchGrid
+   * @ingroup PatchGrid
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
-  class PatchGridLeafIterator {
-   private:
-    // LevelIterator to the equivalent entity in the host grid
-    using IteratorImpl=typename GridImp::Trimmer::template ParameterSpaceLeafIterator<codim,pitype>;
-    typedef typename GridImp::Trimmer::template Codim<codim>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
+  class PatchGridLevelIterator {
+    typedef
+        typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::template Partition<pitype>::LevelIterator
+            HostGridLevelIterator;
 
    public:
     constexpr static int codimension = codim;
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
-    PatchGridLeafIterator() = default;
-    //! @todo Please doc me !
-    explicit PatchGridLeafIterator(const GridImp* patchGrid)
+    typedef typename GridImp::Trimmer::template Codim<codim>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
+
+    //! Constructor
+    PatchGridLevelIterator() = default;
+    explicit PatchGridLevelIterator(const GridImp* patchGrid, int level)
         : patchGrid_(patchGrid),
-          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template begin<codim, pitype>()) {}
+          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template begin<codim, pitype>()) {}
 
     /** @brief Constructor which create the end iterator
-     *  @param endDummy      Here only to distinguish it from the other constructor
-     *  @param patchGrid  pointer to grid instance
+        @param endDummy      Here only to distinguish it from the other constructor
+        @param patchGrid  pointer to PatchGrid instance
+        @param level         grid level on which the iterator shall be created
      */
-    explicit PatchGridLeafIterator(const GridImp* patchGrid, [[maybe_unused]] bool endDummy)
+    explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
         : patchGrid_(patchGrid),
-          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template end<codim, pitype>()) {}
+          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template end<codim, pitype>()) {}
 
     //! prefix increment
-    void increment() { ++hostLeafIterator_; }
+    void increment() { ++hostLevelIterator_; }
 
     //! dereferencing
     Entity dereference() const {
-
       if constexpr (codim==0) {
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_, *hostLeafIterator_,id_};
+        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_, *hostLevelIterator_,id_};
         auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
         return Entity{std::move(realEntity)};
       }
@@ -61,12 +62,13 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
     //! equality
-    bool equals(const PatchGridLeafIterator& i) const { return hostLeafIterator_ == i.hostLeafIterator_; }
+    bool equals(const PatchGridLevelIterator& i) const { return hostLevelIterator_ == i.hostLevelIterator_; }
 
    private:
     const GridImp* patchGrid_;
     typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId id_;
-    IteratorImpl hostLeafIterator_;
+
+    HostGridLevelIterator hostLevelIterator_;
   };
 
 }  // namespace Dune::IGANEW

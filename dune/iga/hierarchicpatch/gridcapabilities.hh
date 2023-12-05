@@ -13,15 +13,15 @@ namespace Dune {
     template <std::size_t dim, std::size_t dimworld, typename ScalarType, template <int,int, typename> typename GridFamilyTraits,
               int codim>
     struct hasEntity<const IGANEW::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>, codim> {
-      using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld,ScalarType>::TrimmerTraits::ParameterSpaceGrid;
-      static const bool v      = hasEntity<ParameterSpaceGrid, codim>::v;
+      using Trimmer = typename GridFamilyTraits<dim, dimworld,ScalarType>::Trimmer;
+      static const bool v      = Trimmer::template hasEntity<codim>;
     };
 
     template <std::size_t dim, std::size_t dimworld, typename ScalarType, template <int,int, typename> typename GridFamilyTraits,
               int codim>
     struct hasEntity<IGANEW::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>, codim> {
-      using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld,ScalarType>::TrimmerTraits::ParameterSpaceGrid;
-      static const bool v      = hasEntity<ParameterSpaceGrid, codim>::v;
+      using Trimmer = typename GridFamilyTraits<dim, dimworld,ScalarType>::Trimmer;
+      static const bool v      = Trimmer::template hasEntity<codim>;
     };
 
     template <std::size_t dim, std::size_t dimworld, typename ScalarType, template <int,int, typename> typename GridFamilyTraits,
@@ -29,24 +29,24 @@ namespace Dune {
     struct hasEntity<
         const Dune::Grid<dim, dimworld, ScalarType, IGANEW::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>,
         codim> {
-      using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld,ScalarType>::TrimmerTraits::ParameterSpaceGrid;
-      static const bool v      = hasEntity<ParameterSpaceGrid, codim>::v;
+      using Trimmer = typename GridFamilyTraits<dim, dimworld,ScalarType>::Trimmer;
+      static const bool v      = Trimmer::template hasEntity<codim>;
     };
 
     template <std::size_t dim, std::size_t dimworld, typename ScalarType, template <int,int, typename> typename GridFamilyTraits,
               int codim>
     struct hasEntityIterator<IGANEW::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>, codim> {
       using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld,ScalarType>::TrimmerTraits::ParameterSpaceGrid;
-
-      static const bool v = hasEntityIterator<ParameterSpaceGrid, codim>::v;
+      using Trimmer = typename GridFamilyTraits<dim, dimworld,ScalarType>::Trimmer;
+      static const bool v      = Trimmer::template hasEntityIterator<codim>;
     };
 
     template <std::size_t dim, std::size_t dimworld, typename ScalarType, template <int,int, typename> typename GridFamilyTraits,
               int codim>
     struct hasEntityIterator<
         Dune::Grid<dim, dimworld, ScalarType, IGANEW::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>, codim> {
-      using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld,ScalarType>::TrimmerTraits::ParameterSpaceGrid;
-      static const bool v      = hasEntityIterator<ParameterSpaceGrid, codim>::v;
+      using Trimmer = typename GridFamilyTraits<dim, dimworld,ScalarType>::Trimmer;
+      static const bool v      = Trimmer::template hasEntityIterator<codim>;
     };
 
     /** @brief PatchGrid can communicate when the host grid can communicate

@@ -799,6 +799,7 @@ int main(int argc, char** argv) try {
   TestSuite t;
   // t.subTest(testGrids<DefaultTrim::Trimmer>());
   t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
+  std::cout<<"===============TEST DefaultTrim==="<<std::endl;
   t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
   //
   // gridCheck();

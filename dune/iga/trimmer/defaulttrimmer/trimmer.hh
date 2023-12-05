@@ -12,7 +12,12 @@
 
 #include "patchgridindexsets.hh"
 #include "patchgridleafiterator.hh"
+#include "patchgridleveliterator.hh"
 #include "trimmedlocalgeometry.hh"
+#include "trimmedentity.hh"
+
+#include "patchgridleveliterator.hh"
+#include "patchgridintersectioniterator.hh"
 #include <dune/iga/trimmer/localgeometryvariant.hh>
 
 #include <dune/geometry/referenceelements.hh>
@@ -23,8 +28,6 @@
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/iga/hierarchicpatch/patchgridentityseed.hh>
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
-#include <dune/iga/hierarchicpatch/patchgridintersectioniterator.hh>
-#include <dune/iga/hierarchicpatch/patchgridleveliterator.hh>
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
 #include <dune/subgrid/subgrid.hh>
@@ -36,6 +39,29 @@ namespace Dune::IGANEW {
   }
 
   namespace DefaultTrim {
+        template<typename HostIdType>
+      struct IdType {
+        enum class HostOrTrimmed{host,trimmed};
+        HostOrTrimmed host_or_trimmed;
+        HostIdType id;
+
+        friend std::ostream& operator<<(std::ostream& stream, const IdType& id) {
+          stream << "Type: " << std::string(id.host_or_trimmed==HostOrTrimmed::host? "Host": "Trimmed") << ", Key: " << id.id << "\n";
+          return stream;
+        }
+      };
+
+      template<typename HostIdType>
+      bool operator<(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+
+        if(lhs.host_or_trimmed==rhs.host_or_trimmed)
+          return lhs.id < rhs.id;
+        else if(lhs.host_or_trimmed<rhs.host_or_trimmed)
+          return true;
+        else
+          return false;
+
+      }
 
     /**
      * @brief Parameter struct representing parameters for the trimming operation.
@@ -73,28 +99,44 @@ namespace Dune::IGANEW {
       using Trimmer = Trimmer<dim, dimworld, ScalarType>;
 
       using GlobalIdSet   = PatchGridGlobalIdSet<const Grid>;
+
+
       using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
       using LevelIndexSet = PatchGridLevelIndexSet<const Grid>;
       using LeafIndexSet  = PatchGridLeafIndexSet<const Grid>;
       template <int codim, PartitionIteratorType pitype>
       using LeafIterator = PatchGridLeafIterator<codim, pitype, const Grid>;
 
+      template <int codim, PartitionIteratorType pitype>
+      using LevelIterator = PatchGridLevelIterator<codim, pitype, const Grid>;
+       using LeafIntersection= PatchGridLeafIntersection<const Grid>;
+      using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
+      using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
+
+
       struct TrimmerTraits {
         using ParameterSpaceGrid
             = Dune::SubGrid<dim,
                             YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;  ///< Type of the Parametric grid
+        using HostIdType= typename ParameterSpaceGrid::GlobalIdSet::IdType;
+         using GlobalIdSetId=IdType<HostIdType>;
         template <int codim>
         struct Codim {
           // This Geometry maps from the reference Element to knotspans
-          using LocalParameterSpaceGeometry = TrimmedLocalGeometry;
+          using UntrimmedParameterSpaceGeometry= typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+          using TrimmedParameterSpaceGeometry = TrimmedLocalGeometry<dim-codim,dim,const Grid,LocalGeometryTag::InParameterSpace>;
+          using LocalParameterSpaceGeometry = Trim::LocalGeometryVariant<Trimmer,UntrimmedParameterSpaceGeometry,TrimmedParameterSpaceGeometry>;
           // This Geometry maps from the reference Element subTypes to 0..1
-          using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+          using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+          using TrimmedLocalGeometry = TrimmedLocalGeometry<dim-codim,dim,const Grid,LocalGeometryTag::InReferenceElement>;
+          using LocalGeometry = Trim::LocalGeometryVariant<Trimmer,UntrimmedLocalGeometry,TrimmedLocalGeometry>;
           // The entity living in the knotspan space
-          using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
+          using ParameterSpaceGridEntity = TrimmedParameterSpaceGridEntity<codim,dim,const Grid>;
 
           using ParameterSpaceGridEntitySeed = typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
         };
 
+         using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<0>::Entity;
         using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
       };
       // clang-format off
@@ -159,6 +201,61 @@ namespace Dune::IGANEW {
           = true;  ///< boolean for the linearity of the local geometry, for the untrimmed case this is always true
       static constexpr bool isAlwaysTrivial = true;  ///< Boolean indicating if the trimming is always trivial, no
       ///< trimming or simple deletion of element.
+
+
+      template<int codim>
+      static const bool hasEntity      = codim==0;
+
+      template<int codim>
+      static const bool hasEntityIterator = codim==0;
+
+      template<int codim>
+static const bool hasHostEntity = codim==0;
+
+
+
+            template<int codim>
+      using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
+      //! First level intersection
+      [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin(const Entity<0>& ent) const {
+
+                DUNE_THROW(NotImplemented,"ilevelbegin");
+
+        // return PatchGridLevelIntersectionIterator<GridImp>(
+        //     grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.untrimmedHostEntity()));
+      }
+
+      //! Reference to one past the last neighbor
+      PatchGridLevelIntersectionIterator<GridImp> ilevelend(const Entity<0>& ent) const {
+
+        DUNE_THROW(NotImplemented,"ilevelend");
+
+        // return PatchGridLevelIntersectionIterator<GridImp>(
+        //     grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.untrimmedHostEntity()));
+      }
+
+      //! First leaf intersection
+      PatchGridLeafIntersectionIterator<GridImp> ileafbegin(const Entity<0>& ent) const {
+
+                DUNE_THROW(NotImplemented,"ileafbeginileafbegin");
+
+        // return PatchGridLeafIntersectionIterator<GridImp>(
+        //     grid_, parameterSpaceGrid().leafGridView().ibegin(ent.untrimmedHostEntity()));
+      }
+
+      //! Reference to one past the last leaf intersection
+      PatchGridLeafIntersectionIterator<GridImp> ileafend(const Entity<0>& ent) const {
+
+                DUNE_THROW(NotImplemented,"ileafendileafend");
+
+        // return PatchGridLeafIntersectionIterator<GridImp>(
+        //     grid_, parameterSpaceGrid().leafGridView().iend(ent.untrimmedHostEntity()));
+      }
+
+      template<int codim>
+      using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
+
+
 
       /**
        * @brief Default constructor for Trimmer.

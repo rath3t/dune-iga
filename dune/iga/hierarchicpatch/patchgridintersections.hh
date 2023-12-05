@@ -26,7 +26,8 @@ namespace Dune::IGANEW {
    */
   template <class GridImp>
   class PatchGridLeafIntersection {
-    friend class PatchGridLeafIntersectionIterator<GridImp>;
+    friend  typename GridImp::Traits::LeafIntersectionIterator;
+
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
@@ -168,7 +169,7 @@ namespace Dune::IGANEW {
 
   template <class GridImp>
   class PatchGridLevelIntersection {
-    friend class PatchGridLevelIntersectionIterator<GridImp>;
+    friend  typename GridImp::Traits::LevelIntersectionIterator;
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 

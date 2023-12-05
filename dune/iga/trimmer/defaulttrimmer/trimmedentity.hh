@@ -13,14 +13,24 @@ namespace Dune {
         // [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
         using LocalCoordinate = FieldVector<ctype, mydimension>;
 
-    using TrimmerType= typename GridImp::TrimmerType;
-    using GlobalIdSetIdType= typename TrimmerType::GlobalIdSetIdType;
-    using ElementTrimData= typename TrimmerType::ElementTrimData;
-    using HostParameterSpaceGridEntity= typename TrimmerType::template HostParameterSpaceGridEntity<codim_>;
-    using LocalParameterSpaceGeometry= typename TrimmerType::template LocalParameterSpaceGeometry<codim_>;
+    using Trimmer= typename GridImp::Trimmer;
+    using GlobalIdSetIdType= typename Trimmer::TrimmerTraits::GlobalIdSetId;
+    using ElementTrimData= typename Trimmer::ElementTrimData;
+    using HostParameterSpaceGridEntity= typename Trimmer::TrimmerTraits::HostParameterSpaceGridEntity;
+    using LocalParameterSpaceGeometry=typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::LocalParameterSpaceGeometry;
+    // using LocalParameterSpaceGeometry= typename Trimmer::TrimmerTraits::template Codim<codim_>::LocalParameterSpaceGeometry;
   public:
+
+    template <typename =void> requires (codim_==0)
     TrimmedParameterSpaceGridEntity(const GridImp* grid,const HostParameterSpaceGridEntity& untrimmedElement, GlobalIdSetIdType id,
-      const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData=std::nullopt) :grid_{grid},hostEntity_{untrimmedElement},id_{id},trimData_{trimData},localId_{0}{
+      const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData=std::nullopt) :grid_{grid},hostEntity_{untrimmedElement},
+    localGeometry_{std::make_optional<LocalParameterSpaceGeometry>(untrimmedElement.geometry())},id_{id},trimData_{trimData},localId_{0}{
+    }
+
+    template <typename =void> requires (codim_!=0)
+    TrimmedParameterSpaceGridEntity(const GridImp* grid, GlobalIdSetIdType id,
+  const std::optional<std::reference_wrapper<const ElementTrimData>>& trimData=std::nullopt) :grid_{grid},id_{id},trimData_{trimData},localId_{0}{
+      DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
     }
 
     auto & id() const  {
@@ -29,7 +39,10 @@ namespace Dune {
 
 
   private:
-    HostParameterSpaceGridEntity hostEntity_;
+    struct Empty{};
+   [[no_unique_address]] std::conditional_t<codim_==0,HostParameterSpaceGridEntity,Empty> hostEntity_;
+    // The optional is only here since geometries are not default constructable
+    std::optional<typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::LocalParameterSpaceGeometry> localGeometry_;
     GlobalIdSetIdType id_;
     std::optional<std::reference_wrapper<const ElementTrimData>> trimData_;
     size_t localId_;
@@ -49,7 +62,10 @@ namespace Dune {
 
     //! Level of this element
     [[nodiscard]] int level() const {
+      if constexpr (codim_==0)
       return hostEntity_.level();
+      DUNE_THROW(NotImplemented,"level not implemented for codim!=0 objects");
+
     }
 
     /** @brief The partition type for parallel computing */
@@ -64,7 +80,10 @@ namespace Dune {
       //@todo Trim this is crasy
       // if(trimData_)
       //   return trimData_.template geometry<codim_>(localId_);
+      if constexpr (codim_==0)
       return hostEntity_.geometry();
+      else
+        return localGeometry_.value();
     }
 
     /** @brief Return the number of subEntities of codimension codim.
@@ -83,8 +102,14 @@ namespace Dune {
     [[nodiscard]] decltype(auto) subEntity(int i) const {
       // if(trimData_)
       //   return trimData_.template subEntity<codim_,cc>(i,localId_);
-      auto id = grid_->entityContainer().subId(id_,i,cc);
+      // auto id = grid_->entityContainer().subId(id_,i,cc);
+      auto id = id_;
+      DUNE_THROW(Dune::NotImplemented,"subEntity can not be requested");
+      if constexpr (cc==0)
       return TrimmedParameterSpaceGridEntity<cc,mydimension,GridImp>(grid_,hostEntity_.template subEntity<cc>(i),id);
+      else
+        return TrimmedParameterSpaceGridEntity<cc,mydimension,GridImp>(grid_,id);
+
     }
 
     //! First level intersection

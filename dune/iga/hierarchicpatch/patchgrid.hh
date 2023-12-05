@@ -21,8 +21,6 @@
 #include "patchgridfwd.hh"
 #include "patchgridgeometry.hh"
 #include "patchgridhierarchiciterator.hh"
-#include "patchgridintersectioniterator.hh"
-#include "patchgridleveliterator.hh"
 #include "patchgridview.hh"
 
 #include <dune/common/parallel/communication.hh>
@@ -107,11 +105,16 @@ namespace Dune::IGANEW {
     using LocalIdSetImpl= GridFamily::LocalIdSet;
   template <int codim, PartitionIteratorType pitype>
     using LeafIteratorImpl= GridFamily::template LeafIterator<codim,pitype>;
+    template <int codim, PartitionIteratorType pitype>
+    using LevelIteratorImpl= GridFamily::template LevelIterator<codim,pitype>;
     friend class PatchGridHierarchicIterator<const PatchGrid>;
-    friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
-    friend class PatchGridLevelIntersection<const PatchGrid>;
-    friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
-    friend class PatchGridLeafIntersection<const PatchGrid>;
+    friend GridFamily::LevelIntersection;
+    friend GridFamily::LeafIntersection;
+    friend GridFamily::LeafIntersectionIterator;
+    friend GridFamily::LevelIntersectionIterator;
+   // friend class PatchGridLevelIntersection<const PatchGrid>;
+    //friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
+    //friend class PatchGridLeafIntersection<const PatchGrid>;
     friend class PatchGridLevelGridView<PatchGrid>;
     friend class PatchGridLeafGridView<PatchGrid>;
     friend struct HostGridAccess<PatchGrid>;
@@ -178,25 +181,25 @@ namespace Dune::IGANEW {
     //! Iterator to first entity of given codim on level
     template <int codim>
     typename Traits::template Codim<codim>::LevelIterator lbegin(int level) const {
-      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level);
+      return LevelIteratorImpl<codim, All_Partition>(this, level);
     }
 
     //! one past the end on this level
     template <int codim>
     typename Traits::template Codim<codim>::LevelIterator lend(int level) const {
-      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level, true);
+      return LevelIteratorImpl<codim, All_Partition>(this, level, true);
     }
 
     //! Iterator to first entity of given codim on level
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin(int level) const {
-      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level);
+      return LevelIteratorImpl<codim, PiType>(this, level);
     }
 
     //! one past the end on this level
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend(int level) const {
-      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level, true);
+      return LevelIteratorImpl<codim, PiType>(this, level, true);
     }
 
     //! Iterator to first leaf entity of given codim
@@ -447,8 +450,8 @@ namespace Dune::IGANEW {
     ParameterSpaceGrid& parameterSpaceGrid() { return trimmer_->parameterSpaceGrid(); }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
-    template <int codim>
-    const typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity& getHostEntity(
+    template <int codim> requires Trimmer::template hasHostEntity<codim>
+    const typename Trimmer::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
         const typename Traits::template Codim<codim>::Entity& e) const {
       return e.impl().hostEntity();
     }

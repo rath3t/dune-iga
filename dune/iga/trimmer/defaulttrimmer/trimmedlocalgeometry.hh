@@ -10,15 +10,15 @@ namespace Dune {
       template <int dim, int dimworld,typename ScalarType = double>
       struct Trimmer;
 
-      template <int mydim_, typename TrimmerType_, LocalGeometryTag localGeometryTag>
+        template <int mydim, int coorddim, class GridImp,LocalGeometryTag localGeometryTag>
       class TrimmedLocalGeometry {
        public:
-        using ctype = typename TrimmerType_::ctype;
+        using ctype = typename GridImp::ctype;
 
-        static constexpr int mydimension = mydim_;
-        using TrimmerType                = TrimmerType_;
+        static constexpr int mydimension = mydim;
+        using Trimmer                = typename GridImp::Trimmer;
 
-        static constexpr int coorddimension = TrimmerType_::mydimension;
+        static constexpr int coorddimension = coorddim;
         static constexpr int codim          = coorddimension - mydimension;
         using PatchGeometry                 = GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>;
         using LocalCoordinateInPatch        = typename PatchGeometry::LocalCoordinate;
@@ -34,7 +34,7 @@ namespace Dune {
         //! type of the LocalView of the patch geometry
         using GeometryLocalView =
             typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
-                                                ctype>::template GeometryLocalView<codim, TrimmerType>;
+                                                ctype>::template GeometryLocalView<codim, Trimmer>;
 
         /** constructor from host geometry  */
         explicit TrimmedLocalGeometry(const GeometryKernel::NURBSPatch<mydimension,coorddimension,ctype>& trimData) : trimData_{&trimData} {}

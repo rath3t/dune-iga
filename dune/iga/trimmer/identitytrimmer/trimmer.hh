@@ -13,6 +13,7 @@
 #include "patchgridindexsets.hh"
 #include "patchgridleafiterator.hh"
 #include "patchgridlocalgeometry.hh"
+#include "patchgridleveliterator.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -22,8 +23,8 @@
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/iga/hierarchicpatch/patchgridentityseed.hh>
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
-#include <dune/iga/hierarchicpatch/patchgridintersectioniterator.hh>
-#include <dune/iga/hierarchicpatch/patchgridleveliterator.hh>
+#include "patchgridintersectioniterator.hh"
+
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
 namespace Dune::IGANEW {
@@ -76,6 +77,11 @@ namespace Dune::IGANEW {
       using LeafIndexSet  = PatchGridLeafIndexSet<const Grid>;
       template <int codim, PartitionIteratorType pitype>
       using LeafIterator = PatchGridLeafIterator<codim, pitype, const Grid>;
+      template <int codim, PartitionIteratorType pitype>
+      using LevelIterator = PatchGridLevelIterator<codim, pitype, const Grid>;
+      using LeafIntersection= PatchGridLeafIntersection<const Grid>;
+      using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
+      using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
 
       struct TrimmerTraits {
         using ParameterSpaceGrid
@@ -142,6 +148,15 @@ namespace Dune::IGANEW {
       using GridTraits    = typename GridFamily::Traits;
       using TrimmerTraits = typename GridFamily::TrimmerTraits;
 
+      template<int codim>
+    static const bool hasEntity      = codim==0;
+
+      template<int codim>
+      static const bool hasEntityIterator = codim==0;
+
+      template<int codim>
+static const bool hasHostEntity = true;
+
       template <int codim>
       using Codim   = typename TrimmerTraits::template Codim<codim>;
       using GridImp = typename GridTraits::Grid;
@@ -156,6 +171,32 @@ namespace Dune::IGANEW {
           = true;  ///< boolean for the linearity of the local geometry, for the untrimmed case this is always true
       static constexpr bool isAlwaysTrivial = true;  ///< Boolean indicating if the trimming is always trivial, no
                                                      ///< trimming or simple deletion of element.
+
+      template<int codim>
+      using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
+      //! First level intersection
+      [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin(const Entity<0>& ent) const {
+        return PatchGridLevelIntersectionIterator<GridImp>(
+            grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.untrimmedHostEntity()));
+      }
+
+      //! Reference to one past the last neighbor
+      PatchGridLevelIntersectionIterator<GridImp> ilevelend(const Entity<0>& ent) const {
+        return PatchGridLevelIntersectionIterator<GridImp>(
+            grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.untrimmedHostEntity()));
+      }
+
+      //! First leaf intersection
+      PatchGridLeafIntersectionIterator<GridImp> ileafbegin(const Entity<0>& ent) const {
+        return PatchGridLeafIntersectionIterator<GridImp>(
+            grid_, parameterSpaceGrid().leafGridView().ibegin(ent.untrimmedHostEntity()));
+      }
+
+      //! Reference to one past the last leaf intersection
+      PatchGridLeafIntersectionIterator<GridImp> ileafend(const Entity<0>& ent) const {
+        return PatchGridLeafIntersectionIterator<GridImp>(
+            grid_, parameterSpaceGrid().leafGridView().iend(ent.untrimmedHostEntity()));
+      }
 
       /**
        * @brief Default constructor for Trimmer.

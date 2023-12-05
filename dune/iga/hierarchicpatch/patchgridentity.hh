@@ -19,11 +19,11 @@ namespace Dune::IGANEW {
   template <int codim, int dim, class GridImp>
   class PatchGridEntity;
 
-  template <int codim, PartitionIteratorType pitype, class GridImp>
-  class PatchGridLevelIterator;
+  // template <int codim, PartitionIteratorType pitype, class GridImp>
+  // class PatchGridLevelIterator;
 
-  template <class GridImp>
-  class PatchGridLevelIntersectionIterator;
+  // template <class GridImp>
+  // class PatchGridLevelIntersectionIterator;
 
   template <class GridImp>
   class PatchGridLeafIntersectionIterator;
@@ -122,7 +122,7 @@ namespace Dune::IGANEW {
     bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    EntitySeed seed() const { return EntitySeed(hostEntity_); }
+    EntitySeed seed() const { return EntitySeed(untrimmedHostEntity()); }
 
     //! level of this element
     int level() const { return hostEntity_.level(); }
@@ -196,10 +196,10 @@ namespace Dune::IGANEW {
     typedef typename GridImp::template Codim<0>::LocalGeometry LocalGeometry;
 
     //! The Iterator over intersections on this level
-    typedef PatchGridLevelIntersectionIterator<GridImp> LevelIntersectionIterator;
+    typedef typename GridImp::GridFamily::LevelIntersectionIterator LevelIntersectionIterator;
 
     //! The Iterator over intersections on the leaf level
-    typedef PatchGridLeafIntersectionIterator<GridImp> LeafIntersectionIterator;
+    typedef typename GridImp::GridFamily::LeafIntersectionIterator LeafIntersectionIterator;
 
     //! Iterator over descendants of the entity
     typedef PatchGridHierarchicIterator<GridImp> HierarchicIterator;
@@ -282,27 +282,26 @@ namespace Dune::IGANEW {
     }
 
     //! First level intersection
-    [[nodiscard]] PatchGridLevelIntersectionIterator<GridImp> ilevelbegin() const {
-      return PatchGridLevelIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->parameterSpaceGrid().levelGridView(level()).ibegin(untrimmedHostEntity()));
+    [[nodiscard]] LevelIntersectionIterator ilevelbegin() const {
+      return patchGrid_->trimmer_->ilevelbegin(*this);
     }
 
     //! Reference to one past the last neighbor
-    PatchGridLevelIntersectionIterator<GridImp> ilevelend() const {
-      return PatchGridLevelIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->parameterSpaceGrid().levelGridView(level()).iend(untrimmedHostEntity()));
+    LevelIntersectionIterator ilevelend() const {
+      return patchGrid_->trimmer_->ilevelend(*this);
+
     }
 
     //! First leaf intersection
-    PatchGridLeafIntersectionIterator<GridImp> ileafbegin() const {
-      return PatchGridLeafIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->parameterSpaceGrid().leafGridView().ibegin(untrimmedHostEntity()));
+    LeafIntersectionIterator ileafbegin() const {
+      return patchGrid_->trimmer_->ileafbegin(*this);
+
     }
 
     //! Reference to one past the last leaf intersection
-    PatchGridLeafIntersectionIterator<GridImp> ileafend() const {
-      return PatchGridLeafIntersectionIterator<GridImp>(
-          patchGrid_, patchGrid_->parameterSpaceGrid().leafGridView().iend(untrimmedHostEntity()));
+    LeafIntersectionIterator ileafend() const {
+      return patchGrid_->trimmer_->ileafend(*this);
+
     }
 
     //! returns true if Entity has NO children
