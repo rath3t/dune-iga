@@ -23,7 +23,6 @@
 #include "patchgridhierarchiciterator.hh"
 #include "patchgridintersectioniterator.hh"
 #include "patchgridleveliterator.hh"
-#include "patchgridlocalgeometry.hh"
 #include "patchgridview.hh"
 
 #include <dune/common/parallel/communication.hh>

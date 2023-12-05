@@ -19,12 +19,12 @@ namespace Dune::IGANEW {
   template <int codim, class GridImp>
   class PatchGridEntitySeed {
    protected:
+    using Trimmer = typename GridImp::Trimmer;
     // Entity type of the hostgrid
-    typedef typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::Entity ParameterSpaceGridEntity;
+    using ParameterSpaceGridEntity= typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity ;
 
     // EntitySeed type of the hostgrid
-    typedef
-        typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed ParameterSpaceGridEntitySeed;
+        using ParameterSpaceGridEntitySeed =typename Trimmer::template Codim<codim>::ParameterSpaceGridEntitySeed ;
 
    public:
     constexpr static int codimension = codim;

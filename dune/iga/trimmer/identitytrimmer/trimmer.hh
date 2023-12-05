@@ -23,7 +23,7 @@
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/patchgridintersectioniterator.hh>
 #include <dune/iga/hierarchicpatch/patchgridleveliterator.hh>
-#include <dune/iga/hierarchicpatch/patchgridlocalgeometry.hh>
+#include "patchgridlocalgeometry.hh"
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
 namespace Dune::IGANEW {
@@ -76,11 +76,24 @@ namespace Dune::IGANEW {
       using LeafIndexSet    = PatchGridLeafIndexSet<const Grid>;
       template <int codim, PartitionIteratorType pitype>
       using LeafIterator = PatchGridLeafIterator<codim, pitype, const Grid>;
-      // using GlobalIdSetIdType = typename GlobalIdSetType<const Grid>;
 
       struct TrimmerTraits {
         using ParameterSpaceGrid
             = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
+        template <int codim>
+        struct Codim{
+          //This Geometry maps from the reference Element to knotspans
+          using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+          //This Geometry maps from the reference Element subTypes to 0..1
+          using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
+          //The entity living in the knotspan space
+          using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
+
+          using ParameterSpaceGridEntitySeed =typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
+
+        };
+
+        using ParameterSpaceLeafIntersection= typename ParameterSpaceGrid::Traits::LeafIntersection;
       };
       // clang-format off
       typedef GridTraits<
@@ -127,10 +140,12 @@ namespace Dune::IGANEW {
     class Trimmer {
      public:
       using GridFamily = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
-      using Traits = typename GridFamily::Traits;
+      using GridTraits = typename GridFamily::Traits;
       using TrimmerTraits = typename GridFamily::TrimmerTraits;
 
-      using GridImp                       = typename Traits::Grid;
+      template<int codim>
+      using Codim = typename TrimmerTraits::template Codim<codim>;
+      using GridImp                       = typename GridTraits::Grid;
       static constexpr int mydimension    = GridImp::dimension;     ///< Dimension of the patch.
       static constexpr int dimensionworld = GridImp::dimensionworld;  ///< Dimension of the world.
       using ctype                         = ScalarType;
@@ -158,8 +173,7 @@ namespace Dune::IGANEW {
       using ElementTrimDataContainer
           = ElementTrimDataContainer<ParameterSpaceGrid>;  ///< Container for element trim data.
 
-      template <int codim>
-      using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
+
 
       template <int codim, PartitionIteratorType pitype>
       using ParameterSpaceLeafIterator =
@@ -171,11 +185,7 @@ namespace Dune::IGANEW {
 
       using EntityContainerType = Empty;
 
-      template <int codim>
-      using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
 
-      template <int codim>
-      using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 

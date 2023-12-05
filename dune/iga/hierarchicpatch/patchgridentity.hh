@@ -65,17 +65,19 @@ namespace Dune::IGANEW {
 
    private:
     // The codimension of this entity wrt the host grid
-    constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
+    // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
 
     // equivalent entity in the host grid
+    using Trimmer = typename GridImp::Trimmer;
+    using ParameterSpaceGridEntity = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity;
+
     //@todo Trimmer should also provide a
 
 
    public:
     typedef typename GridImp::ctype ctype;
-    using TrimmerType = typename GridImp::Trimmer;
 
-    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<codim>;
+
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
     //! The type of the EntitySeed interface class
@@ -120,7 +122,7 @@ namespace Dune::IGANEW {
     bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    EntitySeed seed() const { return EntitySeed(untrimmedHostEntity()); }
+    EntitySeed seed() const { return EntitySeed(hostEntity_); }
 
     //! level of this element
     int level() const { return hostEntity_.level(); }
@@ -133,14 +135,14 @@ namespace Dune::IGANEW {
      */
     unsigned int subEntities(unsigned int cc) const { return hostEntity_.subEntities(cc); }
 
-      using ParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim>;
+      // using ParameterSpaceGeometry = typename Trimmer::template LocalParameterSpaceGeometry<codim>;
 
 
     //! geometry of this entity
     Geometry geometry() const {
 
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, TrimmerType>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, Trimmer>());
       return Geometry(geo);
     }
 
@@ -148,9 +150,7 @@ namespace Dune::IGANEW {
 
 
     const auto& untrimmedHostEntity()const {
-      if constexpr (requires {hostEntity_.untrimmedHostEntity();})
-        return hostEntity_.untrimmedHostEntity();
-      else
+
       return hostEntity_;
     }
 
@@ -182,15 +182,14 @@ namespace Dune::IGANEW {
 
    public:
     typedef typename GridImp::ctype ctype;
-    using TrimmerType = typename GridImp::Trimmer;
+    using Trimmer = typename GridImp::Trimmer;
     // The codimension of this entitypointer wrt the host grid
     constexpr static int dimension       = GridImp::dimension;
     constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - dimension;
     constexpr static int dimworld        = GridImp::dimensionworld;
 
     // equivalent entity in the host grid
-    using ParameterSpaceGridEntity = typename TrimmerType::template ParameterSpaceGridEntity<0>;
-
+    using ParameterSpaceGridEntity = typename Trimmer::template Codim<0>::ParameterSpaceGridEntity;
 
     typedef typename GridImp::template Codim<0>::Geometry Geometry;
 
@@ -260,11 +259,11 @@ namespace Dune::IGANEW {
       //@todo Trim not hostEntity_
       static_assert(
           std::is_same_v<
-              decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>()),
-              typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, TrimmerType>>);
+              decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>()),
+              typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, Trimmer>>);
       // auto referenceEle= referenceElement(*this);
       auto geo = typename Geometry::Implementation(
-          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, TrimmerType>());
+          hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>());
       return Geometry(geo);
     }
 

@@ -34,12 +34,13 @@ namespace Dune::IGANEW {
     constexpr static int mydim = GridImp::dimension - 1;
 
     constexpr static int dimworld = GridImp::dimensionworld;
-    using TrimmerType             = typename GridImp::Trimmer;
+    using Trimmer             = typename GridImp::Trimmer;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::ParameterSpaceGrid::LeafGridView::Intersection HostLeafIntersection;
+    using ParameterSpaceLeafIntersection = typename Trimmer::TrimmerTraits::ParameterSpaceLeafIntersection;
+
     using LocalCoordinate = FieldVector<ctype, mydim>;
 
    public:
@@ -50,24 +51,24 @@ namespace Dune::IGANEW {
 
     PatchGridLeafIntersection() {}
 
-    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, const HostLeafIntersection& hostIntersection)
-        : patchGrid_(parameterSpaceGrid), hostIntersection_(hostIntersection) {}
+    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, const ParameterSpaceLeafIntersection& hostIntersection)
+        : patchGrid_(parameterSpaceGrid), paramterSpaceIntersection(hostIntersection) {}
 
-    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, HostLeafIntersection&& hostIntersection)
-        : patchGrid_(parameterSpaceGrid), hostIntersection_(std::move(hostIntersection)) {}
+    PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, ParameterSpaceLeafIntersection&& hostIntersection)
+        : patchGrid_(parameterSpaceGrid), paramterSpaceIntersection(std::move(hostIntersection)) {}
 
-    bool equals(const PatchGridLeafIntersection& other) const { return hostIntersection_ == other.hostIntersection_; }
+    bool equals(const PatchGridLeafIntersection& other) const { return paramterSpaceIntersection == other.paramterSpaceIntersection; }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
-    Entity inside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside()); }
+    Entity inside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, paramterSpaceIntersection.inside()); }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
-    Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside()); }
+    Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, paramterSpaceIntersection.outside()); }
 
     //! return true if intersection is with boundary.
-    bool boundary() const { return hostIntersection_.boundary(); }
+    bool boundary() const { return paramterSpaceIntersection.boundary(); }
 
     /** @brief Return unit outer normal (length == 1)
      *
@@ -81,16 +82,16 @@ namespace Dune::IGANEW {
     }
 
     //! return true if across the edge an neighbor on this level exists
-    bool neighbor() const { return hostIntersection_.neighbor(); }
+    bool neighbor() const { return paramterSpaceIntersection.neighbor(); }
 
     //! return the boundary segment index
-    size_t boundarySegmentIndex() const { return hostIntersection_.boundarySegmentIndex(); }
+    size_t boundarySegmentIndex() const { return paramterSpaceIntersection.boundarySegmentIndex(); }
 
     //! Return true if this is a conforming intersection
-    bool conforming() const { return hostIntersection_.conforming(); }
+    bool conforming() const { return paramterSpaceIntersection.conforming(); }
 
     //! Geometry type of an intersection
-    GeometryType type() const { return hostIntersection_.type(); }
+    GeometryType type() const { return paramterSpaceIntersection.type(); }
 
     //! intersection of codimension 1 of this neighbor with element where
     //! iteration started.
@@ -101,17 +102,17 @@ namespace Dune::IGANEW {
       // @todo Trim richtigen view raussuchen
       // auto intersectionGeometry= inside().trimData()
       // auto geometryOfIntersectionInParameterSpace = ... get intersection from trimdata
-      // hostIntersection_.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1,
+      // paramterSpaceIntersection.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1,
       // TrimmerType>());
       // auto geo = typename LocalGeometry::Implementation(geometryOfIntersectionInParameterSpace);
-      // LocalGeometry(hostIntersection_.geometryInOutside());
-      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInInside()));
+      // LocalGeometry(paramterSpaceIntersection.geometryInOutside());
+      return LocalGeometry(typename LocalGeometry::Implementation(paramterSpaceIntersection.geometryInInside()));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     LocalGeometry geometryInOutside() const {
-      return LocalGeometry(typename LocalGeometry::Implementation(hostIntersection_.geometryInOutside()));
+      return LocalGeometry(typename LocalGeometry::Implementation(paramterSpaceIntersection.geometryInOutside()));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
@@ -119,22 +120,22 @@ namespace Dune::IGANEW {
     Geometry geometry() const {
       // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
       auto geo = typename Geometry::Implementation(
-          hostIntersection_.geometry(), patchGrid_->patchGeometries_.back().template localView<1, TrimmerType>());
+          paramterSpaceIntersection.geometry(), patchGrid_->patchGeometries_.back().template localView<1, Trimmer>());
       return Geometry(geo);
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
-    int indexInInside() const { return hostIntersection_.indexInInside(); }
+    int indexInInside() const { return paramterSpaceIntersection.indexInInside(); }
 
     //! local number of codim 1 entity in neighbor where intersection is contained
-    int indexInOutside() const { return hostIntersection_.indexInOutside(); }
+    int indexInOutside() const { return paramterSpaceIntersection.indexInOutside(); }
 
     //! return outer normal
     FieldVector<ctype, GridImp::dimensionworld> outerNormal(const LocalCoordinate& local) const {
       FieldMatrix<ctype, dimworld, dim> J
           = inside().geometry().jacobianInverseTransposed(geometryInInside().global(local));
       FieldVector<ctype, dimworld> res;
-      J.mv(hostIntersection_.outerNormal(local), res);
+      J.mv(paramterSpaceIntersection.outerNormal(local), res);
       return res;
     }
 
@@ -150,7 +151,7 @@ namespace Dune::IGANEW {
     FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal(const LocalCoordinate& local) const {
       auto Jinv = inside().geometry().jacobianInverseTransposed(geometryInInside().global(local));
       FieldVector<ctype, dimworld> res;
-      Jinv.mv(hostIntersection_.unitOuterNormal(local), res);
+      Jinv.mv(paramterSpaceIntersection.unitOuterNormal(local), res);
       res /= res.two_norm();
       return res;
     }
@@ -162,7 +163,7 @@ namespace Dune::IGANEW {
 
     const GridImp* patchGrid_{nullptr};
 
-    HostLeafIntersection hostIntersection_{};
+    ParameterSpaceLeafIntersection paramterSpaceIntersection{};
   };
 
   template <class GridImp>
@@ -196,30 +197,30 @@ namespace Dune::IGANEW {
     PatchGridLevelIntersection() = default;
 
     PatchGridLevelIntersection(const GridImp* identityGrid, const HostLevelIntersection& hostIntersection)
-        : patchGrid_(identityGrid), hostIntersection_(hostIntersection) {}
+        : patchGrid_(identityGrid), paramterSpaceIntersection(hostIntersection) {}
 
     PatchGridLevelIntersection(const GridImp* identityGrid, HostLevelIntersection&& hostIntersection)
-        : patchGrid_(identityGrid), hostIntersection_(std::move(hostIntersection)) {}
+        : patchGrid_(identityGrid), paramterSpaceIntersection(std::move(hostIntersection)) {}
 
     [[nodiscard]] bool equals(const PatchGridLevelIntersection& other) const {
-      return hostIntersection_ == other.hostIntersection_;
+      return paramterSpaceIntersection == other.paramterSpaceIntersection;
     }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     [[nodiscard]] Entity inside() const {
-      return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.inside());
+      return PatchGridEntity<0, dim, GridImp>(patchGrid_, paramterSpaceIntersection.inside());
     }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     [[nodiscard]] Entity outside() const {
-      return PatchGridEntity<0, dim, GridImp>(patchGrid_, hostIntersection_.outside());
+      return PatchGridEntity<0, dim, GridImp>(patchGrid_, paramterSpaceIntersection.outside());
     }
 
     /** @brief return true if intersection is with boundary.
      */
-    [[nodiscard]] bool boundary() const { return hostIntersection_.boundary(); }
+    [[nodiscard]] bool boundary() const { return paramterSpaceIntersection.boundary(); }
 
     /** @brief Return unit outer normal (length == 1)
      *
@@ -233,30 +234,30 @@ namespace Dune::IGANEW {
     }
 
     //! return true if across the edge an neighbor on this level exists
-    [[nodiscard]] bool neighbor() const { return hostIntersection_.neighbor(); }
+    [[nodiscard]] bool neighbor() const { return paramterSpaceIntersection.neighbor(); }
 
     //! return the boundary segment index
-    [[nodiscard]] size_t boundarySegmentIndex() const { return hostIntersection_.boundarySegmentIndex(); }
+    [[nodiscard]] size_t boundarySegmentIndex() const { return paramterSpaceIntersection.boundarySegmentIndex(); }
 
     //! Return true if this is a conforming intersection
-    [[nodiscard]] bool conforming() const { return hostIntersection_.conforming(); }
+    [[nodiscard]] bool conforming() const { return paramterSpaceIntersection.conforming(); }
 
     //! Geometry type of an intersection
-    [[nodiscard]] GeometryType type() const { return hostIntersection_.type(); }
+    [[nodiscard]] GeometryType type() const { return paramterSpaceIntersection.type(); }
 
     //! intersection of codimension 1 of this neighbor with element where
     //! iteration started.
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
     [[nodiscard]] LocalGeometry geometryInInside() const {
-      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(hostIntersection_.geometryInInside());
+      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(paramterSpaceIntersection.geometryInInside());
       return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     [[nodiscard]] LocalGeometry geometryInOutside() const {
-      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(hostIntersection_.geometryInOutside());
+      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(paramterSpaceIntersection.geometryInOutside());
       return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 
@@ -265,16 +266,16 @@ namespace Dune::IGANEW {
     [[nodiscard]] Geometry geometry() const {
       // @todo trim does this make sense?
       auto geo = typename Geometry::Implementation(
-          hostIntersection_.geometry(),
+          paramterSpaceIntersection.geometry(),
           patchGrid_->patchGeometries_[inside().level()].template localView<1, TrimmerType>());
       return Geometry(geo);
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
-    [[nodiscard]] int indexInInside() const { return hostIntersection_.indexInInside(); }
+    [[nodiscard]] int indexInInside() const { return paramterSpaceIntersection.indexInInside(); }
 
     //! local number of codim 1 entity in neighbor where intersection is contained
-    [[nodiscard]] int indexInOutside() const { return hostIntersection_.indexInOutside(); }
+    [[nodiscard]] int indexInOutside() const { return paramterSpaceIntersection.indexInOutside(); }
 
     //! return outer normal
     [[nodiscard]] FieldVector<ctype, dimworld> outerNormal(const LocalCoordinate& local) const {
@@ -284,7 +285,7 @@ namespace Dune::IGANEW {
       auto refElement                                           = referenceElement(inside().geometry());
       const int indexInInside                                   = this->indexInInside();
       const typename LocalGeometry::GlobalCoordinate& refNormal = refElement.integrationOuterNormal(indexInInside);
-      const auto refNormal2                                     = hostIntersection_.outerNormal(local);
+      const auto refNormal2                                     = paramterSpaceIntersection.outerNormal(local);
       // std::cout<<"refNormal"<<refNormal2<<"refNormal"<<refNormal<<std::endl;
       // std::cout<<"J"<<J<<std::endl;
       J.mv(refNormal, res);
@@ -311,7 +312,7 @@ namespace Dune::IGANEW {
    private:
     const GridImp* patchGrid_;
 
-    HostLevelIntersection hostIntersection_;
+    HostLevelIntersection paramterSpaceIntersection;
   };
 
 }  // namespace Dune::IGANEW

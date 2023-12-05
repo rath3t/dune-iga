@@ -6,7 +6,7 @@ set(HEADERS
         patchgridentityseed.hh
         patchgridhierarchiciterator.hh
         patchgridgeometry.hh
-        patchgridlocalgeometry.hh
+        ../trimmer/identitytrimmer/patchgridlocalgeometry.hh
         patchgridintersectioniterator.hh
         patchgridintersections.hh
         patchgridindexsets.hh

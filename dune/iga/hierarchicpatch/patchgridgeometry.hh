@@ -22,7 +22,7 @@ namespace Dune::IGANEW {
    public:
     static constexpr int mydimension = mydim;
     // static constexpr Trimming trim   = GridImp::trim;
-    using TrimmerType = typename GridImp::Trimmer;
+    using Trimmer = typename GridImp::Trimmer;
 
     static constexpr std::integral auto worlddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
@@ -39,15 +39,14 @@ namespace Dune::IGANEW {
     using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
     using Volume                    = ctype;
 
-    // The codimension of this entitypointer wrt the host grid
-    // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - mydim;
+    //The geometry in the parameterspace, i.e. in the knotspan domain
+    using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
 
-    using ParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim>;
     // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
     //! type of the LocalView of the patch geometry
     using GeometryLocalView =
         typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
-                                            ctype>::template GeometryLocalView<codim, TrimmerType>;
+                                            ctype>::template GeometryLocalView<codim, Trimmer>;
 
     /** constructor from host geometry */
     PatchGridGeometry(const ParameterSpaceGeometry& localGeometry, GeometryLocalView&& geometryLocalView)
