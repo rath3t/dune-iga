@@ -100,6 +100,7 @@ namespace Dune::IGANEW {
         };
 
         using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
+        using ParameterSpaceLevelIntersection = typename ParameterSpaceGrid::Traits::LevelIntersection;
       };
       // clang-format off
       typedef GridTraits<

@@ -15,10 +15,12 @@
 #include "patchgridleveliterator.hh"
 #include "trimmedlocalgeometry.hh"
 #include "trimmedentity.hh"
+#include "patchgridintersections.hh"
 
 #include "patchgridleveliterator.hh"
 #include "patchgridintersectioniterator.hh"
 #include <dune/iga/trimmer/localgeometryvariant.hh>
+#include <dune/iga/trimmer/intersectionvariants.hh>
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -139,7 +141,15 @@ namespace Dune::IGANEW {
         };
 
          using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<0>::Entity;
-        using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
+        using UntrimmedParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
+        using UntrimmedParameterSpaceLevelIntersection = typename ParameterSpaceGrid::Traits::LevelIntersection;
+        using TrimmedParameterSpaceLeafIntersection = TrimmedLeafIntersection<const Grid>;
+        using TrimmedParameterSpaceLevelIntersection =  TrimmedLevelIntersection<const Grid>;
+
+        using ParameterSpaceLeafIntersection = Trim::IntersectionVariant<Trimmer,UntrimmedParameterSpaceLeafIntersection,TrimmedParameterSpaceLeafIntersection>;
+        using ParameterSpaceLevelIntersection = Trim::IntersectionVariant<Trimmer,UntrimmedParameterSpaceLevelIntersection,TrimmedParameterSpaceLevelIntersection>;
+
+
       };
       // clang-format off
       typedef GridTraits<

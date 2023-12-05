@@ -183,7 +183,7 @@ namespace Dune::IGANEW {
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
 
-    typedef typename GridImp::GridFamily::LevelIntersection HostLevelIntersection;
+    using ParameterSpaceLevelIntersection = typename Trimmer::TrimmerTraits::ParameterSpaceLevelIntersection;
 
     using LocalCoordinate = FieldVector<ctype, mydim>;
 
@@ -197,10 +197,10 @@ namespace Dune::IGANEW {
 
     PatchGridLevelIntersection() = default;
 
-    PatchGridLevelIntersection(const GridImp* identityGrid, const HostLevelIntersection& hostIntersection)
+    PatchGridLevelIntersection(const GridImp* identityGrid, const ParameterSpaceLevelIntersection& hostIntersection)
         : patchGrid_(identityGrid), parameterSpaceIntersection(hostIntersection) {}
 
-    PatchGridLevelIntersection(const GridImp* identityGrid, HostLevelIntersection&& hostIntersection)
+    PatchGridLevelIntersection(const GridImp* identityGrid, ParameterSpaceLevelIntersection&& hostIntersection)
         : patchGrid_(identityGrid), parameterSpaceIntersection(std::move(hostIntersection)) {}
 
     [[nodiscard]] bool equals(const PatchGridLevelIntersection& other) const {
@@ -313,7 +313,7 @@ namespace Dune::IGANEW {
    private:
     const GridImp* patchGrid_;
 
-    HostLevelIntersection parameterSpaceIntersection;
+    ParameterSpaceLevelIntersection parameterSpaceIntersection;
   };
 
 }  // namespace Dune::IGANEW
