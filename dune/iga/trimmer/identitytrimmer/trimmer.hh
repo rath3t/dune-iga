@@ -12,6 +12,7 @@
 
 #include "patchgridindexsets.hh"
 #include "patchgridleafiterator.hh"
+#include "patchgridlocalgeometry.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -23,7 +24,6 @@
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/patchgridintersectioniterator.hh>
 #include <dune/iga/hierarchicpatch/patchgridleveliterator.hh>
-#include "patchgridlocalgeometry.hh"
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
 namespace Dune::IGANEW {
@@ -66,14 +66,14 @@ namespace Dune::IGANEW {
     class Trimmer;
     template <int dim, int dimworld, typename ScalarType>
     struct PatchGridFamily {
-      using ctype = ScalarType;
-      using Grid  = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
-      using Trimmer        = Trimmer<dim,dimworld,ScalarType>;
+      using ctype   = ScalarType;
+      using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
+      using Trimmer = Trimmer<dim, dimworld, ScalarType>;
 
-      using GlobalIdSetType = PatchGridGlobalIdSet<const Grid>;
-      using LocalIdSetType  = PatchGridLocalIdSet<const Grid>;
-      using LevelIndexSet   = PatchGridLevelIndexSet<const Grid>;
-      using LeafIndexSet    = PatchGridLeafIndexSet<const Grid>;
+      using GlobalIdSet   = PatchGridGlobalIdSet<const Grid>;
+      using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
+      using LevelIndexSet = PatchGridLevelIndexSet<const Grid>;
+      using LeafIndexSet  = PatchGridLeafIndexSet<const Grid>;
       template <int codim, PartitionIteratorType pitype>
       using LeafIterator = PatchGridLeafIterator<codim, pitype, const Grid>;
 
@@ -81,19 +81,18 @@ namespace Dune::IGANEW {
         using ParameterSpaceGrid
             = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
         template <int codim>
-        struct Codim{
-          //This Geometry maps from the reference Element to knotspans
+        struct Codim {
+          // This Geometry maps from the reference Element to knotspans
           using LocalParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
-          //This Geometry maps from the reference Element subTypes to 0..1
+          // This Geometry maps from the reference Element subTypes to 0..1
           using LocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
-          //The entity living in the knotspan space
+          // The entity living in the knotspan space
           using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
-          using ParameterSpaceGridEntitySeed =typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
-
+          using ParameterSpaceGridEntitySeed = typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
         };
 
-        using ParameterSpaceLeafIntersection= typename ParameterSpaceGrid::Traits::LeafIntersection;
+        using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
       };
       // clang-format off
       typedef GridTraits<
@@ -109,9 +108,9 @@ namespace Dune::IGANEW {
       PatchGridLeafIterator,
       LevelIndexSet,
       LeafIndexSet,
-      GlobalIdSetType,
+      GlobalIdSet,
       typename TrimmerTraits::ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
-      LocalIdSetType,
+      LocalIdSet,
       typename TrimmerTraits::ParameterSpaceGrid::Traits::LocalIdSet::IdType,
       Communication<No_Comm>,
       PatchGridLevelGridViewTraits,
@@ -139,14 +138,16 @@ namespace Dune::IGANEW {
     template <int dim, int dimworld, typename ScalarType>
     class Trimmer {
      public:
-      using GridFamily = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
-      using GridTraits = typename GridFamily::Traits;
+      using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
+      using GridTraits    = typename GridFamily::Traits;
       using TrimmerTraits = typename GridFamily::TrimmerTraits;
 
-      template<int codim>
-      using Codim = typename TrimmerTraits::template Codim<codim>;
-      using GridImp                       = typename GridTraits::Grid;
-      static constexpr int mydimension    = GridImp::dimension;     ///< Dimension of the patch.
+      template <int codim>
+      using Codim   = typename TrimmerTraits::template Codim<codim>;
+      using GridImp = typename GridTraits::Grid;
+      friend GridImp;
+
+      static constexpr int mydimension    = GridImp::dimension;       ///< Dimension of the patch.
       static constexpr int dimensionworld = GridImp::dimensionworld;  ///< Dimension of the world.
       using ctype                         = ScalarType;
 
@@ -173,19 +174,16 @@ namespace Dune::IGANEW {
       using ElementTrimDataContainer
           = ElementTrimDataContainer<ParameterSpaceGrid>;  ///< Container for element trim data.
 
-
-
       template <int codim, PartitionIteratorType pitype>
       using ParameterSpaceLeafIterator =
           typename ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator;
 
-      using LocalIdSetType = PatchGridLocalIdSet<GridImp>;
-      using LeafIndexSet   = PatchGridLeafIndexSet<GridImp>;
-      using LevelIndexSet  = PatchGridLevelIndexSet<GridImp>;
+      using GlobalIdSet   = typename GridFamily::GlobalIdSet;
+      using LocalIdSet    = typename GridFamily::LocalIdSet;
+      using LeafIndexSet  = typename GridFamily::LeafIndexSet;
+      using LevelIndexSet = typename GridFamily::LevelIndexSet;
 
       using EntityContainerType = Empty;
-
-
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 
@@ -206,9 +204,8 @@ namespace Dune::IGANEW {
        * @param patchData NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      void createParameterSpaceGrid(const GeometryKernel::NURBSPatch<mydimension, dimensionworld, ctype>& patch,
-                                    const std::optional<PatchTrimData>& trimData) {
-        parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(patch.uniqueKnotVector());
+      void createParameterSpaceGrid() {
+        parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(grid_->patchGeometries_[0].uniqueKnotVector());
       }
 
       /**
@@ -217,10 +214,28 @@ namespace Dune::IGANEW {
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      Trimmer(const GeometryKernel::NURBSPatch<mydimension, dimensionworld, ctype>& patch,
-              const std::optional<PatchTrimData>& trimData) {
-        createParameterSpaceGrid(patch, trimData);
+      Trimmer(GridImp& grid, const std::optional<PatchTrimData>& trimData)
+          : grid_{&grid},
+            leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
+            globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
+            localIdSet_(std::make_unique<LocalIdSet>(*grid_)) {
+        createParameterSpaceGrid();
+        setIndices();
       }
+
+      Trimmer& operator=(Trimmer&& other) noexcept {
+        this->grid_               = other.grid_;
+        this->parameterSpaceGrid_ = other.parameterSpaceGrid_;
+        leafIndexSet_             = std::make_unique<LeafIndexSet>(this->grid_);
+        globalIdSet_              = std::make_unique<GlobalIdSet>(this->grid_);
+        localIdSet_               = std::make_unique<LocalIdSet>(this->grid_);
+
+        setIndices();
+
+        return *this;
+      }
+
+      GridImp* grid_;
 
       /**
        * @brief Pass parameters to the trimmer.
@@ -244,15 +259,54 @@ namespace Dune::IGANEW {
        * @brief Refine the grid globally.
        * @param ref Number of refinement levels.
        */
-      auto globalRefine(int ref) {
-        // fill up container
-        // patchTrimData,trimDatas_;
+      auto globalRefine(int refCount) {
+        parameterSpaceGrid().globalRefine(refCount);
+        setIndices();
 
         // @todo Trim move the refine here from the grid
         ;
       }
 
-     private:
+     protected:
+     protected:
+      //! compute the grid indices and ids
+      void setIndices() {
+        localIdSet_->update();
+
+        globalIdSet_->update();
+
+        // //////////////////////////////////////////
+        //   Create the index sets
+        // //////////////////////////////////////////
+        for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
+          auto p = std::make_unique<LevelIndexSet>();
+          levelIndexSets_.emplace_back(std::move(p));
+        }
+
+        for (int i = 0; i <= maxLevel(); i++)
+          if (levelIndexSets_[i]) levelIndexSets_[i]->update(*grid_, i);
+
+        leafIndexSet_->update(*grid_);
+      }
+
+      /** @brief Return maximum level defined in this grid.
+       *
+       * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
+       */
+      [[nodiscard]] int maxLevel() const { return parameterSpaceGrid().maxLevel(); }
+
+      //! Our set of level indices
+      std::vector<std::unique_ptr<LevelIndexSet>> levelIndexSets_;
+
+      //! @todo Please doc me !
+      std::unique_ptr<LeafIndexSet> leafIndexSet_;
+
+      //! @todo Please doc me !
+      std::unique_ptr<GlobalIdSet> globalIdSet_;
+
+      //! @todo Please doc me !
+      std::unique_ptr<LocalIdSet> localIdSet_;
+
       std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;  ///< The parameter space grid.
     };
 

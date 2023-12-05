@@ -10,7 +10,7 @@
  * @brief The PatchGridLeafIterator class
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::DefaultTrim {
 
   /** @brief Iterator over all entities of a given codimension and level of a grid.
    *  @ingroup PatchGrid
@@ -19,7 +19,7 @@ namespace Dune::IGANEW {
   class PatchGridLeafIterator {
    private:
     // LevelIterator to the equivalent entity in the host grid
-    using IteratorImpl=typename GridImp::EntityContainer::template EntityInteratorImpl<codim>;
+    using IteratorImpl=typename GridImp::Trimmer::template ParameterSpaceLeafIterator<codim,pitype>;
 
    public:
     constexpr static int codimension = codim;
@@ -28,34 +28,30 @@ namespace Dune::IGANEW {
     PatchGridLeafIterator() = default;
     //! @todo Please doc me !
     explicit PatchGridLeafIterator(const GridImp* patchGrid)
-        : patchGrid_(patchGrid),iteratorImpl{patchGrid_->entityContainer_.template begin<codim>()} {
-
-    }
+        : patchGrid_(patchGrid),
+          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template begin<codim, pitype>()) {}
 
     /** @brief Constructor which create the end iterator
      *  @param endDummy      Here only to distinguish it from the other constructor
      *  @param patchGrid  pointer to grid instance
      */
     explicit PatchGridLeafIterator(const GridImp* patchGrid, [[maybe_unused]] bool endDummy)
-        : patchGrid_(patchGrid) ,iteratorImpl{patchGrid_->entityContainer_.template end<codim>()}{
-
-    }
+        : patchGrid_(patchGrid),
+          hostLeafIterator_(patchGrid->parameterSpaceGrid().leafGridView().template end<codim, pitype>()) {}
 
     //! prefix increment
-    void increment() { ++iteratorImpl; }
-
-    using ParameterSpaceGridEntity = typename GridImp::TrimmerType::template ParameterSpaceGridEntity<codimension,GridImp>;
+    void increment() { ++hostLeafIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{patchGrid_, iteratorImpl->second}}; }
+    Entity dereference() const { return Entity{{patchGrid_, *hostLeafIterator_}}; }
 
     //! equality
-    bool equals(const PatchGridLeafIterator& i) const { return iteratorImpl == i.iteratorImpl; }
+    bool equals(const PatchGridLeafIterator& i) const { return hostLeafIterator_ == i.hostLeafIterator_; }
 
    private:
     const GridImp* patchGrid_;
 
-    IteratorImpl iteratorImpl;
+    IteratorImpl hostLeafIterator_;
   };
 
 }  // namespace Dune::IGANEW

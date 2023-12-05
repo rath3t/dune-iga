@@ -19,6 +19,7 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
+#include <dune/subgrid/test/common.hh>
 
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
@@ -798,6 +799,7 @@ int main(int argc, char** argv) try {
   TestSuite t;
   // t.subTest(testGrids<DefaultTrim::Trimmer>());
   t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
+  t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

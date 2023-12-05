@@ -93,8 +93,8 @@ namespace Dune::IGANEW {
     friend class PatchGridLevelGridView<const PatchGrid>;
     friend  GridFamily_<dim,dimworld, ScalarType>::LevelIndexSet;
     friend  GridFamily_<dim,dimworld, ScalarType>::LeafIndexSet;
-    friend  GridFamily_<dim,dimworld, ScalarType>::GlobalIdSetType;
-    friend  GridFamily_<dim,dimworld, ScalarType>::LocalIdSetType;
+    friend  GridFamily_<dim,dimworld, ScalarType>::GlobalIdSet;
+    friend  GridFamily_<dim,dimworld, ScalarType>::LocalIdSet;
 
 
     //! type of the used GridFamily for this grid
@@ -103,8 +103,8 @@ namespace Dune::IGANEW {
   private:
     using LevelIndexSetImpl= GridFamily::LevelIndexSet;
     using LeafIndexSetImpl= GridFamily::LeafIndexSet;
-    using GlobalIdSetImpl= GridFamily::GlobalIdSetType;
-    using LocalIdSetImpl= GridFamily::LocalIdSetType;
+    using GlobalIdSetImpl= GridFamily::GlobalIdSet;
+    using LocalIdSetImpl= GridFamily::LocalIdSet;
   template <int codim, PartitionIteratorType pitype>
     using LeafIteratorImpl= GridFamily::template LeafIterator<codim,pitype>;
     friend class PatchGridHierarchicIterator<const PatchGrid>;
@@ -160,34 +160,20 @@ namespace Dune::IGANEW {
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<typename Trimmer::PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(std::make_unique<Trimmer>(patchGeometries_[0], patchTrimData)),
-          leafIndexSet_(std::make_unique<LeafIndexSetImpl>(*this)),
-          globalIdSet_(std::make_unique<GlobalIdSetImpl>(*this)),
-          localIdSet_(std::make_unique<LocalIdSetImpl>(*this)) {
+          trimmer_(std::make_unique<Trimmer>(*this, patchTrimData))
+   {
       // trimmer_->createIdSetAndParameterGrid(*this);
-      setIndices();
       patchGeometriesUnElevated = patchGeometries_;
 
     }
 
-    PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->trimmer_            = std::move(other.trimmer_);
-      patchGeometries_          = std::move(other.patchGeometries_);
-      patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
-      leafIndexSet_             = std::make_unique<LeafIndexSetImpl>(*this);
-      globalIdSet_              = std::make_unique<GlobalIdSetImpl>(*this);
-      localIdSet_               = std::make_unique<LocalIdSetImpl>(*this);
-      trimmer_->createIdSetAndParameterGrid(*this);
-      setIndices();
-
-      return *this;
-    }
+    PatchGrid& operator=(PatchGrid&& other)= default;
 
     /** @brief Return maximum level defined in this grid.
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
-    [[nodiscard]] int maxLevel() const { return trimmer_->parameterSpaceGrid().maxLevel(); }
+    [[nodiscard]] int maxLevel() const { return trimmer_->maxLevel(); }
 
     //! Iterator to first entity of given codim on level
     template <int codim>
@@ -253,29 +239,28 @@ namespace Dune::IGANEW {
 
     //! number of entities per level, codim and geometry type in this process
     int size(int level, GeometryType type) const {
-//@todo Trim
-      return {};
+      return levelIndexSet(level).size(type);
     }
 
     //! number of leaf entities per codim and geometry type in this process
     int size(GeometryType type) const { return leafIndexSet().size(type); }
 
     /** @brief Access to the GlobalIdSet */
-    const typename Traits::GlobalIdSet& globalIdSet() const { return *globalIdSet_; }
+    const typename Traits::GlobalIdSet& globalIdSet() const { return *trimmer_->globalIdSet_; }
 
     /** @brief Access to the LocalIdSet */
-    const typename Traits::LocalIdSet& localIdSet() const { return *localIdSet_; }
+    const typename Traits::LocalIdSet& localIdSet() const { return *trimmer_->localIdSet_; }
 
     /** @brief Access to the LevelIndexSets */
     const typename Traits::LevelIndexSet& levelIndexSet(int level) const {
       if (level < 0 || level > maxLevel()) {
         DUNE_THROW(GridError, "levelIndexSet of nonexisting level " << level << " requested!");
       }
-      return *levelIndexSets_[level];
+      return *trimmer_->levelIndexSets_[level];
     }
 
     /** @brief Access to the LeafIndexSet */
-    const typename Traits::LeafIndexSet& leafIndexSet() const { return *leafIndexSet_; }
+    const typename Traits::LeafIndexSet& leafIndexSet() const { return *trimmer_->leafIndexSet_; }
 
     /** @brief Create Entity from EntitySeed */
     template <class EntitySeed>
@@ -311,9 +296,8 @@ namespace Dune::IGANEW {
         patchGeometries_.emplace_back(newfinestPatchData, newUniqueKnotVecs);
         patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
       }
-
-      trimmer_->parameterSpaceGrid().globalRefine(refCount);
-      setIndices();
+      //Here it is exploited that the knot refinem above is in sync with the globaRefine of the trimmer
+      trimmer_->globalRefine(refCount);
     }
 
     /**
@@ -470,60 +454,19 @@ namespace Dune::IGANEW {
     }
 
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }
-    auto entityContainer()const {
-      return entityContainer_;
-    }
+
    private:
     PatchGrid() = default;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-    auto trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      return trimmer_->trimData(element, *globalIdSet_);
-    }
 
     std::unique_ptr<Trimmer> trimmer_;
 
-
-
-   protected:
-    //! compute the grid indices and ids
-    void setIndices() {
-      localIdSet_->update();
-
-      globalIdSet_->update();
-
-      // //////////////////////////////////////////
-      //   Create the index sets
-      // //////////////////////////////////////////
-      for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
-        auto p = std::make_unique<LevelIndexSetImpl>();
-        levelIndexSets_.emplace_back(std::move(p));
-      }
-
-      for (int i = 0; i <= maxLevel(); i++)
-        if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
-
-      leafIndexSet_->update(*this);
-    }
-
+  private:
     //! @todo Please doc me !
     Communication<No_Comm> ccobj;
 
-    //! Our set of level indices
-    std::vector<std::unique_ptr<LevelIndexSetImpl>> levelIndexSets_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<LeafIndexSetImpl> leafIndexSet_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<GlobalIdSetImpl> globalIdSet_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<LocalIdSetImpl> localIdSet_;
-
-    using EntityContainer = typename Trimmer::EntityContainerType;
-    [[no_unique_address]] EntityContainer entityContainer_;
 
 
   };  // end Class PatchGrid
