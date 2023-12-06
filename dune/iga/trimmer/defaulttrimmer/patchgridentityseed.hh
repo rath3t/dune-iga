@@ -22,6 +22,7 @@ namespace Dune::IGANEW::DefaultTrim {
     using Trimmer = typename GridImp::Trimmer;
     friend Trimmer;
     // Entity type of the hostgrid
+    using EntityImp= typename Trimmer::TrimmerTraits::template Codim<codim>::EntityImp ;
     using Entity= typename GridImp::template Codim<codim>::Entity ;
 
     // EntitySeed type of the hostgrid
@@ -41,7 +42,7 @@ namespace Dune::IGANEW::DefaultTrim {
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
      */
-    explicit PatchGridEntitySeed(const Entity& ent) : entity_(&ent) {}
+    explicit PatchGridEntitySeed(const EntityImp& ent) : entity_(&ent) {}
 
     /**
      * @brief Get stored ParameterSpaceGridEntitySeed
@@ -54,13 +55,12 @@ namespace Dune::IGANEW::DefaultTrim {
     bool isValid() const { return entity_!=nullptr; }
 
    private:
-    /** \brief Access to the underlying FoamGrid data structure */
-    const Entity* target() const
+    Entity target() const
     {
-      return entity_;
+      return *entity_;
     }
 
-    const Entity* entity_{nullptr};
+    const EntityImp* entity_{nullptr};
   };
 
 }  // namespace Dune::IGANEW

@@ -272,12 +272,15 @@ namespace Dune::IGANEW {
           const EntitySeed& seed) const {
         using EntityImp = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
 
-        return *seed.impl().target();
+        return seed.impl().target();
       }
 
-      template <class Entity>
-typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
-        using  EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImpl;
+      template<int codim>
+      using EntityImp= typename TrimmerTraits::template Codim<codim>::EntityImp ;
+
+      template<typename  EntityImpl>
+typename GridFamily::Traits::template Codim<EntityImpl::codimension>::EntitySeed seed(const  EntityImpl& ent) const {
+        using  EntitySeedImp = typename TrimmerTraits::template Codim<EntityImpl::codimension>::EntitySeedImpl;
 
         return  EntitySeedImp(ent);
       }
