@@ -44,6 +44,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! prefix increment
     void increment() { ++hostLevelIterator_; }
+    using GlobalIdSetId = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
+    using ElementTrimData              = typename  GridImp::Trimmer::ElementTrimData;
 
     //! dereferencing
     Entity dereference() const {
@@ -52,10 +54,16 @@ namespace Dune::IGANEW::DefaultTrim {
         auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
         return Entity{std::move(realEntity)};
       }
-      else {
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,id_};
+      else if(id_.elementState==GlobalIdSetId::HostOrTrimmed::host) { // subentity is untrimmed
+
+        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,*hostLevelIterator_,id_};
         auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+
+        return Entity{std::move(realEntity)};
+      }else {
         DUNE_THROW(NotImplemented,"This is doing the wrong thing");
+        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,id_,ElementTrimData(),hostLevelIterator_->level()};
+        auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
 
         return Entity{std::move(realEntity)};
       }

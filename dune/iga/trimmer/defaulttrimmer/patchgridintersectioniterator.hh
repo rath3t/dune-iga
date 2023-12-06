@@ -33,6 +33,8 @@ namespace Dune::IGANEW::DefaultTrim{
     typedef typename GridImp::ctype ctype;
 
     typedef typename GridImp::ParameterSpaceGrid::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
+    using ParameterSpaceLeafIntersection = typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLeafIntersection;
+    using LeafIntersection = typename GridImp::Traits::LeafIntersection;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
@@ -50,7 +52,11 @@ namespace Dune::IGANEW::DefaultTrim{
     void increment() { ++hostIterator_; }
 
     //! @brief dereferencing
-    Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_); }
+    LeafIntersection dereference() const {
+      auto parameterspaceIntersection=  ParameterSpaceLeafIntersection(parameterSpaceGrid_, *hostIterator_);
+      auto realIntersection = typename  LeafIntersection::Implementation(parameterSpaceGrid_,parameterspaceIntersection);
+      return LeafIntersection();
+    }
 
    private:
     //**********************************************************
@@ -72,6 +78,8 @@ namespace Dune::IGANEW::DefaultTrim{
     typedef typename GridImp::ctype ctype;
 
     typedef typename GridImp::ParameterSpaceGrid::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
+    using ParameterSpaceLevelIntersection = typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLevelIntersection;
+    using LevelIntersection = typename GridImp::Traits::LevelIntersection;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
@@ -91,8 +99,10 @@ namespace Dune::IGANEW::DefaultTrim{
     void increment() { ++hostIterator_; }
 
     //! @brief dereferencing
-    Intersection dereference() const {
-      return PatchGridLevelIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
+    LevelIntersection dereference() const {
+      auto parameterspaceIntersection=  ParameterSpaceLevelIntersection(parameterSpaceGrid_, *hostIterator_);
+      auto realIntersection= typename LevelIntersection::Implementation(parameterSpaceGrid_,parameterspaceIntersection);
+      return LevelIntersection(realIntersection);
     }
 
    private:

@@ -30,52 +30,52 @@ namespace Dune::IGANEW::DefaultTrim {
     //! get index of an entity
     template <int codim>
     int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
-      DUNE_THROW(NotImplemented, "Indices index");
-return {};
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
-      //     grid_->template getHostEntity<codim>(e));
+//       DUNE_THROW(NotImplemented, "Indices index");
+// return {};
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
+          grid_->template getHostEntity<codim>(e).getHostEntity());
     }
 
     //! get index of subEntity of a codim 0 entity
     template <int cc>
     int subIndex(const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const {
       // @todo Trim, the subindeces are wrong!
-      DUNE_THROW(NotImplemented, "subIndex not implemented");
+      // DUNE_THROW(NotImplemented, "subIndex not implemented");
 
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e), i, codim);
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
     }
 
     //! get number of entities of given codim, type and on this level
     std::size_t size(int codim) const {
       // @todo Trim,coun trimmed elements!
-      DUNE_THROW(NotImplemented, "size not implemented");
-return {};
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
+//       DUNE_THROW(NotImplemented, "size not implemented");
+// return {};
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
     }
 
     //! get number of entities of given codim, type and on this level
     std::size_t size(GeometryType type) const {
       // @todo Trim, count cube and none types i.e. full and trimmed elements
-      DUNE_THROW(NotImplemented, "size not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
+      // DUNE_THROW(NotImplemented, "size not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
     }
 
     /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
       // @todo Trim, this should return none and cube for trimmed geometries
-      DUNE_THROW(NotImplemented, "types not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
+      // DUNE_THROW(NotImplemented, "types not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
     }
 
     /** @brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
-      DUNE_THROW(NotImplemented, "contains not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().levelIndexSet(level_).contains(
-      //     grid_->template getHostEntity<EntityType::codimension>(e));
+      // DUNE_THROW(NotImplemented, "contains not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).contains(
+      grid_->template getHostEntity<EntityType::codimension>(e).getHostEntity());
     }
 
     /** @brief Set up the index set */
@@ -116,9 +116,9 @@ return {};
      */
     template <int codim>
     int index(const typename std::remove_const<GridImp>::type::template Codim<codim>::Entity& e) const {
-      DUNE_THROW(NotImplemented, "index not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e));
+      // DUNE_THROW(NotImplemented, "index not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e).getHostEntity());
     }
 
     //! get index of subEntity of a codim 0 entity
@@ -130,41 +130,41 @@ return {};
     int subIndex(const typename std::remove_const<GridImp>::type::Traits::template Codim<cc>::Entity& e, int i,
                  int codim) const {
       // @todo Trim, this is wrong for the trimmed case
-      DUNE_THROW(NotImplemented, "subIndex not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e), i, codim);
+      // DUNE_THROW(NotImplemented, "subIndex not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
     }
 
     //! get number of entities of given type
     std::size_t size(GeometryType type) const {
       // @todo Trim, count cube and none types i.e. full and trimmed elements
-      DUNE_THROW(NotImplemented, "size not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().size(type);
+      // DUNE_THROW(NotImplemented, "size not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().leafIndexSet().size(type);
     }
 
     //! get number of entities of given codim
     std::size_t size(int codim) const {
-      DUNE_THROW(NotImplemented, "size not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
+      // DUNE_THROW(NotImplemented, "size not implemented");
+      // return {};
+       return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
     }
 
     /** @brief Deliver all geometry types used in this grid */
     Types types(int codim) const {
       // @todo Trim, this should provide cube and none!
-      DUNE_THROW(NotImplemented, "types not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().types(codim);
+      // DUNE_THROW(NotImplemented, "types not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().leafIndexSet().types(codim);
     }
 
     /** @brief Return true if the given entity is contained in the index set */
     template <class EntityType>
     bool contains(const EntityType& e) const {
-      DUNE_THROW(NotImplemented, "contains not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().leafIndexSet().contains(
-      //     grid_->template getHostEntity<EntityType::codimension>(e));
+      // DUNE_THROW(NotImplemented, "contains not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().leafIndexSet().contains(
+          grid_->template getHostEntity<EntityType::codimension>(e).getHostEntity());
     }
 
     /** @todo Currently we support only vertex and element indices */
@@ -194,9 +194,9 @@ return {};
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      DUNE_THROW(NotImplemented, "id not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().untrimmedHostEntity());
+      // DUNE_THROW(NotImplemented, "id not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity().getHostEntity());
     }
 
     //! get id of subEntity
@@ -207,9 +207,9 @@ return {};
                  int codim) const {
       // @todo Trim, the sub indeces are wrong!!!
       //  Return sub id of the host entity
-      DUNE_THROW(NotImplemented, "subId not implemented");
-      return {};
-      // return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
+      // DUNE_THROW(NotImplemented, "subId not implemented");
+      // return {};
+      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().getHostEntity().getHostEntity(), i, codim);
     }
 
     /** @todo Should be private */
@@ -240,14 +240,15 @@ return {};
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      DUNE_THROW(NotImplemented, "subId not implemented");
-      return {};
+      // DUNE_THROW(NotImplemented, "subId not implemented");
+      // return {};
       // if constexpr (cd==0)
       // return grid_->parameterSpaceGrid().localIdSet().id(e.impl().untrimmedHostEntity());
       // else {
       //   DUNE_THROW(NotImplemented, "Indices only for elements implemented");
       //   return {};
       // }
+      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity().getHostEntity());
 
     }
 
@@ -260,10 +261,10 @@ return {};
                  int codim) const {
       // Return sub id of the host entity
       /* @todo Trim, the sub indices are wrong!!! */
-      DUNE_THROW(NotImplemented, "subId not implemented");
-      return {};
+      // DUNE_THROW(NotImplemented, "subId not implemented");
+      // return {};
 
-      // return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
+      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().getHostEntity().getHostEntity(), i, codim);
       return {};
     }
 

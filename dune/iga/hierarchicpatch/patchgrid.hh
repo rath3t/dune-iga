@@ -16,11 +16,9 @@
 #include "traits.hh"
 // #include "gridcapabilities.hh"
 #include "patchgridentity.hh"
-#include "patchgridentityseed.hh"
 #include "patchgridfactory.hh"
 #include "patchgridfwd.hh"
 #include "patchgridgeometry.hh"
-#include "patchgridhierarchiciterator.hh"
 #include "patchgridview.hh"
 
 #include <dune/common/parallel/communication.hh>
@@ -107,7 +105,7 @@ namespace Dune::IGANEW {
     using LeafIteratorImpl= GridFamily::template LeafIterator<codim,pitype>;
     template <int codim, PartitionIteratorType pitype>
     using LevelIteratorImpl= GridFamily::template LevelIterator<codim,pitype>;
-    friend class PatchGridHierarchicIterator<const PatchGrid>;
+    friend GridFamily::HierarchicIterator;
     friend GridFamily::LevelIntersection;
     friend GridFamily::LeafIntersection;
     friend GridFamily::LeafIntersectionIterator;
@@ -268,10 +266,7 @@ namespace Dune::IGANEW {
     /** @brief Create Entity from EntitySeed */
     template <class EntitySeed>
     typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
-      typedef PatchGridEntity<EntitySeed::codimension, ParameterSpaceGrid::dimension, const typename Traits::Grid>
-          EntityImp;
-
-      return EntityImp(this, trimmer_->parameterSpaceGrid().entity(seed.impl().hostEntitySeed()));
+      return trimmer_->entity(seed);
     }
 
     /** @name Grid Refinement Methods */
@@ -453,7 +448,7 @@ namespace Dune::IGANEW {
     template <int codim> requires Trimmer::template hasHostEntity<codim>
     const typename Trimmer::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
         const typename Traits::template Codim<codim>::Entity& e) const {
-      return e.impl().hostEntity();
+      return e.impl().getHostEntity();
     }
 
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }

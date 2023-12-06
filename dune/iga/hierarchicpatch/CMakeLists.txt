@@ -3,8 +3,8 @@
 
 set(HEADERS
         patchgridentity.hh
-        patchgridentityseed.hh
-        patchgridhierarchiciterator.hh
+        ../trimmer/defaulttrimmer/patchgridentityseed.hh
+        ../trimmer/defaulttrimmer/patchgridhierarchiciterator.hh
         patchgridgeometry.hh
         ../trimmer/identitytrimmer/patchgridlocalgeometry.hh
         ../trimmer/defaulttrimmer/patchgridintersectioniterator.hh

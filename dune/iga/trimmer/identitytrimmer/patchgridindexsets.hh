@@ -171,7 +171,7 @@ namespace Dune::IGANEW::IdentityTrim {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().untrimmedHostEntity());
+      return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity());
     }
 
     //! get id of subEntity
@@ -182,7 +182,7 @@ namespace Dune::IGANEW::IdentityTrim {
                  int codim) const {
       // @todo Trim, the sub indeces are wrong!!!
       //  Return sub id of the host entity
-      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
+      return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().getHostEntity(), i, codim);
     }
 
     /** @todo Should be private */
@@ -213,7 +213,7 @@ namespace Dune::IGANEW::IdentityTrim {
     template <int cd>
     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
       // Return id of the host entity
-      return grid_->parameterSpaceGrid().localIdSet().id(e.impl().untrimmedHostEntity());
+      return grid_->parameterSpaceGrid().localIdSet().id(e.impl().getHostEntity());
     }
 
     //! get id of subEntity
@@ -226,7 +226,7 @@ namespace Dune::IGANEW::IdentityTrim {
       // Return sub id of the host entity
       /* @todo Trim, the sub indices are wrong!!! */
 
-      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().untrimmedHostEntity(), i, codim);
+      return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().getHostEntity(), i, codim);
     }
 
     /** @todo Should be private */

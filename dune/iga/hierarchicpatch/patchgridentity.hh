@@ -28,9 +28,6 @@ namespace Dune::IGANEW {
   template <class GridImp>
   class PatchGridLeafIntersectionIterator;
 
-  template <class GridImp>
-  class PatchGridHierarchicIterator;
-
   // External forward declarations
   template <class Grid>
   struct HostGridAccess;
@@ -116,13 +113,13 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    bool equals(const PatchGridEntity& other) const { return untrimmedHostEntity() == other.untrimmedHostEntity(); }
+    bool equals(const PatchGridEntity& other) const { return getHostEntity() == other.getHostEntity(); }
 
     //! returns true if father entity exists
     bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    EntitySeed seed() const { return EntitySeed(untrimmedHostEntity()); }
+    EntitySeed seed() const { return EntitySeed(typename EntitySeed::Implementation(hostEntity_)); }
 
     //! level of this element
     int level() const { return hostEntity_.level(); }
@@ -149,14 +146,14 @@ namespace Dune::IGANEW {
 
 
 
-    const auto& untrimmedHostEntity()const {
+    const auto& getHostEntity()const {
 
       return hostEntity_;
     }
 
-    const auto& hostEntity()const {
-        return hostEntity_;
-    }
+    // const auto& getHostEntity()const {
+    //     return hostEntity_;
+    // }
   private:
 
     ParameterSpaceGridEntity hostEntity_;
@@ -202,10 +199,13 @@ namespace Dune::IGANEW {
     typedef typename GridImp::GridFamily::LeafIntersectionIterator LeafIntersectionIterator;
 
     //! Iterator over descendants of the entity
-    typedef PatchGridHierarchicIterator<GridImp> HierarchicIterator;
+    typedef typename GridImp::GridFamily::HierarchicIterator HierarchicIterator;
+
 
     //! The type of the EntitySeed interface class
     typedef typename GridImp::template Codim<0>::EntitySeed EntitySeed;
+    typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntitySeed ParameterSpaceGridEntitySeed;
+    // typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::EntitySeedImpl EntitySeedImpl;
 
     PatchGridEntity() : patchGrid_(nullptr) {}
 
@@ -240,19 +240,19 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    [[nodiscard]] bool equals(const PatchGridEntity& other) const { return untrimmedHostEntity() == other.untrimmedHostEntity(); }
+    [[nodiscard]] bool equals(const PatchGridEntity& other) const { return hostEntity_==other.hostEntity_; }
 
     //! returns true if father entity exists
     [[nodiscard]] bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    [[nodiscard]] EntitySeed seed() const { return EntitySeed(untrimmedHostEntity()); }
+    [[nodiscard]] EntitySeed seed() const { return EntitySeed(typename EntitySeed::Implementation(hostEntity_)); }
 
     //! Level of this element
-    [[nodiscard]] int level() const { return untrimmedHostEntity().level(); }
+    [[nodiscard]] int level() const { return getHostEntity().level(); }
 
     /** @brief The partition type for parallel computing */
-    [[nodiscard]] PartitionType partitionType() const { return untrimmedHostEntity().partitionType(); }
+    [[nodiscard]] PartitionType partitionType() const { return getHostEntity().partitionType(); }
 
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry() const {
@@ -305,12 +305,12 @@ namespace Dune::IGANEW {
     }
 
     //! returns true if Entity has NO children
-    bool isLeaf() const { return untrimmedHostEntity().isLeaf(); }
+    bool isLeaf() const { return getHostEntity().isLeaf(); }
 
     //! Inter-level access to father element on coarser grid.
     //! Assumes that meshes are nested.
     typename GridImp::template Codim<0>::Entity father() const {
-      return PatchGridEntity(patchGrid_, untrimmedHostEntity().father());
+      return PatchGridEntity(patchGrid_, getHostEntity().father());
     }
 
     /** @brief Location of this element relative to the reference element element of the father.
@@ -330,13 +330,13 @@ namespace Dune::IGANEW {
      * This is provided for sparsely stored nested unstructured meshes.
      * Returns iterator to first son.
      */
-    PatchGridHierarchicIterator<GridImp> hbegin(int maxLevel) const {
-      return PatchGridHierarchicIterator<const GridImp>(patchGrid_, *this, maxLevel);
+    HierarchicIterator hbegin(int maxLevel) const {
+      return HierarchicIterator(patchGrid_, *this, maxLevel);
     }
 
     //! Returns iterator to one past the last son
-    PatchGridHierarchicIterator<GridImp> hend(int maxLevel) const {
-      return PatchGridHierarchicIterator<const GridImp>(patchGrid_, *this, maxLevel, true);
+    HierarchicIterator hend(int maxLevel) const {
+      return HierarchicIterator(patchGrid_, *this, maxLevel, true);
     }
 
     //! @todo Please doc me !
@@ -357,13 +357,13 @@ namespace Dune::IGANEW {
     //   Internal stuff
     // /////////////////////////////////////////
 
-    const auto& untrimmedHostEntity()const {
-      if constexpr (requires {hostEntity_.untrimmedHostEntity();})
-        return hostEntity_.untrimmedHostEntity();
-      else
-      return hostEntity_;
-    }
-    const auto& hostEntity()const {
+    // const auto& getHostEntity()const {
+    //   if constexpr (requires {hostEntity_.untrimmedHostEntity();})
+    //     return hostEntity_.untrimmedHostEntity();
+    //   else
+    //   return hostEntity_;
+    // }
+    const auto& getHostEntity()const {
       return hostEntity_;
     }
 

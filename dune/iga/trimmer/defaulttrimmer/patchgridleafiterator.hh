@@ -21,6 +21,7 @@ namespace Dune::IGANEW::DefaultTrim {
     // LevelIterator to the equivalent entity in the host grid
     using IteratorImpl=typename GridImp::Trimmer::template ParameterSpaceLeafIterator<codim,pitype>;
     typedef typename GridImp::Trimmer::template Codim<codim>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
+    using ElementTrimData              = typename  GridImp::Trimmer::ElementTrimData;
 
    public:
     constexpr static int codimension = codim;
@@ -43,6 +44,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! prefix increment
     void increment() { ++hostLeafIterator_; }
 
+    using GlobalIdSetId = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
     //! dereferencing
     Entity dereference() const {
 
@@ -51,13 +53,21 @@ namespace Dune::IGANEW::DefaultTrim {
         auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
         return Entity{std::move(realEntity)};
       }
-      else {
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,id_};
-        auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
-        DUNE_THROW(NotImplemented,"This is doing the wrong thing");
+      else if(id_.elementState==GlobalIdSetId::HostOrTrimmed::host) { // subentity is untrimmed
 
-        return Entity{std::move(realEntity)};
-      }
+          auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,*hostLeafIterator_,id_};
+          auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+
+          return Entity{std::move(realEntity)};
+        }else {
+          DUNE_THROW(NotImplemented,"This is doing the wrong thing");
+          auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,id_,ElementTrimData(),hostLeafIterator_->level()};
+          auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+
+          return Entity{std::move(realEntity)};
+        }
+
+
     }
 
     //! equality
@@ -65,7 +75,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
    private:
     const GridImp* patchGrid_;
-    typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId id_;
+     GlobalIdSetId id_;
     IteratorImpl hostLeafIterator_;
   };
 

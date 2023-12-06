@@ -8,7 +8,7 @@
  * @brief The PatchGridHierarchicIterator class
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::DefaultTrim {
 
   //**********************************************************************
   //
@@ -24,6 +24,7 @@ namespace Dune::IGANEW {
     // Type of the corresponding HierarchicIterator in the host grid
     typedef
         typename GridImp::ParameterSpaceGrid::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
+    typedef typename GridImp::Trimmer::template Codim<0>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
 
    public:
     constexpr static int codimension = 0;
@@ -33,19 +34,24 @@ namespace Dune::IGANEW {
     //! the default Constructor
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
         : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().untrimmedHostEntity().hbegin(maxLevel)) {}
+          hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel)) {}
 
     //! @todo Please doc me !
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                          [[maybe_unused]] bool endDummy)
         : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().untrimmedHostEntity().hend(maxLevel)) {}
+          hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)) {}
 
     //! @todo Please doc me !
     void increment() { ++hostHierarchicIterator_; }
 
     //! dereferencing
-    Entity dereference() const { return Entity{{parameterSpaceGrid_, *hostHierarchicIterator_}}; }
+    Entity dereference() const {
+           auto parameterSpaceEntity= ParameterSpaceGridEntity{parameterSpaceGrid_, *hostHierarchicIterator_,{}};
+        auto realEntity= typename Entity::Implementation{parameterSpaceGrid_,std::move(parameterSpaceEntity)};
+        return Entity{std::move(realEntity)};
+
+ }
 
     //! equality
     bool equals(const PatchGridHierarchicIterator& i) const {

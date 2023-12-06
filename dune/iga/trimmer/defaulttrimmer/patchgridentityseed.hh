@@ -9,7 +9,7 @@
  * @brief The PatchGridEntitySeed class
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::DefaultTrim {
 
   /**
    * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
@@ -40,7 +40,7 @@ namespace Dune::IGANEW {
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
      */
-    PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
+    explicit PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
 
     /**
      * @brief Get stored ParameterSpaceGridEntitySeed

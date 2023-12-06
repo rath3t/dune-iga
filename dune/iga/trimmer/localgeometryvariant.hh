@@ -8,6 +8,7 @@ namespace Dune {
       template <typename TrimmerType_, class... Implementations>
       class LocalGeometryVariant {
        public:
+        using Variant = std::variant<Implementations...>;
         using ctype                         = std::common_type_t<typename Implementations::ctype...>;
         using FirstElement                  = std::tuple_element_t<0, std::tuple<Implementations...>>;
         static constexpr int mydimension    = FirstElement::mydimension;
@@ -100,7 +101,7 @@ namespace Dune {
         }
 
        private:
-        std::variant<Implementations...> impl_;
+        Variant impl_;
       };
     }  // namespace Trim
   }    // namespace IGANEW
