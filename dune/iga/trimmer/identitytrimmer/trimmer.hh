@@ -101,7 +101,7 @@ namespace Dune::IGANEW {
 
           using ParameterSpaceGridEntitySeed = typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
           using EntityImp = PatchGridEntity<codim,dim,const Grid>;
-          using EntitySeedImpl = PatchGridEntitySeed<codim,const Grid>;
+          using EntitySeedImp = PatchGridEntitySeed<codim,const Grid>;
         };
 
         using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
@@ -308,6 +308,13 @@ static const bool hasHostEntity = true;
         using  EntityImp = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
 
         return EntityImp(grid_, parameterSpaceGrid().entity(seed.impl().hostEntitySeed()));
+      }
+
+      template <class Entity>
+  typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
+        using  EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImp;
+
+        return  EntitySeedImp(ent.getHostEntity());
       }
 
       /**

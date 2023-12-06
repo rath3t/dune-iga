@@ -20,8 +20,9 @@ namespace Dune::IGANEW::DefaultTrim {
   class PatchGridEntitySeed {
    protected:
     using Trimmer = typename GridImp::Trimmer;
+    friend Trimmer;
     // Entity type of the hostgrid
-    using ParameterSpaceGridEntity= typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity ;
+    using Entity= typename GridImp::template Codim<codim>::Entity ;
 
     // EntitySeed type of the hostgrid
         using ParameterSpaceGridEntitySeed =typename Trimmer::template Codim<codim>::ParameterSpaceGridEntitySeed ;
@@ -40,20 +41,26 @@ namespace Dune::IGANEW::DefaultTrim {
      * We call hostEntity.seed() directly in the constructor
      * of PatchGridEntitySeed to allow for return value optimization.
      */
-    explicit PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity) : hostEntitySeed_(hostEntity.seed()) {}
+    explicit PatchGridEntitySeed(const Entity& ent) : entity_(&ent) {}
 
     /**
      * @brief Get stored ParameterSpaceGridEntitySeed
      */
-    const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
+    // const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
 
     /**
      * @brief Check whether it is safe to create an Entity from this Seed
      */
-    bool isValid() const { return hostEntitySeed_.isValid(); }
+    bool isValid() const { return entity_!=nullptr; }
 
    private:
-    ParameterSpaceGridEntitySeed hostEntitySeed_;
+    /** \brief Access to the underlying FoamGrid data structure */
+    const Entity* target() const
+    {
+      return entity_;
+    }
+
+    const Entity* entity_{nullptr};
   };
 
 }  // namespace Dune::IGANEW

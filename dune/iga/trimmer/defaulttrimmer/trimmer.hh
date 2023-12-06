@@ -234,34 +234,34 @@ namespace Dune::IGANEW {
       using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
       //! First level intersection
       [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
-        DUNE_THROW(NotImplemented, "ilevelbegin");
+        // DUNE_THROW(NotImplemented, "ilevelbegin");
 
-        // return PatchGridLevelIntersectionIterator<GridImp>(
-        //     grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.untrimmedHostEntity()));
+        return PatchGridLevelIntersectionIterator<const GridImp>(
+        grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().getHostEntity().getHostEntity()));
       }
 
       //! Reference to one past the last neighbor
       PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {
-        DUNE_THROW(NotImplemented, "ilevelend");
+        // DUNE_THROW(NotImplemented, "ilevelend");
 
-        // return PatchGridLevelIntersectionIterator<GridImp>(
-        //     grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.untrimmedHostEntity()));
+        return PatchGridLevelIntersectionIterator<const GridImp>(
+        grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.impl().getHostEntity().getHostEntity()));
       }
 
       //! First leaf intersection
       PatchGridLeafIntersectionIterator<const GridImp> ileafbegin(const Entity<0>& ent) const {
-        DUNE_THROW(NotImplemented, "ileafbeginileafbegin");
+        // DUNE_THROW(NotImplemented, "ileafbeginileafbegin");
 
-        // return PatchGridLeafIntersectionIterator<GridImp>(
-        //     grid_, parameterSpaceGrid().leafGridView().ibegin(ent.untrimmedHostEntity()));
+        return PatchGridLeafIntersectionIterator<const GridImp>(
+        grid_, parameterSpaceGrid().leafGridView().ibegin(ent.impl().getHostEntity().getHostEntity()));
       }
 
       //! Reference to one past the last leaf intersection
       PatchGridLeafIntersectionIterator<const GridImp> ileafend(const Entity<0>& ent) const {
-        DUNE_THROW(NotImplemented, "ileafendileafend");
+        // DUNE_THROW(NotImplemented, "ileafendileafend");
 
-        // return PatchGridLeafIntersectionIterator<GridImp>(
-        //     grid_, parameterSpaceGrid().leafGridView().iend(ent.untrimmedHostEntity()));
+        return PatchGridLeafIntersectionIterator<const GridImp>(
+        grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().getHostEntity().getHostEntity()));
       }
 
       template <int codim>
@@ -271,9 +271,15 @@ namespace Dune::IGANEW {
       typename GridFamily::Traits::template Codim<EntitySeed::codimension>::Entity entity(
           const EntitySeed& seed) const {
         using EntityImp = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
-        DUNE_THROW(NotImplemented, "entity with seed not implemented");
 
-        return EntityImp(grid_, TrimmedParameterSpaceGridEntity<EntitySeed::codimension, mydimension, const GridImp>());
+        return *seed.impl().target();
+      }
+
+      template <class Entity>
+typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
+        using  EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImpl;
+
+        return  EntitySeedImp(ent);
       }
 
       /**
@@ -329,9 +335,7 @@ namespace Dune::IGANEW {
 
         parameterSpaceGrid_ = std::make_unique<ParameterSpaceGrid>(*untrimmedParameterSpaceGrid_);
 
-        parameterSpaceGrid_->createBegin();
-        parameterSpaceGrid_->insertLeaf();
-        parameterSpaceGrid_->createEnd();
+      refineParameterSpaceGrid(0);
       }
 
       /**
@@ -416,7 +420,7 @@ namespace Dune::IGANEW {
       }
 
       void createLevel(GridImp& grid,int lvl);
-      void refineParameterSpaceGrid(GridImp& grid, int refCount);
+      void refineParameterSpaceGrid( int refCount);
 
       /** @brief Return maximum level defined in this grid.
        *
@@ -424,7 +428,7 @@ namespace Dune::IGANEW {
        */
       [[nodiscard]] int maxLevel() const { return parameterSpaceGrid().maxLevel(); }
 
-      std::vector<EntityContainer<GridImp>> entityContainer_;
+      VectorEntityContainer<GridImp> entityContainer_;
 
       //! Our set of level indices
       std::vector<std::unique_ptr<typename GridFamily::LevelIndexSet>> levelIndexSets_;

@@ -137,7 +137,7 @@ namespace Dune::IGANEW::DefaultTrim {
           using EdgeParameterSpaceType = typename TrimmerTraits::template Codim<1>::ParameterSpaceGridEntity;
           using EleParameterSpaceType = typename TrimmerTraits::template Codim<2>::ParameterSpaceGridEntity;
 
-    entityContainer_.push_back();
+          entityContainer_.entityImps_.emplace_back();
             auto& entityContainer = entityContainer_;
             // auto& globalIdSet=grid.globalIdSet_;
             untrimmedParameterSpaceGrid_->globalRefine(refCount);
@@ -148,5 +148,6 @@ namespace Dune::IGANEW::DefaultTrim {
 
               parameterSpaceGrid_->insert(ele);
             }
+    parameterSpaceGrid_->createEnd();
         }
 }

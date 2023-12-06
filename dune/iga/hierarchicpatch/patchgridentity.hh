@@ -119,7 +119,7 @@ namespace Dune::IGANEW {
     bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    EntitySeed seed() const { return EntitySeed(typename EntitySeed::Implementation(hostEntity_)); }
+    EntitySeed seed() const { return patchGrid_->trimmer_->seed(*this); }
 
     //! level of this element
     int level() const { return hostEntity_.level(); }
@@ -246,7 +246,7 @@ namespace Dune::IGANEW {
     [[nodiscard]] bool hasFather() const { return hostEntity_.hasFather(); }
 
     //! Create EntitySeed
-    [[nodiscard]] EntitySeed seed() const { return EntitySeed(typename EntitySeed::Implementation(hostEntity_)); }
+    [[nodiscard]] EntitySeed seed() const { return patchGrid_->trimmer_->seed(*this); }
 
     //! Level of this element
     [[nodiscard]] int level() const { return getHostEntity().level(); }

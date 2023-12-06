@@ -64,7 +64,8 @@ namespace Dune::IGANEW::DefaultTrim {
         : patchGrid_(parameterSpaceGrid) ,hostIntersection_{hostIntersection}{}
     HostLeafIntersection  hostIntersection_;
     bool operator==(const TrimmedLeafIntersection& other) const {
-      DUNE_THROW(NotImplemented, "equals not implemented");
+      // DUNE_THROW(NotImplemented, "equals not implemented");
+      return hostIntersection_ == other.hostIntersection_;
     }
 
     //! returns the inside entity
@@ -228,9 +229,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
     HostLevelIntersection hostIntersection_;
     [[nodiscard]] bool operator==(const TrimmedLevelIntersection& other) const {
-      DUNE_THROW(NotImplemented, "equals not implemented");
+      // DUNE_THROW(NotImplemented, "equals not implemented");
 
-      return {};
+      return hostIntersection_ == other.hostIntersection_;
     }
 
     //! return Entity on the inside of this intersection
