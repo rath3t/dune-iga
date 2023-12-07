@@ -143,7 +143,7 @@ auto thoroughGridCheck(auto& grid) {
   return t;
 }
 
-template <template <int, int, typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
+template <template <int, int, typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   //  First test
@@ -180,7 +180,7 @@ auto testNurbsGridCylinder() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<2, 3, TrimmerType> grid(patchData);
+  IGANEW::PatchGrid<2, 3, GridFamily> grid(patchData);
 
   grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
@@ -192,7 +192,7 @@ auto testNurbsGridCylinder() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
+template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
 auto testHierarchicPatch() {
   TestSuite t;
   const double R       = 2.0;
@@ -207,14 +207,14 @@ auto testHierarchicPatch() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  Dune::IGANEW::PatchGrid<2, 3, TrimmerType> patch(nurbsPatchData);
+  Dune::IGANEW::PatchGrid<2, 3, GridFamily> patch(nurbsPatchData);
 
   t.subTest(thoroughGridCheck(patch));
 
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType> requires (requires { TrimmerType<2,3,double>();})
+template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
 auto testTorusGeometry() {
   const double R       = 2.0;
   const double r       = 1.0;
@@ -228,7 +228,7 @@ auto testTorusGeometry() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  IGANEW::PatchGrid<2, 3, TrimmerType> grid(nurbsPatchData);
+  IGANEW::PatchGrid<2, 3, GridFamily> grid(nurbsPatchData);
   grid.globalRefine(1);
   // grid.globalRefineInDirection(1, 1);
   // grid.globalRefineInDirection(0, 2);
@@ -289,7 +289,7 @@ auto testTorusGeometry() {
   return test;
 }
 
-template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<1,3,double>>
+template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<1,3,double>::Trimmer>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   //  Second test
@@ -326,7 +326,7 @@ auto testNURBSGridCurve() {
   patchData               = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 1);
 
   TestSuite t;
-  IGANEW::PatchGrid<dim, dimworld, TrimmerType> grid(patchData);
+  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
   grid.globalRefine(3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -354,7 +354,7 @@ auto testNURBSGridCurve() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
+template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
 auto testNURBSGridSurface() {
   TestSuite t;
   int subSampling = 10;
@@ -385,7 +385,7 @@ auto testNURBSGridSurface() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<dim, dimworld, TrimmerType> grid(patchData);
+  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -397,7 +397,7 @@ auto testNURBSGridSurface() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType>  requires IGANEW::Concept::Trimmer<TrimmerType<3,3,double>>
+template <template <int, int,typename> typename GridFamily>  requires IGANEW::Concept::Trimmer<typename GridFamily<3,3,double>::Trimmer>
 auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
@@ -438,7 +438,7 @@ auto test3DGrid() {
   //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   //  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
   //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
-  IGANEW::PatchGrid<3, 3, TrimmerType> grid(nurbsPatchData);
+  IGANEW::PatchGrid<3, 3, GridFamily> grid(nurbsPatchData);
   //  grid.globalRefine(1);
   //  gridcheck(grid);
   //  grid.globalRefineInDirection(0,1);
@@ -728,7 +728,7 @@ auto testNURBSSurface() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename TrimmerType> requires (requires { TrimmerType<2,2,double>();})
+template <template <int, int,typename> typename GridFamily>  requires IGANEW::Concept::Trimmer<typename GridFamily<2,2,double>::Trimmer>
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -747,7 +747,7 @@ auto testPlate() {
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
   auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld, TrimmerType>;
+  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld, GridFamily>;
 
   Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
@@ -760,50 +760,50 @@ auto testPlate() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename GridFamily>
 auto testGrids() {
 
   TestSuite t("testGrids");
-  if constexpr (requires {testHierarchicPatch<TrimmerType>();} ) {
+  if constexpr (requires {testHierarchicPatch<GridFamily>();} ) {
     std::cout << "testHierarchicPatch" << std::endl;
-    t.subTest(testHierarchicPatch<TrimmerType>());
+    t.subTest(testHierarchicPatch<GridFamily>());
   }else
     std::cout<<"testHierarchicPatch Test disabled"<<std::endl;
 
   // TestSuite t;
 
-  if constexpr ( requires {test3DGrid<TrimmerType>();}) {
+  if constexpr ( requires {test3DGrid<GridFamily>();}) {
     std::cout << "Test3D" << std::endl;
-    t.subTest(test3DGrid<TrimmerType>());
+    t.subTest(test3DGrid<GridFamily>());
   }else
     std::cout<<"Test3D Test disabled"<<std::endl;
 
-  if constexpr (requires {testNURBSGridCurve<TrimmerType>();} ) {
+  if constexpr (requires {testNURBSGridCurve<GridFamily>();} ) {
     std::cout << "Test1Din3D" << std::endl;
-    t.subTest(testNURBSGridCurve<TrimmerType>());
+    t.subTest(testNURBSGridCurve<GridFamily>());
   }else
     std::cout<<"Test1Din3D Test disabled"<<std::endl;
 
-  if constexpr (requires {testNurbsGridCylinder<TrimmerType>();} ) {
+  if constexpr (requires {testNurbsGridCylinder<GridFamily>();} ) {
     std::cout << "testNurbsGridCylinder" << std::endl;
-    t.subTest(testNurbsGridCylinder<TrimmerType>());
+    t.subTest(testNurbsGridCylinder<GridFamily>());
   }else
     std::cout<<"testNurbsGridCylinder Test disabled"<<std::endl;
-  if constexpr (requires {testNURBSGridSurface<TrimmerType>();} ) {
+  if constexpr (requires {testNURBSGridSurface<GridFamily>();} ) {
     std::cout << "testNURBSGridSurface" << std::endl;
-    t.subTest(testNURBSGridSurface<TrimmerType>());
+    t.subTest(testNURBSGridSurface<GridFamily>());
   }else
     std::cout<<"testNURBSGridSurface Test disabled"<<std::endl;
-  if constexpr (requires {testPlate<TrimmerType>();} ) {
+  if constexpr (requires {testPlate<GridFamily>();} ) {
     std::cout << "testPlate==============================================" << std::endl;
-    t.subTest(testPlate<TrimmerType>());
+    t.subTest(testPlate<GridFamily>());
     std::cout << "testPlateEND==============================================" << std::endl;
   }else
     std::cout<<"testPlate Test disabled"<<std::endl;
   // testNurbsGridCylinder();
-  if constexpr (requires {testTorusGeometry<TrimmerType>();} ) {
+  if constexpr (requires {testTorusGeometry<GridFamily>();} ) {
     std::cout << "testTorusGeometry" << std::endl;
-    t.subTest(testTorusGeometry<TrimmerType>());
+    t.subTest(testTorusGeometry<GridFamily>());
   }else
     std::cout<<"testTorusGeometry Test disabled"<<std::endl;
 

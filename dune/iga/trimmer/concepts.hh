@@ -17,7 +17,7 @@ namespace Dune::IGANEW::Concept {
    */
   template <typename T>
   concept Trimmer
-      = requires(T trimmer, const typename T::ParameterType& param, const typename T::ElementTrimData& elementTrimData,
+      = T::isValid and requires(T trimmer, const typename T::ParameterType& param, const typename T::ElementTrimData& elementTrimData,
                  const typename T::PatchTrimData& patchTrimData, const typename T::ParameterSpaceGrid& paramSpaceGrid) {
     { T::mydimension } -> std::convertible_to<int>;
     typename T::ctype;

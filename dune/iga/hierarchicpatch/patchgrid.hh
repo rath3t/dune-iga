@@ -14,7 +14,7 @@
 #include "concepts.hh"
 #include "enums.hh"
 #include "traits.hh"
-// #include "gridcapabilities.hh"
+#include "gridcapabilities.hh"
 #include "patchgridentity.hh"
 #include "patchgridfactory.hh"
 #include "patchgridfwd.hh"
@@ -74,8 +74,7 @@ namespace Dune::IGANEW {
    * auto controlNet = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
    *
    * // Create a PatchGrid from the NURBS patch data
-   * using TrimmerType = IdentityTrim::Trimmer; // use the Identity trimmer which does no trimming at all
-   * PatchGrid<dim, dimworld, TrimmerType> grid({knotSpans, controlNet, order});
+   * PatchGrid<dim, dimworld> grid({knotSpans, controlNet, order});
    *
    * // Perform global refinement
    * grid.globalRefine(2);
@@ -158,11 +157,12 @@ namespace Dune::IGANEW {
 
     using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;
 
+    using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
+
     /** @brief Constructor
      *
      * @param hostgrid The host grid wrapped by the PatchGrid
      */
-    template<typename PatchTrimData>
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
@@ -450,8 +450,8 @@ namespace Dune::IGANEW {
     ParameterSpaceGrid& parameterSpaceGrid() { return trimmer_->parameterSpaceGrid(); }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
-    template <int codim> requires Trimmer::template hasHostEntity<codim>
-    const typename Trimmer::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
+    template <int codim> requires GridFamily::template hasHostEntity<codim>
+    const typename GridFamily::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
         const typename Traits::template Codim<codim>::Entity& e) const {
       return e.impl().getHostEntity();
     }

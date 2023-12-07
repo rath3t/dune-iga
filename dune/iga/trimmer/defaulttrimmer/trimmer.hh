@@ -180,12 +180,23 @@ bool operator!=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
       using LevelIntersectionIterator = PatchGridLevelIntersectionIterator<const Grid>;
       using HierarchicIterator        = PatchGridHierarchicIterator<const Grid>;
 
+      template <int codim>
+static const bool hasEntity = codim == 0;
+
+      template <int codim>
+      static const bool hasEntityIterator = codim == 0;
+
+      template <int codim>
+      static const bool hasHostEntity = true;
+
       struct TrimmerTraits {
         using ParameterSpaceGrid
             = Dune::SubGrid<dim,
                             YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;  ///< Type of the Parametric grid
         using HostIdType    = typename ParameterSpaceGrid::GlobalIdSet::IdType;
         using GlobalIdSetId = IdType<HostIdType>;
+        using PatchTrimData   = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
+                                    typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
         template <int codim>
         struct Codim {
           // This Geometry maps from the reference Element to knotspans
@@ -288,14 +299,6 @@ bool operator!=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
       static constexpr bool isAlwaysTrivial = true;  ///< Boolean indicating if the trimming is always trivial, no
       ///< trimming or simple deletion of element.
 
-      template <int codim>
-      static const bool hasEntity = codim == 0;
-
-      template <int codim>
-      static const bool hasEntityIterator = codim == 0;
-
-      template <int codim>
-      static const bool hasHostEntity = true;
 
       template <int codim>
       using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;

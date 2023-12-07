@@ -72,6 +72,9 @@ namespace Dune::IGANEW {
       using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
       using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
 
+       using PatchTrimData   = PatchTrimDataImpl<dim,
+                                          ScalarType>;  ///< Patch trim data type.
+
       using GlobalIdSet   = PatchGridGlobalIdSet<const Grid>;
       using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
       using LevelIndexSet = PatchGridLevelIndexSet<const Grid>;
@@ -85,6 +88,15 @@ namespace Dune::IGANEW {
       using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
       using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
       using HierarchicIterator= PatchGridHierarchicIterator<const Grid>;
+
+      template<int codim>
+static const bool hasEntity      = true;
+
+      template<int codim>
+      static const bool hasEntityIterator = true;
+
+      template<int codim>
+static const bool hasHostEntity = true;
 
 
       struct TrimmerTraits {
@@ -157,15 +169,6 @@ namespace Dune::IGANEW {
 
       static constexpr bool isValid =  true;
 
-      template<int codim>
-    static const bool hasEntity      = true;
-
-      template<int codim>
-      static const bool hasEntityIterator = true;
-
-      template<int codim>
-static const bool hasHostEntity = true;
-
       template <int codim>
       using Codim   = typename TrimmerTraits::template Codim<codim>;
       using GridImp = typename GridTraits::Grid;
@@ -219,8 +222,7 @@ static const bool hasHostEntity = true;
 
       using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
                                               typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
-                                          typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
+
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
@@ -264,7 +266,7 @@ static const bool hasHostEntity = true;
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      TrimmerImpl(GridImp& grid, const std::optional<PatchTrimData>& trimData)
+      TrimmerImpl(GridImp& grid, const std::optional<typename GridFamily::PatchTrimData>& trimData)
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
