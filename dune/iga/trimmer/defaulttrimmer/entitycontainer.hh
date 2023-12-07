@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
-
+#include <map>
 namespace Dune::IGANEW::DefaultTrim {
   template <typename GridImp>
   struct VectorEntityContainer {
@@ -43,12 +43,19 @@ namespace Dune::IGANEW::DefaultTrim {
     template <int codim>
     auto end(int lvl) {
       return std::get<codim>(entityImps_[lvl]).end();
-
     }
 
-    // EntityMap<0> globalElementMap;
-    // EntityMap<1> globalEdgeMap;
-    // EntityMap<2> globalVertexMap;
+
+    const IdType& subId(const IdType& elementId,int localSubIndex, int codim) const {
+      if (codim==0)
+        return elementId;
+      else if (codim==1)
+        return globalEdgesIdOfElementsMap_.at(elementId)[localSubIndex];
+      else if (codim==2)
+        return globalVerticesIdOfElementsMap.at(elementId)[localSubIndex];
+      assert(codim>=0 and codim <=2);
+      __builtin_unreachable();
+    }
 
 
     //for each level we have codim+1 vectors of entities

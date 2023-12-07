@@ -32,12 +32,13 @@ struct ElementTrimData;
        *  from the TrimmedReferenceElements class.
        *
        */
-      template <int dim, typename Trimmer>
+      template <int dim, typename GridImp>
       class TrimmedReferenceElement {
        public:
         //! The dimension of the reference element.
         static constexpr int mydimension = dim;
         //! The coordinate field type.
+        using Trimmer                         = typename GridImp::Trimmer;
         using ctype                         = typename Trimmer::ctype;
         using ParameterSpaceGrid            = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
         using TrimDataType                  = ElementTrimData<mydimension, ctype>;
@@ -49,7 +50,7 @@ struct ElementTrimData;
           //! type of geometry embedding a subentity into the reference element
 
           using Geometry
-              = TrimmedLocalGeometry<mydimension - codim, Trimmer, LocalGeometryTag::InReferenceElement>;
+              = TrimmedLocalGeometry<mydimension - codim, mydimension,const  GridImp,LocalGeometryTag::InReferenceElement>;
         };
 
 

@@ -53,7 +53,7 @@ namespace Dune::IGANEW::DefaultTrim {
         auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
         return Entity{std::move(realEntity)};
       }
-      else if(id_.elementState==GlobalIdSetId::HostOrTrimmed::host) { // subentity is untrimmed
+      else if(id_.elementState==GlobalIdSetId::ElementState::full) { // subentity is untrimmed
 
           auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,*hostLeafIterator_,id_};
           auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};

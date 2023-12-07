@@ -3,7 +3,7 @@
 #pragma once
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
-  void Trimmer<dim,dimworld,ScalarType>::createLevel( GridImp& grid, int lvl) {
+  void TrimmerImpl<dim,dimworld,ScalarType>::createLevel( GridImp& grid, int lvl) {
     using IdType = typename GridImp::Traits::GlobalIdSet::IdType;
     using EdgeHostType = typename UntrimmedParameterSpaceGrid::template Codim<1>::Entity;
     using EdgeGridType = typename GridImp::template Codim<1>::Entity;
@@ -129,8 +129,8 @@ namespace Dune::IGANEW::DefaultTrim {
    * \param grid
    */
   template <int dim, int dimworld, typename ScalarType>
-  void Trimmer<dim,dimworld,ScalarType>::refineParameterSpaceGrid(int refCount) {
-          using IdType = typename GridImp::Traits::GlobalIdSet::IdType;
+  void TrimmerImpl<dim,dimworld,ScalarType>::refineParameterSpaceGrid(int refCount) {
+          using IdType = typename GridFamily::TrimmerTraits::GlobalIdSetId;
           using EdgeHostType = typename UntrimmedParameterSpaceGrid::template Codim<1>::Entity;
           using EdgeGridType = typename GridImp::template Codim<1>::Entity;
           using EleGridType = typename GridImp::template Codim<0>::Entity;
@@ -139,15 +139,21 @@ namespace Dune::IGANEW::DefaultTrim {
 
           entityContainer_.entityImps_.emplace_back();
             auto& entityContainer = entityContainer_;
+            auto& elementContainer = std::get<0>(entityContainer_.entityImps_.back());
             // auto& globalIdSet=grid.globalIdSet_;
             untrimmedParameterSpaceGrid_->globalRefine(refCount);
-            auto gv= untrimmedParameterSpaceGrid_->leafGridView();
-            auto& globalIdSetParameterSpace = untrimmedParameterSpaceGrid_->globalIdSet();
+            auto gvu= untrimmedParameterSpaceGrid_->leafGridView();
+    parameterSpaceGrid_->createBegin();
+    parameterSpaceGrid_->insertLeaf();
+    parameterSpaceGrid_->createEnd();
+    auto gv= parameterSpaceGrid_->leafGridView();
+            auto& globalIdSetParameterSpace = parameterSpaceGrid_->globalIdSet();
                 parameterSpaceGrid_->createBegin();
             for (const auto& ele: elements(gv)) {
-
-              parameterSpaceGrid_->insert(ele);
+              auto hostId = globalIdSetParameterSpace.id(ele);
+              IdType id = {.elementState=IdType::ElementState::full,.id=hostId};
+              elementContainer.emplace_back(grid_,ele,id);
             }
-    parameterSpaceGrid_->createEnd();
+
         }
 }

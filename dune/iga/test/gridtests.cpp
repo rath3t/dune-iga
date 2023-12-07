@@ -19,15 +19,18 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
-#include <dune/subgrid/test/common.hh>
 
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/patchgrid.hh>
+#include <dune/iga/trimmer/concepts.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 
+#include <dune/subgrid/test/common.hh>
+
 using namespace Dune;
+using namespace Dune::IGANEW;
 using namespace Dune::IGANEW;
 template <typename T, int worldDim, int Items>
 struct Compare {
@@ -140,7 +143,7 @@ auto thoroughGridCheck(auto& grid) {
   return t;
 }
 
-template <template <int, int, typename> typename TrimmerType>
+template <template <int, int, typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   //  First test
@@ -189,7 +192,7 @@ auto testNurbsGridCylinder() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
 auto testHierarchicPatch() {
   TestSuite t;
   const double R       = 2.0;
@@ -211,7 +214,7 @@ auto testHierarchicPatch() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType> requires (requires { TrimmerType<2,3,double>();})
 auto testTorusGeometry() {
   const double R       = 2.0;
   const double r       = 1.0;
@@ -286,7 +289,7 @@ auto testTorusGeometry() {
   return test;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<1,3,double>>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   //  Second test
@@ -351,7 +354,7 @@ auto testNURBSGridCurve() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType> requires IGANEW::Concept::Trimmer<TrimmerType<2,3,double>>
 auto testNURBSGridSurface() {
   TestSuite t;
   int subSampling = 10;
@@ -394,7 +397,7 @@ auto testNURBSGridSurface() {
   return t;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType>  requires IGANEW::Concept::Trimmer<TrimmerType<3,3,double>>
 auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
@@ -725,7 +728,7 @@ auto testNURBSSurface() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename TrimmerType>
+template <template <int, int,typename> typename TrimmerType> requires (requires { TrimmerType<2,2,double>();})
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -761,33 +764,49 @@ template <template <int, int,typename> typename TrimmerType>
 auto testGrids() {
 
   TestSuite t("testGrids");
-  std::cout << "testHierarchicPatch" << std::endl;
-  t.subTest(testHierarchicPatch<TrimmerType>());
-  std::cout << "testNURBSCurve" << std::endl;
+  if constexpr (requires {testHierarchicPatch<TrimmerType>();} ) {
+    std::cout << "testHierarchicPatch" << std::endl;
+    t.subTest(testHierarchicPatch<TrimmerType>());
+  }else
+    std::cout<<"testHierarchicPatch Test disabled"<<std::endl;
 
-  t.subTest(testNURBSCurve());
   // TestSuite t;
-  std::cout << "Test3D" << std::endl;
-  t.subTest(test3DGrid<TrimmerType>());
-  std::cout << "Test1Din3D" << std::endl;
-  t.subTest(testNURBSGridCurve<TrimmerType>());
-  std::cout << "testNURBSSurface" << std::endl;
-  t.subTest(testNURBSSurface());
-  std::cout << "testNurbsGridCylinder" << std::endl;
-  t.subTest(testNurbsGridCylinder<TrimmerType>());
-  std::cout << "testNURBSGridSurface" << std::endl;
-  t.subTest(testNURBSGridSurface<TrimmerType>());
-  std::cout << "testPlate==============================================" << std::endl;
-  t.subTest(testPlate<TrimmerType>());
-  std::cout << "testPlateEND==============================================" << std::endl;
 
+  if constexpr ( requires {test3DGrid<TrimmerType>();}) {
+    std::cout << "Test3D" << std::endl;
+    t.subTest(test3DGrid<TrimmerType>());
+  }else
+    std::cout<<"Test3D Test disabled"<<std::endl;
+
+  if constexpr (requires {testNURBSGridCurve<TrimmerType>();} ) {
+    std::cout << "Test1Din3D" << std::endl;
+    t.subTest(testNURBSGridCurve<TrimmerType>());
+  }else
+    std::cout<<"Test1Din3D Test disabled"<<std::endl;
+
+  if constexpr (requires {testNurbsGridCylinder<TrimmerType>();} ) {
+    std::cout << "testNurbsGridCylinder" << std::endl;
+    t.subTest(testNurbsGridCylinder<TrimmerType>());
+  }else
+    std::cout<<"testNurbsGridCylinder Test disabled"<<std::endl;
+  if constexpr (requires {testNURBSGridSurface<TrimmerType>();} ) {
+    std::cout << "testNURBSGridSurface" << std::endl;
+    t.subTest(testNURBSGridSurface<TrimmerType>());
+  }else
+    std::cout<<"testNURBSGridSurface Test disabled"<<std::endl;
+  if constexpr (requires {testPlate<TrimmerType>();} ) {
+    std::cout << "testPlate==============================================" << std::endl;
+    t.subTest(testPlate<TrimmerType>());
+    std::cout << "testPlateEND==============================================" << std::endl;
+  }else
+    std::cout<<"testPlate Test disabled"<<std::endl;
   // testNurbsGridCylinder();
-  std::cout << "testTorusGeometry" << std::endl;
-  t.subTest(testTorusGeometry<TrimmerType>());
-  // std::cout << " t.subTest(testNurbsBasis());" << std::endl;
-  // t.subTest(testNurbsBasis());
-  t.subTest(testCurveHigherOrderDerivatives());
-  t.subTest(testSurfaceHigherOrderDerivatives());
+  if constexpr (requires {testTorusGeometry<TrimmerType>();} ) {
+    std::cout << "testTorusGeometry" << std::endl;
+    t.subTest(testTorusGeometry<TrimmerType>());
+  }else
+    std::cout<<"testTorusGeometry Test disabled"<<std::endl;
+
   return t;
 }
 
@@ -803,6 +822,12 @@ int main(int argc, char** argv) try {
   std::cout<<"===============TEST IdentityTrim==="<<std::endl;
   t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
 
+  std::cout << "testNURBSCurve" << std::endl;
+  t.subTest(testNURBSCurve());
+  std::cout << "testNURBSSurface" << std::endl;
+  t.subTest(testNURBSSurface());
+  t.subTest(testCurveHigherOrderDerivatives());
+  t.subTest(testSurfaceHigherOrderDerivatives());
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

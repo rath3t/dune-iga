@@ -20,6 +20,7 @@
 #include "patchgridleveliterator.hh"
 #include "trimmedentity.hh"
 #include "trimmedlocalgeometry.hh"
+#include "idset.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -31,8 +32,31 @@
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 #include <dune/iga/trimmer/intersectionvariants.hh>
 #include <dune/iga/trimmer/localgeometryvariant.hh>
+#include <dune/iga/trimmer/identitytrimmer/patchgridlocalgeometry.hh>
 
 #include <dune/subgrid/subgrid.hh>
+
+
+namespace Dune::IGANEW::DefaultTrim {
+  template <typename HostIdType>
+   struct IdType;
+}
+template <typename HostIdType>
+struct std::hash<Dune::IGANEW::DefaultTrim::IdType<HostIdType>>
+{
+  std::size_t operator()(const Dune::IGANEW::DefaultTrim::IdType<HostIdType>& k) const
+  {
+
+    using std::hash;
+
+    // Compute individual hash values for first,
+    // second and third and combine them using XOR
+    // and bit shifting:
+
+    return ((hash<HostIdType>()(k.id)
+             ^ (hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.elementState) << 1)) >> 1);
+  }
+};
 
 namespace Dune::IGANEW {
   namespace GeometryKernel {
@@ -43,14 +67,14 @@ namespace Dune::IGANEW {
   namespace DefaultTrim {
     template <typename HostIdType>
     struct IdType {
-      enum class HostOrTrimmed { host, trimmed };
-      HostOrTrimmed elementState{HostOrTrimmed::host};
+      enum class ElementState { full, trimmed };
+      ElementState elementState{ElementState::full};
       HostIdType id{};
 
       bool operator==(const IdType& other) const { return (elementState == other.elementState) and (id == other.id); }
 
       friend std::ostream& operator<<(std::ostream& stream, const IdType& id) {
-        stream << "Type: " << std::string(id.elementState == HostOrTrimmed::host ? "Host" : "Trimmed")
+        stream << "Type: " << std::string(id.elementState == ElementState::full ? "Host" : "Trimmed")
                << ", Key: " << id.id << "\n";
         return stream;
       }
@@ -66,6 +90,43 @@ namespace Dune::IGANEW {
         return false;
     }
 
+    template <typename HostIdType>
+bool operator>(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+     return rhs < lhs;
+    }
+
+    template <typename HostIdType>
+bool operator==(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+      if (lhs.elementState == rhs.elementState)
+        return lhs.id == rhs.id;
+      else
+        return false;
+    }
+
+
+    template <typename HostIdType>
+bool operator<=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+      if (lhs.elementState == rhs.elementState)
+        return lhs.id <= rhs.id;
+      else if (lhs.elementState <= rhs.elementState)
+        return true;
+      else
+        return false;
+    }
+
+    template <typename HostIdType>
+bool operator>=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+return rhs >= lhs;
+    }
+
+    template <typename HostIdType>
+bool operator!=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
+      if (lhs.elementState == rhs.elementState)
+        return lhs.id != rhs.id;
+      else
+        return true;
+    }
+
     /**
      * @brief Parameter struct representing parameters for the trimming operation.
      */
@@ -77,14 +138,14 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int mydim_, typename ScalarType>
-    struct ElementTrimData {};
+    struct ElementTrimDataImpl {};
 
     /**
      * @brief ElementTrimDataContainer struct representing a container for element trim data.
      * @tparam ParameterSpaceGrid Type of the parameter space grid.
      */
     template <typename ParameterSpaceGrid>
-    struct ElementTrimDataContainer {};
+    struct ElementTrimDataContainerImpl {};
 
     /**
      * @brief PatchTrimData struct representing trim data for a patch.
@@ -92,18 +153,19 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int dim, typename ScalarType>
-    struct PatchTrimData {};
+    struct PatchTrimDataImpl {};
     template <int dim, int dimworld, typename ScalarType>
-    class Trimmer;
+    class TrimmerImpl;
     template <int dim, int dimworld, typename ScalarType>
     struct PatchGridFamily {
       using ctype   = ScalarType;
       using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
-      using Trimmer = Trimmer<dim, dimworld, ScalarType>;
+      using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
+
 
       using GlobalIdSet = PatchGridGlobalIdSet<const Grid>;
 
-      using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
+      using LocalIdSet    = PatchGridGlobalIdSet<const Grid>;
       using LevelIndexSet = PatchGridLevelIndexSet<const Grid>;
       using LeafIndexSet  = PatchGridLeafIndexSet<const Grid>;
       template <int codim, PartitionIteratorType pitype>
@@ -129,13 +191,13 @@ namespace Dune::IGANEW {
           // This Geometry maps from the reference Element to knotspans
           using UntrimmedParameterSpaceGeometry = typename ParameterSpaceGrid::template Codim<codim>::Geometry;
           using TrimmedParameterSpaceGeometry
-              = TrimmedLocalGeometry<dim - codim, dim, const Grid, LocalGeometryTag::InParameterSpace>;
+              = TrimmedLocalGeometryImpl<dim - codim, dim, const Grid, LocalGeometryTag::InParameterSpace>;
           using LocalParameterSpaceGeometry
               = Trim::LocalGeometryVariant<Trimmer, UntrimmedParameterSpaceGeometry, TrimmedParameterSpaceGeometry>;
           // This Geometry maps from the reference Element subTypes to 0..1
           using UntrimmedLocalGeometry = typename ParameterSpaceGrid::template Codim<codim>::LocalGeometry;
           using TrimmedLocalGeometry
-              = TrimmedLocalGeometry<dim - codim, dim, const Grid, LocalGeometryTag::InReferenceElement>;
+              = TrimmedLocalGeometryImpl<dim - codim, dim, const Grid, LocalGeometryTag::InReferenceElement>;
           using LocalGeometry = Trim::LocalGeometryVariant<Trimmer, UntrimmedLocalGeometry, TrimmedLocalGeometry>;
           // The entity living in the knotspan space
           using ParameterSpaceGridEntity = TrimmedParameterSpaceGridEntity<codim, dim, const Grid>;
@@ -173,9 +235,9 @@ namespace Dune::IGANEW {
       LevelIndexSet,
       LeafIndexSet,
       GlobalIdSet,
-      typename TrimmerTraits::ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
+      typename TrimmerTraits::GlobalIdSetId,
       LocalIdSet,
-      typename TrimmerTraits::ParameterSpaceGrid::Traits::LocalIdSet::IdType,
+      typename TrimmerTraits::GlobalIdSetId,
       Communication<No_Comm>,
       PatchGridLevelGridViewTraits,
       PatchGridLeafGridViewTraits,
@@ -200,7 +262,7 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int dim, int dimworld, typename ScalarType>
-    class Trimmer {
+    class TrimmerImpl {
      public:
       using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
       using GridTraits    = typename GridFamily::Traits;
@@ -210,6 +272,11 @@ namespace Dune::IGANEW {
       using Codim   = typename TrimmerTraits::template Codim<codim>;
       using GridImp = typename GridTraits::Grid;
       friend GridImp;
+      static constexpr bool isValid =  (dim==2 and (dimworld ==2 or dimworld==3));
+
+
+      template<int cd, int d, typename  G>
+      friend class TrimmedParameterSpaceGridEntity;
 
       static constexpr int mydimension    = GridImp::dimension;       ///< Dimension of the patch.
       static constexpr int dimensionworld = GridImp::dimensionworld;  ///< Dimension of the world.
@@ -264,9 +331,6 @@ namespace Dune::IGANEW {
         grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().getHostEntity().getHostEntity()));
       }
 
-      template <int codim>
-      using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
-
       template <class EntitySeed>
       typename GridFamily::Traits::template Codim<EntitySeed::codimension>::Entity entity(
           const EntitySeed& seed) const {
@@ -288,19 +352,19 @@ typename GridFamily::Traits::template Codim<EntityImpl::codimension>::EntitySeed
       /**
        * @brief Default constructor for Trimmer.
        */
-      Trimmer() = default;
+      TrimmerImpl() = default;
 
       using ParameterSpaceGrid = typename TrimmerTraits::ParameterSpaceGrid;  ///< Type of the Parametric grid
       template <int mydim>
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
 
-      using ElementTrimData = ElementTrimData<ParameterSpaceGrid::dimension,
+      using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
                                               typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   = PatchTrimData<ParameterSpaceGrid::dimension,
+      using PatchTrimData   = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
                                           typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
       using ElementTrimDataContainer
-          = ElementTrimDataContainer<ParameterSpaceGrid>;  ///< Container for element trim data.
+          = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
       template <int codim, PartitionIteratorType pitype>
       using ParameterSpaceLeafIterator =
@@ -347,7 +411,7 @@ typename GridFamily::Traits::template Codim<EntityImpl::codimension>::EntitySeed
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      Trimmer(GridImp& grid, const std::optional<PatchTrimData>& trimData)
+      TrimmerImpl(GridImp& grid, const std::optional<PatchTrimData>& trimData)
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
@@ -356,7 +420,7 @@ typename GridFamily::Traits::template Codim<EntityImpl::codimension>::EntitySeed
         setIndices();
       }
 
-      Trimmer& operator=(Trimmer&& other) noexcept {
+      TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
         this->grid_               = other.grid_;
         this->parameterSpaceGrid_ = other.parameterSpaceGrid_;
         leafIndexSet_             = std::make_unique<LeafIndexSet>(this->grid_);

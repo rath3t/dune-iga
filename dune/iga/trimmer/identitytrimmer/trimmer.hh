@@ -48,14 +48,14 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int mydim_, typename ScalarType>
-    struct ElementTrimData {};
+    struct ElementTrimDataImpl {};
 
     /**
      * @brief ElementTrimDataContainer struct representing a container for element trim data.
      * @tparam ParameterSpaceGrid Type of the parameter space grid.
      */
     template <typename ParameterSpaceGrid>
-    struct ElementTrimDataContainer {};
+    struct ElementTrimDataContainerImpl {};
 
     /**
      * @brief PatchTrimData struct representing trim data for a patch.
@@ -63,14 +63,14 @@ namespace Dune::IGANEW {
      * @tparam ScalarType Scalar type for the coordinates.
      */
     template <int dim, typename ScalarType>
-    struct PatchTrimData {};
+    struct PatchTrimDataImpl {};
     template <int dim, int dimworld, typename ScalarType>
-    class Trimmer;
+    class TrimmerImpl;
     template <int dim, int dimworld, typename ScalarType>
     struct PatchGridFamily {
       using ctype   = ScalarType;
       using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
-      using Trimmer = Trimmer<dim, dimworld, ScalarType>;
+      using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
 
       using GlobalIdSet   = PatchGridGlobalIdSet<const Grid>;
       using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
@@ -148,12 +148,14 @@ namespace Dune::IGANEW {
      * @tparam dim Dimension of the patch.
      * @tparam ScalarType Scalar type for the coordinates.
      */
-    template <int dim, int dimworld, typename ScalarType>
-    class Trimmer {
+    template <int dim, int dimworld, typename ScalarType= double>
+    class TrimmerImpl {
      public:
       using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
       using GridTraits    = typename GridFamily::Traits;
       using TrimmerTraits = typename GridFamily::TrimmerTraits;
+
+      static constexpr bool isValid =  true;
 
       template<int codim>
     static const bool hasEntity      = true;
@@ -208,19 +210,19 @@ static const bool hasHostEntity = true;
       /**
        * @brief Default constructor for Trimmer.
        */
-      Trimmer() = default;
+      TrimmerImpl() = default;
 
       using ParameterSpaceGrid = typename TrimmerTraits::ParameterSpaceGrid;  ///< Type of the Parametric grid
       template <int mydim>
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
 
-      using ElementTrimData = ElementTrimData<ParameterSpaceGrid::dimension,
+      using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
                                               typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   = PatchTrimData<ParameterSpaceGrid::dimension,
+      using PatchTrimData   = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
                                           typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
       using ElementTrimDataContainer
-          = ElementTrimDataContainer<ParameterSpaceGrid>;  ///< Container for element trim data.
+          = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
       template <int codim, PartitionIteratorType pitype>
       using ParameterSpaceLeafIterator =
@@ -262,7 +264,7 @@ static const bool hasHostEntity = true;
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      Trimmer(GridImp& grid, const std::optional<PatchTrimData>& trimData)
+      TrimmerImpl(GridImp& grid, const std::optional<PatchTrimData>& trimData)
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
@@ -271,7 +273,7 @@ static const bool hasHostEntity = true;
         setIndices();
       }
 
-      Trimmer& operator=(Trimmer&& other) noexcept {
+      TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
         this->grid_               = other.grid_;
         this->parameterSpaceGrid_ = other.parameterSpaceGrid_;
         leafIndexSet_             = std::make_unique<LeafIndexSet>(this->grid_);

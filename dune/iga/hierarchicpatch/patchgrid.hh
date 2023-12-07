@@ -25,8 +25,6 @@
 
 #include <dune/grid/common/grid.hh>
 
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
-
 
 namespace Dune::Functions {
   template <typename GV, typename ScalarType>
@@ -34,6 +32,10 @@ namespace Dune::Functions {
 }
 namespace Dune::IGANEW {
 
+  namespace IdentityTrim {
+    template <int dim, int dimworld, typename ScalarType=double>
+ struct PatchGridFamily;
+  }
   namespace Impl {
     template <int dim>
     class NurbsPreBasisFactoryFromDegreeElevation;
@@ -110,6 +112,8 @@ namespace Dune::IGANEW {
     friend GridFamily::LeafIntersection;
     friend GridFamily::LeafIntersectionIterator;
     friend GridFamily::LevelIntersectionIterator;
+
+
    // friend class PatchGridLevelIntersection<const PatchGrid>;
     //friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
     //friend class PatchGridLeafIntersection<const PatchGrid>;
@@ -158,8 +162,9 @@ namespace Dune::IGANEW {
      *
      * @param hostgrid The host grid wrapped by the PatchGrid
      */
+    template<typename PatchTrimData>
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
-                       const std::optional<typename Trimmer::PatchTrimData>& patchTrimData = std::nullopt)
+                       const std::optional<PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
           trimmer_(std::make_unique<Trimmer>(*this, patchTrimData))
    {
@@ -452,6 +457,8 @@ namespace Dune::IGANEW {
     }
 
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }
+
+    const auto& trimmer()const {return *trimmer_;}
 
    private:
     PatchGrid() = default;

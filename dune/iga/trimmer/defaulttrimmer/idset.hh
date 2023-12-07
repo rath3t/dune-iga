@@ -14,14 +14,14 @@ namespace Dune {
                          typename std::remove_const<GridImp>::type::Traits::GlobalIdSet::IdType> {
         typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
-        using TrimmerType= typename GridImp::TrimmerType;
+        using Trimmer= typename GridImp::Trimmer;
         // friend class GridImp::TrimmerType;
 
 
 
-        using TrimmingCurve= typename TrimmerType::TrimmingCurve;
-        using UntrimmedParameterSpaceGrid= typename TrimmerType::UntrimmedParameterSpaceGrid;
-        using HostIdType= typename TrimmerType::HostIdType;
+        // using TrimmingCurve= typename Trimmer::TrimmingCurve;
+        using UntrimmedParameterSpaceGrid= typename Trimmer::UntrimmedParameterSpaceGrid;
+        // using HostIdType= typename Trimmer::HostIdType;
 
 
 
@@ -32,7 +32,7 @@ namespace Dune {
         // PatchGridGlobalIdSet(const GridImp& g, const std::vector<TrimmingCurve>& trimmingCurves) : grid_(&g) {}
 
         //! define the type used for persistent indices
-        using IdType = typename TrimmerType::GlobalIdSetIdType;
+        using IdType = typename Trimmer::TrimmerTraits::GlobalIdSetId;
 
         //! get id of an entity
         /*
@@ -42,7 +42,7 @@ namespace Dune {
         template <int cd>
         IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
           // Return id of the host entity
-          return e.impl().hostEntity().id();
+          return e.impl().getHostEntity().id();
         }
 
         //! get id of subEntity
@@ -53,7 +53,7 @@ namespace Dune {
                      int codim) const {
           // @todo Trim, the sub indeces are wrong!!!
           //  Return sub id of the host entity
-          return e.impl().subId( i, codim);
+          return e.impl().getHostEntity().subId( i, codim);
         }
 
         /** @todo Should be private */

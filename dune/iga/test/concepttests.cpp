@@ -4,18 +4,32 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include <iostream>
 
-#include <dune/grid/concepts.hh>
-// #include <dune/iga/hierarchicpatch/hierachicpatchgridgeometry.hh>
-#include <dune/common/classname.hh>
+#include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
 
-#include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkgeometry.hh>
+#include <dune/grid/test/checkintersectionit.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/checkjacobians.hh>
+#include <dune/grid/test/gridcheck.hh>
 
-#include <dune/iga/hierarchicpatch/concepts.hh>
-#include <dune/iga/hierarchicpatch/patchgrid.hh>
+#include <dune/iga/geometrykernel/makecirculararc.hh>
+#include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
+#include <dune/iga/hierarchicpatch/gridcapabilities.hh>
+#include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/concepts.hh>
-#include <dune/iga/trimmer/defaulttrimmer/referenceelement.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+
+#include <dune/subgrid/test/common.hh>
+
 template <typename>
 struct IsDefaultReferenceElement : std::false_type {};
 
@@ -31,10 +45,10 @@ void checkConcepts() {
   using LevelGridView = typename G::LevelGridView;
   using GlobalIdSet   = typename G::GlobalIdSet;
   using IndexSet      = typename LeafGridView::IndexSet;
-  using TrimmerType   = typename G::TrimmerType;
+  using Trimmer   = typename G::Trimmer;
 
   using GridEntityReferenceType = decltype(referenceElement(GridEntity()));
-  if constexpr (TrimmerType::isAlwaysTrivial)
+  if constexpr (Trimmer::isAlwaysTrivial)
     static_assert(IsDefaultReferenceElement<GridEntityReferenceType>::value);
   else
     static_assert(not IsDefaultReferenceElement<GridEntityReferenceType>::value);
@@ -59,24 +73,27 @@ int main() {
   checkConcepts<Dune::IGANEW::PatchGrid<3, 3>>();
 
   // Check concepts with trim
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 1, Dune::IGANEW::DefaultTrim::Trimmer>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 2, Dune::IGANEW::DefaultTrim::Trimmer>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<1, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
 
-  checkConcepts<Dune::IGANEW::PatchGrid<2, 2, Dune::IGANEW::DefaultTrim::Trimmer>>();
-  checkConcepts<Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 2, Dune::IGANEW::DefaultTrim::PatchGridFamily>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::DefaultTrim::PatchGridFamily>>();
+  checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::DefaultTrim::PatchGridFamily>>();
 
-  checkConcepts<Dune::IGANEW::PatchGrid<3, 3, Dune::IGANEW::DefaultTrim::Trimmer>>();
 
-  using Grid23 = Dune::IGANEW::PatchGrid<2, 3, Dune::IGANEW::IdentityTrim::Trimmer>;
+  static_assert(not Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<1,1,double>::Trimmer>);
+  static_assert(not Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<1,2,double>::Trimmer>);
+  static_assert(not Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<1,3,double>::Trimmer>);
+  static_assert(not Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<3,3,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<2,2,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::PatchGridFamily<2,3,double>::Trimmer>);
 
-  checkConcepts<Grid23>();
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<1,1,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<1,2,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<1,3,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<2,2,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<2,3,double>::Trimmer>);
+  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::PatchGridFamily<3,3,double>::Trimmer>);
 
-  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<1>>);
-  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
-  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<1>>);
-  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::IdentityTrim::Trimmer<2>>);
-  static_assert(Dune::IGANEW::Concept::Trimmer<Dune::IGANEW::DefaultTrim::Trimmer<2>>);
+
 
   return 0;
 }

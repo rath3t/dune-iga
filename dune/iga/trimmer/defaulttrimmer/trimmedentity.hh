@@ -76,6 +76,9 @@ namespace Dune {
 
 
         auto& id() const { return id_; }
+        template <typename = void>
+requires(codim_ == 0)
+        auto& subId(int i, int codim) const { return grid_->trimmer().entityContainer_.subId(id_,i,codim); }
 
         HostParameterSpaceGridEntity getHostEntity() const {
           if(isTrimmed and codim_!=0)
@@ -106,7 +109,7 @@ namespace Dune {
         template <typename T = void>
         requires(codim_ == 0) [[nodiscard]] bool hasFather() const {
           if constexpr (codim_ == 0)
-            if (id_.elementState == GlobalIdSetIdType::HostOrTrimmed::host) return hostEntity_.hasFather();
+            if (id_.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.hasFather();
           //@todo Trim this is crasy
           DUNE_THROW(NotImplemented, " hasFather");
 
@@ -129,7 +132,7 @@ namespace Dune {
         [[nodiscard]] PartitionType partitionType() const {
           //@todo Trim this is crasy
           if constexpr (codim_ == 0)
-            if (id_.elementState == GlobalIdSetIdType::HostOrTrimmed::host) return hostEntity_.partitionType();
+            if (id_.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.partitionType();
           DUNE_THROW(NotImplemented, "partitionType not implemented for codim!=0 objects");
         }
 
@@ -139,7 +142,7 @@ namespace Dune {
           // if(trimData_)
           //   return trimData_.template geometry<codim_>(localId_);
           // if constexpr (codim_==0) {
-          //   if(id_.elementState==GlobalIdSetIdType::HostOrTrimmed::host)
+          //   if(id_.elementState==GlobalIdSetIdType::ElementState::full)
           //     return hostEntity_.geometry();
           //   else {
           //     DUNE_THROW(NotImplemented,"geometry not implemented for trimmed codim==0 objects");
@@ -160,7 +163,7 @@ namespace Dune {
           // if(trimData_)
           //   return trimData_. subEntities(codim,localId_);
           if constexpr (codim_ == 0) {
-            if (id_.elementState == GlobalIdSetIdType::HostOrTrimmed::host)
+            if (id_.elementState == GlobalIdSetIdType::ElementState::full)
               return hostEntity_.subEntities(codim);
             else {
               DUNE_THROW(NotImplemented, "subEntities not implemented for codim==0 objects");

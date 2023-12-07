@@ -1,7 +1,7 @@
 
 #pragma once
 #include <concepts>
-#include <optional>
+
 namespace Dune::IGANEW::Concept {
 
   template <typename T>
@@ -26,7 +26,7 @@ namespace Dune::IGANEW::Concept {
     typename T::ElementTrimData;
     typename T::PatchTrimData;
 
-    { T() } -> std::convertible_to<T>;  ///< Check for the presence of a default constructor
+     T(); ///< Check for the presence of a default constructor
 
     { T::template isLocalGeometryLinear<0> } -> std::convertible_to<bool>;
     { T::isAlwaysTrivial } -> std::convertible_to<bool>;
