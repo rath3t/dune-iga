@@ -33,7 +33,7 @@ namespace Dune::IGANEW::DefaultTrim {
     constexpr static int dim   = GridImp::dimension;
     constexpr static int mydim = GridImp::dimension - 1;
 
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimworld = GridImp::dimension;
     using Trimmer             = typename GridImp::Trimmer;
 
 
@@ -70,20 +70,21 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! returns the inside entity
     ParameterSpaceGridEntity inside() const {
-      DUNE_THROW(NotImplemented, "inside not implemented");
+      // DUNE_THROW(NotImplemented, "inside not implemented");
       return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.inside(),{});
     }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     ParameterSpaceGridEntity outside() const {
-      DUNE_THROW(NotImplemented, "outside not implemented");
+      // DUNE_THROW(NotImplemented, "outside not implemented");
       return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.outside(),{});
 
     }
 
     //! return true if intersection is with boundary.
     [[nodiscard]] bool boundary() const {
+      return hostIntersection_.boundary();
       DUNE_THROW(NotImplemented, "boundary not implemented");
     }
 
@@ -99,24 +100,29 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return true if across the edge an neighbor on this level exists
     bool neighbor() const {
+      return hostIntersection_.neighbor();
       DUNE_THROW(NotImplemented, "neighbor not implemented");
       return {};
     }
 
     //! return the boundary segment index
     size_t boundarySegmentIndex() const {
+      return hostIntersection_.boundarySegmentIndex();
       DUNE_THROW(NotImplemented, "boundarySegmentIndex not implemented");
       return {};
     }
 
     //! Return true if this is a conforming intersection
     bool conforming() const {
+      return hostIntersection_.conforming();
       DUNE_THROW(NotImplemented, "conforming not implemented");
       return {};
     }
 
     //! Geometry type of an intersection
     GeometryType type() const {
+      return hostIntersection_.type();
+
       DUNE_THROW(NotImplemented, "type not implemented");
       return {};
     }
@@ -124,6 +130,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! @todo this function should return how this inersection resides in the inside host element.
     //! Therefore, this function should provide this intersection and maps to the 0..1 space
     LocalGeometry geometryInInside() const {
+      return hostIntersection_.geometryInInside();
       DUNE_THROW(NotImplemented, "geometryInInside not implemented");
 
       return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
@@ -131,6 +138,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! Same as above
     LocalGeometry geometryInOutside() const {
+      return hostIntersection_.geometryInOutside();
       DUNE_THROW(NotImplemented, "geometryInOutside not implemented");
 
       return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
@@ -140,6 +148,7 @@ namespace Dune::IGANEW::DefaultTrim {
     using TrimmedParameterSpaceGeometry= typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
 
     TrimmedParameterSpaceGeometry geometry() const {
+      return hostIntersection_.geometry();
       // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
 
       return {};
@@ -147,30 +156,38 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! local number of codim 1 entity in self where intersection is contained in
     int indexInInside() const {
+      return hostIntersection_.indexInInside();
       DUNE_THROW(NotImplemented, "indexInInside not implemented");
     }
 
     //! local number of codim 1 entity in neighbor where intersection is contained
     int indexInOutside() const {
+      return hostIntersection_.indexInOutside();
+
       DUNE_THROW(NotImplemented, "indexInOutside not implemented");
     }
 
     //! return outer normal
-    FieldVector<ctype, GridImp::dimensionworld> outerNormal(const LocalCoordinate& local) const {
+    FieldVector<ctype, dim> outerNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.outerNormal(local);
+
       DUNE_THROW(NotImplemented, "outerNormal not implemented");
 
       return {};
     }
 
     //! return outer normal multiplied by the integration element
-    FieldVector<ctype, GridImp::dimensionworld> integrationOuterNormal(const LocalCoordinate& local) const {
+    FieldVector<ctype, dim> integrationOuterNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.integrationOuterNormal(local);
       DUNE_THROW(NotImplemented, "integrationOuterNormal not implemented");
 
       return {};
     }
 
     //! return unit outer normal
-    FieldVector<ctype, GridImp::dimensionworld> unitOuterNormal(const LocalCoordinate& local) const {
+    FieldVector<ctype, dim> unitOuterNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.unitOuterNormal(local);
+
       DUNE_THROW(NotImplemented, "unitOuterNormal not implemented");
 
       return {};
@@ -194,7 +211,7 @@ namespace Dune::IGANEW::DefaultTrim {
     constexpr static int dim   = GridImp::dimension;
     constexpr static int mydim = GridImp::dimension - 1;
 
-    constexpr static int dimworld = GridImp::dimensionworld;
+    constexpr static int dimworld = dim;
 
     using Trimmer = typename GridImp::Trimmer;
 
@@ -237,7 +254,8 @@ namespace Dune::IGANEW::DefaultTrim {
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     [[nodiscard]] ParameterSpaceGridEntity inside() const {
-      DUNE_THROW(NotImplemented, "inside not implemented");
+
+      // DUNE_THROW(NotImplemented, "inside not implemented");
 
       return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.inside(),{});
     }
@@ -245,7 +263,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     [[nodiscard]] ParameterSpaceGridEntity outside() const {
-      DUNE_THROW(NotImplemented, "outside not implemented");
+      // DUNE_THROW(NotImplemented, "outside not implemented");
 
       return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.outside(),{});
     }
@@ -253,6 +271,8 @@ namespace Dune::IGANEW::DefaultTrim {
     /** @brief return true if intersection is with boundary.
      */
     [[nodiscard]] bool boundary() const {
+      return hostIntersection_.boundary();
+
       DUNE_THROW(NotImplemented, "boundary not implemented");
 
       return {};
@@ -264,6 +284,7 @@ namespace Dune::IGANEW::DefaultTrim {
      *     intersection's geometry.
      *       It is scaled to have unit length. */
     NormalVector centerUnitOuterNormal() const {
+      return hostIntersection_.centerUnitOuterNormal();
       DUNE_THROW(NotImplemented, "centerUnitOuterNormal not implemented");
 
       return {};
@@ -278,6 +299,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return the boundary segment index
     [[nodiscard]] size_t boundarySegmentIndex() const {
+      return hostIntersection_.boundarySegmentIndex();
       DUNE_THROW(NotImplemented, "boundarySegmentIndex not implemented");
 
       return {};
@@ -286,12 +308,13 @@ namespace Dune::IGANEW::DefaultTrim {
     //! Return true if this is a conforming intersection
     [[nodiscard]] bool conforming() const {
       DUNE_THROW(NotImplemented, "conforming not implemented");
-
+      return hostIntersection_.conforming();
       return {};
     }
 
     //! Geometry type of an intersection
     [[nodiscard]] GeometryType type() const {
+      return hostIntersection_.type();
       DUNE_THROW(NotImplemented, "type not implemented");
 
       return {};
@@ -302,6 +325,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
     [[nodiscard]] LocalGeometry geometryInInside() const {
+      return hostIntersection_.geometryInInside();
       DUNE_THROW(NotImplemented, "geometryInInside not implemented");
 
       return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
@@ -310,6 +334,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     [[nodiscard]] LocalGeometry geometryInOutside() const {
+      return hostIntersection_.geometryInOutside();
       DUNE_THROW(NotImplemented, "geometryInOutside not implemented");
 
       return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
@@ -319,6 +344,7 @@ namespace Dune::IGANEW::DefaultTrim {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     using TrimmedParameterSpaceGeometry= typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
     [[nodiscard]] TrimmedParameterSpaceGeometry geometry() const {
+      return hostIntersection_.geometry();
       DUNE_THROW(NotImplemented, "geometry not implemented");
 
       return {};
@@ -326,6 +352,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! local number of codim 1 entity in self where intersection is contained in
     [[nodiscard]] int indexInInside() const {
+      return hostIntersection_.indexInInside();
       DUNE_THROW(NotImplemented, "indexInInside not implemented");
 
       return {};
@@ -333,6 +360,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! local number of codim 1 entity in neighbor where intersection is contained
     [[nodiscard]] int indexInOutside() const {
+      return hostIntersection_.indexInOutside();
       DUNE_THROW(NotImplemented, "indexInOutside not implemented");
 
       return {};
@@ -340,6 +368,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return outer normal
     [[nodiscard]] FieldVector<ctype, dimworld> outerNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.outerNormal(local);
       DUNE_THROW(NotImplemented, "outerNormal not implemented");
 
       return {};
@@ -347,6 +376,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return outer normal multiplied by the integration element
     [[nodiscard]] FieldVector<ctype, dimworld> integrationOuterNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.integrationOuterNormal(local);
       DUNE_THROW(NotImplemented, "integrationOuterNormal not implemented");
 
       return {};
@@ -354,6 +384,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return unit outer normal
     [[nodiscard]] FieldVector<ctype, dimworld> unitOuterNormal(const LocalCoordinate& local) const {
+      return hostIntersection_.integrationOuterNormal(local);
       DUNE_THROW(NotImplemented, "unitOuterNormal not implemented");
 
       return {};
