@@ -65,15 +65,13 @@ namespace Dune::IGANEW {
     // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
 
     // equivalent entity in the host grid
-    using Trimmer = typename GridImp::Trimmer;
+    using Trimmer                  = typename GridImp::Trimmer;
     using ParameterSpaceGridEntity = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity;
 
     //@todo Trimmer should also provide a
 
-
    public:
     typedef typename GridImp::ctype ctype;
-
 
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
 
@@ -132,30 +130,21 @@ namespace Dune::IGANEW {
      */
     unsigned int subEntities(unsigned int cc) const { return hostEntity_.subEntities(cc); }
 
-      // using ParameterSpaceGeometry = typename Trimmer::template LocalParameterSpaceGeometry<codim>;
-
+    // using ParameterSpaceGeometry = typename Trimmer::template LocalParameterSpaceGeometry<codim>;
 
     //! geometry of this entity
     Geometry geometry() const {
-
       auto geo = typename Geometry::Implementation(
           hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, Trimmer>());
       return Geometry(geo);
     }
 
-
-
-
-    const auto& getHostEntity()const {
-
-      return hostEntity_;
-    }
+    const auto& getHostEntity() const { return hostEntity_; }
 
     // const auto& getHostEntity()const {
     //     return hostEntity_;
     // }
-  private:
-
+   private:
     ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
   };
@@ -175,7 +164,6 @@ namespace Dune::IGANEW {
   template <int dim, class GridImp>
   class PatchGridEntity<0, dim, GridImp> : public EntityDefaultImplementation<0, dim, GridImp, PatchGridEntity> {
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
-
 
    public:
     typedef typename GridImp::ctype ctype;
@@ -201,10 +189,10 @@ namespace Dune::IGANEW {
     //! Iterator over descendants of the entity
     typedef typename GridImp::GridFamily::HierarchicIterator HierarchicIterator;
 
-
     //! The type of the EntitySeed interface class
     typedef typename GridImp::template Codim<0>::EntitySeed EntitySeed;
-    typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntitySeed ParameterSpaceGridEntitySeed;
+    typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntitySeed
+        ParameterSpaceGridEntitySeed;
     // typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::EntitySeedImpl EntitySeedImpl;
 
     PatchGridEntity() : patchGrid_(nullptr) {}
@@ -240,7 +228,7 @@ namespace Dune::IGANEW {
       return *this;
     }
 
-    [[nodiscard]] bool equals(const PatchGridEntity& other) const { return hostEntity_==other.hostEntity_; }
+    [[nodiscard]] bool equals(const PatchGridEntity& other) const { return hostEntity_ == other.hostEntity_; }
 
     //! returns true if father entity exists
     [[nodiscard]] bool hasFather() const { return hostEntity_.hasFather(); }
@@ -257,10 +245,9 @@ namespace Dune::IGANEW {
     //! Geometry of this entity
     [[nodiscard]] Geometry geometry() const {
       //@todo Trim not hostEntity_
-      static_assert(
-          std::is_same_v<
-              decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>()),
-              typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, Trimmer>>);
+      static_assert(std::is_same_v<
+                    decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>()),
+                    typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, Trimmer>>);
       // auto referenceEle= referenceElement(*this);
       auto geo = typename Geometry::Implementation(
           hostEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>());
@@ -277,32 +264,21 @@ namespace Dune::IGANEW {
     template <int cc>
     [[nodiscard]] typename GridImp::template Codim<cc>::Entity subEntity(int i) const {
       //@todo how to handout vertices and edges?
-      //trimData().subEntity(int i)
+      // trimData().subEntity(int i)
       return PatchGridEntity<cc, dim, GridImp>(patchGrid_, hostEntity_.template subEntity<cc>(i));
     }
 
     //! First level intersection
-    [[nodiscard]] LevelIntersectionIterator ilevelbegin() const {
-      return patchGrid_->trimmer_->ilevelbegin(*this);
-    }
+    [[nodiscard]] LevelIntersectionIterator ilevelbegin() const { return patchGrid_->trimmer_->ilevelbegin(*this); }
 
     //! Reference to one past the last neighbor
-    LevelIntersectionIterator ilevelend() const {
-      return patchGrid_->trimmer_->ilevelend(*this);
-
-    }
+    LevelIntersectionIterator ilevelend() const { return patchGrid_->trimmer_->ilevelend(*this); }
 
     //! First leaf intersection
-    LeafIntersectionIterator ileafbegin() const {
-      return patchGrid_->trimmer_->ileafbegin(*this);
-
-    }
+    LeafIntersectionIterator ileafbegin() const { return patchGrid_->trimmer_->ileafbegin(*this); }
 
     //! Reference to one past the last leaf intersection
-    LeafIntersectionIterator ileafend() const {
-      return patchGrid_->trimmer_->ileafend(*this);
-
-    }
+    LeafIntersectionIterator ileafend() const { return patchGrid_->trimmer_->ileafend(*this); }
 
     //! returns true if Entity has NO children
     bool isLeaf() const { return getHostEntity().isLeaf(); }
@@ -330,14 +306,10 @@ namespace Dune::IGANEW {
      * This is provided for sparsely stored nested unstructured meshes.
      * Returns iterator to first son.
      */
-    HierarchicIterator hbegin(int maxLevel) const {
-      return HierarchicIterator(patchGrid_, *this, maxLevel);
-    }
+    HierarchicIterator hbegin(int maxLevel) const { return HierarchicIterator(patchGrid_, *this, maxLevel); }
 
     //! Returns iterator to one past the last son
-    HierarchicIterator hend(int maxLevel) const {
-      return HierarchicIterator(patchGrid_, *this, maxLevel, true);
-    }
+    HierarchicIterator hend(int maxLevel) const { return HierarchicIterator(patchGrid_, *this, maxLevel, true); }
 
     //! @todo Please doc me !
     bool wasRefined() const {
@@ -363,24 +335,22 @@ namespace Dune::IGANEW {
     //   else
     //   return hostEntity_;
     // }
-    const auto& getHostEntity()const {
-      return hostEntity_;
-    }
+    const auto& getHostEntity() const { return hostEntity_; }
 
-  private:
+   private:
     ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
 
   };  // end of PatchGridEntity codim = 0
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename GridFamily,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamily,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
       const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, GridFamily, ScalarType>>& entity) {
-    return GridFamily<dim,dimworld, ScalarType>::Trimmer::referenceElement(entity);
+    return GridFamily<dim, dimworld, ScalarType>::Trimmer::referenceElement(entity);
   }
 
-  template <int cd, int dim, int dimworld, typename ScalarType, template <int,int, typename> typename GridFamily,
+  template <int cd, int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamily,
             template <int, int, class> class PatchGridEntity>
   auto referenceElement(
       const Entity<cd, dim, const PatchGrid<dim, dimworld, GridFamily, ScalarType>, PatchGridEntity>& entity) {

@@ -25,6 +25,7 @@ namespace Dune::IGANEW::DefaultTrim {
     typedef
         typename GridImp::ParameterSpaceGrid::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
     typedef typename GridImp::Trimmer::template Codim<0>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
+    using Trimmer = typename GridImp::Trimmer;
 
    public:
     constexpr static int codimension = 0;
@@ -33,25 +34,36 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! the default Constructor
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
-        : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel)) {}
+        : elementInfo_{startEntity.impl().getHostEntity().entityInfo_},
+          parameterSpaceGrid_(parameterSpaceGrid),
+          hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel)) {
+      assert(startEntity.level() + 1 == maxLevel && "Only direct descendants are implemented");
+    }
 
     //! @todo Please doc me !
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                          [[maybe_unused]] bool endDummy)
-        : parameterSpaceGrid_(parameterSpaceGrid),
-          hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)) {}
+        : elementInfo_{},
+          parameterSpaceGrid_(parameterSpaceGrid),
+          hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)) {
+      assert(startEntity.level() + 1 == maxLevel && "Only direct descendants are implemented");
+    }
 
     //! @todo Please doc me !
-    void increment() { ++hostHierarchicIterator_; }
+    void increment() {
+      ++hostHierarchicIterator_;
+      ++descendantLocalIndex_;
+    }
 
     //! dereferencing
     Entity dereference() const {
-           auto parameterSpaceEntity= ParameterSpaceGridEntity{parameterSpaceGrid_, *hostHierarchicIterator_,{}};
-        auto realEntity= typename Entity::Implementation{parameterSpaceGrid_,std::move(parameterSpaceEntity)};
-        return Entity{std::move(realEntity)};
-
- }
+      auto parameterSpaceEntity
+          = ParameterSpaceGridEntity{parameterSpaceGrid_, *hostHierarchicIterator_,
+                                     parameterSpaceGrid_->trimmer().entityContainer_.idToElementInfoMap.at(
+                                         elementInfo_.decendantIds[descendantLocalIndex_])};
+      auto realEntity = typename Entity::Implementation{parameterSpaceGrid_, std::move(parameterSpaceEntity)};
+      return Entity{std::move(realEntity)};
+    }
 
     //! equality
     bool equals(const PatchGridHierarchicIterator& i) const {
@@ -59,9 +71,11 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
    private:
+    using ElementInfo = typename Trimmer::TrimmerTraits::ElementInfo;
+    ElementInfo elementInfo_;
     const GridImp* parameterSpaceGrid_;
-
+    unsigned int descendantLocalIndex_{};
     HostGridHierarchicIterator hostHierarchicIterator_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::DefaultTrim

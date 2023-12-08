@@ -13,10 +13,12 @@ namespace Dune {
         // [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
         using LocalCoordinate = FieldVector<ctype, mydimension>;
 
-        using Trimmer                      = typename GridImp::Trimmer;
-        using GlobalIdSetIdType            = typename Trimmer::TrimmerTraits::GlobalIdSetId;
-        using ElementTrimData              = typename Trimmer::ElementTrimData;
-        using HostParameterSpaceGridEntity = typename Trimmer::TrimmerTraits::template Codim<codim_>::HostParameterSpaceGridEntity;
+        using Trimmer           = typename GridImp::Trimmer;
+        using GlobalIdSetIdType = typename Trimmer::TrimmerTraits::GlobalIdSetId;
+        using EntityInfo        = typename Trimmer::TrimmerTraits::template Codim<codim_>::EntityInfo;
+        using ElementTrimData   = typename Trimmer::ElementTrimData;
+        using HostParameterSpaceGridEntity =
+            typename Trimmer::TrimmerTraits::template Codim<codim_>::HostParameterSpaceGridEntity;
         using UntrimmedParameterSpaceGeometry =
             typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::UntrimmedParameterSpaceGeometry;
         using TrimmedParameterSpaceGeometry =
@@ -36,80 +38,76 @@ namespace Dune {
         TrimmedParameterSpaceGridEntity& operator=(const TrimmedParameterSpaceGridEntity& other) = default;
         TrimmedParameterSpaceGridEntity& operator=(TrimmedParameterSpaceGridEntity&& other) noexcept = default;
 
-        //Entity with codim 0 but trimmed thus needs trimdata
+        // Entity with codim 0 but trimmed thus needs trimdata
         template <typename = void>
         requires(codim_ == 0)
             TrimmedParameterSpaceGridEntity(const GridImp* grid, const HostParameterSpaceGridEntity& untrimmedElement,
-                                            GlobalIdSetIdType id,
-                                            const ElementTrimData& trimData
-                                           )
+                                            EntityInfo entInfo, const ElementTrimData& trimData)
             : grid_{grid},
               hostEntity_{untrimmedElement},
               trimmedlocalGeometry_{},
-              id_{id},
-              trimData_{trimData},
-              localId_{0} ,
-        lvl_{untrimmedElement.level()}{
+              entityInfo_{entInfo},
+              trimData_{trimData} {
+          assert(entityInfo_.lvl == untrimmedElement.level());
           isTrimmed = true;
           if (isTrimmed) trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
         }
 
-        //Entity untrimmed does not need trimdata but untrimmedElement
-        TrimmedParameterSpaceGridEntity(const GridImp* grid,const HostParameterSpaceGridEntity& untrimmedElement, GlobalIdSetIdType id
-                                                              )
-            : grid_{grid}, hostEntity_{untrimmedElement}, id_{id}, localId_{0}, lvl_{untrimmedElement.level()} {
+        // Entity untrimmed does not need trimdata but untrimmedElement
+        TrimmedParameterSpaceGridEntity(const GridImp* grid, const HostParameterSpaceGridEntity& untrimmedElement,
+                                        EntityInfo entInfo)
+            : grid_{grid}, hostEntity_{untrimmedElement}, entityInfo_{entInfo} {
+          assert(entityInfo_.lvl == untrimmedElement.level());
           isTrimmed = false;
 
           // DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
         }
 
-        //Entity with codim!=0 but trimmed does need trimdata but no untrimmedElement
+        // Entity with codim!=0 but trimmed does need trimdata but no untrimmedElement
         template <typename = void>
-   requires(codim_ != 0)
-        TrimmedParameterSpaceGridEntity(const GridImp* grid, GlobalIdSetIdType id,const ElementTrimData& trimData, int lvl
-                                                              )
-            : grid_{grid}, trimData_{trimData}, id_{id}, localId_{0}, lvl_{lvl} {
-          isTrimmed = true;
+        requires(codim_ != 0)
+            TrimmedParameterSpaceGridEntity(const GridImp* grid, const ElementTrimData& trimData, EntityInfo entInfo)
+            : grid_{grid}, trimData_{trimData}, entityInfo_{entInfo} {
+          isTrimmed             = true;
           trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
           // DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
         }
 
-
-        auto& id() const { return id_; }
+        auto& id() const { return entityInfo_.id; }
         template <typename = void>
-requires(codim_ == 0)
-        auto& subId(int i, int codim) const { return grid_->trimmer().entityContainer_.subId(id_,i,codim); }
+        requires(codim_ == 0) auto& subId(int i, int codim) const {
+          return grid_->trimmer().entityContainer_.subId(entityInfo_.id, i, codim);
+        }
 
         HostParameterSpaceGridEntity getHostEntity() const {
-          if(isTrimmed and codim_!=0)
-            DUNE_THROW(NotImplemented,"getHostEntity");
+          if (isTrimmed and codim_ != 0)
+            DUNE_THROW(NotImplemented, "getHostEntity");
           else
-          return hostEntity_;
+            return hostEntity_;
         }
 
        private:
-        int lvl_;
+        EntityInfo entityInfo_;
         struct Empty {};
         HostParameterSpaceGridEntity hostEntity_;
         // The optional is only here since geometries are not default constructable
         std::optional<TrimmedParameterSpaceGeometry> trimmedlocalGeometry_;
-        GlobalIdSetIdType id_;
+
         std::optional<std::reference_wrapper<const ElementTrimData>> trimData_;
-        size_t localId_;
 
        public:
         [[nodiscard]] bool operator==(const TrimmedParameterSpaceGridEntity& other) const {
           if constexpr (codim_ == 0)
             return hostEntity_ == other.hostEntity_;
           else
-            return id_ == other.id_;
+            return entityInfo_.id == other.entityInfo_.id;
         }
 
         //! returns true if father entity exists
         template <typename T = void>
         requires(codim_ == 0) [[nodiscard]] bool hasFather() const {
           if constexpr (codim_ == 0)
-            if (id_.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.hasFather();
+            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.hasFather();
           //@todo Trim this is crasy
           DUNE_THROW(NotImplemented, " hasFather");
 
@@ -124,15 +122,14 @@ requires(codim_ == 0)
         }
 
         //! Level of this element
-        [[nodiscard]] int level() const {
-          return lvl_;
-        }
+        [[nodiscard]] int level() const { return entityInfo_.lvl; }
 
         /** @brief The partition type for parallel computing */
         [[nodiscard]] PartitionType partitionType() const {
           //@todo Trim this is crasy
           if constexpr (codim_ == 0)
-            if (id_.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.partitionType();
+            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full)
+              return hostEntity_.partitionType();
           DUNE_THROW(NotImplemented, "partitionType not implemented for codim!=0 objects");
         }
 
@@ -150,7 +147,7 @@ requires(codim_ == 0)
           //     return localGeometry_.value();
           //   }
           // }else {
-          if  (not isTrimmed) return hostEntity_.geometry();
+          if (not isTrimmed) return hostEntity_.geometry();
           DUNE_THROW(NotImplemented, "geometry not implemented for trimmed codim!=0 objects");
           return trimmedlocalGeometry_.value();
           // }
@@ -163,7 +160,7 @@ requires(codim_ == 0)
           // if(trimData_)
           //   return trimData_. subEntities(codim,localId_);
           if constexpr (codim_ == 0) {
-            if (id_.elementState == GlobalIdSetIdType::ElementState::full)
+            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full)
               return hostEntity_.subEntities(codim);
             else {
               DUNE_THROW(NotImplemented, "subEntities not implemented for codim==0 objects");
@@ -184,22 +181,31 @@ requires(codim_ == 0)
           // if(trimData_)
           //   return trimData_.template subEntity<codim_,cc>(i,localId_);
           // auto id = grid_->entityContainer().subId(id_,i,cc);
-          auto id = id_;
-          if constexpr (cc==0)
-            {
-            if (isTrimmed)
-              return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_, id,ElementTrimData()); // trimmed element with trimdata
-            else {
-              return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_, id); // untrimmed element without trimdata
-              }
-            } else if ( not isTrimmed) {
-              return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_.template subEntity<cc>(i), id); // untrimmed subentity without trimdata
-            }else
-            {
-              DUNE_THROW(Dune::NotImplemented, "trimmed subEntity can not be requested");
-              return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, id, ElementTrimData(),lvl_); // Trimmed subentity without trimdata
-
-          }
+          if constexpr (cc == 0) return *this;
+          return grid_->trimmer().entityContainer_.template entity<cc>(subId(i, cc));
+          // {
+          //   if constexpr (cc==0)
+          //   {
+          //     if (isTrimmed)
+          //       return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_,
+          //       entityInfo_,ElementTrimData()); // trimmed element with trimdata
+          //     else {
+          //       return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_, entityInfo_); //
+          //       untrimmed element without trimdata
+          //     }
+          //   } else if ( not isTrimmed) {
+          //     return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_, hostEntity_.template
+          //     subEntity<cc>(i), grid_->trimmer().entityContainer_.idToSubEntityInfoMap[cc+1].at( subId(i,cc))); //
+          //     untrimmed subentity without trimdata
+          //   }else
+          //   {
+          //     DUNE_THROW(Dune::NotImplemented, "trimmed subEntity can not be requested");
+          //     return TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp>(grid_,
+          //     ElementTrimData(),grid_->trimmer().entityContainer_.idToSubEntityInfoMap[cc+1].at( subId(i,cc))); //
+          //     Trimmed subentity without trimdata
+          //
+          //   }
+          // }
         }
 
         //! First level intersection
@@ -230,7 +236,10 @@ requires(codim_ == 0)
         //! Assumes that meshes are nested.
         template <typename = void>
         requires(codim_ == 0) decltype(auto) father() const {
-          return TrimmedParameterSpaceGridEntity(grid_, hostEntity_.father(), {});
+          assert(entityInfo_.fatherId.has_value());
+          return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value());
+          // return TrimmedParameterSpaceGridEntity(grid_, hostEntity_.father(),
+          // grid_->trimmer().entityContainer_.idToElementInfoMap.at( entityInfo_.fatherId.value()));
         }
 
         /** @brief Location of this element relative to the reference element element of the father.

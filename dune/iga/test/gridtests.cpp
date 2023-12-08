@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
+#define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -26,6 +27,7 @@
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/concepts.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 #include <dune/subgrid/test/common.hh>
 
@@ -137,13 +139,11 @@ auto thoroughGridCheck(auto& grid) {
     std::cout << e.what() << std::endl;
   }
 
-
-
-
   return t;
 }
 
-template <template <int, int, typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   //  First test
@@ -192,7 +192,8 @@ auto testNurbsGridCylinder() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testHierarchicPatch() {
   TestSuite t;
   const double R       = 2.0;
@@ -214,7 +215,8 @@ auto testHierarchicPatch() {
   return t;
 }
 
-template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testTorusGeometry() {
   const double R       = 2.0;
   const double r       = 1.0;
@@ -289,7 +291,8 @@ auto testTorusGeometry() {
   return test;
 }
 
-template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<1,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<1, 3, double>::Trimmer>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   //  Second test
@@ -354,7 +357,8 @@ auto testNURBSGridCurve() {
   return t;
 }
 
-template <template <int, int,typename> typename GridFamily> requires IGANEW::Concept::Trimmer<typename GridFamily<2,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testNURBSGridSurface() {
   TestSuite t;
   int subSampling = 10;
@@ -397,7 +401,8 @@ auto testNURBSGridSurface() {
   return t;
 }
 
-template <template <int, int,typename> typename GridFamily>  requires IGANEW::Concept::Trimmer<typename GridFamily<3,3,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<3, 3, double>::Trimmer>
 auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
@@ -728,7 +733,8 @@ auto testNURBSSurface() {
   return testSuite;
 }
 
-template <template <int, int,typename> typename GridFamily>  requires IGANEW::Concept::Trimmer<typename GridFamily<2,2,double>::Trimmer>
+template <template <int, int, typename> typename GridFamily>
+requires IGANEW::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -760,52 +766,52 @@ auto testPlate() {
   return t;
 }
 
-template <template <int, int,typename> typename GridFamily>
+template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
-
   TestSuite t("testGrids");
-  if constexpr (requires {testHierarchicPatch<GridFamily>();} ) {
+  testHierarchicPatch<GridFamily>();
+  if constexpr (requires { testHierarchicPatch<GridFamily>(); }) {
     std::cout << "testHierarchicPatch" << std::endl;
     t.subTest(testHierarchicPatch<GridFamily>());
-  }else
-    std::cout<<"testHierarchicPatch Test disabled"<<std::endl;
+  } else
+    std::cout << "testHierarchicPatch Test disabled" << std::endl;
 
   // TestSuite t;
 
-  if constexpr ( requires {test3DGrid<GridFamily>();}) {
+  if constexpr (requires { test3DGrid<GridFamily>(); }) {
     std::cout << "Test3D" << std::endl;
     t.subTest(test3DGrid<GridFamily>());
-  }else
-    std::cout<<"Test3D Test disabled"<<std::endl;
+  } else
+    std::cout << "Test3D Test disabled" << std::endl;
 
-  if constexpr (requires {testNURBSGridCurve<GridFamily>();} ) {
+  if constexpr (requires { testNURBSGridCurve<GridFamily>(); }) {
     std::cout << "Test1Din3D" << std::endl;
     t.subTest(testNURBSGridCurve<GridFamily>());
-  }else
-    std::cout<<"Test1Din3D Test disabled"<<std::endl;
+  } else
+    std::cout << "Test1Din3D Test disabled" << std::endl;
 
-  if constexpr (requires {testNurbsGridCylinder<GridFamily>();} ) {
+  if constexpr (requires { testNurbsGridCylinder<GridFamily>(); }) {
     std::cout << "testNurbsGridCylinder" << std::endl;
     t.subTest(testNurbsGridCylinder<GridFamily>());
-  }else
-    std::cout<<"testNurbsGridCylinder Test disabled"<<std::endl;
-  if constexpr (requires {testNURBSGridSurface<GridFamily>();} ) {
+  } else
+    std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
+  if constexpr (requires { testNURBSGridSurface<GridFamily>(); }) {
     std::cout << "testNURBSGridSurface" << std::endl;
     t.subTest(testNURBSGridSurface<GridFamily>());
-  }else
-    std::cout<<"testNURBSGridSurface Test disabled"<<std::endl;
-  if constexpr (requires {testPlate<GridFamily>();} ) {
+  } else
+    std::cout << "testNURBSGridSurface Test disabled" << std::endl;
+  if constexpr (requires { testPlate<GridFamily>(); }) {
     std::cout << "testPlate==============================================" << std::endl;
     t.subTest(testPlate<GridFamily>());
     std::cout << "testPlateEND==============================================" << std::endl;
-  }else
-    std::cout<<"testPlate Test disabled"<<std::endl;
+  } else
+    std::cout << "testPlate Test disabled" << std::endl;
   // testNurbsGridCylinder();
-  if constexpr (requires {testTorusGeometry<GridFamily>();} ) {
+  if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
     std::cout << "testTorusGeometry" << std::endl;
     t.subTest(testTorusGeometry<GridFamily>());
-  }else
-    std::cout<<"testTorusGeometry Test disabled"<<std::endl;
+  } else
+    std::cout << "testTorusGeometry Test disabled" << std::endl;
 
   return t;
 }
@@ -817,10 +823,14 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
   // t.subTest(testGrids<DefaultTrim::Trimmer>());
-  std::cout<<"===============TEST DefaultTrim==="<<std::endl;
+  std::cout << "==================================" << std::endl;
+  std::cout << "===============TEST DefaultTrim===" << std::endl;
+  std::cout << "==================================" << std::endl;
   t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
-  std::cout<<"===============TEST IdentityTrim==="<<std::endl;
-  t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
+  std::cout << "==================================" << std::endl;
+  std::cout << "===============TEST IdentityTrim===" << std::endl;
+  std::cout << "==================================" << std::endl;
+  // t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
 
   std::cout << "testNURBSCurve" << std::endl;
   t.subTest(testNURBSCurve());

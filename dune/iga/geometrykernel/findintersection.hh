@@ -7,11 +7,11 @@ namespace Dune::IGANEW {
 
   template <typename GeoCurve, typename ScalarType, int dim>
   auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
-                                    const FieldVector<ScalarType, dim>& dir,  FieldVector<ScalarType, dim> tParameter,
+                                    const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, dim> tParameter,
                                     ScalarType tol = 1e-10) {
     struct Line {
       FieldVector<ScalarType, dim> operator()(ScalarType t) { return pos + t * dir; }
-     FieldVector<ScalarType, dim> jacobian( ) { return dir; }
+      FieldVector<ScalarType, dim> jacobian() { return dir; }
 
       const FieldVector<ScalarType, dim>& pos;
       const FieldVector<ScalarType, dim>& dir;
@@ -19,11 +19,11 @@ namespace Dune::IGANEW {
 
     auto line = Line({pos, dir});
 
-    bool sucess       = false;
+    bool sucess             = false;
     const int maxIterations = 1000;
     FieldVector<ScalarType, 2> curvePoint;
 
-    const FieldVector lineDerivative        = line.jacobian();
+    const FieldVector lineDerivative = line.jacobian();
     for (int iter = 0; iter < maxIterations; ++iter) {
       curvePoint                              = geoCurve.global(tParameter[0]);
       const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
@@ -55,4 +55,4 @@ namespace Dune::IGANEW {
     if (not domain[0].checkInside(tParameter[0])) sucess = false;
     return std::make_tuple(sucess, tParameter, curvePoint);
   }
-}  // namespaceIGANEW
+}  // namespace Dune::IGANEW

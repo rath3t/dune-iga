@@ -4,7 +4,6 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-
 /** \file
  * @brief The TrimmedPatchGridLeafIntersection and PatchGridLevelIntersection classes
  */
@@ -25,23 +24,20 @@ namespace Dune::IGANEW::Trim {
    */
   template <typename TrimmerType_, class... Implementations>
   class IntersectionVariant {
-
     using ctype                         = std::common_type_t<typename Implementations::ctype...>;
     using FirstElement                  = std::tuple_element_t<0, std::tuple<Implementations...>>;
     static constexpr int mydimension    = FirstElement::mydimension;
     static constexpr int coorddimension = FirstElement::coorddimension;
 
-    using LocalCoordinate = FieldVector<ctype,mydimension>;
-
+    using LocalCoordinate = FieldVector<ctype, mydimension>;
 
    public:
-
     auto visit(auto&& lambda) const { return std::visit(lambda, impl_); }
 
     template <class Implementation>
     IntersectionVariant(const Implementation& impl) : impl_(impl) {}
 
-    IntersectionVariant()                                  = default;
+    IntersectionVariant()                                 = default;
     IntersectionVariant(const IntersectionVariant& other) = default;
     template <class Implementation>
     requires(!std::is_same_v<Implementation, IntersectionVariant>) IntersectionVariant& operator=(
@@ -53,24 +49,25 @@ namespace Dune::IGANEW::Trim {
     IntersectionVariant& operator=(const IntersectionVariant& other) = default;
     IntersectionVariant& operator=(IntersectionVariant&& other) noexcept = default;
 
-    // bool equals(const TrimmedPatchGridLeafIntersection& other) const { return parameterSpaceIntersection == other.parameterSpaceIntersection; }
+    // bool equals(const TrimmedPatchGridLeafIntersection& other) const { return parameterSpaceIntersection ==
+    // other.parameterSpaceIntersection; }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     auto inside() const {
-          return visit([](const auto& impl) { return impl.inside(); });
-}
+      return visit([](const auto& impl) { return impl.inside(); });
+    }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     auto outside() const {
-          return visit([](const auto& impl) { return impl.outside(); });
- }
+      return visit([](const auto& impl) { return impl.outside(); });
+    }
 
     //! return true if intersection is with boundary.
     [[nodiscard]] bool boundary() const {
-          return visit([](const auto& impl) { return impl.boundary(); });
- }
+      return visit([](const auto& impl) { return impl.boundary(); });
+    }
 
     /** @brief Return unit outer normal (length == 1)
      *
@@ -79,34 +76,30 @@ namespace Dune::IGANEW::Trim {
      *       It is scaled to have unit length. */
     auto centerUnitOuterNormal() const {
       return visit([](const auto& impl) { return impl.centerUnitOuterNormal(); });
-
     }
 
     //! return true if across the edge an neighbor on this level exists
     bool neighbor() const {
       return visit([](const auto& impl) { return impl.neighbor(); });
-}
+    }
 
     //! return the boundary segment index
     size_t boundarySegmentIndex() const {
       return visit([](const auto& impl) { return impl.boundarySegmentIndex(); });
-}
+    }
 
     //! Return true if this is a conforming intersection
     bool conforming() const {
       return visit([](const auto& impl) { return impl.conforming(); });
-}
+    }
 
     //! Geometry type of an intersection
     GeometryType type() const {
       return visit([](const auto& impl) { return impl.type(); });
- }
-
-
+    }
 
     auto geometryInInside() const {
       return visit([](const auto& impl) { return impl.geometryInInside(); });
-
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
@@ -119,18 +112,17 @@ namespace Dune::IGANEW::Trim {
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
     auto geometry() const {
       return visit([](const auto& impl) { return impl.geometry(); });
-
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
     int indexInInside() const {
       return visit([](const auto& impl) { return impl.indexInInside(); });
-}
+    }
 
     //! local number of codim 1 entity in neighbor where intersection is contained
     int indexInOutside() const {
       return visit([](const auto& impl) { return impl.indexInOutside(); });
- }
+    }
 
     //! return outer normal
     auto outerNormal(const LocalCoordinate& local) const {
@@ -138,9 +130,8 @@ namespace Dune::IGANEW::Trim {
     }
 
     //! return outer normal multiplied by the integration element
-   auto integrationOuterNormal(const LocalCoordinate& local) const {
+    auto integrationOuterNormal(const LocalCoordinate& local) const {
       return visit([&](const auto& impl) { return impl.integrationOuterNormal(local); });
-
     }
 
     //! return unit outer normal
@@ -148,7 +139,7 @@ namespace Dune::IGANEW::Trim {
       return visit([&](const auto& impl) { return impl.unitOuterNormal(local); });
     }
 
-  private:
+   private:
     std::variant<Implementations...> impl_;
   };
   //
@@ -236,15 +227,17 @@ namespace Dune::IGANEW::Trim {
   //   //! Here returned element is in LOCAL coordinates of the element
   //   //! where iteration started.
   //   [[nodiscard]] LocalGeometry geometryInInside() const {
-  //     auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInInside());
-  //     return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
+  //     auto localGeometry = typename
+  //     LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInInside()); return
+  //     LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
   //   }
   //
   //   //! intersection of codimension 1 of this neighbor with element where iteration started.
   //   //! Here returned element is in LOCAL coordinates of neighbor
   //   [[nodiscard]] LocalGeometry geometryInOutside() const {
-  //     auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInOutside());
-  //     return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
+  //     auto localGeometry = typename
+  //     LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInOutside()); return
+  //     LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
   //   }
   //
   //   //! intersection of codimension 1 of this neighbor with element where iteration started.
@@ -301,4 +294,4 @@ namespace Dune::IGANEW::Trim {
   //   HostLevelIntersection parameterSpaceIntersection;
   // };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::Trim

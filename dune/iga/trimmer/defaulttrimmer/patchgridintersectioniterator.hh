@@ -4,16 +4,16 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
+#include <dune/grid/common/intersection.hh>
+
 #include <dune/iga/hierarchicpatch/patchgridentity.hh>
 #include <dune/iga/hierarchicpatch/patchgridintersections.hh>
-
-#include <dune/grid/common/intersection.hh>
 
 /** \file
  * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGANEW::DefaultTrim{
+namespace Dune::IGANEW::DefaultTrim {
 
   /** @brief Iterator over all element neighbors
    * @ingroup PatchGrid
@@ -34,7 +34,7 @@ namespace Dune::IGANEW::DefaultTrim{
 
     typedef typename GridImp::ParameterSpaceGrid::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
     using ParameterSpaceLeafIntersection = typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLeafIntersection;
-    using LeafIntersection = typename GridImp::Traits::LeafIntersection;
+    using LeafIntersection               = typename GridImp::Traits::LeafIntersection;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
@@ -53,8 +53,9 @@ namespace Dune::IGANEW::DefaultTrim{
 
     //! @brief dereferencing
     LeafIntersection dereference() const {
-      auto parameterspaceIntersection=  ParameterSpaceLeafIntersection(parameterSpaceGrid_, *hostIterator_);
-      auto realIntersection = typename  LeafIntersection::Implementation(parameterSpaceGrid_,parameterspaceIntersection);
+      auto parameterspaceIntersection = ParameterSpaceLeafIntersection(parameterSpaceGrid_, *hostIterator_);
+      auto realIntersection =
+          typename LeafIntersection::Implementation(parameterSpaceGrid_, parameterspaceIntersection);
       return LeafIntersection();
     }
 
@@ -79,7 +80,7 @@ namespace Dune::IGANEW::DefaultTrim{
 
     typedef typename GridImp::ParameterSpaceGrid::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
     using ParameterSpaceLevelIntersection = typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLevelIntersection;
-    using LevelIntersection = typename GridImp::Traits::LevelIntersection;
+    using LevelIntersection               = typename GridImp::Traits::LevelIntersection;
 
    public:
     typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
@@ -100,8 +101,9 @@ namespace Dune::IGANEW::DefaultTrim{
 
     //! @brief dereferencing
     LevelIntersection dereference() const {
-      auto parameterspaceIntersection=  ParameterSpaceLevelIntersection(parameterSpaceGrid_, *hostIterator_);
-      auto realIntersection= typename LevelIntersection::Implementation(parameterSpaceGrid_,parameterspaceIntersection);
+      auto parameterspaceIntersection = ParameterSpaceLevelIntersection(parameterSpaceGrid_, *hostIterator_);
+      auto realIntersection =
+          typename LevelIntersection::Implementation(parameterSpaceGrid_, parameterspaceIntersection);
       return LevelIntersection(realIntersection);
     }
 
@@ -110,4 +112,4 @@ namespace Dune::IGANEW::DefaultTrim{
     HostLevelIntersectionIterator hostIterator_ = {};
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::DefaultTrim

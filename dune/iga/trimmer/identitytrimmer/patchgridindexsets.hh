@@ -235,4 +235,4 @@ namespace Dune::IGANEW::IdentityTrim {
     const GridImp* grid_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::IdentityTrim

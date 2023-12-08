@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #define DUNE_CHECK_BOUNDS
+#define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -15,6 +16,7 @@
 
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 using namespace Dune;
 

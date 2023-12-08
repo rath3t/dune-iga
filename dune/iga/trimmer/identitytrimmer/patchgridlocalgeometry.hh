@@ -28,7 +28,7 @@ namespace Dune::IGANEW {
       : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridLocalGeometry> {
    public:
     static constexpr int mydimension = mydim;
-    using Trimmer                = typename GridImp::Trimmer;
+    using Trimmer                    = typename GridImp::Trimmer;
 
     static constexpr std::integral auto coorddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
@@ -49,8 +49,7 @@ namespace Dune::IGANEW {
     constexpr static int CodimInHostGrid          = GridImp::ParameterSpaceGrid::dimension - mydim;
     constexpr static int DimensionWorldOfHostGrid = GridImp::ParameterSpaceGrid::dimensionworld;
 
-
-    using LocalGeometry = typename Trimmer::template Codim<codim>:: LocalGeometry;
+    using LocalGeometry = typename Trimmer::template Codim<codim>::LocalGeometry;
     // using ParameterSpaceGeometry = typename Trimmer::template LocalGeometry<codim>;
 
     explicit PatchGridLocalGeometry(const LocalGeometry& localGeometry) : localGeometry_(localGeometry) {}

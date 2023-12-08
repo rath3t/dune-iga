@@ -26,8 +26,7 @@ namespace Dune::IGANEW {
    */
   template <class GridImp>
   class PatchGridLeafIntersection {
-    friend  typename GridImp::Traits::LeafIntersectionIterator;
-
+    friend typename GridImp::Traits::LeafIntersectionIterator;
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
@@ -35,7 +34,7 @@ namespace Dune::IGANEW {
     constexpr static int mydim = GridImp::dimension - 1;
 
     constexpr static int dimworld = GridImp::dimensionworld;
-    using Trimmer             = typename GridImp::Trimmer;
+    using Trimmer                 = typename GridImp::Trimmer;
 
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
@@ -58,7 +57,9 @@ namespace Dune::IGANEW {
     PatchGridLeafIntersection(const GridImp* parameterSpaceGrid, ParameterSpaceLeafIntersection&& hostIntersection)
         : patchGrid_(parameterSpaceGrid), parameterSpaceIntersection(std::move(hostIntersection)) {}
 
-    bool equals(const PatchGridLeafIntersection& other) const { return parameterSpaceIntersection == other.parameterSpaceIntersection; }
+    bool equals(const PatchGridLeafIntersection& other) const {
+      return parameterSpaceIntersection == other.parameterSpaceIntersection;
+    }
 
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
@@ -66,7 +67,9 @@ namespace Dune::IGANEW {
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
-    Entity outside() const { return PatchGridEntity<0, dim, GridImp>(patchGrid_, parameterSpaceIntersection.outside()); }
+    Entity outside() const {
+      return PatchGridEntity<0, dim, GridImp>(patchGrid_, parameterSpaceIntersection.outside());
+    }
 
     //! return true if intersection is with boundary.
     bool boundary() const { return parameterSpaceIntersection.boundary(); }
@@ -103,9 +106,9 @@ namespace Dune::IGANEW {
       // @todo Trim richtigen view raussuchen
       // auto intersectionGeometry= inside().trimData()
       // auto geometryOfIntersectionInParameterSpace = ... get intersection from trimdata
-      // parameterSpaceIntersection.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template localView<1,
-      // TrimmerType>());
-      // auto geo = typename LocalGeometry::Implementation(geometryOfIntersectionInParameterSpace);
+      // parameterSpaceIntersection.geometryInInside(), patchGrid_->patchGeometries[inside().level()].template
+      // localView<1, TrimmerType>()); auto geo = typename
+      // LocalGeometry::Implementation(geometryOfIntersectionInParameterSpace);
       // LocalGeometry(parameterSpaceIntersection.geometryInOutside());
       return LocalGeometry(typename LocalGeometry::Implementation(parameterSpaceIntersection.geometryInInside()));
     }
@@ -169,7 +172,7 @@ namespace Dune::IGANEW {
 
   template <class GridImp>
   class PatchGridLevelIntersection {
-    friend  typename GridImp::Traits::LevelIntersectionIterator;
+    friend typename GridImp::Traits::LevelIntersectionIterator;
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
@@ -251,14 +254,16 @@ namespace Dune::IGANEW {
     //! Here returned element is in LOCAL coordinates of the element
     //! where iteration started.
     [[nodiscard]] LocalGeometry geometryInInside() const {
-      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInInside());
+      auto localGeometry =
+          typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInInside());
       return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in LOCAL coordinates of neighbor
     [[nodiscard]] LocalGeometry geometryInOutside() const {
-      auto localGeometry = typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInOutside());
+      auto localGeometry =
+          typename LocalGeometry::Implementation::LocalGeometry(parameterSpaceIntersection.geometryInOutside());
       return LocalGeometry(typename LocalGeometry::Implementation(localGeometry));
     }
 

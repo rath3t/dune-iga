@@ -66,7 +66,7 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim,  typename  TrimmerType_ >
+    template <int codim, typename TrimmerType_>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
 
     template <int codim, typename NURBSPatch, typename TrimmerType_>

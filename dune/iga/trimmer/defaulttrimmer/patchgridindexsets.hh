@@ -30,8 +30,8 @@ namespace Dune::IGANEW::DefaultTrim {
     //! get index of an entity
     template <int codim>
     int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
-//       DUNE_THROW(NotImplemented, "Indices index");
-// return {};
+      //       DUNE_THROW(NotImplemented, "Indices index");
+      // return {};
       return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
           grid_->template getHostEntity<codim>(e).getHostEntity());
     }
@@ -42,14 +42,15 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim, the subindeces are wrong!
       // DUNE_THROW(NotImplemented, "subIndex not implemented");
 
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
+      return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(
+          grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
     }
 
     //! get number of entities of given codim, type and on this level
     std::size_t size(int codim) const {
       // @todo Trim,coun trimmed elements!
-//       DUNE_THROW(NotImplemented, "size not implemented");
-// return {};
+      //       DUNE_THROW(NotImplemented, "size not implemented");
+      // return {};
       return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
     }
 
@@ -75,7 +76,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // DUNE_THROW(NotImplemented, "contains not implemented");
       // return {};
       return grid_->parameterSpaceGrid().levelIndexSet(level_).contains(
-      grid_->template getHostEntity<EntityType::codimension>(e).getHostEntity());
+          grid_->template getHostEntity<EntityType::codimension>(e).getHostEntity());
     }
 
     /** @brief Set up the index set */
@@ -118,7 +119,8 @@ namespace Dune::IGANEW::DefaultTrim {
     int index(const typename std::remove_const<GridImp>::type::template Codim<codim>::Entity& e) const {
       // DUNE_THROW(NotImplemented, "index not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e).getHostEntity());
+      return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(
+          grid_->template getHostEntity<codim>(e).getHostEntity());
     }
 
     //! get index of subEntity of a codim 0 entity
@@ -132,7 +134,8 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim, this is wrong for the trimmed case
       // DUNE_THROW(NotImplemented, "subIndex not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
+      return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e).getHostEntity(),
+                                                                 i, codim);
     }
 
     //! get number of entities of given type
@@ -147,7 +150,7 @@ namespace Dune::IGANEW::DefaultTrim {
     std::size_t size(int codim) const {
       // DUNE_THROW(NotImplemented, "size not implemented");
       // return {};
-       return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
+      return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
     }
 
     /** @brief Deliver all geometry types used in this grid */
@@ -172,51 +175,51 @@ namespace Dune::IGANEW::DefaultTrim {
 
     const GridImp* grid_;
   };
-//
-//   template <class GridImp>
-//   class PatchGridGlobalIdSet
-//       : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
-//                      typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::GlobalIdSet::IdType> {
-//     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
-//
-//    public:
-//     //! constructor stores reference to a grid
-//     explicit PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
-//
-//     //! define the type used for persistent indices
-//     typedef typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType IdType;
-//
-//     //! get id of an entity
-//     /*
-//        We use the remove_const to extract the Type from the mutable class,
-//        because the const class is not instantiated yet.
-//      */
-//     template <int cd>
-//     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
-//       // Return id of the host entity
-//       // DUNE_THROW(NotImplemented, "id not implemented");
-//       // return {};
-//       return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity().getHostEntity());
-//     }
-//
-//     //! get id of subEntity
-//     /*
-//
-//      */
-//     IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
-//                  int codim) const {
-//       // @todo Trim, the sub indeces are wrong!!!
-//       //  Return sub id of the host entity
-//       // DUNE_THROW(NotImplemented, "subId not implemented");
-//       // return {};
-//       return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().getHostEntity().getHostEntity(), i, codim);
-//     }
-//
-//     /** @todo Should be private */
-//     void update() {}
-//
-//     const GridImp* grid_;
-//   };
+  //
+  //   template <class GridImp>
+  //   class PatchGridGlobalIdSet
+  //       : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
+  //                      typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::GlobalIdSet::IdType> {
+  //     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
+  //
+  //    public:
+  //     //! constructor stores reference to a grid
+  //     explicit PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
+  //
+  //     //! define the type used for persistent indices
+  //     typedef typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType IdType;
+  //
+  //     //! get id of an entity
+  //     /*
+  //        We use the remove_const to extract the Type from the mutable class,
+  //        because the const class is not instantiated yet.
+  //      */
+  //     template <int cd>
+  //     IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
+  //       // Return id of the host entity
+  //       // DUNE_THROW(NotImplemented, "id not implemented");
+  //       // return {};
+  //       return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity().getHostEntity());
+  //     }
+  //
+  //     //! get id of subEntity
+  //     /*
+  //
+  //      */
+  //     IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
+  //                  int codim) const {
+  //       // @todo Trim, the sub indeces are wrong!!!
+  //       //  Return sub id of the host entity
+  //       // DUNE_THROW(NotImplemented, "subId not implemented");
+  //       // return {};
+  //       return grid_->parameterSpaceGrid().globalIdSet().subId(e.impl().getHostEntity().getHostEntity(), i, codim);
+  //     }
+  //
+  //     /** @todo Should be private */
+  //     void update() {}
+  //
+  //     const GridImp* grid_;
+  //   };
 
   template <class GridImp>
   class PatchGridLocalIdSet
@@ -249,7 +252,6 @@ namespace Dune::IGANEW::DefaultTrim {
       //   return {};
       // }
       return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity().getHostEntity());
-
     }
 
     //! get id of subEntity
@@ -274,4 +276,4 @@ namespace Dune::IGANEW::DefaultTrim {
     const GridImp* grid_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::DefaultTrim

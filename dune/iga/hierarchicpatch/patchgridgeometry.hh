@@ -39,14 +39,13 @@ namespace Dune::IGANEW {
     using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
     using Volume                    = ctype;
 
-    //The geometry in the parameterspace, i.e. in the knotspan domain
+    // The geometry in the parameterspace, i.e. in the knotspan domain
     using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
 
     // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
     //! type of the LocalView of the patch geometry
-    using GeometryLocalView =
-        typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
-                                            ctype>::template GeometryLocalView<codim, Trimmer>;
+    using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
+                                                                  ctype>::template GeometryLocalView<codim, Trimmer>;
 
     /** constructor from host geometry */
     PatchGridGeometry(const ParameterSpaceGeometry& localGeometry, GeometryLocalView&& geometryLocalView)

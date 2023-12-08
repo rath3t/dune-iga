@@ -56,4 +56,4 @@ namespace Dune::IGANEW::IdentityTrim {
     HostGridLevelIterator hostLevelIterator_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::IdentityTrim

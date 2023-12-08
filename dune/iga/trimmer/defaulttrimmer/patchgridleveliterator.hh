@@ -17,9 +17,10 @@ namespace Dune::IGANEW::DefaultTrim {
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
   class PatchGridLevelIterator {
-    typedef
-        typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::template Partition<pitype>::LevelIterator
-            HostGridLevelIterator;
+    using IteratorImplR = typename GridImp::Trimmer::template ParameterSpaceLevelIterator<codim, pitype>;
+    using OLDIteratorImpl =
+        typename GridImp::ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LevelIterator;
+    using IteratorImpl = IteratorImplR;  // std::conditional_t<codim==0,IteratorImplR,OLDIteratorImpl>;
 
    public:
     constexpr static int codimension = codim;
@@ -29,54 +30,70 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! Constructor
     PatchGridLevelIterator() = default;
+    // template<typename =void> requires (codim!=0)
+    // explicit PatchGridLevelIterator(const GridImp* patchGrid, int level)
+    //     : patchGrid_(patchGrid),
+    //       parameterSpaceLevelIterator(patchGrid->parameterSpaceGrid().levelGridView(level).template begin<codim,
+    //       pitype>()) {}
+
+    // template<typename =void> requires (codim==0)
     explicit PatchGridLevelIterator(const GridImp* patchGrid, int level)
         : patchGrid_(patchGrid),
-          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template begin<codim, pitype>()) {}
+          parameterSpaceLevelIterator(patchGrid_->trimmer().entityContainer_.template begin<codim>(level)) {}
 
     /** @brief Constructor which create the end iterator
         @param endDummy      Here only to distinguish it from the other constructor
         @param patchGrid  pointer to PatchGrid instance
         @param level         grid level on which the iterator shall be created
      */
+    // template<typename =void> requires (codim!=0)
+    // explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
+    //     : patchGrid_(patchGrid),
+    //       parameterSpaceLevelIterator(patchGrid->parameterSpaceGrid().levelGridView(level).template end<codim,
+    //       pitype>()) {}
+
+    // template<typename =void> requires (codim==0)
     explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
         : patchGrid_(patchGrid),
-          hostLevelIterator_(patchGrid->parameterSpaceGrid().levelGridView(level).template end<codim, pitype>()) {}
+          parameterSpaceLevelIterator(patchGrid_->trimmer().entityContainer_.template end<codim>(level)) {}
 
     //! prefix increment
-    void increment() { ++hostLevelIterator_; }
-    using GlobalIdSetId = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
-    using ElementTrimData              = typename  GridImp::Trimmer::ElementTrimData;
+    void increment() { ++parameterSpaceLevelIterator; }
+    using GlobalIdSetId   = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
+    using ElementTrimData = typename GridImp::Trimmer::ElementTrimData;
 
     //! dereferencing
     Entity dereference() const {
-      if constexpr (codim==0) {
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_, *hostLevelIterator_,id_};
-        auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+      if constexpr (codim == 0) {
+        // auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_, *parameterSpaceLevelIterator,id_};
+        auto realEntity = typename Entity::Implementation{patchGrid_, *parameterSpaceLevelIterator};
         return Entity{std::move(realEntity)};
-      }
-      else if(id_.elementState==GlobalIdSetId::ElementState::full) { // subentity is untrimmed
-
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,*hostLevelIterator_,id_};
-        auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
-
-        return Entity{std::move(realEntity)};
-      }else {
-        DUNE_THROW(NotImplemented,"This is doing the wrong thing");
-        auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,id_,ElementTrimData(),hostLevelIterator_->level()};
-        auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+      } else /* if(id_.elementState==GlobalIdSetId::ElementState::full)// subentity is untrimmed */ {
+        // auto parameterSpaceEntity= ParameterSpaceGridEntity{patchGrid_,*parameterSpaceLevelIterator,id_};
+        auto realEntity = typename Entity::Implementation{patchGrid_, *parameterSpaceLevelIterator};
 
         return Entity{std::move(realEntity)};
       }
+      // else {
+      //   DUNE_THROW(NotImplemented,"This is doing the wrong thing");
+      //   // auto parameterSpaceEntity=
+      //   ParameterSpaceGridEntity{patchGrid_,id_,ElementTrimData(),parameterSpaceLevelIterator->level()};
+      //   // auto realEntity= typename Entity::Implementation{patchGrid_,std::move(parameterSpaceEntity)};
+      //   //
+      //   // return Entity{std::move(realEntity)};
+      // }
     }
 
     //! equality
-    bool equals(const PatchGridLevelIterator& i) const { return hostLevelIterator_ == i.hostLevelIterator_; }
+    bool equals(const PatchGridLevelIterator& i) const {
+      return parameterSpaceLevelIterator == i.parameterSpaceLevelIterator;
+    }
 
    private:
     const GridImp* patchGrid_;
     typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId id_;
 
-    HostGridLevelIterator hostLevelIterator_;
+    IteratorImpl parameterSpaceLevelIterator;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::DefaultTrim

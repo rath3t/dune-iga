@@ -57,8 +57,8 @@ namespace Dune::IGANEW {
       static constexpr int numberOfSecondDerivatives
           = mydimension * (mydimension + 1) / 2;  ///< Number of second derivatives of the local view.
       static constexpr int patchNumberOfSecondDerivatives
-          = gridDimension * (gridDimension + 1) / 2;  ///< Number of second derivatives for the patch.
-      using Trimmer       = TrimmerType_;        ///< Type of the associated trimmer.
+          = gridDimension * (gridDimension + 1) / 2;                    ///< Number of second derivatives for the patch.
+      using Trimmer            = TrimmerType_;                          ///< Type of the associated trimmer.
       using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;  ///< Type of the parameter space grid.
 
       static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;  ///< Dimension of the world.

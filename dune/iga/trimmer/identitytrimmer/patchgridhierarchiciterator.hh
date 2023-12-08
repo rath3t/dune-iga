@@ -58,4 +58,4 @@ namespace Dune::IGANEW::IdentityTrim {
     HostGridHierarchicIterator hostHierarchicIterator_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::IdentityTrim

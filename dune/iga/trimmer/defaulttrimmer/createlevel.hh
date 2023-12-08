@@ -124,31 +124,101 @@ namespace Dune::IGANEW::DefaultTrim {
    * \param grid
    */
   template <int dim, int dimworld, typename ScalarType>
-  void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCount) {
-    using IdType                 = typename GridFamily::TrimmerTraits::GlobalIdSetId;
+  void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCount, bool initFlag) {
+    using IdType = typename GridFamily::TrimmerTraits::GlobalIdSetId;
+
     using EdgeHostType           = typename UntrimmedParameterSpaceGrid::template Codim<1>::Entity;
     using EdgeGridType           = typename GridImp::template Codim<1>::Entity;
     using EleGridType            = typename GridImp::template Codim<0>::Entity;
     using EdgeParameterSpaceType = typename TrimmerTraits::template Codim<1>::ParameterSpaceGridEntity;
     using EleParameterSpaceType  = typename TrimmerTraits::template Codim<2>::ParameterSpaceGridEntity;
-    const int oldLevel = untrimmedParameterSpaceGrid_->maxLevel();
+    const int oldLevel           = untrimmedParameterSpaceGrid_->maxLevel();
     untrimmedParameterSpaceGrid_->globalRefine(refCount);
     auto gvu = untrimmedParameterSpaceGrid_->leafGridView();
     parameterSpaceGrid_->createBegin();
     parameterSpaceGrid_->insertLeaf();
     parameterSpaceGrid_->createEnd();
-    for (int i = 0; i < refCount; ++i) {
+    assert((initFlag and oldLevel == 0 and refCount == 0)
+           or !initFlag && "If we initialize the grid, we untrimmedParameterSpaceGrid_ should only have one level");
+    // if we init we start at 0 otherwise at 1
+    // if the grid is refined once later this would yield int i = 1; i < 2;
+    for (int i = !initFlag; i < refCount + 1; ++i) {
+      const int newLevel = oldLevel + i;
       entityContainer_.entityImps_.emplace_back();
       auto& entityContainer  = entityContainer_;
       auto& elementContainer = std::get<0>(entityContainer_.entityImps_.back());
-      // auto& globalIdSet=grid.globalIdSet_;
+      auto& edgeContainer    = std::get<1>(entityContainer_.entityImps_.back());
+      auto& vertexContainer  = std::get<2>(entityContainer_.entityImps_.back());
 
-      auto gv                         = parameterSpaceGrid_->levelGridView(oldLevel+i);
+      auto gv                         = parameterSpaceGrid_->levelGridView(newLevel);
       auto& globalIdSetParameterSpace = parameterSpaceGrid_->globalIdSet();
+      int unTrimmedElementIndex       = 0;
+      int trimmedElementIndex         = 0;
+      int edgeIndex          = 0;
+      int vertexIndex        = 0;
       for (const auto& ele : elements(gv)) {
         auto hostId = globalIdSetParameterSpace.id(ele);
-        IdType id   = {.elementState = IdType::ElementState::full, .id = hostId};
-        elementContainer.emplace_back(grid_, ele, id);
+
+        IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+        elementContainer.emplace_back(grid_, ele, elementId);
+        if (ele.hasFather()) {
+          auto fatherHostId = globalIdSetParameterSpace.id(ele.father());
+          // if we know that we (the element) are untrimmed we know that our father is also untrimmed
+          if (true /* untrimmed */) {
+            IdType fatherId = {.elementState = IdType::ElementState::full, .id = fatherHostId};
+            // insert new element info
+            EntityInfo<0> elementInfo{.indexInLvlStorage   = trimmedElementIndex + unTrimmedElementIndex,
+                                      .unTrimmedIndexInLvl = unTrimmedElementIndex,
+                                      .lvl                 = newLevel,
+                                      .id                  = elementId,
+                                      .fatherId            = std::make_optional<IdType>(fatherId)};
+            ++unTrimmedElementIndex;
+            entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
+            elementContainer.emplace_back(grid_, ele, elementInfo);
+
+            // since we have a father we have to add us as his son
+            entityContainer.idToElementInfoMap.at(fatherId).decendantIds.push_back(elementId);
+          }
+        }
+        auto& elementEdgeIndices   = entityContainer.globalEdgesIdOfElementsMap_[elementId];
+        auto& elementVertexIndices = entityContainer.globalVerticesIdOfElementsMap[elementId];
+
+        for (int localEdgeIndex = 0; localEdgeIndex < ele.subEntities(1); ++localEdgeIndex) {
+          // setup all edge indices for given element
+          if (true /* untrimmed */) {
+            auto edge       = ele.template subEntity<1>(localEdgeIndex);
+            auto hostEdgeId = globalIdSetParameterSpace.id(edge);
+            IdType edgeId   = {.elementState = IdType::ElementState::full, .id = hostEdgeId};
+            elementEdgeIndices.emplace_back(edgeId);
+          }
+        }
+
+        for (int localVertexId = 0; localVertexId < ele.subEntities(2); ++localVertexId) {
+          // setup all vertex indices for given element
+          if (true /* untrimmed */) {
+            auto vertex       = ele.template subEntity<2>(localVertexId);
+            auto hostVertexId = globalIdSetParameterSpace.id(vertex);
+            IdType vertexId   = {.elementState = IdType::ElementState::full, .id = hostVertexId};
+            elementVertexIndices.emplace_back(vertexId);
+          }
+        }
+      }
+      for (const auto& edge : edges(gv)) {
+        auto edgeHostId = globalIdSetParameterSpace.id(edge);
+        IdType edgeId   = {.elementState = IdType::ElementState::full, .id = edgeHostId};
+        EntityInfo<1> edgeInfo{.indexInLvlStorage = edgeIndex++, .lvl = newLevel, .id = edgeId};
+
+        entityContainer.idToEdgeInfoMap.insert({edgeId, edgeInfo});
+
+        edgeContainer.emplace_back(grid_, edge, edgeInfo);
+      }
+      for (const auto& vertex : vertices(gv)) {
+        auto vertexHostId = globalIdSetParameterSpace.id(vertex);
+        IdType vertexId   = {.elementState = IdType::ElementState::full, .id = vertexHostId};
+        EntityInfo<2> vertexInfo{.indexInLvlStorage = vertexIndex++, .lvl = newLevel, .id = vertexId};
+
+        entityContainer.idToVertexInfoMap.insert({vertexId, vertexInfo});
+        edgeContainer.emplace_back(grid_, vertex, vertexInfo);
       }
     }
   }

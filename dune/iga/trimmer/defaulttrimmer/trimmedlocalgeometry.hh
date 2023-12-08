@@ -7,14 +7,13 @@ namespace Dune {
 
       enum class LocalGeometryTag { InParameterSpace, InReferenceElement };
 
-
-        template <int mydim, int coorddim, class GridImp,LocalGeometryTag localGeometryTag>
+      template <int mydim, int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
       class TrimmedLocalGeometryImpl {
        public:
         using ctype = typename GridImp::ctype;
 
         static constexpr int mydimension = mydim;
-        using Trimmer                = typename GridImp::Trimmer;
+        using Trimmer                    = typename GridImp::Trimmer;
 
         static constexpr int coorddimension = coorddim;
         static constexpr int codim          = coorddimension - mydimension;
@@ -35,8 +34,10 @@ namespace Dune {
                                                 ctype>::template GeometryLocalView<codim, Trimmer>;
 
         /** constructor from host geometry  */
-          TrimmedLocalGeometryImpl()=default;
-        explicit TrimmedLocalGeometryImpl(const GeometryKernel::NURBSPatch<mydimension,coorddimension,ctype>& trimData) : trimData_{&trimData} {}
+        TrimmedLocalGeometryImpl() = default;
+        explicit TrimmedLocalGeometryImpl(
+            const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>& trimData)
+            : trimData_{&trimData} {}
 
         /** @brief Return the element type identifier
          */
@@ -82,7 +83,7 @@ namespace Dune {
         }
 
        private:
-        const GeometryKernel::NURBSPatch<mydimension,coorddimension,ctype>* trimData_{nullptr};
+        const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>* trimData_{nullptr};
       };
     }  // namespace DefaultTrim
   }    // namespace IGANEW

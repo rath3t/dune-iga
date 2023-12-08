@@ -93,7 +93,8 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   auto grid       = gridFactory.createGrid();
   auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
 
-  t.check(grid->size(0,1)==3)<<"There should only be "<<3<<" edges in this grid, but there are "<<grid->size(0,1);
+  t.check(grid->size(0, 1) == 3) << "There should only be " << 3 << " edges in this grid, but there are "
+                                 << grid->size(0, 1);
 
   double volume = 0;
   for (auto elegeo : elements(grid->leafGridView()) | extractGeo)
@@ -156,7 +157,8 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
   for (auto edgegeo : edges(grid->leafGridView()) | extractGeo)
     circumference += edgegeo.volume();
 
-  t.check(grid->size(0,1)==3)<<"There should only be "<<3<<" edges in this grid, but there are "<<grid->size(0,1);
+  t.check(grid->size(0, 1) == 3) << "There should only be " << 3 << " edges in this grid, but there are "
+                                 << grid->size(0, 1);
 
   // we created a triangle therfore the area should be a triangle
   t.check(FloatCmp::eq(volume, 0.5 * Lx * Ly), "Triangle volume in 3D")

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
+#define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif

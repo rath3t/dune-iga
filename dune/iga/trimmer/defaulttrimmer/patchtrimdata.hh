@@ -7,15 +7,11 @@ namespace Dune {
 
       template <typename TrimmerType_>
       struct PatchTrimData {
-
         using TrimmingCurve = typename TrimmerType_::TrimmingCurve;
 
-        void insertTrimCurve(const TrimmingCurve& curve) {
-          curves.push_back(curve);
-        }
+        void insertTrimCurve(const TrimmingCurve& curve) { curves.push_back(curve); }
 
         std::vector<TrimmingCurve> curves;
-
 
         //???
       };

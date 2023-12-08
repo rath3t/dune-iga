@@ -7,7 +7,6 @@ namespace Dune {
 
       template <int mydim_, typename ScalarType>
       struct ElementTrimData {
-
         //???
       };
 

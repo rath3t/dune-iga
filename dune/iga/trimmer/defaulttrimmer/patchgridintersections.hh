@@ -25,8 +25,7 @@ namespace Dune::IGANEW::DefaultTrim {
    */
   template <class GridImp>
   class TrimmedLeafIntersection {
-    friend  typename GridImp::Traits::LeafIntersectionIterator;
-
+    friend typename GridImp::Traits::LeafIntersectionIterator;
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
@@ -34,12 +33,9 @@ namespace Dune::IGANEW::DefaultTrim {
     constexpr static int mydim = GridImp::dimension - 1;
 
     constexpr static int dimworld = GridImp::dimension;
-    using Trimmer             = typename GridImp::Trimmer;
-
-
+    using Trimmer                 = typename GridImp::Trimmer;
 
     using HostLeafIntersection = typename GridImp::Trimmer::TrimmerTraits::HostLeafIntersection;
-
 
    public:
     // The type used to store coordinates
@@ -51,35 +47,40 @@ namespace Dune::IGANEW::DefaultTrim {
     // typedef typename GridImp::template Codim<0>::Entity Entity;
     typedef FieldVector<ctype, dim> NormalVector;
 
-    using ParameterSpaceGridEntity= typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntity;
+    using ParameterSpaceGridEntity =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntity;
 
-    using IntersectionGeometry = GeometryKernel::NURBSPatch<mydim,dim,ctype>;
+    using IntersectionGeometry = GeometryKernel::NURBSPatch<mydim, dim, ctype>;
 
     TrimmedLeafIntersection() {}
 
     TrimmedLeafIntersection(const GridImp* parameterSpaceGrid, const HostLeafIntersection& hostIntersection)
-        : patchGrid_(parameterSpaceGrid) ,hostIntersection_{hostIntersection}{}
+        : patchGrid_(parameterSpaceGrid), hostIntersection_{hostIntersection} {}
 
     TrimmedLeafIntersection(const GridImp* parameterSpaceGrid, HostLeafIntersection&& hostIntersection)
-        : patchGrid_(parameterSpaceGrid) ,hostIntersection_{hostIntersection}{}
-    HostLeafIntersection  hostIntersection_;
+        : patchGrid_(parameterSpaceGrid), hostIntersection_{hostIntersection} {}
+    HostLeafIntersection hostIntersection_;
     bool operator==(const TrimmedLeafIntersection& other) const {
       // DUNE_THROW(NotImplemented, "equals not implemented");
       return hostIntersection_ == other.hostIntersection_;
     }
+    using IdType = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
 
     //! returns the inside entity
     ParameterSpaceGridEntity inside() const {
       // DUNE_THROW(NotImplemented, "inside not implemented");
-      return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.inside(),{});
+      auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
+      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId);
     }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     ParameterSpaceGridEntity outside() const {
       // DUNE_THROW(NotImplemented, "outside not implemented");
-      return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.outside(),{});
-
+      auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
+      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId);
     }
 
     //! return true if intersection is with boundary.
@@ -95,7 +96,8 @@ namespace Dune::IGANEW::DefaultTrim {
      *       It is scaled to have unit length. */
     NormalVector centerUnitOuterNormal() const {
       DUNE_THROW(NotImplemented, "centerUnitOuterNormal not implemented");
-      //! @todo compute jacobian create normal by cross-product, the cross-product has to take into account the normal points away from the inside element
+      //! @todo compute jacobian create normal by cross-product, the cross-product has to take into account the normal
+      //! points away from the inside element
     }
 
     //! return true if across the edge an neighbor on this level exists
@@ -107,6 +109,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return the boundary segment index
     size_t boundarySegmentIndex() const {
+      return 0;
       return hostIntersection_.boundarySegmentIndex();
       DUNE_THROW(NotImplemented, "boundarySegmentIndex not implemented");
       return {};
@@ -133,7 +136,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return hostIntersection_.geometryInInside();
       DUNE_THROW(NotImplemented, "geometryInInside not implemented");
 
-      return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
+      return std::variant_alternative_t<1, typename LocalGeometry::Variant>{};
     }
 
     //! Same as above
@@ -141,17 +144,20 @@ namespace Dune::IGANEW::DefaultTrim {
       return hostIntersection_.geometryInOutside();
       DUNE_THROW(NotImplemented, "geometryInOutside not implemented");
 
-      return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
+      return std::variant_alternative_t<1, typename LocalGeometry::Variant>{};
     }
 
     //! geometry of the intersection this geometry should map into the knotspan domain
-    using TrimmedParameterSpaceGeometry= typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
+    using TrimmedParameterSpaceGeometry =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
+    using LocalParameterSpaceGeometry =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::LocalParameterSpaceGeometry;
 
-    TrimmedParameterSpaceGeometry geometry() const {
+    LocalParameterSpaceGeometry geometry() const {
       return hostIntersection_.geometry();
       // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
 
-      return {};
+      // return {};
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
@@ -204,7 +210,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
   template <class GridImp>
   class TrimmedLevelIntersection {
-    friend  typename GridImp::Traits::LevelIntersectionIterator;
+    friend typename GridImp::Traits::LevelIntersectionIterator;
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
@@ -215,14 +221,14 @@ namespace Dune::IGANEW::DefaultTrim {
 
     using Trimmer = typename GridImp::Trimmer;
 
-    using ParameterSpaceGridEntity= typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntity;
+    using ParameterSpaceGridEntity =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntity;
     typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::LocalParameterSpaceGeometry Geometry;
     typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::LocalGeometry LocalGeometry;
 
     // typedef typename GridImp::GridFamily::LevelIntersection HostLevelIntersection;
 
     using HostLevelIntersection = typename GridImp::Trimmer::TrimmerTraits::HostLevelIntersection;
-
 
     using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
@@ -239,10 +245,10 @@ namespace Dune::IGANEW::DefaultTrim {
     TrimmedLevelIntersection() = default;
 
     TrimmedLevelIntersection(const GridImp* identityGrid, const HostLevelIntersection& hostIntersection)
-        : patchGrid_(identityGrid),hostIntersection_{hostIntersection}{}
+        : patchGrid_(identityGrid), hostIntersection_{hostIntersection} {}
 
     TrimmedLevelIntersection(const GridImp* identityGrid, HostLevelIntersection&& hostIntersection)
-        : patchGrid_(identityGrid),hostIntersection_{hostIntersection}{}
+        : patchGrid_(identityGrid), hostIntersection_{hostIntersection} {}
 
     HostLevelIntersection hostIntersection_;
     [[nodiscard]] bool operator==(const TrimmedLevelIntersection& other) const {
@@ -251,21 +257,25 @@ namespace Dune::IGANEW::DefaultTrim {
       return hostIntersection_ == other.hostIntersection_;
     }
 
+    using IdType = typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId;
     //! return Entity on the inside of this intersection
     //! (that is the Entity where we started this Iterator)
     [[nodiscard]] ParameterSpaceGridEntity inside() const {
-
       // DUNE_THROW(NotImplemented, "inside not implemented");
-
-      return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.inside(),{});
+      auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
+      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      //! @todo Don't contruct this on the fly?
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId);
     }
 
     //! return Entity on the outside of this intersection
     //! (that is the neighboring Entity)
     [[nodiscard]] ParameterSpaceGridEntity outside() const {
       // DUNE_THROW(NotImplemented, "outside not implemented");
-
-      return ParameterSpaceGridEntity(patchGrid_,hostIntersection_.outside(),{});
+      auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
+      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      //! @todo Don't contruct this on the fly?
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId);
     }
 
     /** @brief return true if intersection is with boundary.
@@ -292,6 +302,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return true if across the edge an neighbor on this level exists
     [[nodiscard]] bool neighbor() const {
+      return hostIntersection_.neighbor();
       DUNE_THROW(NotImplemented, "neighbor not implemented");
 
       return {};
@@ -299,6 +310,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! return the boundary segment index
     [[nodiscard]] size_t boundarySegmentIndex() const {
+      return 0;
       return hostIntersection_.boundarySegmentIndex();
       DUNE_THROW(NotImplemented, "boundarySegmentIndex not implemented");
 
@@ -328,7 +340,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return hostIntersection_.geometryInInside();
       DUNE_THROW(NotImplemented, "geometryInInside not implemented");
 
-      return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
+      return std::variant_alternative_t<1, typename LocalGeometry::Variant>{};
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
@@ -337,17 +349,21 @@ namespace Dune::IGANEW::DefaultTrim {
       return hostIntersection_.geometryInOutside();
       DUNE_THROW(NotImplemented, "geometryInOutside not implemented");
 
-      return std::variant_alternative_t<1,typename LocalGeometry::Variant>{};
+      return std::variant_alternative_t<1, typename LocalGeometry::Variant>{};
     }
 
     //! intersection of codimension 1 of this neighbor with element where iteration started.
     //! Here returned element is in GLOBAL coordinates of the element where iteration started.
-    using TrimmedParameterSpaceGeometry= typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
-    [[nodiscard]] TrimmedParameterSpaceGeometry geometry() const {
+    using TrimmedParameterSpaceGeometry =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
+    using LocalParameterSpaceGeometry =
+        typename GridImp::Trimmer::TrimmerTraits::template Codim<1>::LocalParameterSpaceGeometry;
+
+    LocalParameterSpaceGeometry geometry() const {
       return hostIntersection_.geometry();
       DUNE_THROW(NotImplemented, "geometry not implemented");
 
-      return {};
+      // return {};
     }
 
     //! local number of codim 1 entity in self where intersection is contained in
@@ -396,4 +412,4 @@ namespace Dune::IGANEW::DefaultTrim {
     // HostLevelIntersection parameterSpaceIntersection;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::DefaultTrim

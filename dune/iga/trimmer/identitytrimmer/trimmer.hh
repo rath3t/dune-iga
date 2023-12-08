@@ -11,11 +11,12 @@
 #pragma once
 
 #include "patchgridentityseed.hh"
-#include "patchgridindexsets.hh"
-#include "patchgridleafiterator.hh"
-#include "patchgridlocalgeometry.hh"
-#include "patchgridleveliterator.hh"
 #include "patchgridhierarchiciterator.hh"
+#include "patchgridindexsets.hh"
+#include "patchgridintersectioniterator.hh"
+#include "patchgridleafiterator.hh"
+#include "patchgridleveliterator.hh"
+#include "patchgridlocalgeometry.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -24,8 +25,6 @@
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
-#include "patchgridintersectioniterator.hh"
-
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
 namespace Dune::IGANEW {
@@ -72,8 +71,8 @@ namespace Dune::IGANEW {
       using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
       using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
 
-       using PatchTrimData   = PatchTrimDataImpl<dim,
-                                          ScalarType>;  ///< Patch trim data type.
+      using PatchTrimData = PatchTrimDataImpl<dim,
+                                              ScalarType>;  ///< Patch trim data type.
 
       using GlobalIdSet   = PatchGridGlobalIdSet<const Grid>;
       using LocalIdSet    = PatchGridLocalIdSet<const Grid>;
@@ -82,24 +81,24 @@ namespace Dune::IGANEW {
       template <int codim, PartitionIteratorType pitype>
       using LeafIterator = PatchGridLeafIterator<codim, pitype, const Grid>;
       template <int codim, PartitionIteratorType pitype>
-      using LevelIterator = PatchGridLevelIterator<codim, pitype, const Grid>;
-      using LeafIntersection= PatchGridLeafIntersection<const Grid>;
-      using LevelIntersection= PatchGridLevelIntersection<const Grid>;
-      using LeafIntersectionIterator= PatchGridLeafIntersectionIterator<const Grid>;
-      using LevelIntersectionIterator= PatchGridLevelIntersectionIterator<const Grid>;
-      using HierarchicIterator= PatchGridHierarchicIterator<const Grid>;
+      using LevelIterator             = PatchGridLevelIterator<codim, pitype, const Grid>;
+      using LeafIntersection          = PatchGridLeafIntersection<const Grid>;
+      using LevelIntersection         = PatchGridLevelIntersection<const Grid>;
+      using LeafIntersectionIterator  = PatchGridLeafIntersectionIterator<const Grid>;
+      using LevelIntersectionIterator = PatchGridLevelIntersectionIterator<const Grid>;
+      using HierarchicIterator        = PatchGridHierarchicIterator<const Grid>;
 
-      template<int codim>
-static const bool hasEntity      = true;
+      template <int codim>
+      static const bool hasEntity = true;
 
-      template<int codim>
+      template <int codim>
       static const bool hasEntityIterator = true;
 
-      template<int codim>
-static const bool hasHostEntity = true;
-
+      template <int codim>
+      static const bool hasHostEntity = true;
 
       struct TrimmerTraits {
+        using PatchTrimData = PatchTrimDataImpl<dim, ScalarType>;
         using ParameterSpaceGrid
             = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
         template <int codim>
@@ -112,11 +111,11 @@ static const bool hasHostEntity = true;
           using ParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
           using ParameterSpaceGridEntitySeed = typename ParameterSpaceGrid::Traits::template Codim<codim>::EntitySeed;
-          using EntityImp = PatchGridEntity<codim,dim,const Grid>;
-          using EntitySeedImp = PatchGridEntitySeed<codim,const Grid>;
+          using EntityImp                    = PatchGridEntity<codim, dim, const Grid>;
+          using EntitySeedImp                = PatchGridEntitySeed<codim, const Grid>;
         };
 
-        using ParameterSpaceLeafIntersection = typename ParameterSpaceGrid::Traits::LeafIntersection;
+        using ParameterSpaceLeafIntersection  = typename ParameterSpaceGrid::Traits::LeafIntersection;
         using ParameterSpaceLevelIntersection = typename ParameterSpaceGrid::Traits::LevelIntersection;
       };
       // clang-format off
@@ -160,14 +159,15 @@ static const bool hasHostEntity = true;
      * @tparam dim Dimension of the patch.
      * @tparam ScalarType Scalar type for the coordinates.
      */
-    template <int dim, int dimworld, typename ScalarType= double>
+    template <int dim, int dimworld, typename ScalarType = double>
     class TrimmerImpl {
      public:
       using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
+      using PatchTrimData = typename GridFamily::PatchTrimData;
       using GridTraits    = typename GridFamily::Traits;
       using TrimmerTraits = typename GridFamily::TrimmerTraits;
 
-      static constexpr bool isValid =  true;
+      static constexpr bool isValid = true;
 
       template <int codim>
       using Codim   = typename TrimmerTraits::template Codim<codim>;
@@ -184,7 +184,7 @@ static const bool hasHostEntity = true;
       static constexpr bool isAlwaysTrivial = true;  ///< Boolean indicating if the trimming is always trivial, no
                                                      ///< trimming or simple deletion of element.
 
-      template<int codim>
+      template <int codim>
       using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
       //! First level intersection
       [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
@@ -221,7 +221,7 @@ static const bool hasHostEntity = true;
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
 
       using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
-                                              typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
+                                                  typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
 
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
@@ -308,17 +308,18 @@ static const bool hasHostEntity = true;
       ParameterSpaceGrid& parameterSpaceGrid() { return *parameterSpaceGrid_; }
 
       template <class EntitySeed>
-      typename GridFamily::Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
-        using  EntityImp = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
+      typename GridFamily::Traits::template Codim<EntitySeed::codimension>::Entity entity(
+          const EntitySeed& seed) const {
+        using EntityImp = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
 
         return EntityImp(grid_, parameterSpaceGrid().entity(seed.impl().hostEntitySeed()));
       }
 
       template <class Entity>
-  typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
-        using  EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImp;
+      typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
+        using EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImp;
 
-        return  EntitySeedImp(ent.getHostEntity());
+        return EntitySeedImp(ent.getHostEntity());
       }
 
       /**
