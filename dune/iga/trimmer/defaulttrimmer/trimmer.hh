@@ -313,6 +313,10 @@ struct EntityInfoImpl<HostIdType,0> {
       template <int cd, PartitionIteratorType pi, typename G>
       friend class PatchGridLevelIterator;
       friend class PatchGridHierarchicIterator<const GridImp>;
+      friend class PatchGridLevelIntersection<const GridImp>;
+      friend class PatchGridLeafIntersection<const GridImp>;
+      friend class TrimmedLevelIntersection<const GridImp>;
+      friend class TrimmedLeafIntersection<const GridImp>;
 
       template <int cd>
       using EntityInfo = typename GridFamily::TrimmerTraits::template Codim<cd>::EntityInfo;
@@ -366,7 +370,7 @@ struct EntityInfoImpl<HostIdType,0> {
           const EntitySeed& seed) const {
         using EntityImp               = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
         auto [lvl, indexInLvlStorage] = seed.impl().data();
-        return entityContainer_.template entity<EntitySeed::codimension>(lvl, indexInLvlStorage);
+        return EntityImp{grid_,entityContainer_.template entity<EntitySeed::codimension>(lvl, indexInLvlStorage)};
       }
 
       template <int codim>

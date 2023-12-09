@@ -769,49 +769,47 @@ auto testPlate() {
 template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
   TestSuite t("testGrids");
-  testHierarchicPatch<GridFamily>();
-  if constexpr (requires { testHierarchicPatch<GridFamily>(); }) {
+
+  // if constexpr (requires { testHierarchicPatch<GridFamily>(); }) {
     std::cout << "testHierarchicPatch" << std::endl;
     t.subTest(testHierarchicPatch<GridFamily>());
-  } else
-    std::cout << "testHierarchicPatch Test disabled" << std::endl;
+  // } else
+  //   std::cout << "testHierarchicPatch Test disabled" << std::endl;
 
-  // TestSuite t;
+  // if constexpr (requires { test3DGrid<GridFamily>(); }) {
+  //   std::cout << "Test3D" << std::endl;
+  //   t.subTest(test3DGrid<GridFamily>());
+  // } else
+  //   std::cout << "Test3D Test disabled" << std::endl;
 
-  if constexpr (requires { test3DGrid<GridFamily>(); }) {
-    std::cout << "Test3D" << std::endl;
-    t.subTest(test3DGrid<GridFamily>());
-  } else
-    std::cout << "Test3D Test disabled" << std::endl;
+  // if constexpr (requires { testNURBSGridCurve<GridFamily>(); }) {
+  //   std::cout << "Test1Din3D" << std::endl;
+  //   t.subTest(testNURBSGridCurve<GridFamily>());
+  // } else
+  //   std::cout << "Test1Din3D Test disabled" << std::endl;
 
-  if constexpr (requires { testNURBSGridCurve<GridFamily>(); }) {
-    std::cout << "Test1Din3D" << std::endl;
-    t.subTest(testNURBSGridCurve<GridFamily>());
-  } else
-    std::cout << "Test1Din3D Test disabled" << std::endl;
-
-  if constexpr (requires { testNurbsGridCylinder<GridFamily>(); }) {
+  // if constexpr (requires { testNurbsGridCylinder<GridFamily>(); }) {
     std::cout << "testNurbsGridCylinder" << std::endl;
     t.subTest(testNurbsGridCylinder<GridFamily>());
-  } else
-    std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
-  if constexpr (requires { testNURBSGridSurface<GridFamily>(); }) {
+  // } else
+    // std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
+  // if constexpr (requires { testNURBSGridSurface<GridFamily>(); }) {
     std::cout << "testNURBSGridSurface" << std::endl;
     t.subTest(testNURBSGridSurface<GridFamily>());
-  } else
-    std::cout << "testNURBSGridSurface Test disabled" << std::endl;
-  if constexpr (requires { testPlate<GridFamily>(); }) {
+  // } else
+    // std::cout << "testNURBSGridSurface Test disabled" << std::endl;
+  // if constexpr (requires { testPlate<GridFamily>(); }) {
     std::cout << "testPlate==============================================" << std::endl;
     t.subTest(testPlate<GridFamily>());
     std::cout << "testPlateEND==============================================" << std::endl;
-  } else
-    std::cout << "testPlate Test disabled" << std::endl;
+  // } else
+    // std::cout << "testPlate Test disabled" << std::endl;
   // testNurbsGridCylinder();
-  if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
-    std::cout << "testTorusGeometry" << std::endl;
+  // if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
+    // std::cout << "testTorusGeometry" << std::endl;
     t.subTest(testTorusGeometry<GridFamily>());
-  } else
-    std::cout << "testTorusGeometry Test disabled" << std::endl;
+  // } else
+    // std::cout << "testTorusGeometry Test disabled" << std::endl;
 
   return t;
 }

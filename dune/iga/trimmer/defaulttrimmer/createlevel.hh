@@ -160,7 +160,6 @@ namespace Dune::IGANEW::DefaultTrim {
         auto hostId = globalIdSetParameterSpace.id(ele);
 
         IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
-        elementContainer.emplace_back(grid_, ele, elementId);
         if (ele.hasFather()) {
           auto fatherHostId = globalIdSetParameterSpace.id(ele.father());
           // if we know that we (the element) are untrimmed we know that our father is also untrimmed
@@ -176,8 +175,18 @@ namespace Dune::IGANEW::DefaultTrim {
             entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
             elementContainer.emplace_back(grid_, ele, elementInfo);
 
-            // since we have a father we have to add us as his son
+            // since we have a father we have to add us as his son, this can be faster, we can store in decendantIds, the indexInLvlStorage and lvl, which would provide faster access
             entityContainer.idToElementInfoMap.at(fatherId).decendantIds.push_back(elementId);
+          }
+        }else  /* no father */{
+          if (true /* untrimmed */) {
+            EntityInfo<0> elementInfo{.indexInLvlStorage   = trimmedElementIndex + unTrimmedElementIndex,
+                            .unTrimmedIndexInLvl = unTrimmedElementIndex,
+                            .lvl                 = newLevel,
+                            .id                  = elementId};
+            elementContainer.emplace_back(grid_, ele, elementInfo);
+            entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
+            ++unTrimmedElementIndex;
           }
         }
         auto& elementEdgeIndices   = entityContainer.globalEdgesIdOfElementsMap_[elementId];
@@ -218,7 +227,7 @@ namespace Dune::IGANEW::DefaultTrim {
         EntityInfo<2> vertexInfo{.indexInLvlStorage = vertexIndex++, .lvl = newLevel, .id = vertexId};
 
         entityContainer.idToVertexInfoMap.insert({vertexId, vertexInfo});
-        edgeContainer.emplace_back(grid_, vertex, vertexInfo);
+        vertexContainer.emplace_back(grid_, vertex, vertexInfo);
       }
     }
   }

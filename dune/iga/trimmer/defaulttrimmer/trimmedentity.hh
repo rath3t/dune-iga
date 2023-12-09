@@ -4,6 +4,9 @@
 namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
+
+      template <class GridImp>
+class PatchGridHierarchicIterator;
       // : TrimPatchEntitiy
       template <int codim_, int dim, class GridImp>
       class TrimmedParameterSpaceGridEntity {
@@ -12,6 +15,9 @@ namespace Dune {
         static constexpr int mydimension = dim;
         // [[nodiscard]] GeometryType type() const { return GeometryTypes::cube(mydimension); }
         using LocalCoordinate = FieldVector<ctype, mydimension>;
+
+        friend PatchGridHierarchicIterator<const GridImp>;
+        friend PatchGridEntitySeed<codim_,const GridImp>;
 
         using Trimmer           = typename GridImp::Trimmer;
         using GlobalIdSetIdType = typename Trimmer::TrimmerTraits::GlobalIdSetId;
@@ -254,16 +260,16 @@ namespace Dune {
         template <typename = void>
         requires(codim_ == 0) decltype(auto) geometryInFather() const { return hostEntity_.geometryInFather(); }
 
-        /** @brief Inter-level access to son elements on higher levels<=maxlevel.
-         * This is provided for sparsely stored nested unstructured meshes.
-         * Returns iterator to first son.
-         */
-        template <typename = void>
-        requires(codim_ == 0) decltype(auto) hbegin(int maxLevel) const { return hostEntity_.hbegin(maxLevel); }
-
-        //! Returns iterator to one past the last son
-        template <typename = void>
-        requires(codim_ == 0) decltype(auto) hend(int maxLevel) const { return hostEntity_.hend(maxLevel); }
+        // /** @brief Inter-level access to son elements on higher levels<=maxlevel.
+        //  * This is provided for sparsely stored nested unstructured meshes.
+        //  * Returns iterator to first son.
+        //  */
+        // template <typename = void>
+        // requires(codim_ == 0) decltype(auto) hbegin(int maxLevel) const { return hostEntity_.hbegin(maxLevel); }
+        //
+        // //! Returns iterator to one past the last son
+        // template <typename = void>
+        // requires(codim_ == 0) decltype(auto) hend(int maxLevel) const { return hostEntity_.hend(maxLevel); }
 
         //! @todo Please doc me !
         template <typename = void>
