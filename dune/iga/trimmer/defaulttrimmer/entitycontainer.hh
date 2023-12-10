@@ -79,21 +79,21 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
     template <int codim>
-    requires(codim >= 0 and codim <= 2) auto& entity(const IdType& id) { return entity<codim>(infoFromId<codim>(id)); }
+    requires(codim >= 0 and codim <= 2) auto& entity(const IdType& id, int lvl) { return entity<codim>(infoFromId<codim>(id,lvl)); }
 
     template <int codim>
-    requires(codim >= 0 and codim <= 2) const auto& entity(const IdType& id) const {
-      return entity<codim>(infoFromId<codim>(id));
+    requires(codim >= 0 and codim <= 2) const auto& entity(const IdType& id, int lvl) const {
+      return entity<codim>(infoFromId<codim>(id,lvl));
     }
 
     template <int codim>
-    requires(codim >= 0 and codim <= 2) const auto& infoFromId(const IdType& id) const {
+    requires(codim >= 0 and codim <= 2) const auto& infoFromId(const IdType& id, int lvl) const {
       if constexpr (codim == 0)
         return idToElementInfoMap.at(id);
       else if constexpr (codim == 1)
         return idToEdgeInfoMap.at(id);
       else
-        return idToVertexInfoMap.at(id);
+        return idToVertexInfoMap[lvl].at(id);
     }
 
     // for each level we have codim+1 vectors of entities
@@ -125,7 +125,7 @@ namespace Dune::IGANEW::DefaultTrim {
     std::map<IdType, Dune::ReservedVector<IdType, 8>> globalEdgesIdOfElementsMap_;
     std::map<IdType, Dune::ReservedVector<IdType, 8>> globalVerticesIdOfElementsMap;
 
-    std::map<IdType, EntityInfo<2>> idToVertexInfoMap;
+    std::vector<std::map<IdType, EntityInfo<2>>> idToVertexInfoMap; // vertices are repeated on different levels and share the same id, to differentiate them we warp it inisdew a vector which runs over the levels
     std::map<IdType, EntityInfo<1>> idToEdgeInfoMap;
     std::map<IdType, EntityInfo<0>> idToElementInfoMap;
   };

@@ -56,7 +56,7 @@ namespace Dune::IGANEW::DefaultTrim {
       auto parameterspaceIntersection = ParameterSpaceLeafIntersection(parameterSpaceGrid_, *hostIterator_);
       auto realIntersection =
           typename LeafIntersection::Implementation(parameterSpaceGrid_, parameterspaceIntersection);
-      return LeafIntersection();
+      return LeafIntersection(realIntersection);
     }
 
    private:

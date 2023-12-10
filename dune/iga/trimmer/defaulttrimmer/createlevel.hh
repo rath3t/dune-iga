@@ -221,12 +221,13 @@ namespace Dune::IGANEW::DefaultTrim {
 
         edgeContainer.emplace_back(grid_, edge, edgeInfo);
       }
+      entityContainer.idToVertexInfoMap.emplace_back();
       for (const auto& vertex : vertices(gv)) {
         auto vertexHostId = globalIdSetParameterSpace.id(vertex);
         IdType vertexId   = {.elementState = IdType::ElementState::full, .id = vertexHostId};
         EntityInfo<2> vertexInfo{.indexInLvlStorage = vertexIndex++, .lvl = newLevel, .id = vertexId};
 
-        entityContainer.idToVertexInfoMap.insert({vertexId, vertexInfo});
+        entityContainer.idToVertexInfoMap.back().insert({vertexId, vertexInfo});
         vertexContainer.emplace_back(grid_, vertex, vertexInfo);
       }
     }

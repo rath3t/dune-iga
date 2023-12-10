@@ -89,7 +89,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // if the given entity is leaf or max level we do not add anything to the stack
       if (target->level() < maxLevel_ && !target->isLeaf())
         for (auto descendantId : target->entityInfo_.decendantIds)
-          parameterSpaceElementStack_.push(&parameterSpaceGrid_->trimmer().entityContainer_.template entity<0>( descendantId));
+          parameterSpaceElementStack_.push(&parameterSpaceGrid_->trimmer().entityContainer_.template entity<0>( descendantId,target->level()+1));
     }
 
     void setCurrentEntity() {

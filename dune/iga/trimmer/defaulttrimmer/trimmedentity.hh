@@ -188,7 +188,7 @@ class PatchGridHierarchicIterator;
           //   return trimData_.template subEntity<codim_,cc>(i,localId_);
           // auto id = grid_->entityContainer().subId(id_,i,cc);
           if constexpr (cc == 0) return *this;
-          return grid_->trimmer().entityContainer_.template entity<cc>(subId(i, cc));
+          return grid_->trimmer().entityContainer_.template entity<cc>(subId(i, cc), this->level());
           // {
           //   if constexpr (cc==0)
           //   {
@@ -243,7 +243,7 @@ class PatchGridHierarchicIterator;
         template <typename = void>
         requires(codim_ == 0) decltype(auto) father() const {
           assert(entityInfo_.fatherId.has_value());
-          return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value());
+          return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value(),this->level());
           // return TrimmedParameterSpaceGridEntity(grid_, hostEntity_.father(),
           // grid_->trimmer().entityContainer_.idToElementInfoMap.at( entityInfo_.fatherId.value()));
         }
