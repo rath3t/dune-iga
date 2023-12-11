@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 #include <clipper2/clipper.h>
+#include <clipper2/clipper.rectclip.h>
 
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
@@ -25,22 +26,31 @@ namespace Dune::IGANEW::DefaultTrim {
     int intersectionCounter= 4;
     c.SetZCallback([&](const PointD& e1bot, const PointD& e1top,
   const PointD& e2bot, const PointD& e2top, PointD& pt){pt.z=intersectionCounter++;});
-    Clipper2Lib::RectD elementRect{corners[0][0], corners[0][1], corners[2][0], corners[2][1]};
+    const auto offsetX= corners[0][0];
+    const auto offsetY= corners[0][1];
+    const auto right= corners[2][0];
+    const auto bottom= corners[2][1];
+    Clipper2Lib::RectD elementRect{offsetX, offsetY, right, bottom};
     //
-    //  Clipper2Lib::Intersect(ClipperPaths{elementEdges}, clip_, Clipper2Lib::FillRule::NonZero);
-    // c.AddSubject(elementPath);
+   //   c.AddSubject(elementPath);
 
     PathsD trimmedSampledCurve;
 
     for (auto trimmingCurve:trimmingCurves.curves()) {
       trimmedSampledCurve.emplace({});
-      for (auto v: Utilities::linspace(trimmingCurve.domain()[0],100)) {
+      for (auto v: std::views::reverse(Utilities::linspace(trimmingCurve.domain()[0],10))) {
         auto fieldVectorPoint = trimmingCurve.global({v});
         trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1]});
       }
     }
-    PathsD clippedEdges = RectClip(elementRect,trimmedSampledCurve);
+   PathsD clippedEdges = Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
+
+     // PathsD clippedEdges =Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
+    // c.AddClip(trimmedSampledCurve);
+    // c.Execute(ClipType::Intersection,FillRule::NonZero);
+    // PathsD clippedEdges = RectClipLines(elementRect,trimmedSampledCurve,5);
     std::cout<<clippedEdges.size()<<std::endl;
+
 
 }
 }

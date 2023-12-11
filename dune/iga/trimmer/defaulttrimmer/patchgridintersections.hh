@@ -274,7 +274,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // DUNE_THROW(NotImplemented, "outside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
       IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
-      //! @todo Don't contruct this on the fly?
+      //! @todo Don't contruct this on the fly?trim
       return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,hostIntersection_.outside().level());
     }
 

@@ -38,7 +38,7 @@ auto diagonalTrimmingCurve(double offset) {
   using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
 
   const std::vector<ControlPoint> controlPointsCurve
-      = {{{.p = {-offset-0.1, offset-0.1}, .w = 1}, {.p = {1 - offset+0.1, 1 + offset+0.1}, .w = 1}}};
+      = {{{.p = {-offset, offset-0.1}, .w = 1}, {.p = {1 - offset, 1 + offset+0.1}, .w = 1}}};
   const std::array orderCurve = {1};
   auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
