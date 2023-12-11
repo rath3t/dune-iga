@@ -38,7 +38,7 @@ auto diagonalTrimmingCurve(double offset) {
   using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
 
   const std::vector<ControlPoint> controlPointsCurve
-      = {{{.p = {-offset, offset}, .w = 1}, {.p = {1 - offset, 1 + offset}, .w = 1}}};
+      = {{{.p = {-offset-0.1, offset-0.1}, .w = 1}, {.p = {1 - offset+0.1, 1 + offset+0.1}, .w = 1}}};
   const std::array orderCurve = {1};
   auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
@@ -48,43 +48,15 @@ auto diagonalTrimmingCurve(double offset) {
   return Dune::IGANEW::GeometryKernel::NURBSPatch(patchDataCurve);
 }
 
-using UntrimmedParameterSpaceGrid = YaspGrid<2, TensorProductCoordinates<double, 2>>;
-using YaspGridIdType              = typename UntrimmedParameterSpaceGrid::Traits::GlobalIdSet::IdType;
-struct IndexType {
-  YaspGridIdType id;
-  auto touint() const { return id.touint(); }
-};
 
-using IndexVariant = std::variant<YaspGridIdType, IndexType>;
 
-bool operator<(const IndexVariant& lhs, const IndexVariant& rhs) {
-  return std::visit(
-      [](auto&& arg1, auto&& arg2) {
-        if constexpr (std::is_same_v<
-                          std::remove_cvref_t<decltype(arg1)>,
-                          YaspGridIdType> and std::is_same_v<std::remove_cvref_t<decltype(arg2)>, YaspGridIdType>) {
-          return arg1 < arg2;
-        } else if constexpr (std::is_same_v<
-                                 std::remove_cvref_t<decltype(arg1)>,
-                                 IndexType> and std::is_same_v<std::remove_cvref_t<decltype(arg2)>, IndexType>) {
-          return arg1.id < arg2.id;
-        } else if constexpr (std::is_same_v<
-                                 std::remove_cvref_t<decltype(arg1)>,
-                                 IndexType> and std::is_same_v<std::remove_cvref_t<decltype(arg2)>, YaspGridIdType>) {
-          return true;
-        } else {
-          return false;
-        }
-      },
-      lhs, rhs);
-}
 
 auto testFactoryWithPlateWithTriangularTrim2D() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 2;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::Trimmer>;
+  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
@@ -102,8 +74,8 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  const auto trimCurve = diagonalTrimmingCurve(0.5);
-  using PatchTrimData  = typename Grid::TrimmerType::PatchTrimData;
+  const auto trimCurve = diagonalTrimmingCurve(0.0);
+  using PatchTrimData  = typename Grid::Trimmer::PatchTrimData;
   PatchTrimData patchTrimData;
   patchTrimData.insertTrimCurve(trimCurve);
 

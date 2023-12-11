@@ -119,7 +119,7 @@ namespace Dune::IGANEW::DefaultTrim {
     }
   }
 
-  auto trimElement()
+
 
   /**
    * \brief Create the paramter grid levels
@@ -159,6 +159,8 @@ namespace Dune::IGANEW::DefaultTrim {
       int edgeIndex          = 0;
       int vertexIndex        = 0;
       for (const auto& ele : elements(gv)) {
+        if(trimData_.has_value())
+        trimElement(ele,trimData_.value());
         auto hostId = globalIdSetParameterSpace.id(ele);
 
         IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};

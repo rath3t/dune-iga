@@ -21,6 +21,7 @@
 #include "patchgridleveliterator.hh"
 #include "trimmedentity.hh"
 #include "trimmedlocalgeometry.hh"
+#include "patchtrimdata.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -182,8 +183,7 @@ struct EntityInfoImpl<HostIdType,0> {
      * @tparam dim Dimension of the patch.
      * @tparam ScalarType Scalar type for the coordinates.
      */
-    template <int dim, typename ScalarType>
-    struct PatchTrimDataImpl {};
+
     template <int dim, int dimworld, typename ScalarType>
     class TrimmerImpl;
     template <int dim, int dimworld, typename ScalarType>
@@ -224,8 +224,8 @@ struct EntityInfoImpl<HostIdType,0> {
                             YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;  ///< Type of the Parametric grid
         using HostIdType    = typename ParameterSpaceGrid::GlobalIdSet::IdType;
         using GlobalIdSetId = IdType<HostIdType>;
-        using PatchTrimData = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
-                                                typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
+        using PatchTrimData = PatchTrimDataImpl<const Grid>;  ///< Patch trim data type.
+        using TrimmingCurve = GeometryKernel::NURBSPatch<dim-1,dim,ctype>;
         using ElementInfo   = EntityInfoImpl<HostIdType, 0>;
 
         template <int codim>
@@ -249,6 +249,7 @@ struct EntityInfoImpl<HostIdType,0> {
           using EntityImp                    = PatchGridEntity<codim, dim, const Grid>;
           using EntitySeedImpl               = PatchGridEntitySeed<codim, const Grid>;
           using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
+          using UnTrimmedHostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
         };
 
         using HostLeafIntersection                   = typename ParameterSpaceGrid::Traits::LeafIntersection;
@@ -410,8 +411,8 @@ struct EntityInfoImpl<HostIdType,0> {
 
       using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
                                                   typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   = PatchTrimDataImpl<ParameterSpaceGrid::dimension,
-                                              typename ParameterSpaceGrid::ctype>;  ///< Patch trim data type.
+      using PatchTrimData   =typename GridFamily::TrimmerTraits::PatchTrimData;  ///< Patch trim data type.
+      using TrimmingCurve   =typename GridFamily::TrimmerTraits::TrimmingCurve;  ///< Patch trim data type.
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
@@ -429,6 +430,8 @@ struct EntityInfoImpl<HostIdType,0> {
       friend LevelIndexSet;
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
+
+      static auto trimElement(const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element, const PatchTrimData& trimmingCurves);
 
       /**
        * @brief Get the reference element for a given entity.
@@ -468,10 +471,12 @@ struct EntityInfoImpl<HostIdType,0> {
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
-            localIdSet_(std::make_unique<LocalIdSet>(*grid_)) {
+            localIdSet_(std::make_unique<LocalIdSet>(*grid_)) ,trimData_{trimData}{
         createParameterSpaceGrid();
         setIndices();
       }
+
+
 
       TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
         this->grid_               = other.grid_;
@@ -566,9 +571,12 @@ struct EntityInfoImpl<HostIdType,0> {
       std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;  ///< The parameter space grid.
 
       std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_;
+
+      std::optional<PatchTrimData> trimData_;
     };
 
   }  // namespace DefaultTrim
 }  // namespace Dune::IGANEW
 
 #include "createlevel.hh"
+#include "trimelement.hh"
