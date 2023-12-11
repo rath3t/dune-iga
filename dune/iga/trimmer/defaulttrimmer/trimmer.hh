@@ -199,10 +199,10 @@ struct EntityInfoImpl<HostIdType,0> {
       using HierarchicIterator        = PatchGridHierarchicIterator<const Grid>;
 
       template <int codim>
-      static const bool hasEntity = codim == 0;
+      static const bool hasEntity = true;//codim == 0;
 
       template <int codim>
-      static const bool hasEntityIterator = codim == 0;
+      static const bool hasEntityIterator =true;// codim == 0;
 
       template <int codim>
       static const bool hasHostEntity = true;

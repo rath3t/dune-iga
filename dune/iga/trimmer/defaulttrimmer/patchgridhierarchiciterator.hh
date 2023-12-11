@@ -39,6 +39,7 @@ namespace Dune::IGANEW::DefaultTrim {
     {
 // extract the implementation of the grid entity and the parameter space host entity
       stackChildren(&startEntity.impl().getHostEntity());
+      setCurrentEntity();
     }
 
     //! @todo Please doc me !
@@ -59,8 +60,9 @@ namespace Dune::IGANEW::DefaultTrim {
         return;
 
       auto target = parameterSpaceElementStack_.top();
-      stackChildren(target); // add descendants of current son
       parameterSpaceElementStack_.pop(); // remove current son
+      stackChildren(target); // add descendants of current son
+
 
       setCurrentEntity(); // since std::stack is LIFO, we set the current entity to the first son of the old son
 

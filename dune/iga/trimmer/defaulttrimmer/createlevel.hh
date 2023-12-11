@@ -177,6 +177,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
             // since we have a father we have to add us as his son, this can be faster, we can store in decendantIds, the indexInLvlStorage and lvl, which would provide faster access
             entityContainer.idToElementInfoMap.at(fatherId).decendantIds.push_back(elementId);
+            entityContainer.template entity<0>(fatherId,newLevel-1).entityInfo_.decendantIds.push_back(elementId);
           }
         }else  /* no father */{
           if (true /* untrimmed */) {

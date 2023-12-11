@@ -317,19 +317,14 @@ namespace Dune::IGANEW::DefaultTrim {
       return {};
     }
 
-    //! Return true if this is a conforming intersection
+    //! Return true if this is a conforming intersection, within one patch we are always conforming
     [[nodiscard]] bool conforming() const {
-      DUNE_THROW(NotImplemented, "conforming not implemented");
-      return hostIntersection_.conforming();
-      return {};
+      return true;
     }
 
     //! Geometry type of an intersection
     [[nodiscard]] GeometryType type() const {
-      return hostIntersection_.type();
-      DUNE_THROW(NotImplemented, "type not implemented");
-
-      return {};
+      return GeometryTypes::line;
     }
 
     //! intersection of codimension 1 of this neighbor with element where

@@ -20,6 +20,7 @@ class PatchGridHierarchicIterator;
         friend PatchGridEntitySeed<codim_,const GridImp>;
 
         using Trimmer           = typename GridImp::Trimmer;
+        friend Trimmer;
         using GlobalIdSetIdType = typename Trimmer::TrimmerTraits::GlobalIdSetId;
         using EntityInfo        = typename Trimmer::TrimmerTraits::template Codim<codim_>::EntityInfo;
         using ElementTrimData   = typename Trimmer::ElementTrimData;
