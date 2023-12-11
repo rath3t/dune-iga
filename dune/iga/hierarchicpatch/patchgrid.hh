@@ -222,7 +222,7 @@ namespace Dune::IGANEW {
 
     /** @brief Number of grid entities per level and codim
      */
-    [[nodiscard]] int size(int level, int codim) const { return trimmer_->parameterSpaceGrid().size(level, codim); }
+    [[nodiscard]] int size(int level, int codim) const { return levelIndexSet(level).size(codim); }
 
     /** @brief returns the number of boundary segments within the macro grid
      */

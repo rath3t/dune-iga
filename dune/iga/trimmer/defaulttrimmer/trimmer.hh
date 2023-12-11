@@ -50,7 +50,7 @@ struct std::hash<Dune::IGANEW::DefaultTrim::IdType<HostIdType>> {
     // and bit shifting:
 
     return ((hash<HostIdType>()(k.id)
-             ^ (hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.elementState) << 1))
+             ^ (hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1))
             >> 1);
   }
 };
@@ -64,14 +64,14 @@ namespace Dune::IGANEW {
   namespace DefaultTrim {
     template <typename HostIdType>
     struct IdType {
-      enum class ElementState { full, trimmed };
-      ElementState elementState{ElementState::full};
+      enum class EntityIdType { host, newId };
+      EntityIdType entityIdType{EntityIdType::host};
       HostIdType id{};
 
-      bool operator==(const IdType& other) const { return (elementState == other.elementState) and (id == other.id); }
+      bool operator==(const IdType& other) const { return (entityIdType == other.entityIdType) and (id == other.id); }
 
       friend std::ostream& operator<<(std::ostream& stream, const IdType& id) {
-        stream << "Type: " << std::string(id.elementState == ElementState::full ? "Host" : "Trimmed")
+        stream << "Type: " << std::string(id.entityIdType == EntityIdType::host ? "Host" : "new")
                << ", Key: " << id.id << "\n";
         return stream;
       }
@@ -79,9 +79,9 @@ namespace Dune::IGANEW {
 
     template <typename HostIdType>
     bool operator<(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
-      if (lhs.elementState == rhs.elementState)
+      if (lhs.entityIdType == rhs.entityIdType)
         return lhs.id < rhs.id;
-      else if (lhs.elementState < rhs.elementState)
+      else if (lhs.entityIdType < rhs.entityIdType)
         return true;
       else
         return false;
@@ -94,7 +94,7 @@ namespace Dune::IGANEW {
 
     template <typename HostIdType>
     bool operator==(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
-      if (lhs.elementState == rhs.elementState)
+      if (lhs.entityIdType == rhs.entityIdType)
         return lhs.id == rhs.id;
       else
         return false;
@@ -102,9 +102,9 @@ namespace Dune::IGANEW {
 
     template <typename HostIdType>
     bool operator<=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
-      if (lhs.elementState == rhs.elementState)
+      if (lhs.entityIdType == rhs.entityIdType)
         return lhs.id <= rhs.id;
-      else if (lhs.elementState <= rhs.elementState)
+      else if (lhs.entityIdType <= rhs.entityIdType)
         return true;
       else
         return false;
@@ -117,7 +117,7 @@ namespace Dune::IGANEW {
 
     template <typename HostIdType>
     bool operator!=(const IdType<HostIdType>& lhs, const IdType<HostIdType>& rhs) {
-      if (lhs.elementState == rhs.elementState)
+      if (lhs.entityIdType == rhs.entityIdType)
         return lhs.id != rhs.id;
       else
         return true;
@@ -129,7 +129,13 @@ namespace Dune::IGANEW {
       struct Empty {};
       int indexInLvlStorage;
       int lvl;
+      bool stemFromTrim{false};
       IdType<HostIdType> id;
+
+
+      auto stemsFromTrim() const {
+        return stemFromTrim;
+      }
     };
 
     template <typename HostIdType>
@@ -141,6 +147,11 @@ struct EntityInfoImpl<HostIdType,0> {
        int trimmedIndexInLvl{-1};
       int lvl;
       IdType<HostIdType> id;
+
+      //if the element id is new we know that we are trimmed
+      auto stemsFromTrim() const {
+        return id.entityIdType==IdType<HostIdType>::EntityIdType::newId;
+      }
 
        std::optional<IdType<HostIdType>> fatherId;
       ReservedVector<IdType<HostIdType>, 4> decendantIds;
@@ -252,6 +263,8 @@ struct EntityInfoImpl<HostIdType,0> {
         // Trim::IntersectionVariant<Trimmer,UntrimmedParameterSpaceLevelIntersection,TrimmedParameterSpaceLevelIntersection>;
         using ParameterSpaceLevelIntersection = TrimmedParameterSpaceLevelIntersection;
       };
+
+      using GeometryTypes = ReservedVector<GeometryType,2>;
       // clang-format off
       typedef GridTraits<
         dim, dimworld, Grid,
@@ -276,9 +289,9 @@ struct EntityInfoImpl<HostIdType,0> {
       PatchGridEntitySeed,
       PatchGridLocalGeometry,
           typename TrimmerTraits::ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
-          typename TrimmerTraits::ParameterSpaceGrid::Traits::LevelIndexSet::Types,
+          GeometryTypes,
           typename TrimmerTraits::ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
-          typename TrimmerTraits::ParameterSpaceGrid::Traits::LeafIndexSet::Types>
+          GeometryTypes>
           Traits;
       // clang-format on
       // using GlobalIdSetType =  PatchGridGlobalIdSet<const Grid>;
@@ -317,6 +330,7 @@ struct EntityInfoImpl<HostIdType,0> {
       friend class PatchGridLeafIntersection<const GridImp>;
       friend class TrimmedLevelIntersection<const GridImp>;
       friend class TrimmedLeafIntersection<const GridImp>;
+
 
       template <int cd>
       using EntityInfo = typename GridFamily::TrimmerTraits::template Codim<cd>::EntityInfo;
@@ -411,6 +425,8 @@ struct EntityInfoImpl<HostIdType,0> {
       using LocalIdSet                  = typename GridFamily::LocalIdSet;
       using LeafIndexSet                = typename GridFamily::LeafIndexSet;
       using LevelIndexSet               = typename GridFamily::LevelIndexSet;
+      friend LeafIndexSet;
+      friend LevelIndexSet;
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 

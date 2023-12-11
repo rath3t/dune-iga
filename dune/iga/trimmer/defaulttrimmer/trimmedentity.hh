@@ -56,8 +56,7 @@ class PatchGridHierarchicIterator;
               entityInfo_{entInfo},
               trimData_{trimData} {
           assert(entityInfo_.lvl == untrimmedElement.level());
-          isTrimmed = true;
-          if (isTrimmed) trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
+          if (stemsFromTrim()) trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
         }
 
         // Entity untrimmed does not need trimdata but untrimmedElement
@@ -65,7 +64,6 @@ class PatchGridHierarchicIterator;
                                         EntityInfo entInfo)
             : grid_{grid}, hostEntity_{untrimmedElement}, entityInfo_{entInfo} {
           assert(entityInfo_.lvl == untrimmedElement.level());
-          isTrimmed = false;
 
           // DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
         }
@@ -75,19 +73,38 @@ class PatchGridHierarchicIterator;
         requires(codim_ != 0)
             TrimmedParameterSpaceGridEntity(const GridImp* grid, const ElementTrimData& trimData, EntityInfo entInfo)
             : grid_{grid}, trimData_{trimData}, entityInfo_{entInfo} {
-          isTrimmed             = true;
+
           trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
           // DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
         }
 
         auto& id() const { return entityInfo_.id; }
+
+        auto stemsFromTrim() const {
+          return entityInfo_.stemsFromTrim();
+        }
+
+        auto index()const {
+          if constexpr  (codim_==0)
+          return stemsFromTrim() ? entityInfo_.trimmedIndexInLvl : entityInfo_.unTrimmedIndexInLvl ;
+          else
+            return entityInfo_.indexInLvlStorage;
+        }
+
+        auto subIndex(int i, int codim) const {
+          if   (codim==0)
+            return index() ;
+          else
+            return grid_->trimmer().entityContainer_.template subIndexFromId<codim_>(entityInfo_.id,i,codim, this->level());
+        }
+
         template <typename = void>
         requires(codim_ == 0) auto& subId(int i, int codim) const {
           return grid_->trimmer().entityContainer_.subId(entityInfo_.id, i, codim);
         }
 
         HostParameterSpaceGridEntity getHostEntity() const {
-          if (isTrimmed and codim_ != 0)
+          if ( stemsFromTrim() and codim_ != 0)
             DUNE_THROW(NotImplemented, "getHostEntity");
           else
             return hostEntity_;
@@ -113,9 +130,7 @@ class PatchGridHierarchicIterator;
         //! returns true if father entity exists
         template <typename T = void>
         requires(codim_ == 0) [[nodiscard]] bool hasFather() const {
-          if constexpr (codim_ == 0)
-            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full) return hostEntity_.hasFather();
-          //@todo Trim this is crasy
+            if (not stemsFromTrim()) return hostEntity_.hasFather();
           DUNE_THROW(NotImplemented, " hasFather");
 
           // return hostEntity_.hasFather();
@@ -135,7 +150,7 @@ class PatchGridHierarchicIterator;
         [[nodiscard]] PartitionType partitionType() const {
           //@todo Trim this is crasy
           if constexpr (codim_ == 0)
-            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full)
+            if (not stemsFromTrim())
               return hostEntity_.partitionType();
           DUNE_THROW(NotImplemented, "partitionType not implemented for codim!=0 objects");
         }
@@ -154,7 +169,7 @@ class PatchGridHierarchicIterator;
           //     return localGeometry_.value();
           //   }
           // }else {
-          if (not isTrimmed) return hostEntity_.geometry();
+          if (not stemsFromTrim()) return hostEntity_.geometry();
           DUNE_THROW(NotImplemented, "geometry not implemented for trimmed codim!=0 objects");
           return trimmedlocalGeometry_.value();
           // }
@@ -167,7 +182,7 @@ class PatchGridHierarchicIterator;
           // if(trimData_)
           //   return trimData_. subEntities(codim,localId_);
           if constexpr (codim_ == 0) {
-            if (entityInfo_.id.elementState == GlobalIdSetIdType::ElementState::full)
+            if (not stemsFromTrim())
               return hostEntity_.subEntities(codim);
             else {
               DUNE_THROW(NotImplemented, "subEntities not implemented for codim==0 objects");
@@ -287,7 +302,6 @@ class PatchGridHierarchicIterator;
         const auto& hostEntity() const { return hostEntity_; }
 
         const GridImp* grid_;
-        bool isTrimmed{};
       };
 
     }  // namespace DefaultTrim

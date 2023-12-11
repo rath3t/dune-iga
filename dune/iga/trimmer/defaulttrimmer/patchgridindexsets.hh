@@ -20,10 +20,11 @@ namespace Dune::IGANEW::DefaultTrim {
       : public IndexSet<
             GridImp, PatchGridLevelIndexSet<GridImp>,
             typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::IndexType,
-            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::Types> {
+            typename std::remove_const_t<GridImp>::GridFamily::GeometryTypes> {
    public:
+    using GridFamily = typename GridImp::GridFamily;
+    using GeoTypes = typename GridFamily::GeometryTypes;
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid HostGrid;
-    typedef typename HostGrid::LevelGridView::IndexSet::Types Types;
 
     constexpr static int dim = GridImp::dimension;
 
@@ -32,8 +33,7 @@ namespace Dune::IGANEW::DefaultTrim {
     int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
       //       DUNE_THROW(NotImplemented, "Indices index");
       // return {};
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
-          grid_->template getHostEntity<codim>(e).getHostEntity());
+        return e.impl().getHostEntity().index();
     }
 
     //! get index of subEntity of a codim 0 entity
@@ -42,8 +42,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim, the subindeces are wrong!
       // DUNE_THROW(NotImplemented, "subIndex not implemented");
 
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(
-          grid_->template getHostEntity<cc>(e).getHostEntity(), i, codim);
+        return e.impl().getHostEntity().subIndex( i, codim);
     }
 
     //! get number of entities of given codim, type and on this level
@@ -51,7 +50,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim,coun trimmed elements!
       //       DUNE_THROW(NotImplemented, "size not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
+      return grid_->trimmer().entityContainer_.size(codim,level_);
     }
 
     //! get number of entities of given codim, type and on this level
@@ -59,15 +58,13 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim, count cube and none types i.e. full and trimmed elements
       // DUNE_THROW(NotImplemented, "size not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
+      return grid_->trimmer().entityContainer_.size(type,level_);
     }
 
     /** @brief Deliver all geometry types used in this grid */
-    Types types(int codim) const {
-      // @todo Trim, this should return none and cube for trimmed geometries
-      // DUNE_THROW(NotImplemented, "types not implemented");
-      // return {};
-      return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
+    GeoTypes types(int codim) const {
+      return grid_->trimmer().entityContainer_.types(codim,level_);
+
     }
 
     /** @brief Return true if the given entity is contained in the index set */
@@ -95,11 +92,12 @@ namespace Dune::IGANEW::DefaultTrim {
       : public IndexSet<
             GridImp, PatchGridLeafIndexSet<GridImp>,
             typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LeafGridView::IndexSet::IndexType,
-            typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LeafGridView::IndexSet::Types> {
+            typename std::remove_const_t<GridImp>::GridFamily::GeometryTypes> {
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
    public:
-    typedef typename ParameterSpaceGrid::LevelGridView::IndexSet::Types Types;
+    using GridFamily = typename GridImp::GridFamily;
+    using GeoTypes = typename GridFamily::GeometryTypes;
 
     /*
      * We use the remove_const to extract the Type from the mutable class,
@@ -143,22 +141,22 @@ namespace Dune::IGANEW::DefaultTrim {
       // @todo Trim, count cube and none types i.e. full and trimmed elements
       // DUNE_THROW(NotImplemented, "size not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().leafIndexSet().size(type);
+      return grid_->trimmer().entityContainer_.size(type,grid_->maxLevel());
     }
 
     //! get number of entities of given codim
     std::size_t size(int codim) const {
       // DUNE_THROW(NotImplemented, "size not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
+      return grid_->trimmer().entityContainer_.size(codim,grid_->maxLevel());
     }
 
     /** @brief Deliver all geometry types used in this grid */
-    Types types(int codim) const {
+    GeoTypes types(int codim) const {
       // @todo Trim, this should provide cube and none!
       // DUNE_THROW(NotImplemented, "types not implemented");
       // return {};
-      return grid_->parameterSpaceGrid().leafIndexSet().types(codim);
+      return grid_->trimmer().entityContainer_.types(codim,grid_->maxLevel());
     }
 
     /** @brief Return true if the given entity is contained in the index set */

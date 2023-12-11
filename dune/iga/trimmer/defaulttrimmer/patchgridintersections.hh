@@ -70,7 +70,7 @@ namespace Dune::IGANEW::DefaultTrim {
     ParameterSpaceGridEntity inside() const {
       // DUNE_THROW(NotImplemented, "inside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
-      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,patchGrid_->maxLevel());
     }
 
@@ -79,7 +79,7 @@ namespace Dune::IGANEW::DefaultTrim {
     ParameterSpaceGridEntity outside() const {
       // DUNE_THROW(NotImplemented, "outside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
-      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,patchGrid_->maxLevel());
     }
 
@@ -263,7 +263,7 @@ namespace Dune::IGANEW::DefaultTrim {
     [[nodiscard]] ParameterSpaceGridEntity inside() const {
       // DUNE_THROW(NotImplemented, "inside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
-      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       //! @todo Don't contruct this on the fly?
       return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,hostIntersection_.inside().level());
     }
@@ -273,7 +273,7 @@ namespace Dune::IGANEW::DefaultTrim {
     [[nodiscard]] ParameterSpaceGridEntity outside() const {
       // DUNE_THROW(NotImplemented, "outside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
-      IdType elementId = {.elementState = IdType::ElementState::full, .id = hostId};
+      IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       //! @todo Don't contruct this on the fly?
       return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,hostIntersection_.outside().level());
     }
