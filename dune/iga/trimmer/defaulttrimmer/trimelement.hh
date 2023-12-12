@@ -29,6 +29,11 @@ struct TrimmingTracker {
     elementPath.push_back({});
     for (int i=0; i<4 ; ++i)
       elementPath[0].push_back({corners[i][0],corners[i][1],i+1});
+
+    // auto tmp =  elementPath[0];
+    // std::ranges::reverse_copy(tmp, elementPath[0].begin());
+    // elementPath[0]=tmp;
+     // elementPath[0]=std::ranges::reverse( elementPath[0]);
     // elementPath[0].push_back({corners[0][0],corners[0][1],cornerIndices[0]});
     ClipperD c(5);
     int intersectionCounter= 5;
@@ -57,7 +62,7 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
 
     for (auto trimmingCurve:trimmingCurves.curves()) {
       trimmedSampledCurve.emplace({});
-      for (auto v: Utilities::linspace(trimmingCurve.domain()[0],6)) {
+      for (auto v: Utilities::linspace(trimmingCurve.domain()[0],2)) {
         auto fieldVectorPoint = trimmingCurve.global({v});
         trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1]});
       }
@@ -75,7 +80,7 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
     PolyTreeD tree;
     // c.Execute(ClipType::Intersection,FillRule::NonZero,tree);
 
-    if(not c.Execute(ClipType::Intersection,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
+    if(not c.Execute(ClipType::Union,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
       DUNE_THROW(InvalidStateException,"Trimming failed of element with lower left corner "<<corners[0]);
     // = Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
 
@@ -106,9 +111,9 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
 
     std::cout<<"Final path "<<std::endl;
 
-    for(const auto& [key,value]: tracker.betweenMap) {
-      trimmedPath[std::get<1>(value)]=std::get<2>(value);
-    }
+    // for(const auto& [key,value]: tracker.betweenMap) {
+    //   trimmedPath[std::get<1>(value)]=std::get<2>(value);
+    // }
 
     for( auto point: trimmedPath)
       std::cout<<point<<std::endl;
