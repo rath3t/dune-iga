@@ -38,7 +38,7 @@ auto diagonalTrimmingCurve(double offset) {
   using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
 
   const std::vector<ControlPoint> controlPointsCurve
-      = {{{.p = {-offset, offset-0.1}, .w = 1}, {.p = {1 - offset, 1 + offset+0.1}, .w = 1}}};
+      = {{{.p = {-offset, offset}, .w = 1}, {.p = {1 - offset, 1 + offset}, .w = 1}}};
   const std::array orderCurve = {1};
   auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
@@ -74,7 +74,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  const auto trimCurve = diagonalTrimmingCurve(0.0);
+  const auto trimCurve = diagonalTrimmingCurve(0.1);
   using PatchTrimData  = typename Grid::Trimmer::PatchTrimData;
   PatchTrimData patchTrimData;
   patchTrimData.insertTrimCurve(trimCurve);
@@ -93,28 +93,28 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   auto& globalIdSet      = parameterGrid.globalIdSet();
   auto& indexSet         = grid.leafIndexSet();
   auto& globalIdSetNURBS = grid.globalIdSet();
-
-  for (auto ele : elements(grid.leafGridView())) {
-    std::cout << "Center: " << ele.geometry().center() << std::endl;
-
-    std::cout << "Ele ID " << globalIdSetNURBS.id(ele) << std::endl;
-    std::cout << "Ele Index " << indexSet.index(ele) << std::endl;
-    std::cout << "Edges" << std::endl;
-    for (int edgeI = 0; edgeI < ele.subEntities(1); ++edgeI) {
-      std::cout << "Edge Index " << indexSet.index(ele.subEntity<1>(edgeI)) << std::endl;
-
-      std::cout << globalIdSetNURBS.subId(ele, edgeI, 1) << std::endl;
-      std::cout << ele.subEntity<1>(edgeI).geometry().center() << std::endl;
-    }
-    std::cout << "Vertices" << std::endl;
-
-    for (int vertI = 0; vertI < ele.subEntities(2); ++vertI) {
-      std::cout << "Vertex Index " << indexSet.index(ele.subEntity<2>(vertI)) << std::endl;
-
-      std::cout << globalIdSetNURBS.subId(ele, vertI, 1) << std::endl;
-      std::cout << ele.subEntity<2>(vertI).geometry().center() << std::endl;
-    }
-  }
+  //
+  // for (auto ele : elements(grid.leafGridView())) {
+  //   std::cout << "Center: " << ele.geometry().center() << std::endl;
+  //
+  //   std::cout << "Ele ID " << globalIdSetNURBS.id(ele) << std::endl;
+  //   std::cout << "Ele Index " << indexSet.index(ele) << std::endl;
+  //   std::cout << "Edges" << std::endl;
+  //   for (int edgeI = 0; edgeI < ele.subEntities(1); ++edgeI) {
+  //     std::cout << "Edge Index " << indexSet.index(ele.subEntity<1>(edgeI)) << std::endl;
+  //
+  //     std::cout << globalIdSetNURBS.subId(ele, edgeI, 1) << std::endl;
+  //     std::cout << ele.subEntity<1>(edgeI).geometry().center() << std::endl;
+  //   }
+  //   std::cout << "Vertices" << std::endl;
+  //
+  //   for (int vertI = 0; vertI < ele.subEntities(2); ++vertI) {
+  //     std::cout << "Vertex Index " << indexSet.index(ele.subEntity<2>(vertI)) << std::endl;
+  //
+  //     std::cout << globalIdSetNURBS.subId(ele, vertI, 1) << std::endl;
+  //     std::cout << ele.subEntity<2>(vertI).geometry().center() << std::endl;
+  //   }
+  // }
 
   //   using namespace Clipper2Lib;
   //

@@ -6,10 +6,11 @@ set(TESTS gridtests testbsplines testnurbsbasis factorytest trimtest testfindint
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 foreach(_test ${TESTS})
   dune_add_test(SOURCES ${_test}.cpp TIMEOUT 10000 LABELS cpp)
+#  add_dune_PkgConfig_Clipper2Lib_flags(${_test})
   target_compile_options(${_test} PRIVATE -g)
 
   target_link_libraries(
-    ${_test} PRIVATE PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json
+    ${_test} PRIVATE Clipper2Z nlohmann_json::nlohmann_json
                      earcut_hpp::earcut_hpp)
 
   target_compile_options(
@@ -35,7 +36,7 @@ endforeach()
 dune_add_test(SOURCES concepttests.cpp COMPILE_ONLY LABELS cpp)
 
 target_link_libraries(
-  concepttests PRIVATE PkgConfig::Clipper2Lib nlohmann_json::nlohmann_json
+  concepttests PRIVATE Clipper2Z nlohmann_json::nlohmann_json
                        earcut_hpp::earcut_hpp)
 
 target_compile_options(
