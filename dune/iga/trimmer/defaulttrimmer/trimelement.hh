@@ -12,24 +12,9 @@ struct TrimmingTracker {
 };
 
 
-  template <int dim, int dimworld, typename ScalarType>
-  auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
-    const PatchTrimData& trimmingCurves) {
-    std::cout<<"START "<<std::endl;
-    using namespace Clipper2Lib;
-  auto geo  = element.geometry();
-  std::array cornerIndices= {0,1,3,2};// see dune book page 127 Figure 5.12
-  std::array<FieldVector<ctype,2>,4> corners;// see dune book page 127 Figure 5.12
-  corners[0] = geo.corner(0);
-  corners[1] = geo.corner(1);
-  corners[2] = geo.corner(3);
-  corners[3]  = geo.corner(2);
-
-    PathsD elementPath;
-    elementPath.push_back({});
-    for (int i=0; i<4 ; ++i)
-      elementPath[0].push_back({corners[i][0],corners[i][1],i+1});
-
+void trimRectangle( Clipper2Lib::PathsD& rect, Clipper2Lib::PathsD& trimmingCurves)
+{
+  using namespace Clipper2Lib;
     // auto tmp =  elementPath[0];
     // std::ranges::reverse_copy(tmp, elementPath[0].begin());
     // elementPath[0]=tmp;
@@ -38,7 +23,15 @@ struct TrimmingTracker {
     ClipperD c(5);
     int intersectionCounter= 5;
 
-    TrimmingTracker<ctype> tracker;
+    assert(rect.size()==1 and rect[0].size()==4);
+    for(int i=1; auto& p: rect[0])
+      p.z=i++;
+
+          for(int i=1; auto& curve: trimmingCurves)
+                    for( auto& p: curve)
+                        p.z=10000+i++;
+
+    TrimmingTracker<double> tracker;
     c.SetZCallback([&](const PointD& e1bot, const PointD& e1top,
   const PointD& e2bot, const PointD& e2top, PointD& pt) {
     std::cout<<"e1bot: "<<e1bot.z<<std::endl;
@@ -58,37 +51,23 @@ struct TrimmingTracker {
     else if (areWeAtLeftEdge)
         in=(e1bot.z>e1top.z);
   else if (areWeAtBottomEdge)
-      in=(e1bot.z<e1top.z);
+      in=(e1bot.z>e1top.z);
    else if (areWeAtRightEdge)
       in=(e1bot.z<e1top.z);
-      tracker.betweenMap.insert({{intersectionCounter},{e2top.z,e2bot.z,FieldVector<ctype,2>({pt.x,pt.y}),in}});
+      tracker.betweenMap.insert({{intersectionCounter},{e2top.z,e2bot.z,FieldVector<double,2>({pt.x,pt.y}),in}});
       pt.z=intersectionCounter++;
     });
-    const auto offsetX= corners[0][0];
-    const auto offsetY= corners[0][1];
-    const auto right= corners[2][0];
-    const auto bottom= corners[2][1];
-    Clipper2Lib::RectD elementRect{offsetX, offsetY, right, bottom};
-    //
-   //   c.AddSubject(elementPath);
-std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
-    PathsD trimmedSampledCurve;
 
-    for (auto trimmingCurve:trimmingCurves.curves()) {
-      trimmedSampledCurve.emplace({});
-      for (int i = 0;auto v: Utilities::linspace(trimmingCurve.domain()[0],2)) {
-        auto fieldVectorPoint = trimmingCurve.global({v});
-        trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1],500+i++});
-      }
-    }
+std::cout<<"Lower left corner: "<<rect[0][0]<<std::endl;
+
     std::cout<<"Trimming Curve"<<std::endl;
 
-    for( auto point: trimmedSampledCurve[0])
+    for( auto point: trimmingCurves[0])
       std::cout<<point<<std::endl;
     std::cout<<"Trimming Curve End"<<std::endl;
 
-    c.AddOpenSubject(trimmedSampledCurve );
-    c.AddClip(elementPath );
+    c.AddOpenSubject(trimmingCurves );
+    c.AddClip(rect );
     PathsD clippedOpenEdges;
     PathsD clippedClosedEdges;
     PolyTreeD tree;
@@ -98,7 +77,7 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
     //  std::cout<<"Tree size"<<tree<<std::endl;
 
     if(not c.Execute(ClipType::Intersection,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
-      DUNE_THROW(InvalidStateException,"Trimming failed of element with lower left corner "<<corners[0]);
+      DUNE_THROW(InvalidStateException,"Trimming failed of element with lower left corner "<<rect[0][0]);
     // = Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
 
 
@@ -132,13 +111,40 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
 
 
     std::cout<<"Final path "<<std::endl;
+}
 
-    // for(const auto& [key,value]: tracker.betweenMap) {
-    //   trimmedPath[std::get<1>(value)]=std::get<2>(value);
-    // }
 
-    // for( auto point: trimmedPath)
-    //   std::cout<<point<<std::endl;
+  template <int dim, int dimworld, typename ScalarType>
+  auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
+    const PatchTrimData& trimmingCurves) {
+    std::cout<<"START "<<std::endl;
+    using namespace Clipper2Lib;
+  auto geo  = element.geometry();
+  std::array cornerIndices= {0,1,3,2};// see dune book page 127 Figure 5.12
+  std::array<FieldVector<ctype,2>,4> corners;// see dune book page 127 Figure 5.12
+  corners[0] = geo.corner(0);
+  corners[1] = geo.corner(1);
+  corners[2] = geo.corner(3);
+  corners[3]  = geo.corner(2);
+
+    PathsD elementPath;
+    elementPath.push_back({});
+    for (int i=0; i<4 ; ++i)
+      elementPath[0].push_back({corners[i][0],corners[i][1],i+1});
+
+
+    PathsD trimmedSampledCurve;
+
+    for (auto trimmingCurve:trimmingCurves.curves()) {
+      trimmedSampledCurve.emplace({});
+      for (int i = 0;auto v: std::ranges::reverse_view(Utilities::linspace(trimmingCurve.domain()[0],2))) {
+        auto fieldVectorPoint = trimmingCurve.global({v});
+        trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1],500+i++});
+      }
+    }
+
+    trimRectangle(elementPath,trimmedSampledCurve);
+  
 
 }
 }
