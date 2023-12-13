@@ -8,7 +8,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
   template<typename ctype>
 struct TrimmingTracker {
-  std::map<int,std::tuple<int,int,FieldVector<ctype,2>>> betweenMap;
+  std::map<int,std::tuple<int,int,FieldVector<ctype,2>,bool>> betweenMap;
 };
 
 
@@ -47,7 +47,21 @@ struct TrimmingTracker {
     std::cout<<"e2top: "<<e2top.z<<std::endl;
     std::cout<<"pt: "<<pt<<std::endl;
     std::cout<<"intersectionCounter: "<<intersectionCounter<<std::endl;
-      tracker.betweenMap.insert({{intersectionCounter},{e2top.z,e2bot.z,FieldVector<ctype,2>({pt.x,pt.y})}});
+    bool in{false};
+    auto areWeAtEdge = [&](int i1,int i2){return ((e2top.z== i1 and e2bot.z ==i2) or (e2top.z== i2 and e2bot.z ==i1)); };
+    const bool areWeAtTopEdge =areWeAtEdge(3,4);
+     const bool areWeAtBottomEdge =areWeAtEdge(1,2);
+          const bool areWeAtLeftEdge =areWeAtEdge(4,1);
+                 const bool areWeAtRightEdge =areWeAtEdge(2,3);
+    if (areWeAtTopEdge  )
+     in=(e1bot.z<e1top.z);
+    else if (areWeAtLeftEdge)
+        in=(e1bot.z>e1top.z);
+  else if (areWeAtBottomEdge)
+      in=(e1bot.z<e1top.z);
+   else if (areWeAtRightEdge)
+      in=(e1bot.z<e1top.z);
+      tracker.betweenMap.insert({{intersectionCounter},{e2top.z,e2bot.z,FieldVector<ctype,2>({pt.x,pt.y}),in}});
       pt.z=intersectionCounter++;
     });
     const auto offsetX= corners[0][0];
@@ -62,9 +76,9 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
 
     for (auto trimmingCurve:trimmingCurves.curves()) {
       trimmedSampledCurve.emplace({});
-      for (auto v: Utilities::linspace(trimmingCurve.domain()[0],2)) {
+      for (int i = 0;auto v: Utilities::linspace(trimmingCurve.domain()[0],2)) {
         auto fieldVectorPoint = trimmingCurve.global({v});
-        trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1]});
+        trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1],500+i++});
       }
     }
     std::cout<<"Trimming Curve"<<std::endl;
@@ -78,9 +92,12 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
     PathsD clippedOpenEdges;
     PathsD clippedClosedEdges;
     PolyTreeD tree;
-    // c.Execute(ClipType::Intersection,FillRule::NonZero,tree);
+    //  c.Execute(ClipType::Intersection,FillRule::NonZero,tree);
+    //  std::cout<<"Tree size"<<tree<<std::endl;
+    //       c.Execute(ClipType::Intersection,FillRule::EvenOdd,tree);
+    //  std::cout<<"Tree size"<<tree<<std::endl;
 
-    if(not c.Execute(ClipType::Union,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
+    if(not c.Execute(ClipType::Intersection,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
       DUNE_THROW(InvalidStateException,"Trimming failed of element with lower left corner "<<corners[0]);
     // = Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
 
@@ -97,7 +114,7 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
 
     std::cout<<"Tracked intersections: "<<std::endl;
     for(const auto& [key,value]: tracker.betweenMap)
-      std::cout<<key<<" v:"<<std::get<0>(value)<<" " <<std::get<1>(value)<<" "<<std::get<2>(value)<<std::endl;
+      std::cout<<key<<" v:"<<std::get<0>(value)<<" " <<std::get<1>(value)<<" "<<std::get<2>(value)<<" "<<(std::get<3>(value)? " in": " out")<<std::endl;
      // PathsD clippedEdges =Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
     // c.AddClip(trimmedSampledCurve);
     // c.Execute(ClipType::Intersection,FillRule::NonZero);
@@ -106,8 +123,13 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
     std::cout<<"END "<<std::endl;
 
     //Compute final path
-    PathD trimmedPath= elementPath[0];
-    std::ranges::sort(trimmedPath,[](auto p1,auto p2){ return p1.z<p2.z;});
+    std::vector<std::pair<int,int>> edges;
+    edges.push_back({1,2});
+    edges.push_back({2,3});
+    edges.push_back({3,4});
+    edges.push_back({4,1});
+
+
 
     std::cout<<"Final path "<<std::endl;
 
@@ -115,8 +137,8 @@ std::cout<<"Lower left corner: "<<corners[0]<<std::endl;
     //   trimmedPath[std::get<1>(value)]=std::get<2>(value);
     // }
 
-    for( auto point: trimmedPath)
-      std::cout<<point<<std::endl;
+    // for( auto point: trimmedPath)
+    //   std::cout<<point<<std::endl;
 
 }
 }
