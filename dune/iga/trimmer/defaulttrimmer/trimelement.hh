@@ -8,9 +8,6 @@
 namespace Dune::IGANEW::DefaultTrim {
 
 
-
-
-
   template <int dim, int dimworld, typename ScalarType>
   auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
     const PatchTrimData& trimmingCurves) {
@@ -24,23 +21,22 @@ namespace Dune::IGANEW::DefaultTrim {
   corners[2] = geo.corner(3);
   corners[3]  = geo.corner(2);
 
-    PathsD elementPath;
-    elementPath.push_back({});
+    PathD elementPath;
     for (int i=0; i<4 ; ++i)
-      elementPath[0].push_back({corners[i][0],corners[i][1],i+1});
+      elementPath.push_back({corners[i][0],corners[i][1],i+1});
 
 
     PathsD trimmedSampledCurve;
 
     for (auto trimmingCurve:trimmingCurves.curves()) {
       trimmedSampledCurve.emplace({});
-      for (int i = 0;auto v: std::ranges::reverse_view(Utilities::linspace(trimmingCurve.domain()[0],2))) {
+      for (int i = 0;auto v: std::ranges::reverse_view(Utilities::linspace(trimmingCurve.domain()[0],10))) {
         auto fieldVectorPoint = trimmingCurve.global({v});
         trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1],500+i++});
       }
     }
 
-    trimRectangle(elementPath,trimmedSampledCurve);
+    trimElementImpl(elementPath,trimmedSampledCurve);
   
 
 }

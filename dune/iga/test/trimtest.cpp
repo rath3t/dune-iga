@@ -83,8 +83,8 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  patchData               = Splines::knotRefinement(patchData, {0.5}, 0);
-  patchData               = Splines::knotRefinement(patchData, {0.5}, 1);
+  // patchData               = Splines::knotRefinement(patchData, {0.5}, 0);
+  // patchData               = Splines::knotRefinement(patchData, {0.5}, 1);
   Grid grid(patchData, patchTrimData);
   // grid.globalRefine(1);
   auto& parameterGrid = grid.parameterSpaceGrid();

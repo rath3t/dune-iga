@@ -16,10 +16,8 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 
-
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 #include <dune/iga/patchgrid.hh>
-
 #include <dune/iga/trimmer/defaulttrimmer/trimmingutils/trimrectangle.hh>
 
 using namespace Dune::IGANEW;
@@ -40,9 +38,6 @@ auto diagonalTrimmingCurve(double offset) {
   patchDataCurve.controlPoints = controlNetCurve;
   return Dune::IGANEW::GeometryKernel::NURBSPatch(patchDataCurve);
 }
-
-
-
 
 auto testFactoryWithPlateWithTriangularTrim2D() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
@@ -68,22 +63,20 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   const auto trimCurve = diagonalTrimmingCurve(0.1);
   PathsD trimmedSampledCurve;
-    trimmedSampledCurve.emplace({});
-    for (int i = 0;auto v: std::ranges::reverse_view(Utilities::linspace(trimCurve.domain()[0],2))) {
-      auto fieldVectorPoint = trimCurve.global({v});
-      trimmedSampledCurve.back().push_back({fieldVectorPoint[0],fieldVectorPoint[1],500+i++});
-
+  trimmedSampledCurve.emplace({});
+  for (int i = 0; auto v : std::ranges::reverse_view(Utilities::linspace(trimCurve.domain()[0], 2))) {
+    auto fieldVectorPoint = trimCurve.global({v});
+    trimmedSampledCurve.back().push_back({fieldVectorPoint[0], fieldVectorPoint[1], 500 + i++});
   }
 
   PathsD rect;
   rect.push_back({});
-  rect[0].push_back({0,0});
-  rect[0].push_back({0,1});
-  rect[0].push_back({1,1});
-  rect[0].push_back({1,0});
+  rect[0].push_back({0, 0});
+  rect[0].push_back({0, 1});
+  rect[0].push_back({1, 1});
+  rect[0].push_back({1, 0});
 
-  Dune::IGANEW::DefaultTrim::trimRectangle(rect,trimmedSampledCurve);
-
+  Dune::IGANEW::DefaultTrim::trimRectangle(rect, trimmedSampledCurve);
 
   //
   // for (auto ele : elements(grid.leafGridView())) {

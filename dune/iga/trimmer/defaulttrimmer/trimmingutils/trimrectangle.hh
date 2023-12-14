@@ -3,113 +3,139 @@
 #pragma once
 
 #include <clipper2/clipper.h>
-#include <dune/iga/geometrykernel/findintersection.hh>
+#include <variant>
+
+
 namespace Dune::IGANEW::DefaultTrim {
 
-  template<typename ctype>
-struct TrimmingTracker {
-    std::map<int,std::tuple<int,int,FieldVector<ctype,2>,bool>> betweenMap;
+  struct TrimmingResult {
+    std::size_t nVertices;
+    std::size_t newVertices = 4;
+    std::array<bool, 4> verticesVisited{false, false, false, false};
+    std::array<bool, 4> edgesVisited{false, false, false, false};
+
+    struct HostVertex {
+      std::size_t idx{};
+      std::size_t originalIdx{};
+    };
+    struct NewVertex {
+      std::size_t idx{};
+      int onEdgeIdx{};
+      std::size_t getsNewID{};
+
+      Clipper2Lib::PointD pt;
+    };
+
+    using VertexVariant = std::variant<HostVertex, NewVertex>;
+    std::vector<VertexVariant> vertices;
+
+    std::size_t addOriginalVertex(const size_t originalIdx) {
+      verticesVisited[originalIdx] = true;
+      vertices.emplace_back(HostVertex(nVertices++, originalIdx));
+      return nVertices;
+    }
+    std::size_t addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt) {
+      edgesVisited[edgeIdx] = true;
+      vertices.emplace_back(NewVertex(nVertices++, edgeIdx, newVertices++, pt));
+      return nVertices;
+    }
+    void finish() {
+      // We have to somehow close the loop
+      for (size_t i = 0; const auto didIvisit : verticesVisited) {
+        if (not didIvisit) {
+          if (not (edgesVisited[i] and edgesVisited[i-1])) {
+            // @todo unlikely ? but edge 0 is not visited than -1
+            addOriginalVertex(i);
+          }
+        }
+        i++;
+      }
+    }
   };
 
-  void trimRectangle( Clipper2Lib::PathsD& rect, Clipper2Lib::PathsD& trimmingCurves)
-  {
-    using namespace Clipper2Lib;
-    // auto tmp =  elementPath[0];
-    // std::ranges::reverse_copy(tmp, elementPath[0].begin());
-    // elementPath[0]=tmp;
-    // elementPath[0]=std::ranges::reverse( elementPath[0]);
-    // elementPath[0].push_back({corners[0][0],corners[0][1],cornerIndices[0]});
-    ClipperD c(5);
-    int intersectionCounter= 5;
-
-    assert(rect.size()==1 and rect[0].size()==4);
-    assert(rect.size()==1 and rect[0].size()==4);
-    for(int i=1; auto& p: rect[0])
-      p.z=i++;
-
-    for(int i=1; auto& curve: trimmingCurves)
-      for( auto& p: curve)
-        p.z=10000+i++;
-
-    TrimmingTracker<double> tracker;
-    c.SetZCallback([&](const PointD& e1bot, const PointD& e1top,
-  const PointD& e2bot, const PointD& e2top, PointD& pt) {
-    std::cout<<"e1bot: "<<e1bot.z<<std::endl;
-    std::cout<<"e1top: "<<e1top.z<<std::endl;
-    std::cout<<"e2bot: "<<e2bot.z<<std::endl;
-    std::cout<<"e2top: "<<e2top.z<<std::endl;
-    std::cout<<"pt: "<<pt<<std::endl;
-    std::cout<<"intersectionCounter: "<<intersectionCounter<<std::endl;
-    bool in{false};
-    auto areWeAtEdge = [&](int i1,int i2){return ((e2top.z== i1 and e2bot.z ==i2) or (e2top.z== i2 and e2bot.z ==i1)); };
-    const bool areWeAtTopEdge =areWeAtEdge(3,4);
-     const bool areWeAtBottomEdge =areWeAtEdge(1,2);
-          const bool areWeAtLeftEdge =areWeAtEdge(4,1);
-                 const bool areWeAtRightEdge =areWeAtEdge(2,3);
-    if (areWeAtTopEdge  )
-      in=(e1bot.z<e1top.z);
-     else if (areWeAtLeftEdge)
-       in=(e1bot.z>e1top.z);
- else if (areWeAtBottomEdge)
-   in=(e1bot.z>e1top.z);
-else if (areWeAtRightEdge)
-  in=(e1bot.z<e1top.z);
-  tracker.betweenMap.insert({{intersectionCounter},{e2top.z,e2bot.z,FieldVector<double,2>({pt.x,pt.y}),in}});
-  pt.z=intersectionCounter++;
-});
-
-    std::cout<<"Lower left corner: "<<rect[0][0]<<std::endl;
-
-    std::cout<<"Trimming Curve"<<std::endl;
-
-    for( auto point: trimmingCurves[0])
-      std::cout<<point<<std::endl;
-    std::cout<<"Trimming Curve End"<<std::endl;
-
-    c.AddOpenSubject(trimmingCurves );
-    c.AddClip(rect );
-    PathsD clippedOpenEdges;
-    PathsD clippedClosedEdges;
-    PolyTreeD tree;
-    //  c.Execute(ClipType::Intersection,FillRule::NonZero,tree);
-    //  std::cout<<"Tree size"<<tree<<std::endl;
-    //       c.Execute(ClipType::Intersection,FillRule::EvenOdd,tree);
-    //  std::cout<<"Tree size"<<tree<<std::endl;
-
-    if(not c.Execute(ClipType::Intersection,FillRule::EvenOdd,clippedClosedEdges,clippedOpenEdges))
-      DUNE_THROW(InvalidStateException,"Trimming failed of element with lower left corner "<<rect[0][0]);
-    // = Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
-
-
-    std::cout<<"Result Open"<<std::endl;
-    for( auto& path: clippedOpenEdges)
-      for( auto point: path)
-        std::cout<<point<<std::endl;
-
-    std::cout<<"Result Closed"<<std::endl;
-    for( auto& path: clippedClosedEdges)
-      for( auto point: path)
-        std::cout<<point<<std::endl;
-
-    std::cout<<"Tracked intersections: "<<std::endl;
-    for(const auto& [key,value]: tracker.betweenMap)
-      std::cout<<key<<" v:"<<std::get<0>(value)<<" " <<std::get<1>(value)<<" "<<std::get<2>(value)<<" "<<(std::get<3>(value)? " in": " out")<<std::endl;
-    // PathsD clippedEdges =Clipper2Lib::Intersect(elementPath, trimmedSampledCurve, Clipper2Lib::FillRule::NonZero);
-    // c.AddClip(trimmedSampledCurve);
-    // c.Execute(ClipType::Intersection,FillRule::NonZero);
-    // PathsD clippedEdges = RectClipLines(elementRect,trimmedSampledCurve,5);
-    // std::cout<<clippedEdges.size()<<std::endl;
-    std::cout<<"END "<<std::endl;
-
-    //Compute final path
-    std::vector<std::pair<int,int>> edges;
-    edges.push_back({1,2});
-    edges.push_back({2,3});
-    edges.push_back({3,4});
-    edges.push_back({4,1});
-
-
-
-    std::cout<<"Final path "<<std::endl;
+  inline int giveEdgeIdx(int e1, int e2) {
+    if ((e1 == 0 and e2 == 1) or (e1 == 1 and e2 == 0))
+      return 0;
+    if ((e1 == 1 and e2 == 2) or (e1 == 2 and e2 == 1))
+      return 1;
+    if ((e1 == 2 and e2 == 3) or (e1 == 3 and e2 == 2))
+      return 2;
+    if ((e1 == 3 and e2 == 0) or (e1 == 0 and e2 == 3))
+      return 3;
+    __builtin_unreachable();
   }
-}
+
+  inline auto trimElementImpl(Clipper2Lib::PathD& eleRect, Clipper2Lib::PathsD& trimmingCurves) {
+    using namespace Clipper2Lib;
+
+    ClipperD clipper(8);
+    // todo just add cuve ID to z value of curve points, than we can just same this numer in NewVertex
+    // Counters
+    std::size_t counter     = 0;
+    std::size_t loopCounter = 0;
+    std::vector<size_t> counterBreaks{};
+
+    // Give points in eleRect the z-Val from 0 to 4 counter-clockwise
+    std::ranges::for_each(eleRect, [&](auto& point) { point.z = counter++; });
+    counterBreaks.push_back(counter);
+
+    for (auto& trimmingCurve : trimmingCurves) {
+      std::ranges::for_each(trimmingCurve, [&](auto& point) { point.z = counter++; });
+      counterBreaks.push_back(counter);
+      loopCounter++;
+    }
+
+    // std::cout << "Counter: " << counter << std::endl;
+    // std::cout << "loopCounter: " << loopCounter << std::endl;
+    // std::cout << "Counter Breaks:\n";
+    // for (const auto& c : counterBreaks)
+    //   std::cout << c << std::endl;
+
+    TrimmingResult result{};
+    std::size_t vertexCounter = 0;
+
+    clipper.SetZCallback(
+        [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
+          std::cout << "New Intersection x: " << pt.x << " y: " << pt.y << std::endl;
+          std::cout << e1bot.z << " " << e1top.z << std::endl;
+          std::cout << e2bot.z << " " << e2top.z << std::endl;
+
+          if (e2bot.z > e2top.z and (int) e2top.z != 0) {
+            // Trimming path comes in ... add Vertices before
+            for (const auto i : std::views::iota(vertexCounter, static_cast<std::size_t>(e2bot.z)))
+              vertexCounter = result.addOriginalVertex(i);
+
+            // add new Intersection
+            vertexCounter = result.addNewVertex(giveEdgeIdx((int) e2bot.z, (int) e2top.z), pt);
+          }
+          else {
+            // Trimming path goes out
+            // @todo there is an edge Case where trimming path goes out on an host vertex
+            vertexCounter = result.addNewVertex(giveEdgeIdx((int) e2bot.z, (int) e2top.z), pt);
+          }
+        });
+
+    clipper.AddClip({eleRect});
+    clipper.AddOpenSubject(trimmingCurves);
+
+    PathsD solution{};
+
+    clipper.Execute(ClipType::Intersection, FillRule::EvenOdd, solution);
+    result.finish();
+
+    std::cout << "Vertices found\n";
+
+    struct Visitor {
+      void operator()(const TrimmingResult::HostVertex& v) {
+        std::cout << v.idx << std::endl;
+      }
+      void operator()(const TrimmingResult::NewVertex& v) {
+        std::cout << v.idx << " Edge: " << v.onEdgeIdx << ", gets Idx "  << v.getsNewID << std::endl;
+      }
+    };
+
+    for (auto& vV : result.vertices)
+      std::visit(Visitor{}, vV);
+  }
+
+}  // namespace Dune::IGANEW::DefaultTrim
