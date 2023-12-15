@@ -6,7 +6,7 @@ namespace Dune {
     namespace DefaultTrim {
 
       template <class GridImp>
-class PatchGridHierarchicIterator;
+      class PatchGridHierarchicIterator;
       // : TrimPatchEntitiy
       template <int codim_, int dim, class GridImp>
       class TrimmedParameterSpaceGridEntity {
@@ -17,9 +17,9 @@ class PatchGridHierarchicIterator;
         using LocalCoordinate = FieldVector<ctype, mydimension>;
 
         friend PatchGridHierarchicIterator<const GridImp>;
-        friend PatchGridEntitySeed<codim_,const GridImp>;
+        friend PatchGridEntitySeed<codim_, const GridImp>;
 
-        using Trimmer           = typename GridImp::Trimmer;
+        using Trimmer = typename GridImp::Trimmer;
         friend Trimmer;
         using GlobalIdSetIdType = typename Trimmer::TrimmerTraits::GlobalIdSetId;
         using EntityInfo        = typename Trimmer::TrimmerTraits::template Codim<codim_>::EntityInfo;
@@ -73,29 +73,27 @@ class PatchGridHierarchicIterator;
         requires(codim_ != 0)
             TrimmedParameterSpaceGridEntity(const GridImp* grid, const ElementTrimData& trimData, EntityInfo entInfo)
             : grid_{grid}, trimData_{trimData}, entityInfo_{entInfo} {
-
           trimmedlocalGeometry_ = std::make_optional<TrimmedParameterSpaceGeometry>();
           // DUNE_THROW(NotImplemented,"This constructor should accept a geometry object");
         }
 
         auto& id() const { return entityInfo_.id; }
 
-        auto stemsFromTrim() const {
-          return entityInfo_.stemsFromTrim();
-        }
+        auto stemsFromTrim() const { return entityInfo_.stemsFromTrim(); }
 
-        auto index()const {
-          if constexpr  (codim_==0)
-          return stemsFromTrim() ? entityInfo_.trimmedIndexInLvl : entityInfo_.unTrimmedIndexInLvl ;
+        auto index() const {
+          if constexpr (codim_ == 0)
+            return stemsFromTrim() ? entityInfo_.trimmedIndexInLvl : entityInfo_.unTrimmedIndexInLvl;
           else
             return entityInfo_.indexInLvlStorage;
         }
 
         auto subIndex(int i, int codim) const {
-          if   (codim==0)
-            return index() ;
+          if (codim == 0)
+            return index();
           else
-            return grid_->trimmer().entityContainer_.template subIndexFromId<codim_>(entityInfo_.id,i,codim, this->level());
+            return grid_->trimmer().entityContainer_.template subIndexFromId<codim_>(entityInfo_.id, i, codim,
+                                                                                     this->level());
         }
 
         template <typename = void>
@@ -104,7 +102,7 @@ class PatchGridHierarchicIterator;
         }
 
         HostParameterSpaceGridEntity getHostEntity() const {
-          if ( stemsFromTrim() and codim_ != 0)
+          if (stemsFromTrim() and codim_ != 0)
             DUNE_THROW(NotImplemented, "getHostEntity");
           else
             return hostEntity_;
@@ -130,7 +128,7 @@ class PatchGridHierarchicIterator;
         //! returns true if father entity exists
         template <typename T = void>
         requires(codim_ == 0) [[nodiscard]] bool hasFather() const {
-            if (not stemsFromTrim()) return hostEntity_.hasFather();
+          if (not stemsFromTrim()) return hostEntity_.hasFather();
           DUNE_THROW(NotImplemented, " hasFather");
 
           // return hostEntity_.hasFather();
@@ -150,8 +148,7 @@ class PatchGridHierarchicIterator;
         [[nodiscard]] PartitionType partitionType() const {
           //@todo Trim this is crasy
           if constexpr (codim_ == 0)
-            if (not stemsFromTrim())
-              return hostEntity_.partitionType();
+            if (not stemsFromTrim()) return hostEntity_.partitionType();
           DUNE_THROW(NotImplemented, "partitionType not implemented for codim!=0 objects");
         }
 
@@ -259,7 +256,7 @@ class PatchGridHierarchicIterator;
         template <typename = void>
         requires(codim_ == 0) decltype(auto) father() const {
           assert(entityInfo_.fatherId.has_value());
-          return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value(),this->level());
+          return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value(), this->level());
           // return TrimmedParameterSpaceGridEntity(grid_, hostEntity_.father(),
           // grid_->trimmer().entityContainer_.idToElementInfoMap.at( entityInfo_.fatherId.value()));
         }

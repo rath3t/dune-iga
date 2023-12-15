@@ -19,9 +19,9 @@
 #include "patchgridintersections.hh"
 #include "patchgridleafiterator.hh"
 #include "patchgridleveliterator.hh"
+#include "patchtrimdata.hh"
 #include "trimmedentity.hh"
 #include "trimmedlocalgeometry.hh"
-#include "patchtrimdata.hh"
 
 #include <dune/geometry/referenceelements.hh>
 
@@ -72,8 +72,8 @@ namespace Dune::IGANEW {
       bool operator==(const IdType& other) const { return (entityIdType == other.entityIdType) and (id == other.id); }
 
       friend std::ostream& operator<<(std::ostream& stream, const IdType& id) {
-        stream << "Type: " << std::string(id.entityIdType == EntityIdType::host ? "Host" : "new")
-               << ", Key: " << id.id << "\n";
+        stream << "Type: " << std::string(id.entityIdType == EntityIdType::host ? "Host" : "new") << ", Key: " << id.id
+               << "\n";
         return stream;
       }
     };
@@ -133,28 +133,23 @@ namespace Dune::IGANEW {
       bool stemFromTrim{false};
       IdType<HostIdType> id;
 
-
-      auto stemsFromTrim() const {
-        return stemFromTrim;
-      }
+      auto stemsFromTrim() const { return stemFromTrim; }
     };
 
     template <typename HostIdType>
-struct EntityInfoImpl<HostIdType,0> {
+    struct EntityInfoImpl<HostIdType, 0> {
       static constexpr int codimension = 0;
       struct Empty {};
       int indexInLvlStorage{-1};
-       int unTrimmedIndexInLvl{-1};
-       int trimmedIndexInLvl{-1};
+      int unTrimmedIndexInLvl{-1};
+      int trimmedIndexInLvl{-1};
       int lvl;
       IdType<HostIdType> id;
 
-      //if the element id is new we know that we are trimmed
-      auto stemsFromTrim() const {
-        return id.entityIdType==IdType<HostIdType>::EntityIdType::newId;
-      }
+      // if the element id is new we know that we are trimmed
+      auto stemsFromTrim() const { return id.entityIdType == IdType<HostIdType>::EntityIdType::newId; }
 
-       std::optional<IdType<HostIdType>> fatherId;
+      std::optional<IdType<HostIdType>> fatherId;
       ReservedVector<IdType<HostIdType>, 4> decendantIds;
     };
 
@@ -210,10 +205,10 @@ struct EntityInfoImpl<HostIdType,0> {
       using HierarchicIterator        = PatchGridHierarchicIterator<const Grid>;
 
       template <int codim>
-      static const bool hasEntity = true;//codim == 0;
+      static const bool hasEntity = true;  // codim == 0;
 
       template <int codim>
-      static const bool hasEntityIterator =true;// codim == 0;
+      static const bool hasEntityIterator = true;  // codim == 0;
 
       template <int codim>
       static const bool hasHostEntity = true;
@@ -225,7 +220,7 @@ struct EntityInfoImpl<HostIdType,0> {
         using HostIdType    = typename ParameterSpaceGrid::GlobalIdSet::IdType;
         using GlobalIdSetId = IdType<HostIdType>;
         using PatchTrimData = PatchTrimDataImpl<const Grid>;  ///< Patch trim data type.
-        using TrimmingCurve = GeometryKernel::NURBSPatch<dim-1,dim,ctype>;
+        using TrimmingCurve = GeometryKernel::NURBSPatch<dim - 1, dim, ctype>;
         using ElementInfo   = EntityInfoImpl<HostIdType, 0>;
 
         template <int codim>
@@ -249,7 +244,8 @@ struct EntityInfoImpl<HostIdType,0> {
           using EntityImp                    = PatchGridEntity<codim, dim, const Grid>;
           using EntitySeedImpl               = PatchGridEntitySeed<codim, const Grid>;
           using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
-          using UnTrimmedHostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
+          using UnTrimmedHostParameterSpaceGridEntity =
+              typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
         };
 
         using HostLeafIntersection                   = typename ParameterSpaceGrid::Traits::LeafIntersection;
@@ -265,7 +261,7 @@ struct EntityInfoImpl<HostIdType,0> {
         using ParameterSpaceLevelIntersection = TrimmedParameterSpaceLevelIntersection;
       };
 
-      using GeometryTypes = ReservedVector<GeometryType,2>;
+      using GeometryTypes = ReservedVector<GeometryType, 2>;
       // clang-format off
       typedef GridTraits<
         dim, dimworld, Grid,
@@ -332,7 +328,6 @@ struct EntityInfoImpl<HostIdType,0> {
       friend class TrimmedLevelIntersection<const GridImp>;
       friend class TrimmedLeafIntersection<const GridImp>;
 
-
       template <int cd>
       using EntityInfo = typename GridFamily::TrimmerTraits::template Codim<cd>::EntityInfo;
 
@@ -385,7 +380,7 @@ struct EntityInfoImpl<HostIdType,0> {
           const EntitySeed& seed) const {
         using EntityImp               = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
         auto [lvl, indexInLvlStorage] = seed.impl().data();
-        return EntityImp{grid_,entityContainer_.template entity<EntitySeed::codimension>(lvl, indexInLvlStorage)};
+        return EntityImp{grid_, entityContainer_.template entity<EntitySeed::codimension>(lvl, indexInLvlStorage)};
       }
 
       template <int codim>
@@ -411,8 +406,8 @@ struct EntityInfoImpl<HostIdType,0> {
 
       using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
                                                   typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   =typename GridFamily::TrimmerTraits::PatchTrimData;  ///< Patch trim data type.
-      using TrimmingCurve   =typename GridFamily::TrimmerTraits::TrimmingCurve;  ///< Patch trim data type.
+      using PatchTrimData   = typename GridFamily::TrimmerTraits::PatchTrimData;        ///< Patch trim data type.
+      using TrimmingCurve   = typename GridFamily::TrimmerTraits::TrimmingCurve;        ///< Patch trim data type.
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
@@ -431,7 +426,9 @@ struct EntityInfoImpl<HostIdType,0> {
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 
-      static auto trimElement(const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element, const PatchTrimData& trimmingCurves);
+      static auto trimElement(
+          const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
+          const PatchTrimData& trimmingCurves);
 
       /**
        * @brief Get the reference element for a given entity.
@@ -471,12 +468,11 @@ struct EntityInfoImpl<HostIdType,0> {
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
-            localIdSet_(std::make_unique<LocalIdSet>(*grid_)) ,trimData_{trimData}{
+            localIdSet_(std::make_unique<LocalIdSet>(*grid_)),
+            trimData_{trimData} {
         createParameterSpaceGrid();
         setIndices();
       }
-
-
 
       TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
         this->grid_               = other.grid_;

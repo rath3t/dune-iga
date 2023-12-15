@@ -34,10 +34,10 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! the default Constructor
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
-        :           parameterSpaceGrid_(parameterSpaceGrid),maxLevel_{maxLevel}
-    // ,          hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel))
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          maxLevel_{maxLevel}  // , hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel))
     {
-// extract the implementation of the grid entity and the parameter space host entity
+      // extract the implementation of the grid entity and the parameter space host entity
       stackChildren(&startEntity.impl().getHostEntity());
       setCurrentEntity();
     }
@@ -45,7 +45,8 @@ namespace Dune::IGANEW::DefaultTrim {
     //! @todo Please doc me !
     explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                          [[maybe_unused]] bool endDummy)
-        :           parameterSpaceGrid_(parameterSpaceGrid),maxLevel_{maxLevel}
+        : parameterSpaceGrid_(parameterSpaceGrid),
+          maxLevel_{maxLevel}
     // ,          hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)),maxLevel_{maxLevel}
     {
       // sets current entity to nullptr
@@ -54,17 +55,14 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! @todo Please doc me !
     void increment() {
-
       // exit if no further descendants exist
-      if (parameterSpaceElementStack_.empty())
-        return;
+      if (parameterSpaceElementStack_.empty()) return;
 
       auto target = parameterSpaceElementStack_.top();
-      parameterSpaceElementStack_.pop(); // remove current son
-      stackChildren(target); // add descendants of current son
+      parameterSpaceElementStack_.pop();  // remove current son
+      stackChildren(target);              // add descendants of current son
 
-
-      setCurrentEntity(); // since std::stack is LIFO, we set the current entity to the first son of the old son
+      setCurrentEntity();  // since std::stack is LIFO, we set the current entity to the first son of the old son
 
       // ++hostHierarchicIterator_;
       // ++descendantLocalIndex_;
@@ -72,7 +70,6 @@ namespace Dune::IGANEW::DefaultTrim {
 
     //! dereferencing
     Entity dereference() const {
-
       auto realEntity = typename Entity::Implementation{parameterSpaceGrid_, *currentEntityPtr_};
       return Entity{std::move(realEntity)};
     }
@@ -80,22 +77,23 @@ namespace Dune::IGANEW::DefaultTrim {
     //! equality
     bool equals(const PatchGridHierarchicIterator& i) const {
       // if the iterators point to the different entities they are not equal,
-      // But if we are nullptr by construction (end iterator) and the incremented iterator also becomes a nullptr due to setCurrentEntity(), we return true and this terminates the iteration
+      // But if we are nullptr by construction (end iterator) and the incremented iterator also becomes a nullptr due to
+      // setCurrentEntity(), we return true and this terminates the iteration
       return currentEntityPtr_ == i.currentEntityPtr_;
     }
 
    private:
-    void stackChildren(const ParameterSpaceGridEntity* target)
-    {
+    void stackChildren(const ParameterSpaceGridEntity* target) {
       // Load sons of target onto the iterator stack
       // if the given entity is leaf or max level we do not add anything to the stack
       if (target->level() < maxLevel_ && !target->isLeaf())
         for (auto descendantId : target->entityInfo_.decendantIds)
-          parameterSpaceElementStack_.push(&parameterSpaceGrid_->trimmer().entityContainer_.template entity<0>( descendantId,target->level()+1));
+          parameterSpaceElementStack_.push(
+              &parameterSpaceGrid_->trimmer().entityContainer_.template entity<0>(descendantId, target->level() + 1));
     }
 
     void setCurrentEntity() {
-      currentEntityPtr_= parameterSpaceElementStack_.empty()? nullptr: parameterSpaceElementStack_.top();
+      currentEntityPtr_ = parameterSpaceElementStack_.empty() ? nullptr : parameterSpaceElementStack_.top();
     }
 
     std::stack<const ParameterSpaceGridEntity*> parameterSpaceElementStack_;

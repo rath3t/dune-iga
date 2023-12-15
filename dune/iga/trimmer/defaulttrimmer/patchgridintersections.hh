@@ -71,7 +71,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // DUNE_THROW(NotImplemented, "inside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
       IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,patchGrid_->maxLevel());
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId, patchGrid_->maxLevel());
     }
 
     //! return Entity on the outside of this intersection
@@ -80,7 +80,7 @@ namespace Dune::IGANEW::DefaultTrim {
       // DUNE_THROW(NotImplemented, "outside not implemented");
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
       IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,patchGrid_->maxLevel());
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId, patchGrid_->maxLevel());
     }
 
     //! return true if intersection is with boundary.
@@ -265,7 +265,7 @@ namespace Dune::IGANEW::DefaultTrim {
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
       IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       //! @todo Don't contruct this on the fly?
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,hostIntersection_.inside().level());
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId, hostIntersection_.inside().level());
     }
 
     //! return Entity on the outside of this intersection
@@ -275,7 +275,7 @@ namespace Dune::IGANEW::DefaultTrim {
       auto hostId      = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
       IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
       //! @todo Don't contruct this on the fly?trim
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId,hostIntersection_.outside().level());
+      return patchGrid_->trimmer().entityContainer_.template entity<0>(elementId, hostIntersection_.outside().level());
     }
 
     /** @brief return true if intersection is with boundary.
@@ -318,14 +318,10 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
     //! Return true if this is a conforming intersection, within one patch we are always conforming
-    [[nodiscard]] bool conforming() const {
-      return true;
-    }
+    [[nodiscard]] bool conforming() const { return true; }
 
     //! Geometry type of an intersection
-    [[nodiscard]] GeometryType type() const {
-      return GeometryTypes::line;
-    }
+    [[nodiscard]] GeometryType type() const { return GeometryTypes::line; }
 
     //! intersection of codimension 1 of this neighbor with element where
     //! iteration started.

@@ -119,8 +119,6 @@ namespace Dune::IGANEW::DefaultTrim {
     }
   }
 
-
-
   /**
    * \brief Create the paramter grid levels
    * \param grid
@@ -156,11 +154,10 @@ namespace Dune::IGANEW::DefaultTrim {
       auto& globalIdSetParameterSpace = parameterSpaceGrid_->globalIdSet();
       int unTrimmedElementIndex       = 0;
       int trimmedElementIndex         = 0;
-      int edgeIndex          = 0;
-      int vertexIndex        = 0;
+      int edgeIndex                   = 0;
+      int vertexIndex                 = 0;
       for (const auto& ele : elements(gv)) {
-        if(trimData_.has_value())
-        trimElement(ele,trimData_.value());
+        if (trimData_.has_value()) trimElement(ele, trimData_.value());
         auto hostId = globalIdSetParameterSpace.id(ele);
 
         IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
@@ -179,16 +176,17 @@ namespace Dune::IGANEW::DefaultTrim {
             entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
             elementContainer.emplace_back(grid_, ele, elementInfo);
 
-            // since we have a father we have to add us as his son, this can be faster, we can store in decendantIds, the indexInLvlStorage and lvl, which would provide faster access
+            // since we have a father we have to add us as his son, this can be faster, we can store in decendantIds,
+            // the indexInLvlStorage and lvl, which would provide faster access
             entityContainer.idToElementInfoMap.at(fatherId).decendantIds.push_back(elementId);
-            entityContainer.template entity<0>(fatherId,newLevel-1).entityInfo_.decendantIds.push_back(elementId);
+            entityContainer.template entity<0>(fatherId, newLevel - 1).entityInfo_.decendantIds.push_back(elementId);
           }
-        }else  /* no father */{
+        } else /* no father */ {
           if (true /* untrimmed */) {
             EntityInfo<0> elementInfo{.indexInLvlStorage   = trimmedElementIndex + unTrimmedElementIndex,
-                            .unTrimmedIndexInLvl = unTrimmedElementIndex,
-                            .lvl                 = newLevel,
-                            .id                  = elementId};
+                                      .unTrimmedIndexInLvl = unTrimmedElementIndex,
+                                      .lvl                 = newLevel,
+                                      .id                  = elementId};
             elementContainer.emplace_back(grid_, ele, elementInfo);
             entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
             ++unTrimmedElementIndex;
@@ -197,41 +195,36 @@ namespace Dune::IGANEW::DefaultTrim {
         auto& elementEdgeIndices   = entityContainer.globalEdgesIdOfElementsMap_[elementId];
         auto& elementVertexIndices = entityContainer.globalVerticesIdOfElementsMap[elementId];
 
-
         for (int localEdgeIndex = 0; localEdgeIndex < ele.subEntities(1); ++localEdgeIndex) {
           // setup all edge indices for given element
           if (true /* untrimmed */) {
-            auto hostEdgeId = globalIdSetParameterSpace.subId(ele,localEdgeIndex,1);
+            auto hostEdgeId = globalIdSetParameterSpace.subId(ele, localEdgeIndex, 1);
             IdType edgeId   = {.entityIdType = IdType::EntityIdType::host, .id = hostEdgeId};
             elementEdgeIndices.emplace_back(edgeId);
 
-
             // store vertex ids of edges, for subIndex method of indeSet
             auto& edgeVertexIndices = entityContainer.globalVertexIdOfEdgesMap_[edgeId];
-            if (edgeVertexIndices.size()<2) // if this edge already has two vertices we don't visit again
+            if (edgeVertexIndices.size() < 2)  // if this edge already has two vertices we don't visit again
             {
-              const auto& cube = Dune::ReferenceElements<ctype,mydimension>::cube();
-              for(auto vertexLocalIndexWRTElement: cube.subEntities(localEdgeIndex,1,2)) {
-                auto hostVertexId = globalIdSetParameterSpace.subId(ele,vertexLocalIndexWRTElement,2);
+              const auto& cube = Dune::ReferenceElements<ctype, mydimension>::cube();
+              for (auto vertexLocalIndexWRTElement : cube.subEntities(localEdgeIndex, 1, 2)) {
+                auto hostVertexId = globalIdSetParameterSpace.subId(ele, vertexLocalIndexWRTElement, 2);
                 IdType vertexId   = {.entityIdType = IdType::EntityIdType::host, .id = hostVertexId};
                 edgeVertexIndices.emplace_back(vertexId);
               }
             }
-
           }
         }
 
-        //store vertices ids of element
+        // store vertices ids of element
         for (int localVertexId = 0; localVertexId < ele.subEntities(2); ++localVertexId) {
           // setup all vertex indices for given element
           if (true /* untrimmed */) {
-            auto hostVertexId = globalIdSetParameterSpace.subId(ele,localVertexId,2);
+            auto hostVertexId = globalIdSetParameterSpace.subId(ele, localVertexId, 2);
             IdType vertexId   = {.entityIdType = IdType::EntityIdType::host, .id = hostVertexId};
             elementVertexIndices.emplace_back(vertexId);
           }
         }
-
-
       }
       // save numbers of untrimmed and trimmed elements per level
       entityContainer.numberOfTrimmedElements.push_back(trimmedElementIndex);
@@ -239,7 +232,7 @@ namespace Dune::IGANEW::DefaultTrim {
       for (const auto& edge : edges(gv)) {
         auto edgeHostId = globalIdSetParameterSpace.id(edge);
         IdType edgeId   = {.entityIdType = IdType::EntityIdType::host, .id = edgeHostId};
-        EntityInfo<1> edgeInfo{.indexInLvlStorage = edgeIndex++, .lvl = newLevel,.stemFromTrim=false, .id = edgeId};
+        EntityInfo<1> edgeInfo{.indexInLvlStorage = edgeIndex++, .lvl = newLevel, .stemFromTrim = false, .id = edgeId};
 
         entityContainer.idToEdgeInfoMap.insert({edgeId, edgeInfo});
 
@@ -249,7 +242,8 @@ namespace Dune::IGANEW::DefaultTrim {
       for (const auto& vertex : vertices(gv)) {
         auto vertexHostId = globalIdSetParameterSpace.id(vertex);
         IdType vertexId   = {.entityIdType = IdType::EntityIdType::host, .id = vertexHostId};
-        EntityInfo<2> vertexInfo{.indexInLvlStorage = vertexIndex++, .lvl = newLevel,.stemFromTrim=false, .id = vertexId};
+        EntityInfo<2> vertexInfo{
+            .indexInLvlStorage = vertexIndex++, .lvl = newLevel, .stemFromTrim = false, .id = vertexId};
 
         entityContainer.idToVertexInfoMap.back().insert({vertexId, vertexInfo});
         vertexContainer.emplace_back(grid_, vertex, vertexInfo);

@@ -771,8 +771,8 @@ auto testGrids() {
   TestSuite t("testGrids");
 
   // if constexpr (requires { testHierarchicPatch<GridFamily>(); }) {
-    std::cout << "testHierarchicPatch" << std::endl;
-    t.subTest(testHierarchicPatch<GridFamily>());
+  std::cout << "testHierarchicPatch" << std::endl;
+  t.subTest(testHierarchicPatch<GridFamily>());
   // } else
   //   std::cout << "testHierarchicPatch Test disabled" << std::endl;
 
@@ -789,27 +789,27 @@ auto testGrids() {
   //   std::cout << "Test1Din3D Test disabled" << std::endl;
 
   // if constexpr (requires { testNurbsGridCylinder<GridFamily>(); }) {
-    std::cout << "testNurbsGridCylinder" << std::endl;
-    t.subTest(testNurbsGridCylinder<GridFamily>());
+  std::cout << "testNurbsGridCylinder" << std::endl;
+  t.subTest(testNurbsGridCylinder<GridFamily>());
   // } else
-    // std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
+  // std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
   // if constexpr (requires { testNURBSGridSurface<GridFamily>(); }) {
-    std::cout << "testNURBSGridSurface" << std::endl;
-    t.subTest(testNURBSGridSurface<GridFamily>());
+  std::cout << "testNURBSGridSurface" << std::endl;
+  t.subTest(testNURBSGridSurface<GridFamily>());
   // } else
-    // std::cout << "testNURBSGridSurface Test disabled" << std::endl;
+  // std::cout << "testNURBSGridSurface Test disabled" << std::endl;
   // if constexpr (requires { testPlate<GridFamily>(); }) {
-    std::cout << "testPlate==============================================" << std::endl;
-    t.subTest(testPlate<GridFamily>());
-    std::cout << "testPlateEND==============================================" << std::endl;
+  std::cout << "testPlate==============================================" << std::endl;
+  t.subTest(testPlate<GridFamily>());
+  std::cout << "testPlateEND==============================================" << std::endl;
   // } else
-    // std::cout << "testPlate Test disabled" << std::endl;
+  // std::cout << "testPlate Test disabled" << std::endl;
   // testNurbsGridCylinder();
   // if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
-    // std::cout << "testTorusGeometry" << std::endl;
-    t.subTest(testTorusGeometry<GridFamily>());
+  // std::cout << "testTorusGeometry" << std::endl;
+  t.subTest(testTorusGeometry<GridFamily>());
   // } else
-    // std::cout << "testTorusGeometry Test disabled" << std::endl;
+  // std::cout << "testTorusGeometry Test disabled" << std::endl;
 
   return t;
 }

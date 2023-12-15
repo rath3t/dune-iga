@@ -93,7 +93,7 @@ namespace Dune {
         template <int codim>
         static constexpr bool isLocalGeometryLinear = codim == 0;
         static constexpr bool isAlwaysTrivial = false;  ///< Boolean indicating if the trimming is always trivial, no
-        ///< trimming or simple deletion of element.
+                                                        ///< trimming or simple deletion of element.
 
        private:
         using UntrimmedParameterSpaceGrid
