@@ -6,6 +6,12 @@
 #include <variant>
 
 namespace Dune::IGANEW::DefaultTrim {
+
+  enum class error_type {
+    clipperNotSucessfull,
+    malformedCurve
+  };
+
   struct ClippingResult {
     std::size_t nVertices{};
     std::size_t newVertices = 4;

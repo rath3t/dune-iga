@@ -13,6 +13,8 @@ set(HEADERS
         patchgridleafiterator.hh
         ../trimmer/identitytrimmer/patchgridleveliterator.hh
         patchgridview.hh
+        ../io/ibrageometry.hh
+        ../io/ibrareader.hh
 )
 
 install(FILES ${HEADERS}

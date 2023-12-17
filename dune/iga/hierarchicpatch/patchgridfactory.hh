@@ -3,6 +3,8 @@
 #include <nlohmann/json.hpp>
 
 #include <dune/grid/common/gridfactory.hh>
+#include "../io/ibrareader.hh"
+
 namespace Dune {
 
   template <int dim_, int dimworld_, template <int, int, typename> typename TrimmerType_, typename ScalarType>
@@ -11,7 +13,7 @@ namespace Dune {
     constexpr static int dimworld = dimworld_;
     constexpr static int dim      = dim_;
     using PatchGrid               = IGANEW::PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-    using TrimmerType             = typename PatchGrid::TrimmerType;
+    using TrimmerType             = typename PatchGrid::Trimmer;
     using PatchTrimData           = typename TrimmerType::PatchTrimData;
     using TrimParameterType       = typename TrimmerType::ParameterType;
 
@@ -22,6 +24,7 @@ namespace Dune {
     /** @brief Forward setting to trimmer
     @param parameter The parameters
  */
+    // @todo this is never called and does nothing
     void setupTrimmer(const TrimParameterType& parameter) { trimmer.setup(parameter); }
 
     /** @brief Insert a patch into the grid
@@ -38,13 +41,17 @@ namespace Dune {
     @param patchData The patch data
     @param patchTrimData Trimming data for this patch
  */
+    // @todo this does not really add the trimming curve to anything
     void insertTrimmingCurve(const IGANEW::NURBSPatchData<dim - 1, dim, ctype>& curve) { trimCurves.push_back(curve); }
 
     /** @brief Insert a patch into the grid
     @param patchData The patch data
     @param patchTrimData Trimming data for this patch
  */
-    void insertJson(const std::string& filename) { json_ = filename; }
+    void insertJson(const std::string& filename) {
+      json_ = filename;
+      auto [patchData, trimData] = IGANEW::IbraReader<dim, dimworld, PatchGrid>::read(filename);
+    }
 
     /** @brief Finalize grid creation and hand over the grid
 
