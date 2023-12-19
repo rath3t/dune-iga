@@ -36,6 +36,9 @@ namespace Dune::IGANEW::Utilities {
 
     /** @brief Returns the size of the domain */
     ScalarType size() const { return right() - left(); }
+
+    /** @brief Checks if value in inside*/
+    bool checkInside(ScalarType val) const { return val > left() and val < right(); }
   };
 
   /**

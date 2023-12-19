@@ -59,6 +59,7 @@ namespace Dune::IGANEW::GeometryKernel {
         = YaspGeometry<mydimension - codim, mydimension,
                        const YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>>;
 
+    using PatchData           = NURBSPatchData<mydimension, worlddimension, ScalarType>;
     using ControlPointType    = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
     using ControlPointCoordinateNetType
@@ -66,7 +67,7 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim, typename TrimmerType_ = IdentityTrim::Trimmer<mydimension, ctype>>
+    template <int codim, typename TrimmerType_>
     using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
 
     template <int codim, typename NURBSPatch, typename TrimmerType_>
@@ -86,7 +87,7 @@ namespace Dune::IGANEW::GeometryKernel {
      * @tparam TrimmerType Type of the trimmer.
      * @return Local view of the patch.
      */
-    template <int codim, typename TrimmerType = IdentityTrim::Trimmer<mydimension, ctype>>
+    template <int codim, typename TrimmerType>
     auto localView() const {
       return GeometryLocalView<codim, TrimmerType>(*this);
     }
@@ -95,7 +96,7 @@ namespace Dune::IGANEW::GeometryKernel {
      * @brief Explicit constructor for NURBSPatch.
      * @param patchData Patch data for the NURBS patch.
      */
-    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData)
+    explicit NURBSPatch(const NURBSPatchData<dim_, dimworld_, ScalarType>& patchData)
         : patchData_(patchData),
           uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
           nurbs_{patchData_} {}
@@ -105,8 +106,8 @@ namespace Dune::IGANEW::GeometryKernel {
      * @param patchData Patch data for the NURBS patch.
      * @param uniqueKnotSpans Unique knot spans for the NURBS patch.
      */
-    explicit NURBSPatch(const NURBSPatchData<mydimension, worlddimension, ScalarType>& patchData,
-                        const std::array<std::vector<ctype>, mydimension>& uniqueKnotSpans)
+    explicit NURBSPatch(const NURBSPatchData<dim_, dimworld_, ScalarType>& patchData,
+                        const std::array<std::vector<ctype>, dim_>& uniqueKnotSpans)
         : patchData_(patchData), uniqueKnotSpans_{uniqueKnotSpans}, nurbs_{patchData_} {}
 
     /**

@@ -1,27 +1,22 @@
 
 #pragma once
 
-#include "elementtrimdata.hh"
 namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
 
       enum class LocalGeometryTag { InParameterSpace, InReferenceElement };
 
-      template <int dim, typename ScalarType = double>
-      struct Trimmer;
-
-      template <int mydim_, int coorddim, typename ScalarType, LocalGeometryTag localGeometryTag>
-      class TrimmedLocalGeometry {
+      template <int mydim, int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
+      class TrimmedLocalGeometryImpl {
        public:
-        using ctype = ScalarType;
+        using ctype = typename GridImp::ctype;
 
-        static constexpr int mydimension = mydim_;
-        using TrimmerType                = Trimmer<mydimension, ctype>;
-        using TrimDataType               = ElementTrimData<mydimension, ctype>;
+        static constexpr int mydimension = mydim;
+        using Trimmer                    = typename GridImp::Trimmer;
 
         static constexpr int coorddimension = coorddim;
-        static constexpr int codim          = coorddim - mydimension;
+        static constexpr int codim          = coorddimension - mydimension;
         using PatchGeometry                 = GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>;
         using LocalCoordinateInPatch        = typename PatchGeometry::LocalCoordinate;
         using LocalCoordinate               = FieldVector<ctype, mydimension>;
@@ -36,11 +31,13 @@ namespace Dune {
         //! type of the LocalView of the patch geometry
         using GeometryLocalView =
             typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
-                                                ctype>::template GeometryLocalView<codim, TrimmerType>;
+                                                ctype>::template GeometryLocalView<codim, Trimmer>;
 
-        /** constructor from host geometry
-         */
-        explicit TrimmedLocalGeometry(const TrimDataType& trimData) : trimData_{&trimData} {}
+        /** constructor from host geometry  */
+        TrimmedLocalGeometryImpl() = default;
+        explicit TrimmedLocalGeometryImpl(
+            const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>& trimData)
+            : trimData_{&trimData} {}
 
         /** @brief Return the element type identifier
          */
@@ -86,7 +83,7 @@ namespace Dune {
         }
 
        private:
-        const TrimDataType* trimData_{nullptr};
+        const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>* trimData_{nullptr};
       };
     }  // namespace DefaultTrim
   }    // namespace IGANEW

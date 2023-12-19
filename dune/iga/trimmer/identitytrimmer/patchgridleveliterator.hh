@@ -10,7 +10,7 @@
  * @brief The PatchGridLevelIterator class
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::IdentityTrim {
 
   /** @brief Iterator over all entities of a given codimension and level of a grid.
    * @ingroup PatchGrid
@@ -56,4 +56,4 @@ namespace Dune::IGANEW {
     HostGridLevelIterator hostLevelIterator_;
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::IdentityTrim

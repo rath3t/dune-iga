@@ -4,16 +4,16 @@
 // vi: set et ts=4 sw=2 sts=2:
 #pragma once
 
-#include "patchgridentity.hh"
-#include "patchgridintersections.hh"
-
 #include <dune/grid/common/intersection.hh>
+
+#include <dune/iga/hierarchicpatch/patchgridentity.hh>
+#include <dune/iga/hierarchicpatch/patchgridintersections.hh>
 
 /** \file
  * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGANEW::IdentityTrim {
 
   /** @brief Iterator over all element neighbors
    * @ingroup PatchGrid
@@ -100,4 +100,4 @@ namespace Dune::IGANEW {
     HostLevelIntersectionIterator hostIterator_ = {};
   };
 
-}  // namespace Dune::IGANEW
+}  // namespace Dune::IGANEW::IdentityTrim

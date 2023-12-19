@@ -8,10 +8,10 @@ add_python_targets(iga __init__ _igagrids _nurbspatchdata _boundarypatch
 dune_add_pybind11_module(NAME _iga)
 set_property(
   TARGET _iga
-  PROPERTY LINK_LIBRARIES dunecommon dunegeometry PkgConfig::Clipper2Lib
+  PROPERTY LINK_LIBRARIES dunecommon dunegeometry Clipper2Z
            nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp
   APPEND)
-target_link_libraries(_iga PUBLIC PkgConfig::Clipper2Lib)
+target_link_libraries(_iga PUBLIC Clipper2Z)
 target_compile_definitions(_iga PUBLIC ENABLE_CLIPPERLIB2=1)
 
 if(SKBUILD)

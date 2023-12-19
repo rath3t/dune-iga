@@ -16,12 +16,19 @@
 
 namespace Dune::IGANEW {
 
+  /**
+   * \brief This class describes entities in the 0..1 space if untrimmed this is in the cube,
+   * for the untrimmed case this is simply a wrapper around the Yasp grid local geometry
+   * \tparam mydim
+   * \tparam coorddim
+   * \tparam GridImp
+   */
   template <int mydim, int coorddim, class GridImp>
   class PatchGridLocalGeometry
       : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridLocalGeometry> {
    public:
     static constexpr int mydimension = mydim;
-    using TrimmerType                = typename GridImp::TrimmerType;
+    using Trimmer                    = typename GridImp::Trimmer;
 
     static constexpr std::integral auto coorddimension = coorddim;
     static constexpr std::integral auto griddim        = GridImp::dimension;
@@ -42,23 +49,8 @@ namespace Dune::IGANEW {
     constexpr static int CodimInHostGrid          = GridImp::ParameterSpaceGrid::dimension - mydim;
     constexpr static int DimensionWorldOfHostGrid = GridImp::ParameterSpaceGrid::dimensionworld;
 
-    // select appropriate hostgrid geometry via typeswitch
-    typedef typename GridImp::ParameterSpaceGrid::Traits::template Codim<CodimInHostGrid>::LocalGeometry
-        HostGridLocalGeometryType;
-
-    // using LocalNURBSGeometry = GeometryKernel::NURBSPatch<mydim, coorddim, ctype>;
-    using LocalHostGeometry = HostGridLocalGeometryType;
-    //! type of the LocalView of the patch geometry
-    // using LocalGeometry =
-    //     typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
-    //                                         ctype>::template GeometryLocalView<codim, TrimmerType>;
-
-    /** constructor from host geometry
-     */
-    // PatchGridLocalGeometry(const GeometryKernel::NURBSPatch<mydim, coorddim, ctype>& localPatchGeometry)
-    //     : localPatchGeometry_(localPatchGeometry) {}
-    using LocalGeometry = typename TrimmerType::template LocalGeometry<codim>;
-    // using ParameterSpaceGeometry = typename TrimmerType::template LocalGeometry<codim>;
+    using LocalGeometry = typename Trimmer::template Codim<codim>::LocalGeometry;
+    // using ParameterSpaceGeometry = typename Trimmer::template LocalGeometry<codim>;
 
     explicit PatchGridLocalGeometry(const LocalGeometry& localGeometry) : localGeometry_(localGeometry) {}
 
@@ -105,7 +97,6 @@ namespace Dune::IGANEW {
 
    private:
     LocalGeometry localGeometry_;
-    // GeometryLocalView geometryLocalView_{};
   };
 
 }  // namespace Dune::IGANEW

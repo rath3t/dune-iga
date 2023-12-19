@@ -1,7 +1,7 @@
 
 #pragma once
 #include <concepts>
-#include <optional>
+
 namespace Dune::IGANEW::Concept {
 
   template <typename T>
@@ -16,9 +16,10 @@ namespace Dune::IGANEW::Concept {
    * @tparam T Type to be checked for conformity to the Trimmer concept.
    */
   template <typename T>
-  concept Trimmer
-      = requires(T trimmer, const typename T::ParameterType& param, const typename T::ElementTrimData& elementTrimData,
-                 const typename T::PatchTrimData& patchTrimData, const typename T::ParameterSpaceGrid& paramSpaceGrid) {
+  concept Trimmer = T::isValid and requires(T trimmer, const typename T::ParameterType& param,
+                                            const typename T::ElementTrimData& elementTrimData,
+                                            const typename T::PatchTrimData& patchTrimData,
+                                            const typename T::ParameterSpaceGrid& paramSpaceGrid) {
     { T::mydimension } -> std::convertible_to<int>;
     typename T::ctype;
     typename T::ParameterSpaceGrid;
@@ -26,7 +27,7 @@ namespace Dune::IGANEW::Concept {
     typename T::ElementTrimData;
     typename T::PatchTrimData;
 
-    { T() } -> std::convertible_to<T>;  ///< Check for the presence of a default constructor
+    T();  ///< Check for the presence of a default constructor
 
     { T::template isLocalGeometryLinear<0> } -> std::convertible_to<bool>;
     { T::isAlwaysTrivial } -> std::convertible_to<bool>;
@@ -50,7 +51,6 @@ namespace Dune::IGANEW::Concept {
 
     // { trimmer.unTrimmedParameterSpaceGrid() } -> std::convertible_to<const typename T::UntrimmedParameterSpaceGrid&>;
     // { trimmer.unTrimmedParameterSpaceGrid() } -> std::convertible_to<typename T::UntrimmedParameterSpaceGrid&>;
-  }
-  and Dune::Concept::Grid<typename T::ParameterSpaceGrid>;
+  } and Dune::Concept::Grid<typename T::ParameterSpaceGrid>;
 
 }  // namespace Dune::IGANEW::Concept

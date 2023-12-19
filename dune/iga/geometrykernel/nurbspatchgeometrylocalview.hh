@@ -15,9 +15,9 @@
 #include <dune/iga/geometrykernel/higherorderalgorithms.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
-#include <dune/iga/hierarchicpatch/patchgridentity.hh>
+// #include <dune/iga/hierarchicpatch/patchgridentity.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+// #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 namespace Dune::IGANEW {
   namespace GeometryKernel {
@@ -57,9 +57,9 @@ namespace Dune::IGANEW {
       static constexpr int numberOfSecondDerivatives
           = mydimension * (mydimension + 1) / 2;  ///< Number of second derivatives of the local view.
       static constexpr int patchNumberOfSecondDerivatives
-          = gridDimension * (gridDimension + 1) / 2;  ///< Number of second derivatives for the patch.
-      using TrimmerType        = TrimmerType_;        ///< Type of the associated trimmer.
-      using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;  ///< Type of the parameter space grid.
+          = gridDimension * (gridDimension + 1) / 2;                    ///< Number of second derivatives for the patch.
+      using Trimmer            = TrimmerType_;                          ///< Type of the associated trimmer.
+      using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;  ///< Type of the parameter space grid.
 
       static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;  ///< Dimension of the world.
 
@@ -71,7 +71,7 @@ namespace Dune::IGANEW {
           typename PatchGeometry::JacobianTransposed;        ///< Type for the transposed Jacobian matrix of the patch.
       using PatchHessian = typename PatchGeometry::Hessian;  ///< Type for the Hessian matrix of the patch.
 
-      using ParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim>;
+      using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
 
       //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
       //! and
@@ -191,7 +191,7 @@ namespace Dune::IGANEW {
        * @return Volume of the patch.
        */
       [[nodiscard]] double volume() const {
-        if constexpr (not TrimmerType::Triangulation::isAlwaysTrivial) {
+        if constexpr (not Trimmer::Triangulation::isAlwaysTrivial) {
           // @todo: Implement integration of trimmed quantities and new edge geometries.
         } else {
           const auto& rule = QuadratureRules<ctype, mydimension>::rule(
@@ -344,7 +344,7 @@ namespace Dune::IGANEW {
 
         /* if trimming is enabled the parameter space geometry is potentially non-linear,
          * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
-        if constexpr (not TrimmerType::template isLocalGeometryLinear<codim>) {
+        if constexpr (not Trimmer::template isLocalGeometryLinear<codim>) {
           // const auto dgdtdt = parameterSpaceGeometry->hessian(ouInPatch);
           //
           // assert(TrimmerType::template isLocalGeometryLinear<

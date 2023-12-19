@@ -37,6 +37,7 @@ include(DuneMacros)
 
 # start a dune project with information from dune.module
 dune_project()
+dune_enable_all_packages()
 
 dune_add_library(duneiga INTERFACE
   EXPORT_NAME Iga
@@ -58,4 +59,4 @@ if(BUILD_DOC)
 endif()
 
 # finalize the dune project, e.g. generating config.h etc.
-finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
+finalize_dune_project()

@@ -26,7 +26,7 @@ namespace Dune::IGANEW {
   template <class GridImp>
   struct PatchGridLevelGridView : DefaultLevelGridView<const GridImp> {
     typedef PatchGridLevelGridView ThisType;
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
 
     PatchGridLevelGridView(const typename DefaultLevelGridView<const GridImp>::Grid& grid, int level)
         : DefaultLevelGridView<const GridImp>(grid, level) {}
@@ -38,7 +38,7 @@ namespace Dune::IGANEW {
       return this->grid().patchGeometries[this->level_];
     }
 
-    auto untrimmedElementNumbers() const { return untrimmedElementNumbers(this->level_); }
+    auto untrimmedElementNumbers() const { return this->grid().untrimmedElementNumbers(this->level_); }
 
     const auto& tensorProductCoordinates() const { return this->grid().tensorProductCoordinates(this->level_); }
   };
@@ -55,7 +55,7 @@ namespace Dune::IGANEW {
     PatchGridLeafGridView(const typename DefaultLeafGridView<const GridImp>::Grid& grid)
         : DefaultLeafGridView<const GridImp>(grid) {}
 
-    using TrimmerType = typename GridImp::TrimmerType;
+    using TrimmerType = typename GridImp::Trimmer;
     const auto& patchData() const { return this->grid().patchGeometries_[this->grid().maxLevel()].patchData(); }
 
     const auto& unTrimmedPatch() const {

@@ -3,16 +3,18 @@
 
 set(HEADERS
         patchgridentity.hh
-        patchgridentityseed.hh
-        patchgridhierarchiciterator.hh
+        ../trimmer/defaulttrimmer/patchgridentityseed.hh
+        ../trimmer/defaulttrimmer/patchgridhierarchiciterator.hh
         patchgridgeometry.hh
-        patchgridlocalgeometry.hh
-        patchgridintersectioniterator.hh
+        ../trimmer/identitytrimmer/patchgridlocalgeometry.hh
+        ../trimmer/defaulttrimmer/patchgridintersectioniterator.hh
         patchgridintersections.hh
         patchgridindexsets.hh
         patchgridleafiterator.hh
-        patchgridleveliterator.hh
+        ../trimmer/identitytrimmer/patchgridleveliterator.hh
         patchgridview.hh
+        ../io/ibrageometry.hh
+        ../io/ibrareader.hh
 )
 
 install(FILES ${HEADERS}

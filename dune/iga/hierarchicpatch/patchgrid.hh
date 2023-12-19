@@ -13,27 +13,17 @@
 
 #include "concepts.hh"
 #include "enums.hh"
-#include "traits.hh"
-// #include "gridcapabilities.hh"
+#include "gridcapabilities.hh"
 #include "patchgridentity.hh"
-#include "patchgridentityseed.hh"
 #include "patchgridfactory.hh"
 #include "patchgridfwd.hh"
 #include "patchgridgeometry.hh"
-#include "patchgridhierarchiciterator.hh"
-#include "patchgridindexsets.hh"
-#include "patchgridintersectioniterator.hh"
-#include "patchgridleafiterator.hh"
-#include "patchgridleveliterator.hh"
-#include "patchgridlocalgeometry.hh"
 #include "patchgridview.hh"
+#include "traits.hh"
 
 #include <dune/common/parallel/communication.hh>
 
 #include <dune/grid/common/grid.hh>
-
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
-
 
 namespace Dune::Functions {
   template <typename GV, typename ScalarType>
@@ -41,6 +31,10 @@ namespace Dune::Functions {
 }
 namespace Dune::IGANEW {
 
+  namespace IdentityTrim {
+    template <int dim, int dimworld, typename ScalarType = double>
+    struct PatchGridFamily;
+  }
   namespace Impl {
     template <int dim>
     class NurbsPreBasisFactoryFromDegreeElevation;
@@ -50,31 +44,10 @@ namespace Dune::IGANEW {
   template <class Grid>
   struct HostGridAccess;
 
-  template <int dim, int dimworld, template <int, typename> typename TrimmerType_, typename ScalarType>
-  struct PatchGridFamily {
-    using Grid               = PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-    using TrimmerType        = TrimmerType_<dim, ScalarType>;
-    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
-
-    typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
-                       PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
-                       PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator, PatchGridLeafIterator,
-                       PatchGridLevelIndexSet<const Grid>, PatchGridLeafIndexSet<const Grid>,
-                       PatchGridGlobalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType,
-                       PatchGridLocalIdSet<const Grid>, typename ParameterSpaceGrid::Traits::LocalIdSet::IdType,
-                       Communication<No_Comm>, PatchGridLevelGridViewTraits, PatchGridLeafGridViewTraits,
-                       PatchGridEntitySeed, PatchGridLocalGeometry,
-                       typename ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
-                       typename ParameterSpaceGrid::Traits::LevelIndexSet::Types,
-                       typename ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
-                       typename ParameterSpaceGrid::Traits::LeafIndexSet::Types>
-        Traits;
-  };
-
   /**
    * @brief Provides a NURBS grid based on a single NURBS patch
    * @ingroup PatchGrid
-    * @tparam dim The dimension of the grid
+   * @tparam dim The dimension of the grid
    * @tparam dimworld The dimension of the embedding space
    * @tparam TrimmerType_ The trimmer of the trimmer
    * @tparam ScalarType The type for the coordinates
@@ -98,38 +71,57 @@ namespace Dune::IGANEW {
    * auto controlNet = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
    *
    * // Create a PatchGrid from the NURBS patch data
-   * using TrimmerType = IdentityTrim::Trimmer; // use the Identity trimmer which does no trimming at all
-   * PatchGrid<dim, dimworld, TrimmerType> grid({knotSpans, controlNet, order});
+   * PatchGrid<dim, dimworld> grid({knotSpans, controlNet, order});
    *
    * // Perform global refinement
    * grid.globalRefine(2);
    *
    * @endcode
    */
-  template <int dim, int dimworld, template <int, typename> typename TrimmerType_ = IdentityTrim::Trimmer,
+  template <int dim, int dimworld, template <int, int, typename> typename GridFamily_ = IdentityTrim::PatchGridFamily,
             typename ScalarType = double>
-  class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType,
-                                                     PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>> {
+  class PatchGrid
+      : public GridDefaultImplementation<dim, dimworld, ScalarType, GridFamily_<dim, dimworld, ScalarType>> {
     friend class PatchGridLeafGridView<const PatchGrid>;
     friend class PatchGridLevelGridView<const PatchGrid>;
-    friend class PatchGridLevelIndexSet<const PatchGrid>;
-    friend class PatchGridLeafIndexSet<const PatchGrid>;
-    friend class PatchGridGlobalIdSet<const PatchGrid>;
-    friend class PatchGridLocalIdSet<const PatchGrid>;
-    friend class PatchGridHierarchicIterator<const PatchGrid>;
-    friend class PatchGridLevelIntersectionIterator<const PatchGrid>;
-    friend class PatchGridLevelIntersection<const PatchGrid>;
-    friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
-    friend class PatchGridLeafIntersection<const PatchGrid>;
+    friend GridFamily_<dim, dimworld, ScalarType>::LevelIndexSet;
+    friend GridFamily_<dim, dimworld, ScalarType>::LeafIndexSet;
+    friend GridFamily_<dim, dimworld, ScalarType>::GlobalIdSet;
+    friend GridFamily_<dim, dimworld, ScalarType>::LocalIdSet;
+
+    //! type of the used GridFamily for this grid
+   public:
+    using GridFamily = GridFamily_<dim, dimworld, ScalarType>;
+
+   private:
+    using LevelIndexSetImpl = GridFamily::LevelIndexSet;
+    using LeafIndexSetImpl  = GridFamily::LeafIndexSet;
+    using GlobalIdSetImpl   = GridFamily::GlobalIdSet;
+    using LocalIdSetImpl    = GridFamily::LocalIdSet;
+    template <int codim, PartitionIteratorType pitype>
+    using LeafIteratorImpl = GridFamily::template LeafIterator<codim, pitype>;
+    template <int codim, PartitionIteratorType pitype>
+    using LevelIteratorImpl = GridFamily::template LevelIterator<codim, pitype>;
+    friend GridFamily::HierarchicIterator;
+    friend GridFamily::LevelIntersection;
+    friend GridFamily::LeafIntersection;
+    friend GridFamily::LeafIntersectionIterator;
+    friend GridFamily::LevelIntersectionIterator;
+
+    // friend class PatchGridLevelIntersection<const PatchGrid>;
+    // friend class PatchGridLeafIntersectionIterator<const PatchGrid>;
+    // friend class PatchGridLeafIntersection<const PatchGrid>;
     friend class PatchGridLevelGridView<PatchGrid>;
     friend class PatchGridLeafGridView<PatchGrid>;
     friend struct HostGridAccess<PatchGrid>;
     friend class GridFactory<PatchGrid>;
 
    public:
-    using TrimmerType = TrimmerType_<dim, ScalarType>;
+    using Trimmer = typename GridFamily::Trimmer;
     //! The type used to store coordinates, inherited from the Trimmer
-    using ctype = typename TrimmerType::ctype;
+    using ctype = typename Trimmer::ctype;
+
+    friend Trimmer;
 
    private:
     friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
@@ -153,141 +145,122 @@ namespace Dune::IGANEW {
     // The Interface Methods
     //**********************************************************
 
-    //! type of the used GridFamily for this grid
-    using GridFamily = PatchGridFamily<dim, dimworld, TrimmerType_, ScalarType>;
-
     //! the Traits
     using Traits = typename GridFamily::Traits;
 
-    using ParameterSpaceGrid = typename TrimmerType::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;
+
+    using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
 
     /** @brief Constructor
      *
      * @param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
-                       const std::optional<typename TrimmerType::PatchTrimData>& patchTrimData = std::nullopt)
+                       const std::optional<PatchTrimData>& patchTrimData = std::nullopt)
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(patchGeometries_[0], patchTrimData),
-          leafIndexSet_(std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this)),
-          globalIdSet_(std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this)),
-          localIdSet_(std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this)) {
-      setIndices();
+          trimmer_(std::make_unique<Trimmer>(*this, patchTrimData)) {
+      // trimmer_->createIdSetAndParameterGrid(*this);
       patchGeometriesUnElevated = patchGeometries_;
     }
 
-    PatchGrid& operator=(PatchGrid&& other) noexcept {
-      this->trimmer_            = std::move(other.trimmer_);
-      patchGeometries_          = std::move(other.patchGeometries_);
-      patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
-      leafIndexSet_             = std::make_unique<PatchGridLeafIndexSet<const PatchGrid>>(*this);
-      globalIdSet_              = std::make_unique<PatchGridGlobalIdSet<const PatchGrid>>(*this);
-      localIdSet_               = std::make_unique<PatchGridLocalIdSet<const PatchGrid>>(*this);
-      setIndices();
-      return *this;
-    }
+    PatchGrid& operator=(PatchGrid&& other) = default;
 
     /** @brief Return maximum level defined in this grid.
      *
      * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
      */
-    int maxLevel() const { return trimmer_.parameterSpaceGrid().maxLevel(); }
+    [[nodiscard]] int maxLevel() const { return trimmer_->maxLevel(); }
 
     //! Iterator to first entity of given codim on level
     template <int codim>
     typename Traits::template Codim<codim>::LevelIterator lbegin(int level) const {
-      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level);
+      return LevelIteratorImpl<codim, All_Partition>(this, level);
     }
 
     //! one past the end on this level
     template <int codim>
     typename Traits::template Codim<codim>::LevelIterator lend(int level) const {
-      return PatchGridLevelIterator<codim, All_Partition, const PatchGrid>(this, level, true);
+      return LevelIteratorImpl<codim, All_Partition>(this, level, true);
     }
 
     //! Iterator to first entity of given codim on level
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin(int level) const {
-      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level);
+      return LevelIteratorImpl<codim, PiType>(this, level);
     }
 
     //! one past the end on this level
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend(int level) const {
-      return PatchGridLevelIterator<codim, PiType, const PatchGrid>(this, level, true);
+      return LevelIteratorImpl<codim, PiType>(this, level, true);
     }
 
     //! Iterator to first leaf entity of given codim
     template <int codim>
     typename Traits::template Codim<codim>::LeafIterator leafbegin() const {
-      return PatchGridLeafIterator<codim, All_Partition, const PatchGrid>(this);
+      return LeafIteratorImpl<codim, All_Partition>(this);
     }
 
     //! one past the end of the sequence of leaf entities
     template <int codim>
     typename Traits::template Codim<codim>::LeafIterator leafend() const {
-      return PatchGridLeafIterator<codim, All_Partition, const PatchGrid>(this, true);
+      return LeafIteratorImpl<codim, All_Partition>(this, true);
     }
 
     //! Iterator to first leaf entity of given codim
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafbegin() const {
-      return PatchGridLeafIterator<codim, PiType, const PatchGrid>(this);
+      return LeafIteratorImpl<codim, PiType>(this);
     }
 
     //! one past the end of the sequence of leaf entities
     template <int codim, PartitionIteratorType PiType>
     typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafend() const {
-      return PatchGridLeafIterator<codim, PiType, const PatchGrid>(this, true);
+      return LeafIteratorImpl<codim, PiType>(this, true);
     }
 
     /** @brief Number of grid entities per level and codim
      */
-    [[nodiscard]] int size(int level, int codim) const { return trimmer_.parameterSpaceGrid().size(level, codim); }
+    [[nodiscard]] int size(int level, int codim) const { return levelIndexSet(level).size(codim); }
 
     /** @brief returns the number of boundary segments within the macro grid
      */
     [[nodiscard]] size_t numBoundarySegments() const {
       // @todo Trim this is wrong another trimmer functionality should care about this
-      return trimmer_.parameterSpaceGrid().numBoundarySegments();
+      return trimmer_->parameterSpaceGrid().numBoundarySegments();
     }
 
     //! number of leaf entities per codim in this process
     [[nodiscard]] int size(int codim) const { return leafIndexSet().size(codim); }
 
     //! number of entities per level, codim and geometry type in this process
-    int size(int level, GeometryType type) const {
-//@todo Trim
-      return {};
-    }
+    int size(int level, GeometryType type) const { return levelIndexSet(level).size(type); }
 
     //! number of leaf entities per codim and geometry type in this process
     int size(GeometryType type) const { return leafIndexSet().size(type); }
 
     /** @brief Access to the GlobalIdSet */
-    const typename Traits::GlobalIdSet& globalIdSet() const { return *globalIdSet_; }
+    const typename Traits::GlobalIdSet& globalIdSet() const { return *trimmer_->globalIdSet_; }
 
     /** @brief Access to the LocalIdSet */
-    const typename Traits::LocalIdSet& localIdSet() const { return *localIdSet_; }
+    const typename Traits::LocalIdSet& localIdSet() const { return *trimmer_->localIdSet_; }
 
     /** @brief Access to the LevelIndexSets */
     const typename Traits::LevelIndexSet& levelIndexSet(int level) const {
       if (level < 0 || level > maxLevel()) {
         DUNE_THROW(GridError, "levelIndexSet of nonexisting level " << level << " requested!");
       }
-      return *levelIndexSets_[level];
+      return *trimmer_->levelIndexSets_[level];
     }
 
     /** @brief Access to the LeafIndexSet */
-    const typename Traits::LeafIndexSet& leafIndexSet() const { return *leafIndexSet_; }
+    const typename Traits::LeafIndexSet& leafIndexSet() const { return *trimmer_->leafIndexSet_; }
 
     /** @brief Create Entity from EntitySeed */
     template <class EntitySeed>
     typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
-      typedef PatchGridEntity<EntitySeed::codimension, ParameterSpaceGrid::dimension, const typename Traits::Grid>
-          EntityImp;
-
-      return EntityImp(this, trimmer_.parameterSpaceGrid().entity(seed.impl().hostEntitySeed()));
+      return trimmer_->entity(seed);
     }
 
     /** @name Grid Refinement Methods */
@@ -315,9 +288,8 @@ namespace Dune::IGANEW {
         patchGeometries_.emplace_back(newfinestPatchData, newUniqueKnotVecs);
         patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
       }
-
-      trimmer_.parameterSpaceGrid().globalRefine(refCount);
-      setIndices();
+      // Here it is exploited that the knot refinem above is in sync with the globaRefine of the trimmer
+      trimmer_->globalRefine(refCount);
     }
 
     /**
@@ -392,7 +364,7 @@ namespace Dune::IGANEW {
      */
     bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
       // @todo trim this does not do the right thing! the knotspans should also be aware of this change
-      return false;  // trimmer_.parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
+      return false;  // trimmer_->parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
     }
 
     /** @brief Return refinement mark for entity
@@ -400,36 +372,36 @@ namespace Dune::IGANEW {
      * \return refinement mark (1,0,-1)
      */
     int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-      return 0;  // trimmer_.parameterSpaceGrid().getMark(getHostEntity<0>(e));
+      return 0;  // trimmer_->parameterSpaceGrid().getMark(getHostEntity<0>(e));
     }
 
     /** @brief returns true, if at least one entity is marked for adaption */
-    bool preAdapt() { return trimmer_.paramterSpaceGrid().preAdapt(); }
+    bool preAdapt() { return trimmer_->paramterSpaceGrid().preAdapt(); }
 
     //! Triggers the grid refinement process
-    bool adapt() { return trimmer_.paramterSpaceGrid().adapt(); }
+    bool adapt() { return trimmer_->paramterSpaceGrid().adapt(); }
 
     /** @brief Clean up refinement markers */
-    void postAdapt() { return trimmer_.paramterSpaceGrid().postAdapt(); }
+    void postAdapt() { return trimmer_->paramterSpaceGrid().postAdapt(); }
 
     /*@}*/
 
     /** @brief Size of the overlap on the leaf level */
     unsigned int overlapSize(int codim) const {
-      return trimmer_.parameterSpaceGrid().leafGridView().overlapSize(codim);
+      return trimmer_->parameterSpaceGrid().leafGridView().overlapSize(codim);
     }
 
     /** @brief Size of the ghost cell layer on the leaf level */
-    unsigned int ghostSize(int codim) const { return trimmer_.parameterSpaceGrid().leafGridView().ghostSize(codim); }
+    unsigned int ghostSize(int codim) const { return trimmer_->parameterSpaceGrid().leafGridView().ghostSize(codim); }
 
     /** @brief Size of the overlap on a given level */
     unsigned int overlapSize(int level, int codim) const {
-      return trimmer_.parameterSpaceGrid().levelGridView(level).overlapSize(codim);
+      return trimmer_->parameterSpaceGrid().levelGridView(level).overlapSize(codim);
     }
 
     /** @brief Size of the ghost cell layer on a given level */
     unsigned int ghostSize(int level, int codim) const {
-      return trimmer_.parameterSpaceGrid().levelGridView(level).ghostSize(codim);
+      return trimmer_->parameterSpaceGrid().levelGridView(level).ghostSize(codim);
     }
 
 #if 0
@@ -449,13 +421,13 @@ namespace Dune::IGANEW {
     /** @brief Communicate data of level gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
-      trimmer_.parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
+      trimmer_->parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
     }
 
     /** @brief Communicate data of leaf gridView */
     template <class DataHandle>
     void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
-      trimmer_.parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
+      trimmer_->parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
     }
 
     // **********************************************************
@@ -463,64 +435,31 @@ namespace Dune::IGANEW {
     // **********************************************************
 
     //! Returns the hostgrid this PatchGrid lives in
-    const ParameterSpaceGrid& parameterSpaceGrid() const { return trimmer_.parameterSpaceGrid(); }
-    ParameterSpaceGrid& parameterSpaceGrid() { return trimmer_.parameterSpaceGrid(); }
+    const ParameterSpaceGrid& parameterSpaceGrid() const { return trimmer_->parameterSpaceGrid(); }
+    ParameterSpaceGrid& parameterSpaceGrid() { return trimmer_->parameterSpaceGrid(); }
 
     //! Returns the hostgrid entity encapsulated in given PatchGrid entity
     template <int codim>
-    const typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity& getHostEntity(
-        const typename Traits::template Codim<codim>::Entity& e) const {
-      return e.impl().hostEntity_;
+    requires GridFamily::template hasHostEntity<codim> const typename GridFamily::TrimmerTraits::template Codim<
+        codim>::ParameterSpaceGridEntity&
+    getHostEntity(const typename Traits::template Codim<codim>::Entity& e) const {
+      return e.impl().getHostEntity();
     }
 
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }
+
+    const auto& trimmer() const { return *trimmer_; }
 
    private:
     PatchGrid() = default;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-    auto trimData(const typename Traits::template Codim<0>::Entity& element) const {
-      return trimmer_.trimData(element, *globalIdSet_);
-    }
+    std::unique_ptr<Trimmer> trimmer_;
 
-    TrimmerType trimmer_;
-
-   protected:
-    //! compute the grid indices and ids
-    void setIndices() {
-      localIdSet_->update();
-
-      globalIdSet_->update();
-
-      // //////////////////////////////////////////
-      //   Create the index sets
-      // //////////////////////////////////////////
-      for (int i = levelIndexSets_.size(); i <= maxLevel(); i++) {
-        auto p = std::make_unique<PatchGridLevelIndexSet<const PatchGrid>>();
-        levelIndexSets_.emplace_back(std::move(p));
-      }
-
-      for (int i = 0; i <= maxLevel(); i++)
-        if (levelIndexSets_[i]) levelIndexSets_[i]->update(*this, i);
-
-      leafIndexSet_->update(*this);
-    }
-
+   private:
     //! @todo Please doc me !
     Communication<No_Comm> ccobj;
-
-    //! Our set of level indices
-    std::vector<std::unique_ptr<PatchGridLevelIndexSet<const PatchGrid>>> levelIndexSets_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<PatchGridLeafIndexSet<const PatchGrid>> leafIndexSet_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<PatchGridGlobalIdSet<const PatchGrid>> globalIdSet_;
-
-    //! @todo Please doc me !
-    std::unique_ptr<PatchGridLocalIdSet<const PatchGrid>> localIdSet_;
 
   };  // end Class PatchGrid
 
