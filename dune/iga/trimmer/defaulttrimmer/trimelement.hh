@@ -23,29 +23,30 @@ namespace Dune::IGANEW::DefaultTrim {
     corners[3] = geo.corner(2);
 
     PathD elementPath;
-    for (int i = 0; i < 4; ++i)
+    for (const auto i : std::views::iota(0, 4))
       elementPath.push_back({corners[i][0], corners[i][1], i});
 
     PathsD clipPaths;
     PathD tempPath;
+    constexpr int N = 5;
 
     for (auto loop : trimData.loops()) {
       tempPath.clear();
-      for (auto& curve: loop.curves()) {
-        for (auto v : Utilities::linspace(curve.domain()[0], 2)) {
+      for (int i = 100; auto& curve: loop.curves()) {
+        for (auto v : Utilities::linspace(curve.domain()[0], N)) {
           auto fV = curve.global({v});
-          tempPath.emplace_back(fV[0], fV[1]);
+          tempPath.emplace_back(fV[0], fV[1], i++);
         }
         // Add an additional point just outside of the element
         auto localLastPoint = curve.domain()[0][1];
         auto lastPoint = curve.global(localLastPoint);
+
         auto scale = element.geometry().volume() / 10;
-        auto dx = curve.jacobian({localLastPoint}) * scale;
-        tempPath.emplace_back(dx[0] + lastPoint[0], dx[1] + lastPoint[1]);
+
+        auto dx1 = curve.jacobian({localLastPoint}) * scale;
+        tempPath.emplace_back(lastPoint[0] + dx1[0], lastPoint[1] + dx1[1], i++);
+        i += 99 - N;
       }
-      // For curve other than the first one, delete first node
-      if (!clipPaths.empty())
-        tempPath.erase(tempPath.begin());
       clipPaths.push_back(tempPath);
     }
 

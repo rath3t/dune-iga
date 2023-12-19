@@ -11,6 +11,7 @@
 namespace Dune::IGANEW {
 
   template <int dim, int dimworld, typename PatchGrid>
+  requires(dim == 2) && (dimworld == 2 || dimworld == 3) && (dim <= dimworld)
   class IbraReader {
     using GridFamily    = typename PatchGrid::GridFamily;
     using PatchData     = NURBSPatchData<dim, dimworld, typename GridFamily::ctype>;
@@ -21,20 +22,16 @@ namespace Dune::IGANEW {
     using ControlPointNetType = typename PatchData::ControlPointNetType;
 
    public:
-    static auto read(const std::string& fileName) {
+    static auto read(const std::string& fileName, const bool trim = true, std::array<int, 2> preKnotRefine  = {0, 0}) {
       std::ifstream ibraInputFile;
       ibraInputFile.open(fileName);
-      return read(ibraInputFile);
+      return read(ibraInputFile, trim, preKnotRefine);
     }
 
     template <typename InputStringType>
-    requires(
-        not std::convertible_to<
-            std::string,
-            InputStringType> and not std::convertible_to<InputStringType, const char*>) static auto read(InputStringType&
-                                                                                                             ibraInputFile,
-                                                                                                         const bool trim
-                                                                                                         = true) {
+      requires(not std::convertible_to<std::string, InputStringType>
+               and not std::convertible_to<InputStringType, const char*>)
+    static auto read(InputStringType& ibraInputFile, const bool trim = true, std::array<int, 2> preKnotRefine  = {0, 0}) {
       using json = nlohmann::json;
 
       std::vector<Ibra::Surface<dimworld>> surfaces;
@@ -96,6 +93,14 @@ namespace Dune::IGANEW {
 
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData _patchData{knotSpans, controlNet, _surface.degree};
+
+      // Optional preKnot refinement
+      for (const auto i : std::views::iota(0, dim)) {
+        if( preKnotRefine[i] > 0) {
+          auto newKnots = Splines::generateRefinedKnots(knotSpans, i, preKnotRefine[i]);
+          _patchData = Splines::knotRefinement(_patchData, newKnots, i);
+        }
+      }
 
       PatchTrimData trimData{};
       if (trim) constructTrimmingCurves(brep, trimData);

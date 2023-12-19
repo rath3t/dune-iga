@@ -26,12 +26,10 @@ auto testIbraReader() {
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
-  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra");
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {0, 0});
 
   auto grid = gridFactory.createGrid();
 
-  // auto& parameterGrid = grid->parameterSpaceGrid();
-  // auto gv             = parameterGrid.leafGridView();
 
   return t;
 }
@@ -44,7 +42,7 @@ int main(int argc, char** argv) try {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
   t.subTest(testIbraReader());
 
-  t.report();
+  // auto success = t.report();
 
   return t.exit();
 } catch (Dune::Exception& e) {
