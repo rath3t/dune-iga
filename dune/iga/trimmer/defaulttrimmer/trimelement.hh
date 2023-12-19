@@ -43,8 +43,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
         auto scale = element.geometry().volume() / 10;
 
-        auto dx1 = curve.jacobian({localLastPoint}) * scale;
-        tempPath.emplace_back(lastPoint[0] + dx1[0], lastPoint[1] + dx1[1], i++);
+        auto dx = curve.jacobian({localLastPoint}) * scale;
+        tempPath.emplace_back(lastPoint[0] + dx[0], lastPoint[1] + dx[1], i++);
+
         i += 99 - N;
       }
       clipPaths.push_back(tempPath);

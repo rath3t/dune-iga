@@ -15,7 +15,6 @@ namespace Dune::IGANEW::DefaultTrim {
   static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
 
   struct ClippingResult {
-    std::array<bool, 4> edgesVisited{false, false, false, false};
 
     struct HostVertex {
       std::size_t originalIdx{};
@@ -28,33 +27,40 @@ namespace Dune::IGANEW::DefaultTrim {
       std::size_t boundaryCurveIdx{};
       Clipper2Lib::PointD pt{};
     };
-
     using VertexVariant = std::variant<HostVertex, NewVertex>;
-    std::vector<VertexVariant> vertices{};
+
 
     void addOriginalVertex(const size_t originalIdx, const Clipper2Lib::PointD& pt) {
-      vertices.emplace_back(HostVertex(originalIdx, pt));
+      vertices_.emplace_back(HostVertex(originalIdx, pt));
     }
 
     void addNewVertex(const int edgeIdx, const bool goesIn, const std::size_t boundaryCurveIdx,
                       const Clipper2Lib::PointD& pt) {
-      edgesVisited[edgeIdx] = true;
-      vertices.emplace_back(NewVertex(edgeIdx, goesIn, boundaryCurveIdx, pt));
+
+      const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
+        auto isSame = false;
+        std::visit([&](auto&& vertex){
+          isSame = FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y);
+        }, vertexVariant);
+        return isSame;
+      });
+      if (it == vertices_.end())
+        vertices_.emplace_back(NewVertex(edgeIdx, goesIn, boundaryCurveIdx, pt));
     }
 
     void finish(const Clipper2Lib::PathD& eleRect) {
       // For now
-      if (vertices.empty()) {
+      if (vertices_.empty()) {
         for (const auto i : std::views::iota(0u, 4u))
           addOriginalVertex(i, eleRect[i]);
         return;
       }
 
       // For now only 2 Intersections, on different edges
-      assert(std::get<1>(vertices[0]).goesIn and vertices.size() == 2 and not std::get<1>(vertices[1]).goesIn);
+      assert(std::get<1>(vertices_[0]).goesIn and vertices_.size() == 2 and not std::get<1>(vertices_[1]).goesIn);
 
-      const auto idx1 = std::get<1>(vertices[0]).onEdgeIdx;
-      auto idx2       = std::get<1>(vertices[1]).onEdgeIdx;
+      const auto idx1 = std::get<1>(vertices_[0]).onEdgeIdx;
+      auto idx2       = std::get<1>(vertices_[1]).onEdgeIdx;
 
       while (idx2 != idx1) {
         idx2 = nextEntityIdx(idx2, 1);
@@ -63,6 +69,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
       // Now sort counter-clockwise
     }
+    std::vector<VertexVariant> vertices_{};
   };
 
   inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {
@@ -79,13 +86,12 @@ namespace Dune::IGANEW::DefaultTrim {
     return e1 < e2;
   }
 
-  inline auto clipElementRectangle(Clipper2Lib::PathD& eleRect, Clipper2Lib::PathsD& trimmingCurves) -> std::tuple<TrimmingFlag, ClippingResult> {
+  inline auto clipElementRectangle(Clipper2Lib::PathD& eleRect, const Clipper2Lib::PathsD& trimmingCurves) -> std::tuple<TrimmingFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
     auto isFullElement = [&](const auto& clippedEdges) {
       return FloatCmp::eq(Area(clippedEdges), Area(eleRect));
     };
-
 
     // First determine if element is trimmed
     const auto intersectResult = Intersect({eleRect}, trimmingCurves, FillRule::NonZero, 8);
@@ -94,33 +100,24 @@ namespace Dune::IGANEW::DefaultTrim {
     if (isFullElement(intersectResult.front()))
       return std::make_tuple(TrimmingFlag::full, ClippingResult{});
 
-
+    // Element is trimmed
     ClipperD clipper(8);
-
-    auto isOnHostVertex = [&](const auto& point)-> bool {
-      auto it =  std::ranges::find_if(eleRect, [&](const auto& elementPoint) {
-        return FloatCmp::eq(elementPoint.x, point.x) and FloatCmp::eq(elementPoint.y, point.y);
-      });
-      return it != eleRect.end();
-    };
-
     ClippingResult result{};
+
     clipper.SetZCallback(
         [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
-          // if (e1bot.z > 3 or e1top.z > 3)
-          //   return;
           std::cout << "New Intersection x: " << pt.x << " y: " << pt.y << std::endl;
           std::cout << e1bot.z << " " << e1top.z << std::endl;
           std::cout << e2bot.z << " " << e2top.z << std::endl;
 
-          result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), goesIn(e1bot.z, e1top.z), -1, pt);
+          result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), goesIn(e1bot.z, e1top.z), pt.z, pt);
         });
 
     PathsD resultClosedPaths{};
     PathsD resultOpenPaths{};
 
     for (const auto i : std::views::iota(0, 4)) {
-      std::cout << "Edge " << i << std::endl;
+      //std::cout << "Edge " << i << std::endl;
 
       clipper.Clear();
       clipper.AddClip(trimmingCurves);
@@ -129,7 +126,7 @@ namespace Dune::IGANEW::DefaultTrim {
       clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
       std::cout << resultClosedPaths;
     }
-    // result.finish(eleRect);
+    //result.finish(eleRect);
 
     std::cout << resultClosedPaths;
 
@@ -140,11 +137,11 @@ namespace Dune::IGANEW::DefaultTrim {
         std::cout << "Original Idx: " << v.originalIdx << std::endl;
       }
       void operator()(const ClippingResult::NewVertex& v) const {
-        std::cout << "Edge: " << v.onEdgeIdx << ", goes in " << v.goesIn << " Pt: " << v.pt << std::endl;
+        std::cout << "Edge: " << v.onEdgeIdx << ", goes in " << v.goesIn << " Pt: " << v.pt << " On BC: " << v.boundaryCurveIdx << std::endl;
       }
     };
 
-    for (auto& vV : result.vertices)
+    for (auto& vV : result.vertices_)
       std::visit(Visitor{}, vV);
 
     return std::make_tuple(TrimmingFlag::trimmed, result);
