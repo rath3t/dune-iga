@@ -28,6 +28,8 @@ find_package(dune-common REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
      ${dune-common_MODULE_PATH})
 
+find_package(Matplot++ REQUIRED)
+
 # silence alugrid
 set(ENV{ALUGRID_VERBOSITY_LEVEL} 0)
 

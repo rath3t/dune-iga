@@ -11,7 +11,7 @@ foreach(_test ${TESTS})
 
   target_link_libraries(
     ${_test} PRIVATE Clipper2Z nlohmann_json::nlohmann_json
-                     earcut_hpp::earcut_hpp)
+                     earcut_hpp::earcut_hpp Matplot++::matplot)
 
   target_compile_options(
     ${_test}
