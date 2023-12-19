@@ -10,6 +10,7 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
+#include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 
 namespace Dune::IGANEW::Ibra {
 
@@ -49,13 +50,12 @@ namespace Dune::IGANEW::Ibra {
     Dune::DynamicMatrix<double> controlPoints;
     std::vector<double> weights;
 
-    using ControlPointType = typename NURBSPatchData<dim, worldDim>::ControlPointType;
-
+    template <typename ControlPointType>
     [[nodiscard]] std::vector<std::vector<ControlPointType>> transformControlPoints() const {
       if constexpr (dim == 1) {
         std::vector<ControlPointType> cps;
         for (int i = 0; i < n_controlPoints[0]; ++i) {
-          cps.push_back(controlPointAt({i}));
+          cps.push_back(controlPointAt<ControlPointType>({i}));
         }
         return {cps};
       } else if constexpr (dim == 2) {
@@ -64,7 +64,7 @@ namespace Dune::IGANEW::Ibra {
         for (int i = 0; i < n_controlPoints[0]; ++i) {
           cpTemp.clear();
           for (int j = 0; j < n_controlPoints[1]; ++j) {
-            cpTemp.push_back(controlPointAt({i, j}));
+            cpTemp.push_back(controlPointAt<ControlPointType>({i, j}));
           }
           vec.push_back(cpTemp);
         }
@@ -86,6 +86,7 @@ namespace Dune::IGANEW::Ibra {
     }
 
    private:
+    template <typename ControlPointType>
     [[nodiscard]] ControlPointType controlPointAt(std::array<int, dim> idx) const {
       int row = (dim == 1) ? idx[0] : idx[0] * n_controlPoints[1] + idx[1];
 
@@ -122,6 +123,20 @@ namespace Dune::IGANEW::Ibra {
         geometry = *it;
       else
         DUNE_THROW(Dune::InvalidStateException, "Couldn't find geometry in BrepTrim: " << key);
+    }
+
+    template <typename TrimmingCurve>
+    auto asCurve() const {
+      using ControlPointType    = typename TrimmingCurve::ControlPointType;
+      using ControlPointNetType = typename TrimmingCurve::ControlPointNetType;
+      using PatchData           = typename TrimmingCurve::PatchData;
+
+      const auto cp = geometry.transformControlPoints<ControlPointType>()[0];
+      std::array dimSize{static_cast<int>(cp.size())};
+      std::array knotSpans{geometry.compileKnotVectors()};
+      ControlPointNetType controlNet{dimSize, cp};
+
+      return TrimmingCurve(PatchData(knotSpans, controlNet, std::array(geometry.degree)));
     }
   };
 
@@ -297,6 +312,6 @@ namespace Dune::IGANEW::Ibra {
     trim.domain.right() = dom.back();
   };
 
-}  // namespace Dune::IGA::Ibra
+}  // namespace Dune::IGANEW::Ibra
 
 // DUNE_IGA_IBRAGEOMETRY_HH

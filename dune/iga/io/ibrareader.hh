@@ -3,26 +3,24 @@
 
 #pragma once
 
-
 #include <fstream>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 #include <nlohmann/json.hpp>
 
 #include "ibrageometry.hh"
-
 
 namespace Dune::IGANEW {
 
   template <int dim, int dimworld, typename PatchGrid>
   class IbraReader {
-
-    using GridFamily = typename PatchGrid::GridFamily;
-    using PatchData = NURBSPatchData<dim, dimworld, typename GridFamily::ctype>;
+    using GridFamily    = typename PatchGrid::GridFamily;
+    using PatchData     = NURBSPatchData<dim, dimworld, typename GridFamily::ctype>;
     using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
+    using TrimmingCurve = typename GridFamily::TrimmerTraits::TrimmingCurve;
 
-    using ControlPoint        = typename PatchData::ControlPointType;
+    using ControlPointType    = typename PatchData::ControlPointType;
     using ControlPointNetType = typename PatchData::ControlPointNetType;
-  public:
+
+   public:
     static auto read(const std::string& fileName) {
       std::ifstream ibraInputFile;
       ibraInputFile.open(fileName);
@@ -30,14 +28,15 @@ namespace Dune::IGANEW {
     }
 
     template <typename InputStringType>
-    requires(not std::convertible_to<
-                 std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>) static
-    auto read(InputStringType& ibraInputFile, const bool trim = true,
-                              std::array<int, 2> elevateDegree = {0, 0}, std::array<int, 2> preKnotRefine = {0, 0},
-                              std::array<int, 2> postKnotRefine = {0, 0}) {
+    requires(
+        not std::convertible_to<
+            std::string,
+            InputStringType> and not std::convertible_to<InputStringType, const char*>) static auto read(InputStringType&
+                                                                                                             ibraInputFile,
+                                                                                                         const bool trim
+                                                                                                         = true) {
       using json = nlohmann::json;
 
-      // Result
       std::vector<Ibra::Surface<dimworld>> surfaces;
       std::vector<Ibra::Curve2D> curves2D;
 
@@ -89,37 +88,32 @@ namespace Dune::IGANEW {
 
       // Reader has done its job, now NURBSGrid can be constructed
 
-      Ibra::Surface<dimworld> _surface                           = brep.surfaces[0];
-      const std::array<std::vector<double>, dim> knotSpans   = _surface.compileKnotVectors();
-      const std::vector<std::vector<ControlPoint>> controlPoints = _surface.transformControlPoints();
-      std::array<int, dim> dimsize                           = _surface.n_controlPoints;
+      Ibra::Surface<dimworld> _surface                     = brep.surfaces[0];
+      const std::array<std::vector<double>, dim> knotSpans = _surface.compileKnotVectors();
+      const std::vector<std::vector<ControlPointType>> controlPoints
+          = _surface.template transformControlPoints<ControlPointType>();
+      std::array<int, dim> dimsize = _surface.n_controlPoints;
 
       auto controlNet = ControlPointNetType(dimsize, controlPoints);
       PatchData _patchData{knotSpans, controlNet, _surface.degree};
 
+      PatchTrimData trimData{};
+      if (trim) constructTrimmingCurves(brep, trimData);
 
-      // Make the trimData and pass them into the grid
-      // So the grid can figure out what to do with it
-      // auto trimData = constructGlobalBoundaries(brep);
-
-      return std::make_tuple(_patchData, PatchTrimData());
+      return std::make_tuple(_patchData, trimData);
     }
 
    private:
-    // static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
-    //   auto data = std::make_shared<TrimData>();
-    //   std::vector<Boundary> boundaries;
-    //   std::vector<Ibra::BrepLoop> loops = brep.loops;
-    //   for (Ibra::BrepLoop& loop : loops) {
-    //     boundaries.clear();
-    //     for (Ibra::BrepTrim& trim : loop.trims) {
-    //       boundaries.emplace_back(trim);
-    //     }
-    //     data->addLoop(boundaries);
-    //   }
-    //
-    //   return data;
-    // }
+    static void constructTrimmingCurves(const Ibra::Brep<dimworld>& brep, PatchTrimData& trimData) {
+      const std::vector<Ibra::BrepLoop> loops = brep.loops;
+      assert(!loops.empty() && "Only one boundary loop is currently supported");
+      for (int i = 0; const Ibra::BrepLoop& loop : loops) {
+        trimData.addLoop();
+        for (const Ibra::BrepTrim& trim : loop.trims)
+          trimData.insertTrimCurve(trim.asCurve<TrimmingCurve>(), i);
+        i++;
+      }
+    }
   };
 
-}  // namespace Dune::IGA
+}  // namespace Dune::IGANEW

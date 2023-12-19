@@ -428,7 +428,7 @@ namespace Dune::IGANEW {
 
       static auto trimElement(
           const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
-          const PatchTrimData& trimmingCurves);
+          const PatchTrimData& trimData);
 
       /**
        * @brief Get the reference element for a given entity.

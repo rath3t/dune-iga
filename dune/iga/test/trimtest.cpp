@@ -90,15 +90,6 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   return t;
 }
 
-auto testWithIbraReader() {
-  Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-
-
-
-  return t;
-}
-
-
 #include <cfenv>
 
 int main(int argc, char** argv) try {

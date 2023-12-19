@@ -2,8 +2,9 @@
 #pragma once
 #include <nlohmann/json.hpp>
 
-#include <dune/grid/common/gridfactory.hh>
 #include "../io/ibrareader.hh"
+
+#include <dune/grid/common/gridfactory.hh>
 
 namespace Dune {
 
@@ -49,8 +50,9 @@ namespace Dune {
     @param patchTrimData Trimming data for this patch
  */
     void insertJson(const std::string& filename) {
-      json_ = filename;
+      json_                      = filename;
       auto [patchData, trimData] = IGANEW::IbraReader<dim, dimworld, PatchGrid>::read(filename);
+      insertPatch(patchData, trimData);
     }
 
     /** @brief Finalize grid creation and hand over the grid

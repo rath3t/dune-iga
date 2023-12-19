@@ -59,6 +59,7 @@ namespace Dune::IGANEW::GeometryKernel {
         = YaspGeometry<mydimension - codim, mydimension,
                        const YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>>;
 
+    using PatchData           = NURBSPatchData<mydimension, worlddimension, ScalarType>;
     using ControlPointType    = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointType;
     using ControlPointNetType = typename NURBSPatchData<mydimension, worlddimension, ScalarType>::ControlPointNetType;
     using ControlPointCoordinateNetType

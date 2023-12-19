@@ -5,32 +5,36 @@
 #  include "config.h"
 #endif
 
+#include <cfenv>
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
-
+#include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <cfenv>
 
 using namespace Dune::IGANEW;
 
 auto testIbraReader() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  using PatchGrid = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
   gridFactory.insertJson("auxiliaryfiles/element_trim.ibra");
 
+  auto grid = gridFactory.createGrid();
+
+  // auto& parameterGrid = grid->parameterSpaceGrid();
+  // auto gv             = parameterGrid.leafGridView();
+
   return t;
 }
-
 
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);

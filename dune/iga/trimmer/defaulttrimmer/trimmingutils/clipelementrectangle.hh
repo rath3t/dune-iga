@@ -7,10 +7,7 @@
 
 namespace Dune::IGANEW::DefaultTrim {
 
-  enum class error_type {
-    clipperNotSucessfull,
-    malformedCurve
-  };
+  enum class error_type { clipperNotSucessfull, malformedCurve };
 
   struct ClippingResult {
     std::size_t nVertices{};
@@ -40,7 +37,8 @@ namespace Dune::IGANEW::DefaultTrim {
       vertices.emplace_back(HostVertex(nVertices++, originalIdx, pt));
     }
 
-    void addNewVertex(const int edgeIdx, const bool goesIn, const std::size_t boundaryCurveIdx, const Clipper2Lib::PointD& pt) {
+    void addNewVertex(const int edgeIdx, const bool goesIn, const std::size_t boundaryCurveIdx,
+                      const Clipper2Lib::PointD& pt) {
       edgesVisited[edgeIdx] = true;
       vertices.emplace_back(NewVertex(nVertices++, edgeIdx, goesIn, boundaryCurveIdx, pt));
     }
@@ -48,8 +46,8 @@ namespace Dune::IGANEW::DefaultTrim {
     void finish(const Clipper2Lib::PathD& eleRect) {
       // For now
       if (vertices.empty()) {
-         for (const auto i : std::views::iota(0u, 4u))
-           addOriginalVertex(i, eleRect[i]);
+        for (const auto i : std::views::iota(0u, 4u))
+          addOriginalVertex(i, eleRect[i]);
         return;
       }
 
@@ -57,7 +55,7 @@ namespace Dune::IGANEW::DefaultTrim {
       assert(std::get<1>(vertices[0]).goesIn and vertices.size() == 2 and not std::get<1>(vertices[1]).goesIn);
 
       const auto idx1 = std::get<1>(vertices[0]).onEdgeIdx;
-      auto idx2 = std::get<1>(vertices[1]).onEdgeIdx;
+      auto idx2       = std::get<1>(vertices[1]).onEdgeIdx;
 
       while (idx2 != idx1) {
         idx2 = nextEntityIdx(idx2, 1);
@@ -65,7 +63,6 @@ namespace Dune::IGANEW::DefaultTrim {
       }
 
       // Now sort counter-clockwise
-
     }
   };
 
@@ -79,11 +76,9 @@ namespace Dune::IGANEW::DefaultTrim {
   }
 
   inline bool goesIn(const std::size_t e1, const std::size_t e2) {
-    if (giveEdgeIdx(e1, e2) < 3)
-      return e1 > e2;
+    if (giveEdgeIdx(e1, e2) < 3) return e1 > e2;
     return e1 < e2;
   }
-
 
   inline auto clipElementRectangle(Clipper2Lib::PathD& eleRect, Clipper2Lib::PathsD& trimmingCurves) {
     using namespace Clipper2Lib;
@@ -109,20 +104,21 @@ namespace Dune::IGANEW::DefaultTrim {
     clipper.SetZCallback(
         [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
           std::cout << "New Intersection x: " << pt.x << " y: " << pt.y << std::endl;
-          // std::cout << e1bot.z << " " << e1top.z << std::endl;
-          // std::cout << e2bot.z << " " << e2top.z << std::endl;
+          std::cout << e1bot.z << " " << e1top.z << std::endl;
+          std::cout << e2bot.z << " " << e2top.z << std::endl;
 
-          result.addNewVertex(giveEdgeIdx(e2bot.z, e2top.z), goesIn(e2bot.z, e2top.z), e1bot.z, pt);
+          // result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), goesIn(e1bot.z, e1top.z), e2bot.z, pt);
         });
 
-    clipper.AddClip({eleRect});
-    clipper.AddOpenSubject(trimmingCurves);
+    clipper.AddClip(trimmingCurves);
+    clipper.AddSubject({eleRect});
+    //clipper.AddOpenSubject(PathsD{{eleRect[3], eleRect[0]}});
 
-    PathsD clippedPath{};
-    PathsD clippedPath2{};
+    PathsD resultClosedPaths{};
+    PathsD resultOpenPaths{};
 
-    clipper.Execute(ClipType::Intersection, FillRule::EvenOdd, clippedPath, clippedPath2);
-    result.finish(eleRect);
+    clipper.Execute(ClipType::Intersection, FillRule::NonZero, trimmingCurves);
+    // result.finish(eleRect);
 
     std::cout << "Vertices found\n";
 
