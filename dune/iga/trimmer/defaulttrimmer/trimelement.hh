@@ -51,7 +51,10 @@ namespace Dune::IGANEW::DefaultTrim {
       clipPaths.push_back(tempPath);
     }
 
+    auto result = Impl::clipElementRectangle(elementPath, clipPaths);
 
-    auto result = clipElementRectangle(elementPath, clipPaths);
+
+
+
   }
 }  // namespace Dune::IGANEW::DefaultTrim

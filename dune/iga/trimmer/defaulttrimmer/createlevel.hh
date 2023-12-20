@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
+#include <matplot/matplot.h>
+
+
 #pragma once
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
@@ -156,6 +159,9 @@ namespace Dune::IGANEW::DefaultTrim {
       int trimmedElementIndex         = 0;
       int edgeIndex                   = 0;
       int vertexIndex                 = 0;
+
+      auto figure = matplot::figure(true);
+
       for (const auto& ele : elements(gv)) {
         if (trimData_.has_value()) trimElement(ele, trimData_.value());
         auto hostId = globalIdSetParameterSpace.id(ele);
@@ -226,6 +232,10 @@ namespace Dune::IGANEW::DefaultTrim {
           }
         }
       }
+
+      //matplot::save("figure", "svg");
+      matplot::save("figure", "gif");
+
       // save numbers of untrimmed and trimmed elements per level
       entityContainer.numberOfTrimmedElements.push_back(trimmedElementIndex);
       entityContainer.numberOfUnTrimmedElements.push_back(unTrimmedElementIndex);
