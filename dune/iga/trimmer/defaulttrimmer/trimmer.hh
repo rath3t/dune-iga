@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "elementtrimdata.hh"
 #include "entitycontainer.hh"
 #include "idset.hh"
 #include "patchgridentityseed.hh"
@@ -63,6 +64,9 @@ namespace Dune::IGANEW {
   }
 
   namespace DefaultTrim {
+
+    enum class ElementTrimFlag { full, empty, trimmed };
+
     template <typename HostIdType>
     struct IdType {
       enum class EntityIdType { host, newId };
@@ -158,13 +162,13 @@ namespace Dune::IGANEW {
      */
     struct Parameter {};
 
-    /**
-     * @brief ElementTrimData struct representing trim data for an element.
-     * @tparam mydim_ Dimension of the element.
-     * @tparam ScalarType Scalar type for the coordinates.
-     */
-    template <int mydim_, typename ScalarType>
-    struct ElementTrimDataImpl {};
+    // /**
+    //  * @brief ElementTrimData struct representing trim data for an element.
+    //  * @tparam mydim_ Dimension of the element.
+    //  * @tparam ScalarType Scalar type for the coordinates.
+    //  */
+    // template <int mydim_, typename ScalarType>
+    // struct ElementTrimDataImpl {};
 
     /**
      * @brief ElementTrimDataContainer struct representing a container for element trim data.
@@ -404,10 +408,9 @@ namespace Dune::IGANEW {
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
 
-      using ElementTrimData = ElementTrimDataImpl<ParameterSpaceGrid::dimension,
-                                                  typename ParameterSpaceGrid::ctype>;  ///< Element trim data type.
-      using PatchTrimData   = typename GridFamily::TrimmerTraits::PatchTrimData;        ///< Patch trim data type.
-      using TrimmingCurve   = typename GridFamily::TrimmerTraits::TrimmingCurve;        ///< Patch trim data type.
+      using ElementTrimData = ElementTrimDataImpl<GridFamily>;                    ///< Element trim data type.
+      using PatchTrimData   = typename GridFamily::TrimmerTraits::PatchTrimData;  ///< Patch trim data type.
+      using TrimmingCurve   = typename GridFamily::TrimmerTraits::TrimmingCurve;  ///< Patch trim data type.
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
@@ -428,7 +431,7 @@ namespace Dune::IGANEW {
 
       static auto trimElement(
           const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
-          const PatchTrimData& trimData);
+          const PatchTrimData& patchTrimData);
 
       /**
        * @brief Get the reference element for a given entity.

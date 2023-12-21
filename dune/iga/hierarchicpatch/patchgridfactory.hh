@@ -49,7 +49,7 @@ namespace Dune {
     @param patchData The patch data
     @param patchTrimData Trimming data for this patch
  */
-    void insertJson(const std::string& filename, const bool trim = true, std::array<int, 2> preKnotRefine  = {0, 0}) {
+    void insertJson(const std::string& filename, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0}) {
       json_                      = filename;
       auto [patchData, trimData] = IGANEW::IbraReader<dim, dimworld, PatchGrid>::read(filename, trim, preKnotRefine);
       insertPatch(patchData, trimData);

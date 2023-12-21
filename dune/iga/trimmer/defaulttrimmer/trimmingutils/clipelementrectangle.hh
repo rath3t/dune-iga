@@ -11,18 +11,16 @@
 namespace Dune::IGANEW::DefaultTrim::Impl {
 
   // enum class error_type { clipperNotSucessfull, malformedCurve };
-  enum class TrimmingFlag { full, empty, trimmed };
   static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
-
 
   struct ClippingResult {
     struct HostVertex {
+      size_t hostIdx{};
       Clipper2Lib::PointD pt{};
     };
 
     struct NewVertex {
       int onEdgeIdx{};
-      std::size_t boundaryCurveIdx{};
       Clipper2Lib::PointD pt{};
     };
     using VertexVariant = std::variant<HostVertex, NewVertex>;
@@ -38,50 +36,46 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     }
 
     void addOriginalVertex(const Clipper2Lib::PointD& pt) {
-      if (not isAlreadyThere(pt)) vertices_.emplace_back(HostVertex(pt));
+      if (not isAlreadyThere(pt)) vertices_.emplace_back(HostVertex(pt.z, pt));
     }
 
-    void addNewVertex(const int edgeIdx, const std::size_t boundaryCurveIdx,
-                      const Clipper2Lib::PointD& pt) {
-      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, boundaryCurveIdx, pt));
+    void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt) {
+      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt));
     }
 
     void finish() {
-      // Sort the points in counter clockwise manner such that the first point is in the lower left (courtesy to ChatGPT)
-      auto getPoint = [](auto&& vertexVariant) {
-        return vertexVariant.pt;
-      };
+      // Sort the points in counter clockwise manner such that the first point is in the lower left (courtesy to
+      // ChatGPT)
+      auto getPoint = [](auto&& vertexVariant) { return vertexVariant.pt; };
 
-      const auto minVertex = *std::ranges::min_element(vertices_, [&](const VertexVariant& aV, const VertexVariant& bV) {
-        const auto a = std::visit(getPoint, aV);
-        const auto b = std::visit(getPoint, bV);
-        return (a.y < b.y) || (a.y == b.y && a.x < b.x);
-      });
+      const auto minVertex
+          = *std::ranges::min_element(vertices_, [&](const VertexVariant& aV, const VertexVariant& bV) {
+              const auto a = std::visit(getPoint, aV);
+              const auto b = std::visit(getPoint, bV);
+              return (a.y < b.y) || (a.y == b.y && a.x < b.x);
+            });
 
-      auto polarAngle = [](const auto& p, const auto& reference) -> double {
-        return atan2(p.y - reference.y, p.x - reference.x);
-      };
+      auto polarAngle
+          = [](const auto& p, const auto& reference) -> double { return atan2(p.y - reference.y, p.x - reference.x); };
 
       // Sort the points based on polar angle with respect to the reference point
-      auto comparePoints  = [&](const VertexVariant& aV, const VertexVariant& bV, const VertexVariant& referenceV) -> bool {
-        const auto a = std::visit(getPoint, aV);
-        const auto b = std::visit(getPoint, bV);
+      auto comparePoints
+          = [&](const VertexVariant& aV, const VertexVariant& bV, const VertexVariant& referenceV) -> bool {
+        const auto a         = std::visit(getPoint, aV);
+        const auto b         = std::visit(getPoint, bV);
         const auto reference = std::visit(getPoint, referenceV);
-        const double angleA = polarAngle(a, reference);
-        const double angleB = polarAngle(b, reference);
+        const double angleA  = polarAngle(a, reference);
+        const double angleB  = polarAngle(b, reference);
 
-        if (angleA != angleB)
-          return angleA < angleB;
+        if (angleA != angleB) return angleA < angleB;
 
-        //If two points have the same angle, sort based on distance to the reference point
-        return (a.x - reference.x) * (a.x - reference.x) + (a.y - reference.y) * (a.y - reference.y) <
-               (b.x - reference.x) * (b.x - reference.x) + (b.y - reference.y) * (b.y - reference.y);
-
+        // If two points have the same angle, sort based on distance to the reference point
+        return (a.x - reference.x) * (a.x - reference.x) + (a.y - reference.y) * (a.y - reference.y)
+               < (b.x - reference.x) * (b.x - reference.x) + (b.y - reference.y) * (b.y - reference.y);
       };
       std::ranges::sort(vertices_, [&](const VertexVariant& aV, const VertexVariant& bV) {
         return comparePoints(aV, bV, minVertex);
       });
-
     }
     std::vector<VertexVariant> vertices_{};
   };
@@ -98,27 +92,25 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
   inline bool goesIn(const std::size_t e1, const std::size_t e2) { return e1 > e2; }
 
   inline auto clipElementRectangle(Clipper2Lib::PathD& eleRect, const Clipper2Lib::PathsD& trimmingCurves)
-      -> std::tuple<TrimmingFlag, ClippingResult> {
+      -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
     auto isFullElement = [&](const auto& clippedEdges) { return FloatCmp::eq(Area(clippedEdges), Area(eleRect)); };
 
     // First determine if element is trimmed
     const auto intersectResult = Intersect({eleRect}, trimmingCurves, FillRule::NonZero, 2);
-    if (intersectResult.empty()) return std::make_tuple(TrimmingFlag::empty, ClippingResult{});
+    if (intersectResult.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{});
     if (isFullElement(intersectResult.front())) {
       matplot::rectangle(eleRect[0].x, eleRect[1].y, eleRect[1].x - eleRect[0].x, eleRect[3].y - eleRect[0].y);
-      return std::make_tuple(TrimmingFlag::full, ClippingResult{});
+      return std::make_tuple(ElementTrimFlag::full, ClippingResult{});
     }
 
     // Element is trimmed
     ClipperD clipper(8);
     ClippingResult result{};
 
-    clipper.SetZCallback(
-        [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
-          result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), pt.z, pt);
-        });
+    clipper.SetZCallback([&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top,
+                             const PointD& pt) { result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), pt); });
 
     PathsD resultClosedPaths{};
     PathsD resultOpenPaths{};
@@ -139,17 +131,15 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     auto isPointInTrimmingCurves = [&](const auto& pt1) -> bool {
       return std::ranges::any_of(trimmingCurves, [&](const auto& curve) {
-        auto it =  std::ranges::find_if(
-                 curve,
-                 [&](const auto& pt2) { return FloatCmp::eq(pt1.x, pt2.x) and FloatCmp::eq(pt1.y, pt2.y); });
+        auto it = std::ranges::find_if(
+            curve, [&](const auto& pt2) { return FloatCmp::eq(pt1.x, pt2.x) and FloatCmp::eq(pt1.y, pt2.y); });
         return it != curve.end();
       });
     };
 
     // check if any element vertex is a starting point of one of the trimming curves as the algorihtm cannot find them
     for (const auto& cP : eleRect)
-      if (isPointInTrimmingCurves(cP))
-        result.addOriginalVertex(cP);
+      if (isPointInTrimmingCurves(cP)) result.addOriginalVertex(cP);
 
     result.finish();
 
@@ -158,18 +148,17 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     struct Visitor {
       static void plotEllipse(const PointD& pt) {
         constexpr auto w = 0.025;
-        const auto c = matplot::ellipse(pt.x - (w / 2), pt.y - (w / 2), w, w);
+        const auto c     = matplot::ellipse(pt.x - (w / 2), pt.y - (w / 2), w, w);
         c->color("blue");
       }
 
       void operator()(const ClippingResult::HostVertex& v) const {
         plotEllipse(v.pt);
-        std::cout << "Pt: " << v.pt << std::endl;
+        std::cout << "Pt: " << v.pt << " Host Idx: " << v.hostIdx << std::endl;
       }
       void operator()(const ClippingResult::NewVertex& v) const {
         plotEllipse(v.pt);
-        std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt
-                  << " On BC: " << v.boundaryCurveIdx << std::endl;
+        std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On BC: " << v.pt.z << std::endl;
       }
     };
 
@@ -180,6 +169,6 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     matplot::axis(matplot::square);
     matplot::rectangle(eleRect[0].x, eleRect[1].y, eleRect[1].x - eleRect[0].x, eleRect[3].y - eleRect[0].y);
 
-    return std::make_tuple(TrimmingFlag::trimmed, result);
+    return std::make_tuple(ElementTrimFlag::trimmed, result);
   }
-}  // namespace Dune::IGANEW::DefaultTrim
+}  // namespace Dune::IGANEW::DefaultTrim::Impl

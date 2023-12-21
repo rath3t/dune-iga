@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #include <matplot/matplot.h>
 
-
 #pragma once
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
@@ -163,14 +162,20 @@ namespace Dune::IGANEW::DefaultTrim {
       auto figure = matplot::figure(true);
 
       for (const auto& ele : elements(gv)) {
-        if (trimData_.has_value()) trimElement(ele, trimData_.value());
+        ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};
+        ElementTrimData eleTrimData{eleTrimFlag};
+        if (trimData_.has_value()) {
+          eleTrimData = trimElement(ele, trimData_.value());
+          eleTrimFlag = eleTrimData.flag();
+        }
+
         auto hostId = globalIdSetParameterSpace.id(ele);
 
         IdType elementId = {.entityIdType = IdType::EntityIdType::host, .id = hostId};
         if (ele.hasFather()) {
           auto fatherHostId = globalIdSetParameterSpace.id(ele.father());
           // if we know that we (the element) are untrimmed we know that our father is also untrimmed
-          if (true /* untrimmed */) {
+          if (eleTrimFlag == ElementTrimFlag::full) {
             IdType fatherId = {.entityIdType = IdType::EntityIdType::host, .id = fatherHostId};
             // insert new element info
             EntityInfo<0> elementInfo{.indexInLvlStorage   = trimmedElementIndex + unTrimmedElementIndex,
@@ -186,6 +191,10 @@ namespace Dune::IGANEW::DefaultTrim {
             // the indexInLvlStorage and lvl, which would provide faster access
             entityContainer.idToElementInfoMap.at(fatherId).decendantIds.push_back(elementId);
             entityContainer.template entity<0>(fatherId, newLevel - 1).entityInfo_.decendantIds.push_back(elementId);
+          } else if (eleTrimFlag == ElementTrimFlag::trimmed) {
+            // trimmed
+          } else {
+            // empty
           }
         } else /* no father */ {
           if (true /* untrimmed */) {
@@ -233,7 +242,7 @@ namespace Dune::IGANEW::DefaultTrim {
         }
       }
 
-      //matplot::save("figure", "svg");
+      // matplot::save("figure", "svg");
       matplot::save("figure", "gif");
 
       // save numbers of untrimmed and trimmed elements per level
