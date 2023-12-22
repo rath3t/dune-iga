@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 #include <clipper2/clipper.h>
-#include <clipper2/clipper.rectclip.h>
+
+#include <dune/iga/geometrykernel/findintersection.hh>
 
 #include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmingutils/clipelementrectangle.hh>
@@ -28,8 +29,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
     PathsD clipPaths;
     PathD tempPath;
-    constexpr int N = 5;
-
+    constexpr int N = 10;
+    // @todo store param value of sampled points on trimmingCurve
     for (auto loop : patchTrimData.loops()) {
       tempPath.clear();
       for (int i = 100; auto& curve : loop.curves()) {
@@ -54,15 +55,51 @@ namespace Dune::IGANEW::DefaultTrim {
     auto [flag, result] = Impl::clipElementRectangle(elementPath, clipPaths);
 
     // Create ElementTrimData with exact intersection Points and a geometry representation of the element edges
-    ElementTrimData trimData(flag);
+    ElementTrimData elementTrimData(flag);
 
-    if (flag != ElementTrimFlag::trimmed) return trimData;
+    if (flag != ElementTrimFlag::trimmed) return elementTrimData;
 
     auto nextEntity  = [&](const int i) { return (i + 1) % result.vertices_.size(); };
     auto isNewVertex = [](const auto& vV) { return std::holds_alternative<Impl::ClippingResult::NewVertex>(vV); };
     auto getPt       = [](auto&& vV) { return vV.pt; };
     auto getHostIdx  = [](const auto& vV) { return std::get<Impl::ClippingResult::HostVertex>(vV).hostIdx; };
-    auto getEdgeIdx  = [](const auto& vV) { return std::get<Impl::ClippingResult::NewVertex>(vV).pt.z; };
+    auto getEdgeIdx  = [](const auto& vV) { return std::get<Impl::ClippingResult::NewVertex>(vV).onEdgeIdx; };
+    auto getTrimmingCurveZ = [](const auto& vV) {return std::get<Impl::ClippingResult::NewVertex>(vV).trimmingCurveZ; };
+
+    // @todo could be done via Jacobian of the edges
+    std::array<FieldVector<ScalarType, dim>, 4> dirs {FieldVector<ScalarType, dim>{1.0, 0.0}, FieldVector<ScalarType, dim>{0, 1},
+      FieldVector<ScalarType, dim>{-1, 0}, FieldVector<ScalarType, dim>{0, -1}};
+
+    auto approxSamePoint = [](const Clipper2Lib::PointD& pt1, const Dune::FieldVector<ScalarType, dim>& pt2, const double prec) -> bool {
+      return FloatCmp::eq(pt1.x, pt2[0], prec) and FloatCmp::eq(pt1.y, pt2[1], prec);
+    };
+    auto callFindIntersection = [&](const size_t tcIdx, const int edgeIdx, auto ip) -> std::pair<double, FieldVector<ScalarType, dim>> {
+      // @todo gerneraliize for more than one loop
+      auto curvePatchGeo = patchTrimData.loops().front().curves()[tcIdx];
+      auto pos = corners[edgeIdx];
+      auto dir = dirs[edgeIdx];
+      auto guessTParam = FieldVector<ScalarType, dim>{curvePatchGeo.domainMidPoint()[0], 0.5};
+
+      auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
+      //if (success)
+        return std::make_pair(tParam[0], curvePoint);
+
+      // No sucess can happen on cases where the point is correct but the t is not
+      // @todo maybe this should throw
+      assert(approxSamePoint(ip, curvePoint, 1e-4) && "It has failed miserably");
+
+      // Check domain[0] and domain[1]
+      auto domain = curvePatchGeo.domain();
+
+      // if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0]})))
+      //   return std::make_pair(domain[0][0], curvePoint);
+      // if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[1]})))
+      //   return std::make_pair(domain[1][0], curvePoint);
+
+      // DUNE_THROW(Dune::GridError, "Clipping has failed");
+    };
+
+
 
     for (const auto i : std::views::iota(0u, result.vertices_.size())) {
       auto vV1 = result.vertices_[i];
@@ -70,7 +107,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
       // First case edge is completly untrimmed
       if (!isNewVertex(vV1) and !isNewVertex(vV2)) {
-        trimData.addEdge(Impl::giveEdgeIdx(getHostIdx(vV1), getHostIdx(vV2)));
+        elementTrimData.addEdge(Impl::giveEdgeIdx(getHostIdx(vV1), getHostIdx(vV2)));
         continue;
       }
 
@@ -80,15 +117,23 @@ namespace Dune::IGANEW::DefaultTrim {
       // Second case edge begins on a hostVertes and ends on a newVertex
       if (!isNewVertex(vV1) and isNewVertex(vV2)) {
         // Find intersection point on edge(vV2)
-        auto edge = getEdgeIdx(vV2);
-      }
+        auto edgeIdx = getEdgeIdx(vV2);
+        auto trimmingCurveIdx = static_cast<size_t>(std::floor((getTrimmingCurveZ(vV2)/100)-1));
 
+        auto [tParam, curvePoint] = callFindIntersection(trimmingCurveIdx, edgeIdx, pt2);
+        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam << std::endl;
+      }
+      // Third case newVertex - newVertex
+      if (isNewVertex(vV1), isNewVertex(vV2)) {
+
+      }
       // Third case edge begins on a newVertex and ends in a HostVertex
       if (isNewVertex(vV1), !isNewVertex(vV2)) {
-        // Intersection Point should already be found in case 2
+        // First intersection point should be already available
+
       }
     }
 
-    return trimData;
+    return elementTrimData;
   }
 }  // namespace Dune::IGANEW::DefaultTrim

@@ -21,16 +21,22 @@ namespace Dune::IGANEW {
 
     bool sucess             = false;
     const int maxIterations = 1000;
+    const auto domain = geoCurve.domain();
     FieldVector<ScalarType, 2> curvePoint;
 
     const FieldVector lineDerivative = line.jacobian();
+    const auto energyLambda = [&](auto& tParameter_ ) {
+      curvePoint                              = geoCurve.global(tParameter_[0]);
+      const FieldVector dist                  = curvePoint - line(tParameter_[1]);
+  return  0.5 * dist.two_norm2();
+    };
+
     for (int iter = 0; iter < maxIterations; ++iter) {
-      curvePoint                              = geoCurve.global(tParameter[0]);
       const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
       const FieldVector curvSecondeDerivative = geoCurve.hessian(tParameter[0])[0];
       const FieldVector dist                  = curvePoint - line(tParameter[1]);
 
-      const ScalarType energy = 0.5 * dist.two_norm2();
+      const ScalarType energy =energyLambda(tParameter);
 
       FieldVector<ScalarType, 2> grad({curveDerivative * dist, -lineDerivative * dist});
 
@@ -43,6 +49,15 @@ namespace Dune::IGANEW {
       FieldVector<ScalarType, 2> deltaT;
       Hess.solve(deltaT, grad);
       tParameter -= deltaT;
+      tParameter[0]= std::clamp(tParameter[0],domain[0].left(),domain[0].right());
+
+        if (tParameter[0] == domain[0].left() or tParameter[0] == domain[0].right()) {
+          if(energyLambda(tParameter)<tol)
+            return std::make_tuple(true, tParameter, geoCurve.global(tParameter[0]));
+          else
+            return std::make_tuple(false, tParameter, geoCurve.global(tParameter[0]));
+        }
+
 
       // Check for convergence
       if (deltaT.two_norm() < tol) {
@@ -51,8 +66,7 @@ namespace Dune::IGANEW {
         break;
       }
     }
-    auto domain = geoCurve.domain();
-    if (not domain[0].checkInside(tParameter[0])) sucess = false;
+
     return std::make_tuple(sucess, tParameter, curvePoint);
   }
 }  // namespace Dune::IGANEW

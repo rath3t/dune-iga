@@ -22,15 +22,14 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     struct NewVertex {
       int onEdgeIdx{};
       Clipper2Lib::PointD pt{};
+      size_t trimmingCurveZ{};
     };
     using VertexVariant = std::variant<HostVertex, NewVertex>;
 
     auto isAlreadyThere(const auto& pt) {
       const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
-        auto isSame = false;
-        std::visit([&](auto&& vertex) { isSame = FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y); },
+        return std::visit([&](const auto& vertex) { return FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y); },
                    vertexVariant);
-        return isSame;
       });
       return it != vertices_.end();
     }
@@ -39,8 +38,8 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       if (not isAlreadyThere(pt)) vertices_.emplace_back(HostVertex(pt.z, pt));
     }
 
-    void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt) {
-      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt));
+    void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
+      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
     }
 
     void finish() {
@@ -77,6 +76,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
         return comparePoints(aV, bV, minVertex);
       });
     }
+    // @todo maybe use set to get rid of alreadyThere method
     std::vector<VertexVariant> vertices_{};
   };
 
@@ -95,11 +95,15 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
+    // @todo check z value if same as eleRect -> full
     auto isFullElement = [&](const auto& clippedEdges) { return FloatCmp::eq(Area(clippedEdges), Area(eleRect)); };
 
     // First determine if element is trimmed
+    // @todo try this with clipper for non-boundary elements with ClipperD
     const auto intersectResult = Intersect({eleRect}, trimmingCurves, FillRule::NonZero, 2);
-    if (intersectResult.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{});
+
+    if (intersectResult.empty())
+      return std::make_tuple(ElementTrimFlag::empty, ClippingResult{});
     if (isFullElement(intersectResult.front())) {
       matplot::rectangle(eleRect[0].x, eleRect[1].y, eleRect[1].x - eleRect[0].x, eleRect[3].y - eleRect[0].y);
       return std::make_tuple(ElementTrimFlag::full, ClippingResult{});
@@ -110,7 +114,9 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     ClippingResult result{};
 
     clipper.SetZCallback([&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top,
-                             const PointD& pt) { result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), pt); });
+                             const PointD& pt) {
+      result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), pt, e2bot.z);
+    });
 
     PathsD resultClosedPaths{};
     PathsD resultOpenPaths{};
@@ -123,7 +129,10 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
       clipper.AddOpenSubject(PathsD{{eleRect[i], eleRect[nextEntityIdx(i, 1)]}});
       clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
-
+      // We receive here all intersection points but not the sampled curve points
+      // resultClosedPaths should be empty
+      assert(resultClosedPaths.empty());
+      assert(resultOpenPaths.size()<=1);
       if (not resultOpenPaths.empty())
         for (const auto& p : resultOpenPaths.front())
           result.addOriginalVertex(p);
@@ -138,6 +147,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     };
 
     // check if any element vertex is a starting point of one of the trimming curves as the algorihtm cannot find them
+    // @todo only for boundary elements
     for (const auto& cP : eleRect)
       if (isPointInTrimmingCurves(cP)) result.addOriginalVertex(cP);
 
@@ -158,7 +168,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       }
       void operator()(const ClippingResult::NewVertex& v) const {
         plotEllipse(v.pt);
-        std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On BC: " << v.pt.z << std::endl;
+        std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On TC: " << v.trimmingCurveZ << std::endl;
       }
     };
 
