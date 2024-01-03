@@ -5,10 +5,48 @@
 #include <dune/common/fvector.hh>
 namespace Dune::IGANEW {
 
+  enum class FindIntersectionCurveAndLineResult {
+    noSucess, sucess, linesParallel
+  };
+
+  // @todo write tests for that
+  template <typename GeoCurve, typename ScalarType, int dim>
+  auto findIntersectionCurveAndLinearLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
+                                    const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
+                                    ScalarType tol = 1e-10) {
+    assert(geoCurve.degree()[0] == 1 && "Curve has to be linear to be calling this function");
+
+    const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
+    const FieldVector curvePos = geoCurve.global({geoCurve.domain()[0].front()});
+
+    FieldMatrix<ScalarType, dim, 2> linearSystem;
+    FieldVector<ScalarType, dim> b;
+
+    for (int i = 0; i < dim; i++) {
+      linearSystem[i][0] = curveDerivative[i];
+      linearSystem[i][1] = -dir[i];
+      b[i] = pos[i] - curvePos[i];
+    }
+
+    if (FloatCmp::eq(linearSystem.determinant(), 0.0, tol))
+      return std::make_tuple(FindIntersectionCurveAndLineResult::linesParallel, tParameter, geoCurve.global(tParameter[0]));
+
+    FieldVector<ScalarType, dim> sol;
+    linearSystem.solve(sol, b);
+
+    // Check if point is in domain
+    if (not geoCurve.domain()[0].checkInside(tParameter[0]))
+      return std::make_tuple(FindIntersectionCurveAndLineResult::noSucess, sol, geoCurve.global(sol[0]));
+    return std::make_tuple(FindIntersectionCurveAndLineResult::sucess, sol, geoCurve.global(sol[0]));
+  }
+
   template <typename GeoCurve, typename ScalarType, int dim>
   auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
-                                    const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, dim> tParameter,
+                                    const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
                                     ScalarType tol = 1e-10) {
+    if (geoCurve.degree()[0] == 1)
+      return findIntersectionCurveAndLinearLine(geoCurve, pos, dir, tParameter, tol);
+
     struct Line {
       FieldVector<ScalarType, dim> operator()(ScalarType t) { return pos + t * dir; }
       FieldVector<ScalarType, dim> jacobian() { return dir; }
@@ -21,22 +59,16 @@ namespace Dune::IGANEW {
 
     bool sucess             = false;
     const int maxIterations = 1000;
-    const auto domain = geoCurve.domain();
     FieldVector<ScalarType, 2> curvePoint;
 
     const FieldVector lineDerivative = line.jacobian();
-    const auto energyLambda = [&](auto& tParameter_ ) {
-      curvePoint                              = geoCurve.global(tParameter_[0]);
-      const FieldVector dist                  = curvePoint - line(tParameter_[1]);
-  return  0.5 * dist.two_norm2();
-    };
-
     for (int iter = 0; iter < maxIterations; ++iter) {
+      curvePoint                              = geoCurve.global(tParameter[0]);
       const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
       const FieldVector curvSecondeDerivative = geoCurve.hessian(tParameter[0])[0];
       const FieldVector dist                  = curvePoint - line(tParameter[1]);
 
-      const ScalarType energy =energyLambda(tParameter);
+      const ScalarType energy = 0.5 * dist.two_norm2();
 
       FieldVector<ScalarType, 2> grad({curveDerivative * dist, -lineDerivative * dist});
 
@@ -49,15 +81,6 @@ namespace Dune::IGANEW {
       FieldVector<ScalarType, 2> deltaT;
       Hess.solve(deltaT, grad);
       tParameter -= deltaT;
-      tParameter[0]= std::clamp(tParameter[0],domain[0].left(),domain[0].right());
-
-        if (tParameter[0] == domain[0].left() or tParameter[0] == domain[0].right()) {
-          if(energyLambda(tParameter)<tol)
-            return std::make_tuple(true, tParameter, geoCurve.global(tParameter[0]));
-          else
-            return std::make_tuple(false, tParameter, geoCurve.global(tParameter[0]));
-        }
-
 
       // Check for convergence
       if (deltaT.two_norm() < tol) {
@@ -66,7 +89,8 @@ namespace Dune::IGANEW {
         break;
       }
     }
-
-    return std::make_tuple(sucess, tParameter, curvePoint);
+    auto domain = geoCurve.domain();
+    if (not domain[0].checkInside(tParameter[0])) sucess = false;
+    return std::make_tuple(sucess ? FindIntersectionCurveAndLineResult::sucess : FindIntersectionCurveAndLineResult::noSucess, tParameter, curvePoint);
   }
 }  // namespace Dune::IGANEW

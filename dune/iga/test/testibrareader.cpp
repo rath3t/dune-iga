@@ -26,7 +26,7 @@ auto testIbraReader() {
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
-  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {2, 2});
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {1, 1});
 
   auto grid = gridFactory.createGrid();
 

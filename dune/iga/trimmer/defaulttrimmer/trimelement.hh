@@ -73,33 +73,40 @@ namespace Dune::IGANEW::DefaultTrim {
     auto approxSamePoint = [](const Clipper2Lib::PointD& pt1, const Dune::FieldVector<ScalarType, dim>& pt2, const double prec) -> bool {
       return FloatCmp::eq(pt1.x, pt2[0], prec) and FloatCmp::eq(pt1.y, pt2[1], prec);
     };
+    auto getTrimmingCurveIdx = [&](auto& vV) -> size_t {
+      return static_cast<size_t>(std::floor((getTrimmingCurveZ(vV)/100)-1));
+    };
+
     auto callFindIntersection = [&](const size_t tcIdx, const int edgeIdx, auto ip) -> std::pair<double, FieldVector<ScalarType, dim>> {
-      // @todo gerneraliize for more than one loop
+      // @todo gerneralize for more than one loop
       auto curvePatchGeo = patchTrimData.loops().front().curves()[tcIdx];
       auto pos = corners[edgeIdx];
       auto dir = dirs[edgeIdx];
+      // @todo make better guess by maybe using z Val with lookup-table
       auto guessTParam = FieldVector<ScalarType, dim>{curvePatchGeo.domainMidPoint()[0], 0.5};
 
       auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
-      //if (success)
+      if (success == FindIntersectionCurveAndLineResult::sucess)
         return std::make_pair(tParam[0], curvePoint);
+      if (success == FindIntersectionCurveAndLineResult::linesParallel) {
+        // Check ip against first point of curve
+        if (approxSamePoint(ip, curvePatchGeo.corner(0), 1e-4))
+          return std::make_pair(curvePatchGeo.domain()[0].front(), curvePatchGeo.corner(0));
+        DUNE_THROW(Dune::GridError, "Edge is parallel to curve");
 
-      // No sucess can happen on cases where the point is correct but the t is not
-      // @todo maybe this should throw
-      assert(approxSamePoint(ip, curvePoint, 1e-4) && "It has failed miserably");
+      }
 
       // Check domain[0] and domain[1]
       auto domain = curvePatchGeo.domain();
 
-      // if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0]})))
-      //   return std::make_pair(domain[0][0], curvePoint);
-      // if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[1]})))
-      //   return std::make_pair(domain[1][0], curvePoint);
+      if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0].front()})))
+        return std::make_pair(domain[0][0], curvePoint);
+      if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0].back()})))
+        return std::make_pair(domain[1][0], curvePoint);
 
-      // DUNE_THROW(Dune::GridError, "Clipping has failed");
+      DUNE_THROW(Dune::GridError, "Couldn't find intersection Point");
+
     };
-
-
 
     for (const auto i : std::views::iota(0u, result.vertices_.size())) {
       auto vV1 = result.vertices_[i];
@@ -117,20 +124,22 @@ namespace Dune::IGANEW::DefaultTrim {
       // Second case edge begins on a hostVertes and ends on a newVertex
       if (!isNewVertex(vV1) and isNewVertex(vV2)) {
         // Find intersection point on edge(vV2)
-        auto edgeIdx = getEdgeIdx(vV2);
-        auto trimmingCurveIdx = static_cast<size_t>(std::floor((getTrimmingCurveZ(vV2)/100)-1));
-
-        auto [tParam, curvePoint] = callFindIntersection(trimmingCurveIdx, edgeIdx, pt2);
+        auto [tParam, curvePoint] = callFindIntersection( getTrimmingCurveIdx(vV2), getEdgeIdx(vV2), pt2);
         std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam << std::endl;
+        continue;
       }
       // Third case newVertex - newVertex
       if (isNewVertex(vV1), isNewVertex(vV2)) {
-
+        // Find intersection point on edge(vV2)
+        // First intersection point should be already available
+        auto [tParam, curvePoint] = callFindIntersection( getTrimmingCurveIdx(vV2), getEdgeIdx(vV2), pt2);
+        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam << std::endl;
+        continue;
       }
-      // Third case edge begins on a newVertex and ends in a HostVertex
+      // Fourth case edge begins on a newVertex and ends in a HostVertex
       if (isNewVertex(vV1), !isNewVertex(vV2)) {
         // First intersection point should be already available
-
+        continue;
       }
     }
 
