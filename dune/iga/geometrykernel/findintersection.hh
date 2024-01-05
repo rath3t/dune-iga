@@ -9,9 +9,8 @@ namespace Dune::IGANEW {
     noSucess, sucess, linesParallel
   };
 
-  // @todo write tests for that
   template <typename GeoCurve, typename ScalarType, int dim>
-  auto findIntersectionCurveAndLinearLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
+  auto findIntersectionLinearCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
                                     const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
                                     ScalarType tol = 1e-10) {
     assert(geoCurve.degree()[0] == 1 && "Curve has to be linear to be calling this function");
@@ -28,6 +27,7 @@ namespace Dune::IGANEW {
       b[i] = pos[i] - curvePos[i];
     }
 
+    // If system is not solvable, the lines are paralell and therefore have no intersection
     if (FloatCmp::eq(linearSystem.determinant(), 0.0, tol))
       return std::make_tuple(FindIntersectionCurveAndLineResult::linesParallel, tParameter, geoCurve.global(tParameter[0]));
 
@@ -45,7 +45,7 @@ namespace Dune::IGANEW {
                                     const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
                                     ScalarType tol = 1e-10) {
     if (geoCurve.degree()[0] == 1)
-      return findIntersectionCurveAndLinearLine(geoCurve, pos, dir, tParameter, tol);
+      return findIntersectionLinearCurveAndLine(geoCurve, pos, dir, tParameter, tol);
 
     struct Line {
       FieldVector<ScalarType, dim> operator()(ScalarType t) { return pos + t * dir; }

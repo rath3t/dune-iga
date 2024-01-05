@@ -14,6 +14,7 @@ namespace Dune::IGANEW::DefaultTrim {
   auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(
       const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
       const PatchTrimData& patchTrimData) {
+
     std::cout << "START " << std::endl;
     using namespace Clipper2Lib;
     auto geo = element.geometry();
@@ -108,37 +109,76 @@ namespace Dune::IGANEW::DefaultTrim {
 
     };
 
+    auto createHostGeometry = [&](auto& vertex1, auto& vertex2) -> TrimmingCurve {
+      const std::array<std::vector<double>, 1> knotSpans = {{{0, 0, 1, 1}}};
+
+      const std::vector<typename TrimmingCurve::ControlPointType> controlPoints =
+        {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
+      auto controlNet       = NURBSPatchData<1, 2>::ControlPointNetType(controlPoints);
+      typename TrimmingCurve::PatchData patchData(knotSpans, controlNet, {1});
+
+      return GeometryKernel::NURBSPatch(patchData);
+    };
+
+    auto createTrimmingCurveSlice = [&](auto& curveIdx, double t1, double t2) -> TrimmingCurve {
+
+      typename TrimmingCurve::PatchData patchData;
+
+
+      return TrimmingCurve(patchData);
+    };
+
+    ///
+    // Here the actual code is starting
+    ///
+
+    std::vector<FieldVector<ScalarType, dim>> foundVertices;
     for (const auto i : std::views::iota(0u, result.vertices_.size())) {
       auto vV1 = result.vertices_[i];
       auto vV2 = result.vertices_[nextEntity(i)];
 
-      // First case edge is completly untrimmed
-      if (!isNewVertex(vV1) and !isNewVertex(vV2)) {
-        elementTrimData.addEdge(Impl::giveEdgeIdx(getHostIdx(vV1), getHostIdx(vV2)));
-        continue;
-      }
-
       auto pt1 = std::visit(getPt, vV1);
       auto pt2 = std::visit(getPt, vV2);
 
+      // First case edge is completly untrimmed
+      if (!isNewVertex(vV1) and !isNewVertex(vV2)) {
+        elementTrimData.addEdge(Impl::giveEdgeIdx(getHostIdx(vV1), getHostIdx(vV2)));
+        foundVertices.push_back({pt2.x, pt2.y});
+        continue;
+      }
+
       // Second case edge begins on a hostVertes and ends on a newVertex
       if (!isNewVertex(vV1) and isNewVertex(vV2)) {
-        // Find intersection point on edge(vV2)
         auto [tParam, curvePoint] = callFindIntersection( getTrimmingCurveIdx(vV2), getEdgeIdx(vV2), pt2);
         std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam << std::endl;
+
+        auto trimmedEdge = createHostGeometry(foundVertices.back(), curvePoint);
+        elementTrimData.addEdgeHostNew(getEdgeIdx(vV2), trimmedEdge, curvePoint);
+        foundVertices.push_back(curvePoint);
+
         continue;
       }
       // Third case newVertex - newVertex
       if (isNewVertex(vV1), isNewVertex(vV2)) {
-        // Find intersection point on edge(vV2)
-        // First intersection point should be already available
-        auto [tParam, curvePoint] = callFindIntersection( getTrimmingCurveIdx(vV2), getEdgeIdx(vV2), pt2);
+        auto curveIdx = getTrimmingCurveIdx(vV2);
+        double oldTParam = -999999.99999;
+
+        auto [tParam, curvePoint] = callFindIntersection(curveIdx, getEdgeIdx(vV2), pt2);
         std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam << std::endl;
+
+        auto elementTrimmingCurve = createTrimmingCurveSlice(curveIdx, tParam, oldTParam);
+        elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+        foundVertices.push_back(curvePoint);
+
         continue;
       }
       // Fourth case edge begins on a newVertex and ends in a HostVertex
       if (isNewVertex(vV1), !isNewVertex(vV2)) {
-        // First intersection point should be already available
+        auto v2 = Dune::FieldVector<ScalarType, dim> {pt2.x, pt2.y};
+
+        auto trimmedEdge = createHostGeometry(foundVertices.back(), v2);
+        elementTrimData.addEdgeNewHost(getEdgeIdx(vV1), trimmedEdge, getHostIdx(vV2));
+
         continue;
       }
     }

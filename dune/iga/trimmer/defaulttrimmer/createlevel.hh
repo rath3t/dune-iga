@@ -197,7 +197,7 @@ namespace Dune::IGANEW::DefaultTrim {
             // empty
           }
         } else /* no father */ {
-          if (true /* untrimmed */) {
+          if (eleTrimFlag == ElementTrimFlag::full) {
             EntityInfo<0> elementInfo{.indexInLvlStorage   = trimmedElementIndex + unTrimmedElementIndex,
                                       .unTrimmedIndexInLvl = unTrimmedElementIndex,
                                       .lvl                 = newLevel,
@@ -205,6 +205,10 @@ namespace Dune::IGANEW::DefaultTrim {
             elementContainer.emplace_back(grid_, ele, elementInfo);
             entityContainer.idToElementInfoMap.insert({elementId, elementInfo});
             ++unTrimmedElementIndex;
+          } else if (eleTrimFlag == ElementTrimFlag::trimmed) {
+            // trimmed
+          } else {
+            // empty
           }
         }
         auto& elementEdgeIndices   = entityContainer.globalEdgesIdOfElementsMap_[elementId];

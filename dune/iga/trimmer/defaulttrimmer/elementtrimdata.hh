@@ -20,32 +20,53 @@ namespace Dune::IGANEW::DefaultTrim {
         typename GridFamily::TrimmerTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
     using EdgePatchGeometry = typename EdgeTrimmedParameterSpaceGeometry::PatchGeometry;
 
-    using VertexGeometry = FieldVector<ctype, dim>;
+    using Vertex = FieldVector<ctype, dim>;
 
-    using EdgeVariant = std::variant<EdgeTrimmedParameterSpaceGeometry, int>;
-    using EdgeData    = std::pair<int, EdgeVariant>;
+    struct VertexInfo {
+      bool isHost;
+      int idx;
+
+      std::optional<Vertex> geometry;
+    };
+
+    struct EdgeInfo {
+      bool isHost;
+      bool isTrimmed;
+      int idx;
+
+      std::optional<EdgePatchGeometry> geometry;
+    };
 
     explicit ElementTrimDataImpl(auto flag) : flag_(flag) {}
 
-    void addEdge(int hostEdgeIdx) { edgeData.emplace_back(std::make_pair(hostEdgeIdx, hostEdgeIdx)); }
-
-    void addEdge(EdgePatchGeometry& edge, int hostEdgeIdx) {
-      edgeData.emplace_back(std::make_pair(hostEdgeIdx, edge));
-      vertexGeometries_.emplace_back(edge.corners(0));
-      vertexGeometries_.emplace_back(edge.corners(1));
+    void addEdge(int idx) {
+      edges_.emplace_back(true, false, idx, std::nullopt);
+      vertices_.emplace_back(true, idx + 1, std::nullopt);
     }
 
-    [[nodiscard]] size_t numEdges() const { return edgeData.size(); }
-    [[nodiscard]] EdgeData edgeInfo(int i) const {
-      assert(edgeData.size() > i);
-      return edgeData[i];
+    void addEdgeHostNew(int idx, EdgePatchGeometry& geometry, Vertex& v2) {
+      edges_.emplace_back(true, true, idx, geometry);
+      vertices_.emplace_back(false, newVertexCounter_++, v2);
     }
+    void addEdgeNewNew(EdgePatchGeometry& geometry, Vertex& v2) {
+      edges_.emplace_back(false, true, newEdgeCounter_++, geometry);
+      vertices_.emplace_back(false, newVertexCounter_++, v2);
+    }
+    void addEdgeNewHost(int idx, EdgePatchGeometry& geometry, int v2Idx) {
+      edges_.emplace_back(true, true, idx, geometry);
+      vertices_.emplace_back(true, v2Idx, std::nullopt);
+    }
+
+    // Getter
     [[nodiscard]] ElementTrimFlag flag() const { return flag_; }
 
    private:
     ElementTrimFlag flag_;
-    std::vector<EdgeData> edgeData{};
-    std::vector<VertexGeometry> vertexGeometries_{};
+    std::vector<VertexInfo> vertices_{};
+    std::vector<EdgeInfo> edges_;
+
+    int newVertexCounter_ = 4;
+    int newEdgeCounter_ = 4;
   };
 
 }  // namespace Dune::IGANEW::DefaultTrim

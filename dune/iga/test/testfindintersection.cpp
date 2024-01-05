@@ -36,8 +36,8 @@ auto diagonalLine() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 1, 1}}};
 
   using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
-  const std::vector<ControlPoint> controlPointsCurve
-  = {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
+  const std::vector<ControlPoint> controlPointsCurve =
+    {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
   const std::array orderCurve = {1};
 
   auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
