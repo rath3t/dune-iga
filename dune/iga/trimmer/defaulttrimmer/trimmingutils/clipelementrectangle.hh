@@ -49,7 +49,8 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     void addOriginalVertex(const Clipper2Lib::PointD& pt) {
       assert(pt.z < 4);
-      if (not isAlreadyThereHV(pt.z)) vertices_.emplace_back(HostVertex(pt.z, originalVertices_[pt.z]));
+      if (FloatCmp::eq(pt.x, originalVertices_[pt.z].x) and FloatCmp::eq(pt.y, originalVertices_[pt.z].y) and not isAlreadyThereHV(pt.z))
+        vertices_.emplace_back(HostVertex(pt.z, originalVertices_[pt.z]));
     }
 
     void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
@@ -92,13 +93,11 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       });
 
       // Remove duplicate entries for NewVertices, begin at the first host index
-      const auto it = std::ranges::find_if(
-          vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
-      if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
+      // const auto it = std::ranges::find_if(
+      //     vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
+      // if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
 
-      std::ranges::rotate(vertices_, it);
-      for (const auto& vV : vertices_) {
-      }
+      //std::ranges::rotate(vertices_, it);
     }
 
     std::vector<VertexVariant> vertices_{};
@@ -133,7 +132,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     PathsD trimmingCurves;
     PathD tempPath;
-    constexpr int N = 10;
+    constexpr int N = 20;
     // @todo store param value of sampled points on trimmingCurve
     for (auto loop : patchTrimData.loops()) {
       tempPath.clear();
@@ -212,7 +211,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
             result.addOriginalVertex(p);
           else {
             // Check if this is neeeded
-            std::cout << "maybe we need thhis point\n";
+            std::cout << "maybe we need this point\n";
           }
         }
     }
