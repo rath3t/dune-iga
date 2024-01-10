@@ -20,7 +20,7 @@ namespace Dune {
         using UntrimmedParameterSpaceGrid = typename Trimmer::UntrimmedParameterSpaceGrid;
         // using HostIdType= typename Trimmer::HostIdType;
 
-       public:
+      public:
         //! constructor stores reference to a grid
         PatchGridGlobalIdSet() = default;
         PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
@@ -54,7 +54,7 @@ namespace Dune {
         /** @todo Should be private */
         void update() {}
 
-       public:
+      public:
         // using IndexVariant = IdType;
 
         // auto getStableIndex(IdType thirdPartyIndex) -> IdType {

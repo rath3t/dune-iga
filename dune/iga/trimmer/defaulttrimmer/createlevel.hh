@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-
 #pragma once
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
@@ -158,7 +157,6 @@ namespace Dune::IGANEW::DefaultTrim {
       int trimmedElementIndex         = 0;
       int edgeIndex                   = 0;
       int vertexIndex                 = 0;
-
 
       for (const auto& ele : elements(gv)) {
         ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};

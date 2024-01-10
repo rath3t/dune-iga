@@ -12,7 +12,7 @@ class BoundaryPatchEnclosingVerticesPropertyTrimmed {
   typedef typename GridView::IndexSet IndexSet;
   static const int dim = GridView::dimension;
 
- public:
+public:
   typedef typename GridView::Intersection Intersection;
 
   /** @brief Create property from a marker vector
@@ -43,7 +43,7 @@ class BoundaryPatchEnclosingVerticesPropertyTrimmed {
     return true;
   }
 
- private:
+private:
   const IndexSet& indexSet_;
   const Dune::BitSetVector<ncomp>& vertices_;
 };

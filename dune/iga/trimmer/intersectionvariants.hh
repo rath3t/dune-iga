@@ -31,7 +31,7 @@ namespace Dune::IGANEW::Trim {
 
     using LocalCoordinate = FieldVector<ctype, mydimension>;
 
-   public:
+  public:
     auto visit(auto&& lambda) const { return std::visit(lambda, impl_); }
 
     template <class Implementation>
@@ -139,7 +139,7 @@ namespace Dune::IGANEW::Trim {
       return visit([&](const auto& impl) { return impl.unitOuterNormal(local); });
     }
 
-   private:
+  private:
     std::variant<Implementations...> impl_;
   };
   //

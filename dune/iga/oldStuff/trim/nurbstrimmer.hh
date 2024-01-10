@@ -35,7 +35,7 @@ namespace Dune::IGA::Trim {
 
   template <typename intType_ = int64_t, int sc_ = 12>
   class NURBSPatchTrimmer {
-   public:
+  public:
     static constexpr auto dim  = 2;
     static constexpr int scale = sc_;
     inline static double scaleFactor() { return std::pow(10, scale); };
@@ -88,7 +88,7 @@ namespace Dune::IGA::Trim {
       }
     }
 
-   private:
+  private:
     // Forward declare some structs and data types
     struct ClippingResult;
     struct InnerLoops;

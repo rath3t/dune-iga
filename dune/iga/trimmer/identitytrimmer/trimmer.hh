@@ -161,7 +161,7 @@ namespace Dune::IGANEW {
      */
     template <int dim, int dimworld, typename ScalarType = double>
     class TrimmerImpl {
-     public:
+    public:
       using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>;  ///< Scalar type for the coordinates.
       using PatchTrimData = typename GridFamily::PatchTrimData;
       using GridTraits    = typename GridFamily::Traits;
@@ -334,8 +334,8 @@ namespace Dune::IGANEW {
         ;
       }
 
-     protected:
-     protected:
+    protected:
+    protected:
       //! compute the grid indices and ids
       void setIndices() {
         localIdSet_->update();

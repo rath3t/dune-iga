@@ -90,10 +90,10 @@ namespace Dune::IGANEW {
     friend GridFamily_<dim, dimworld, ScalarType>::LocalIdSet;
 
     //! type of the used GridFamily for this grid
-   public:
+  public:
     using GridFamily = GridFamily_<dim, dimworld, ScalarType>;
 
-   private:
+  private:
     using LevelIndexSetImpl = GridFamily::LevelIndexSet;
     using LeafIndexSetImpl  = GridFamily::LeafIndexSet;
     using GlobalIdSetImpl   = GridFamily::GlobalIdSet;
@@ -116,14 +116,14 @@ namespace Dune::IGANEW {
     friend struct HostGridAccess<PatchGrid>;
     friend class GridFactory<PatchGrid>;
 
-   public:
+  public:
     using Trimmer = typename GridFamily::Trimmer;
     //! The type used to store coordinates, inherited from the Trimmer
     using ctype = typename Trimmer::ctype;
 
     friend Trimmer;
 
-   private:
+  private:
     friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
     friend class Functions::NurbsPreBasis<typename PatchGrid::LeafGridView, ctype>;
     friend class Functions::NurbsPreBasis<typename PatchGrid::LevelGridView, ctype>;
@@ -137,7 +137,7 @@ namespace Dune::IGANEW {
     template <int codim_, int dim_, class GridImp_>
     friend class PatchGridEntity;
 
-   public:
+  public:
     using PatchTensorProductCoordinatesType =
         typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::TensorProductCoordinatesType;
 
@@ -450,14 +450,14 @@ namespace Dune::IGANEW {
 
     const auto& trimmer() const { return *trimmer_; }
 
-   private:
+  private:
     PatchGrid() = default;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
     std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
     std::unique_ptr<Trimmer> trimmer_;
 
-   private:
+  private:
     //! @todo Please doc me !
     Communication<No_Comm> ccobj;
 

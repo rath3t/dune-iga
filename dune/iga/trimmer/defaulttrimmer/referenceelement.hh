@@ -34,7 +34,7 @@ namespace Dune {
        */
       template <int dim, typename GridImp>
       class TrimmedReferenceElement {
-       public:
+      public:
         //! The dimension of the reference element.
         static constexpr int mydimension = dim;
         //! The coordinate field type.
@@ -266,7 +266,7 @@ namespace Dune {
           return {};
         }
 
-       private:
+      private:
         TrimDataTypeOptionalReference trimData_;
         const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
             ReferenceElements<ctype, mydimension>::cube()};

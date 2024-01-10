@@ -87,7 +87,7 @@ namespace Dune::IGA::Ibra {
       return knotVec;
     }
 
-   private:
+  private:
     [[nodiscard]] ControlPointType controlPointAt(std::array<int, dim> idx) const {
       int row = (dim == 1) ? idx[0] : idx[0] * n_controlPoints[1] + idx[1];
 

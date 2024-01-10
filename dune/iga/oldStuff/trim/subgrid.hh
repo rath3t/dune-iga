@@ -21,7 +21,7 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
   /** @brief representation of the subgrid of trimmed elements in the reference space */
   template <int dim>
   class TrimmedSubGrid {
-   public:
+  public:
     using Point   = Dune::FieldVector<double, dim>;
     using Element = MultiLinearGeometry<double, dim, dim>;
     using Index   = std::uint64_t;
@@ -30,7 +30,7 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
     std::vector<Point> vertices_{};
     std::vector<Index> indices_{};
 
-   private:
+  private:
     std::vector<Boundary> outerBoundaries_;
     std::optional<std::vector<std::vector<Boundary>>> innerBoundaries_;
     TransformToSpan<dim> transformer;
@@ -42,7 +42,7 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
     static constexpr double outerTargetTolerance{1e-4};
     static constexpr double innerTargetTolerance{1e-4};
 
-   public:
+  public:
     /// brief: Constructs an trimmed_ elementRepresentation with outer and inner boundaries
     explicit TrimmedSubGrid(Trim::ElementBoundaries& _boundaries,
                             std::pair<std::array<double, dim>, std::array<double, dim>> scalingAndOffset)
@@ -55,7 +55,7 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
       constructSubGrid();
     }
 
-   private:
+  private:
     void constructSubGrid() {
       auto boundaries               = splitBoundaries();
       std::tie(indices_, vertices_) = triangulate<dim>(boundaries, transformer);
@@ -88,14 +88,14 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
           if (innerLoop.size() < 3) divideLoop(innerLoop, partsForSize(innerLoop.size()));
     }
 
-   public:
+  public:
     /// @brief Calculates the area from the simplex elements in the current grid
     [[nodiscard]] double calculateArea() const {
       return std::accumulate(elements_.begin(), elements_.end(), 0.0,
                              [](double rhs, const auto& element) { return rhs + element.volume(); });
     }
 
-   private:
+  private:
     auto splitBoundaries() const { return std::make_pair(splitOuterBoundaries(), splitInnerBoundaryLoops()); }
     auto splitOuterBoundaries(int maxDivisions       = maxOuterBoundaryDivisions,
                               double targetTolerance = outerTargetTolerance) const {
@@ -114,7 +114,7 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
         return std::nullopt;
     }
 
-   public:
+  public:
     auto createRefinedGrid(int refinementSteps) const
         -> std::tuple<decltype(elements_), decltype(vertices_), decltype(indices_)> {
       if (refinementSteps == 0) return {elements_, vertices_, indices_};

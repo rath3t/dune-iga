@@ -112,7 +112,7 @@ namespace Dune::IGANEW::Trim {
    */
   template <int codim_, typename TrimmerType_, class HostImplementation, class TrimmedImplementation>
   class ParameterSpaceGridEntityVariant {
-   public:
+  public:
     using TrimmerType                 = TrimmerType_;
     using LocalParameterSpaceGeometry = typename TrimmerType::template LocalParameterSpaceGeometry<codim_>;
 

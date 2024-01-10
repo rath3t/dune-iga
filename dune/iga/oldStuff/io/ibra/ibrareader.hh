@@ -23,7 +23,7 @@ namespace Dune::IGA {
   // At the moment only gridDim und worldDim == 2 or 3 supported
   template <int gridDim, int worldDim, typename ScalarType = double>
   requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim) class IbraReader {
-   public:
+  public:
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim, ScalarType>;
     using ControlPoint        = Dune::IGA::NURBSPatchData<gridDim, worldDim>::ControlPointType;
     using PatchData           = Dune::IGA::NURBSPatchData<gridDim, worldDim>;
@@ -135,7 +135,7 @@ namespace Dune::IGA {
         return std::make_unique<Grid>(_patchData);
     }
 
-   private:
+  private:
     static auto constructGlobalBoundaries(const Ibra::Brep<worldDim>& brep) -> std::shared_ptr<TrimData> {
       auto data = std::make_shared<TrimData>();
       std::vector<Boundary> boundaries;

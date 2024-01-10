@@ -373,7 +373,7 @@ namespace Dune::IGANEW {
         return false;
       }
 
-     private:
+    private:
       void checkState() const { assert(parameterSpaceGeometry && "Bind the local view first!"); }
       GlobalInParameterSpace globalInParameterSpace(const LocalCoordinate& local) const {
         checkState();

@@ -37,7 +37,7 @@ namespace Dune::IGANEW {
    */
   template <int netdim, class ElementType, class Container = std::vector<ElementType>>
   class MultiDimensionalNet {
-   public:
+  public:
     static constexpr std::size_t netDim = netdim;
 
     constexpr MultiDimensionalNet()                           = default;
@@ -383,7 +383,7 @@ namespace Dune::IGANEW {
       return Impl::HyperSurfaceIterator(*this, direction, directionEnd);
     }
 
-   private:
+  private:
     std::array<int, netdim> dimSize_;
     Container values_;
   };
@@ -395,7 +395,7 @@ namespace Dune::IGANEW {
   namespace Impl {
     template <std::integral auto netdim, typename ValueType>
     class HyperSurfaceIterator {
-     public:
+    public:
       HyperSurfaceIterator(MultiDimensionalNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction,
                            int at)
           : net_{&net}, direction_{direction}, at_{at} {
@@ -466,7 +466,7 @@ namespace Dune::IGANEW {
 
       auto operator->() { return *this; }
 
-     private:
+    private:
       MultiDimensionalNet<netdim, ValueType>* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
@@ -530,7 +530,7 @@ namespace Dune::IGANEW {
   template <std::size_t netdim>
   class MultiDimensionalNetIndex  // FIXME merge with Net
   {
-   public:
+  public:
     explicit MultiDimensionalNetIndex(const FieldVector<int, netdim>& dimSize) {
       std::ranges::copy(dimSize, dimSize_.begin());
       size_ = 1;
@@ -578,7 +578,7 @@ namespace Dune::IGANEW {
 
     int size() const { return size_; }
 
-   private:
+  private:
     std::array<int, netdim> dimSize_;
     int size_;
   };

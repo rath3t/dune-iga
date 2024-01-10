@@ -18,7 +18,7 @@ namespace Dune::IGANEW::IdentityTrim {
    */
   template <int codim, class GridImp>
   class PatchGridEntitySeed {
-   protected:
+  protected:
     using Trimmer = typename GridImp::Trimmer;
     // Entity type of the hostgrid
     using ParameterSpaceGridEntity = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity;
@@ -26,7 +26,7 @@ namespace Dune::IGANEW::IdentityTrim {
     // EntitySeed type of the hostgrid
     using ParameterSpaceGridEntitySeed = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntitySeed;
 
-   public:
+  public:
     constexpr static int codimension = codim;
 
     /**
@@ -52,7 +52,7 @@ namespace Dune::IGANEW::IdentityTrim {
      */
     bool isValid() const { return hostEntitySeed_.isValid(); }
 
-   private:
+  private:
     ParameterSpaceGridEntitySeed hostEntitySeed_;
   };
 

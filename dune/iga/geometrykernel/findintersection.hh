@@ -5,18 +5,16 @@
 #include <dune/common/fvector.hh>
 namespace Dune::IGANEW {
 
-  enum class FindIntersectionCurveAndLineResult {
-    noSucess, sucess, linesParallel
-  };
+  enum class FindIntersectionCurveAndLineResult { noSucess, sucess, linesParallel };
 
   template <typename GeoCurve, typename ScalarType, int dim>
   auto findIntersectionLinearCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
-                                    const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
-                                    ScalarType tol = 1e-10) {
+                                          const FieldVector<ScalarType, dim>& dir,
+                                          FieldVector<ScalarType, 2> tParameter, ScalarType tol = 1e-10) {
     assert(geoCurve.degree()[0] == 1 && "Curve has to be linear to be calling this function");
 
-    const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
-    const FieldVector curvePos = geoCurve.global({geoCurve.domain()[0].front()});
+    const FieldVector curveDerivative = geoCurve.jacobianTransposed(tParameter[0])[0];
+    const FieldVector curvePos        = geoCurve.global({geoCurve.domain()[0].front()});
 
     FieldMatrix<ScalarType, dim, 2> linearSystem;
     FieldVector<ScalarType, dim> b;
@@ -24,12 +22,13 @@ namespace Dune::IGANEW {
     for (int i = 0; i < dim; i++) {
       linearSystem[i][0] = curveDerivative[i];
       linearSystem[i][1] = -dir[i];
-      b[i] = pos[i] - curvePos[i];
+      b[i]               = pos[i] - curvePos[i];
     }
 
     // If system is not solvable, the lines are paralell and therefore have no intersection
     if (FloatCmp::eq(linearSystem.determinant(), 0.0, tol))
-      return std::make_tuple(FindIntersectionCurveAndLineResult::linesParallel, tParameter, geoCurve.global(tParameter[0]));
+      return std::make_tuple(FindIntersectionCurveAndLineResult::linesParallel, tParameter,
+                             geoCurve.global(tParameter[0]));
 
     FieldVector<ScalarType, dim> sol;
     linearSystem.solve(sol, b);
@@ -44,8 +43,7 @@ namespace Dune::IGANEW {
   auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
                                     const FieldVector<ScalarType, dim>& dir, FieldVector<ScalarType, 2> tParameter,
                                     ScalarType tol = 1e-10) {
-    if (geoCurve.degree()[0] == 1)
-      return findIntersectionLinearCurveAndLine(geoCurve, pos, dir, tParameter, tol);
+    if (geoCurve.degree()[0] == 1) return findIntersectionLinearCurveAndLine(geoCurve, pos, dir, tParameter, tol);
 
     struct Line {
       FieldVector<ScalarType, dim> operator()(ScalarType t) { return pos + t * dir; }
@@ -91,6 +89,8 @@ namespace Dune::IGANEW {
     }
     auto domain = geoCurve.domain();
     if (not domain[0].checkInside(tParameter[0])) sucess = false;
-    return std::make_tuple(sucess ? FindIntersectionCurveAndLineResult::sucess : FindIntersectionCurveAndLineResult::noSucess, tParameter, curvePoint);
+    return std::make_tuple(
+        sucess ? FindIntersectionCurveAndLineResult::sucess : FindIntersectionCurveAndLineResult::noSucess, tParameter,
+        curvePoint);
   }
 }  // namespace Dune::IGANEW

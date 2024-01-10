@@ -82,7 +82,7 @@ namespace Dune {
        */
       template <int dim, int dimworld, typename ScalarType>
       class Trimmer {
-       public:
+      public:
         static constexpr int mydimension = dim;         ///< Dimension of the patch.
         using ctype                      = ScalarType;  ///< Scalar type for the coordinates.
 
@@ -95,12 +95,12 @@ namespace Dune {
         static constexpr bool isAlwaysTrivial = false;  ///< Boolean indicating if the trimming is always trivial, no
                                                         ///< trimming or simple deletion of element.
 
-       private:
+      private:
         using UntrimmedParameterSpaceGrid
             = YaspGrid<mydimension,
                        TensorProductCoordinates<ctype, mydimension>>;  ///< Type of the untrimmed Parametric grid
 
-       public:
+      public:
         using TrimmingCurve      = GeometryKernel::NURBSPatch<mydimension - 1, mydimension, ctype>;
         using ParameterSpaceGrid = SubGrid<mydimension, UntrimmedParameterSpaceGrid>;  ///< Type of the Parametric grid
 
@@ -130,7 +130,7 @@ namespace Dune {
                 const std::optional<PatchTrimData>& trimData)
             : patch_{patch}, patchTrimData_{trimData} {}
 
-       private:
+      private:
         template <int codim_, int dim_, class GridImp_>
         friend class TrimmedParameterSpaceGridEntity;
         template <class GridImp_>
@@ -152,7 +152,7 @@ namespace Dune {
         // Codim<codim>::Entity;
         using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::template Codim<codim>::Entity;
 
-       public:
+      public:
         using HostIdType = typename UntrimmedParameterSpaceGrid::Traits::GlobalIdSet::IdType;
 
         template <class GridImp>
@@ -402,7 +402,7 @@ namespace Dune {
         template <typename LevelIndexSets, typename LeafIndexSet>
         void updateIndices(LevelIndexSets& lvlIndexSets, LeafIndexSet& leafIndexSet) {}
 
-       private:
+      private:
         std::unique_ptr<UntrimmedParameterSpaceGrid>
             untrimmedParameterSpaceGrid_;                         ///< The untrimmed parameter space grid.
         std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_;  ///< The trimmed parameter space grid.

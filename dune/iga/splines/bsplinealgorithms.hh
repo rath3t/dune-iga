@@ -46,7 +46,7 @@ namespace Dune::IGANEW::Splines {
    */
   template <typename ScalarType_>
   class BsplineBasis {
-   public:
+  public:
     using ScalarType        = ScalarType_;
     using DynamicVectorType = Dune::DynamicVector<ScalarType>;
     using DynamicMatrixType = Dune::DynamicMatrix<ScalarType>;
@@ -197,7 +197,7 @@ namespace Dune::IGANEW::Splines {
       return dN;
     }
 
-   private:
+  private:
     std::vector<ScalarType> knots_;
     int degree_;
   };

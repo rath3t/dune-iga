@@ -25,7 +25,7 @@ namespace Dune::IGANEW::IdentityTrim {
     typedef
         typename GridImp::ParameterSpaceGrid::template Codim<0>::Entity::HierarchicIterator HostGridHierarchicIterator;
 
-   public:
+  public:
     constexpr static int codimension = 0;
 
     typedef typename GridImp::template Codim<0>::Entity Entity;
@@ -52,7 +52,7 @@ namespace Dune::IGANEW::IdentityTrim {
       return hostHierarchicIterator_ == i.hostHierarchicIterator_;
     }
 
-   private:
+  private:
     const GridImp* parameterSpaceGrid_;
 
     HostGridHierarchicIterator hostHierarchicIterator_;

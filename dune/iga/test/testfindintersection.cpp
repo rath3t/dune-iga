@@ -14,15 +14,15 @@
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/iga/geometrykernel/findintersection.hh>
-#include <dune/iga/geometrykernel/slicecurve.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
+#include <dune/iga/geometrykernel/slicecurve.hh>
 
 using namespace Dune::IGANEW;
 
 auto diagonalCurve() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 0, 1, 1, 1}}};
 
-  using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
   const std::vector<ControlPoint> controlPointsCurve
       = {{{.p = {0, 0}, .w = 1}, {.p = {0.6, 0.4}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
   const std::array orderCurve = {2};
@@ -37,12 +37,11 @@ auto diagonalCurve() {
 auto diagonalLine() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 1, 1}}};
 
-  using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
-  const std::vector<ControlPoint> controlPointsCurve =
-    {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
-  const std::array orderCurve = {1};
+  using ControlPoint                                 = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  const std::vector<ControlPoint> controlPointsCurve = {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
+  const std::array orderCurve                        = {1};
 
-  auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
+  auto controlNetCurve = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
@@ -76,14 +75,14 @@ auto test2() {
   t.check(success == FindIntersectionCurveAndLineResult::sucess) << "No intersection found";
 
   t.check(Dune::FloatCmp::eq(tParameter[0], 0.4166666666666667))
-        << "tCurve is " << tParameter[0] << " but should be " << 0.4166666666666667;
-  t.check(Dune::FloatCmp::eq(tParameter[1],  -0.6833333333333333))
+      << "tCurve is " << tParameter[0] << " but should be " << 0.4166666666666667;
+  t.check(Dune::FloatCmp::eq(tParameter[1], -0.6833333333333333))
       << "tLine is " << tParameter[1] << " but should be " << -0.6833333333333333;
-  t.check(Dune::FloatCmp::eq(curvePoint, {0.5,  -2.916666666666667})) << "The obtained point is wrong";
+  t.check(Dune::FloatCmp::eq(curvePoint, {0.5, -2.916666666666667})) << "The obtained point is wrong";
 
   // Parallel line
-   std::tie(success, tParameter, curvePoint) = Dune::IGANEW::findIntersectionCurveAndLine(
-        curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
+  std::tie(success, tParameter, curvePoint)
+      = Dune::IGANEW::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
   t.check(success == FindIntersectionCurveAndLineResult::linesParallel);
 
   return t;
@@ -93,7 +92,7 @@ auto testSliceCurve() {
   Dune::TestSuite t;
 
   const auto curve2 = diagonalCurve();
-  constexpr std::array testT {0.4, 0.6};
+  constexpr std::array testT{0.4, 0.6};
   const auto slicedCurve = sliceCurve(curve2, testT);
 
   for (int i = 0; i < 2; ++i) {

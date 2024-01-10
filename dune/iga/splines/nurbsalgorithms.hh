@@ -159,7 +159,7 @@ namespace Dune::IGANEW::Splines {
    */
   template <int dim, typename ScalarType_ = double>
   class Nurbs {
-   public:
+  public:
     Nurbs()                        = default;
     using ScalarType               = ScalarType_;
     using DynamicVectorType        = DynamicVector<ScalarType>;
@@ -404,7 +404,7 @@ namespace Dune::IGANEW::Splines {
       return basisFunctionDerivatives(u, knots_, degree_, weights_, derivativeOrder, spIndex);
     }
 
-   private:
+  private:
     std::array<std::vector<ScalarType>, dim> knots_;
     std::array<int, dim> degree_;
     MultiDimensionalNet<dim, ScalarType> weights_;

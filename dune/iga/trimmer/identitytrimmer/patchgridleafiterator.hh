@@ -17,11 +17,11 @@ namespace Dune::IGANEW::IdentityTrim {
    */
   template <int codim, PartitionIteratorType pitype, class GridImp>
   class PatchGridLeafIterator {
-   private:
+  private:
     // LevelIterator to the equivalent entity in the host grid
     using IteratorImpl = typename GridImp::Trimmer::template ParameterSpaceLeafIterator<codim, pitype>;
 
-   public:
+  public:
     constexpr static int codimension = codim;
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
@@ -48,7 +48,7 @@ namespace Dune::IGANEW::IdentityTrim {
     //! equality
     bool equals(const PatchGridLeafIterator& i) const { return hostLeafIterator_ == i.hostLeafIterator_; }
 
-   private:
+  private:
     const GridImp* patchGrid_;
 
     IteratorImpl hostLeafIterator_;

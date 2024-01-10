@@ -43,7 +43,7 @@ namespace Dune::IGANEW {
 
     using LocalCoordinate = FieldVector<ctype, mydim>;
 
-   public:
+  public:
     typedef typename GridImp::template Codim<1>::Geometry Geometry;
     typedef typename GridImp::template Codim<1>::LocalGeometry LocalGeometry;
     typedef typename GridImp::template Codim<0>::Entity Entity;
@@ -160,7 +160,7 @@ namespace Dune::IGANEW {
       return res;
     }
 
-   private:
+  private:
     //**********************************************************
     //  private methods
     //**********************************************************
@@ -192,7 +192,7 @@ namespace Dune::IGANEW {
 
     using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
-   public:
+  public:
     typedef typename GridImp::template Codim<1>::Geometry Geometry;
     typedef typename GridImp::template Codim<1>::LocalGeometry LocalGeometry;
     typedef typename GridImp::template Codim<0>::Entity Entity;
@@ -315,7 +315,7 @@ namespace Dune::IGANEW {
       return res;
     }
 
-   private:
+  private:
     const GridImp* patchGrid_;
 
     ParameterSpaceLevelIntersection parameterSpaceIntersection;

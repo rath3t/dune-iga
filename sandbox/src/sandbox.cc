@@ -11,7 +11,7 @@
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/utils/igahelpers.hh"
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::cout << "Hello this is dune-iga" << std::endl;
   return 0;
 }

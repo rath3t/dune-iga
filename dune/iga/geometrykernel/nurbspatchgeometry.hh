@@ -39,7 +39,7 @@ namespace Dune::IGANEW::GeometryKernel {
    */
   template <int dim_, int dimworld_, typename ScalarType = double>
   class NURBSPatch {
-   public:
+  public:
     static constexpr std::integral auto worlddimension = dimworld_;
     static constexpr std::integral auto mydimension    = dim_;
 
@@ -73,11 +73,11 @@ namespace Dune::IGANEW::GeometryKernel {
     template <int codim, typename NURBSPatch, typename TrimmerType_>
     friend struct PatchGeometryLocalView;
 
-   private:
+  private:
     /* @brief Helper class to compute a matrix pseudo-inverse. */
     using MatrixHelper = typename MultiLinearGeometryTraits<ctype>::MatrixHelper;
 
-   public:
+  public:
     /* @brief Default constructor for NURBSPatch.*/
     NURBSPatch() = default;
 
@@ -278,7 +278,7 @@ namespace Dune::IGANEW::GeometryKernel {
     /* @brief Get the patch data of the NURBS patch. */
     auto& patchData() { return patchData_; }
 
-   private:
+  private:
     /* @brief Calculate NURBS and control point net for a given local coordinate. */
     auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
       auto subNetStart     = Splines::findSpan(patchData_.degree, u, patchData_.knotSpans);

@@ -37,7 +37,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     using HostLeafIntersection = typename GridImp::Trimmer::TrimmerTraits::HostLeafIntersection;
 
-   public:
+  public:
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
     using LocalCoordinate = FieldVector<ctype, mydim>;
@@ -199,7 +199,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return {};
     }
 
-   private:
+  private:
     //**********************************************************
     //  private methods
     //**********************************************************
@@ -232,7 +232,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     using MatrixHelper = typename MultiLinearGeometryTraits<double>::MatrixHelper;
 
-   public:
+  public:
     // The type used to store coordinates
     typedef typename GridImp::ctype ctype;
     using LocalCoordinate = FieldVector<ctype, mydim>;
@@ -397,7 +397,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return {};
     }
 
-   private:
+  private:
     const GridImp* patchGrid_;
 
     // HostLevelIntersection parameterSpaceIntersection;

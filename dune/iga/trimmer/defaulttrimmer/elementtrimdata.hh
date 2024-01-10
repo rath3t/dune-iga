@@ -60,12 +60,13 @@ namespace Dune::IGANEW::DefaultTrim {
 
     /* this is for testing purposes only */
     void drawResult(const std::string& filename, auto eleGeometry) {
-      if (static_cast<int>(flag_) != 2)
-        return;
+      if (static_cast<int>(flag_) != 2) return;
 
       auto figure = matplot::figure(true);
       matplot::hold("on");
-      matplot::axis(matplot::square);
+
+      constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
+      constexpr std::array idxLookUp = {0, 1, 3, 2};
 
       auto plotEllipse = [](const Vertex& v) {
         constexpr auto w = 0.025;
@@ -73,24 +74,19 @@ namespace Dune::IGANEW::DefaultTrim {
         c->color("blue");
       };
 
-
       auto plotLine = [](std::vector<Vertex>& vs, bool thin = false) {
         std::vector<double> x;
-        std::ranges::transform(vs, std::back_inserter(x), [](auto& v) {
-          return v[0];
-        });
+        std::ranges::transform(vs, std::back_inserter(x), [](auto& v) { return v[0]; });
 
         std::vector<double> y;
-        std::ranges::transform(vs, std::back_inserter(y), [](auto& v) {
-          return v[1];
-        });
+        std::ranges::transform(vs, std::back_inserter(y), [](auto& v) { return v[1]; });
         if (thin)
           matplot::plot(x, y)->line_width(0.5).color("grey");
         else
           matplot::plot(x, y)->line_width(2).color("red");
       };
 
-      for (auto c : {std::array{0, 1}, {1, 3}, {3, 2}, {2, 0} }) {
+      for (auto c : edgeLookUp) {
         std::vector<Vertex> vs{eleGeometry.corner(c[0]), eleGeometry.corner(c[1])};
         plotLine(vs, true);
       }
@@ -98,31 +94,37 @@ namespace Dune::IGANEW::DefaultTrim {
       for (auto& v : vertices_) {
         if (v.geometry.has_value())
           plotEllipse(v.geometry.value());
-      }
-      for (auto& curve : edges_) {
-        if (not curve.geometry.has_value())
-          continue;
-        int n = 20;
-        std::vector<Vertex> vs;
-        for (double u : Utilities::linspace(curve.geometry.value().domain().front(), n))
-          vs.push_back(curve.geometry.value().global(u));
-        plotLine(vs);
+        else
+          plotEllipse(eleGeometry.corner(idxLookUp[v.idx]));
       }
 
-      //matplot::rectangle(eleRect[0].x, eleRect[1].y, eleRect[1].x - eleRect[0].x, eleRect[3].y - eleRect[0].y);
+      for (auto& curve : edges_) {
+        if (curve.geometry.has_value()) {
+          std::vector<Vertex> vs;
+          for (double u : Utilities::linspace(curve.geometry.value().domain().front(), 20))
+            vs.push_back(curve.geometry.value().global(u));
+          plotLine(vs);
+        } else {
+          auto cornerIdx = edgeLookUp[curve.idx];
+          std::vector<Vertex> vs{eleGeometry.corner(cornerIdx.front()), eleGeometry.corner(cornerIdx.back())};
+          plotLine(vs);
+        }
+      }
+
+      matplot::axis(matplot::equal);
       matplot::save(filename, "gif");
     }
 
     // Getter
     [[nodiscard]] ElementTrimFlag flag() const { return flag_; }
 
-   private:
+  private:
     ElementTrimFlag flag_;
     std::vector<VertexInfo> vertices_{};
     std::vector<EdgeInfo> edges_;
 
     int newVertexCounter_ = 4;
-    int newEdgeCounter_ = 4;
+    int newEdgeCounter_   = 4;
   };
 
 }  // namespace Dune::IGANEW::DefaultTrim

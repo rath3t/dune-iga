@@ -10,14 +10,14 @@ namespace Dune::IGA {
 
   template <class GridView>
   class IGARefinedGeometries {
-   public:
+  public:
     static constexpr int dim = GridView::dimension;
 
     using Element = MultiLinearGeometry<double, dim, dim>;
     using Point   = Dune::FieldVector<double, dim>;
     using Index   = std::uint64_t;
 
-   private:
+  private:
     struct ElementData {
       std::vector<Element> elements;
       std::vector<Point> vertices;
@@ -27,7 +27,7 @@ namespace Dune::IGA {
     std::unordered_map<Index, ElementData> trimmedElementData_;
     ElementData cubeData{};
 
-   public:
+  public:
     IGARefinedGeometries(const GridView& gridView, const int subSampleFull, const int subSampleTrimmed) {
       assert(subSampleFull >= 0 and subSampleTrimmed >= 0 && "subSamples have to be zero or positive");
 
@@ -96,7 +96,7 @@ namespace Dune::IGA {
         return GeometryTypes::cube(dim);
     }
 
-   private:
+  private:
     void createCubeRefinement(const int subSample) {
       Dune::RefinementIntervals tag{subSample + 1};
       Dune::VirtualRefinement<dim, double>& refinement

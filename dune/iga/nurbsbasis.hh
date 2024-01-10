@@ -59,7 +59,7 @@ namespace Dune::Functions {
     typedef typename GV::ctype D;
     enum { dim = GV::dimension };
 
-   public:
+  public:
     //! @brief export type traits for function signature
     using Traits = LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>>;
 
@@ -122,7 +122,7 @@ namespace Dune::Functions {
      */
     [[nodiscard]] std::size_t size() const { return lFE_.size(); }
 
-   private:
+  private:
     const NurbsPreBasis<GV>& preBasis_;
 
     const NurbsLocalFiniteElement<GV, R>& lFE_;
@@ -217,7 +217,7 @@ namespace Dune::Functions {
       assert(size() == lastIndex);
     }
 
-   public:
+  public:
     void init(const std::array<unsigned, dim>& sizes) {
       sizes_ = sizes;
 
@@ -275,7 +275,7 @@ namespace Dune::Functions {
     //! get i'th index
     [[nodiscard]] const LocalKey& localKey(std::size_t i) const { return li_[i]; }
 
-   private:
+  private:
     // Number of shape functions on this element per coordinate direction
     std::array<unsigned, dim> sizes_;
 
@@ -288,7 +288,7 @@ namespace Dune::Functions {
    */
   template <int dim, class LB>
   class NurbsLocalInterpolation {
-   public:
+  public:
     //! @brief Local interpolation of a function
     template <typename F, typename C>
     void interpolate(const F& f, std::vector<C>& out) const {
@@ -312,7 +312,7 @@ namespace Dune::Functions {
     enum { dim = GV::dimension };
     friend class NurbsLocalBasis<GV, R>;
 
-   public:
+  public:
     /** @brief Export various types related to this LocalFiniteElement
      */
     typedef LocalFiniteElementTraits<NurbsLocalBasis<GV, R>, NurbsLocalCoefficients<dim>,
@@ -431,7 +431,7 @@ namespace Dune::Functions {
 
     /** @brief Simple dim-dimensional multi-index class */
     class MultiDigitCounter {
-     public:
+    public:
       /** @brief Constructs a new multi-index, and sets all digits to zero
        *  @param limits Number of different digit values for each digit, i.e., digit i counts from 0 to limits[i]-1
        */
@@ -463,7 +463,7 @@ namespace Dune::Functions {
         return r;
       }
 
-     private:
+    private:
       /** @brief The number of different digit values for each place */
       const std::array<unsigned int, dim> limits_;
 
@@ -471,7 +471,7 @@ namespace Dune::Functions {
       std::array<unsigned int, dim> counter_;
     };
 
-   public:
+  public:
     /** @brief The grid view that the FE space is defined on */
     using GridView  = GV;
     using size_type = std::size_t;
@@ -708,7 +708,7 @@ namespace Dune::Functions {
   class NurbsNode : public LeafBasisNode {
     static const int dim = GV::dimension;
 
-   public:
+  public:
     using size_type     = std::size_t;
     using Element       = typename GV::template Codim<0>::Entity;
     using FiniteElement = NurbsLocalFiniteElement<GV, double>;
@@ -735,7 +735,7 @@ namespace Dune::Functions {
       this->setSize(finiteElement_.size());
     }
 
-   protected:
+  protected:
     const NurbsPreBasis<GV>* preBasis_;
 
     FiniteElement finiteElement_;
@@ -748,7 +748,7 @@ namespace Dune::Functions {
 
       template <std::integral auto dim, std::integral auto dimworld>
       class NurbsPreBasisFactoryFromPatchData {
-       public:
+      public:
         static constexpr std::size_t requiredMultiIndexSize = 1;
         explicit NurbsPreBasisFactoryFromPatchData(
             const std::optional<Dune::IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
@@ -759,13 +759,13 @@ namespace Dune::Functions {
           return NurbsPreBasis<GridView>(gridView, patchData_);
         }
 
-       private:
+      private:
         std::optional<Dune::IGANEW::NURBSPatchData<dim, dimworld>> patchData_;
       };
 
       template <int dim>
       class NurbsPreBasisFactoryFromDegreeElevation {
-       public:
+      public:
         static constexpr std::size_t requiredMultiIndexSize = 1;
 
         explicit NurbsPreBasisFactoryFromDegreeElevation(const std::array<int, dim>& degreeElevate)
@@ -787,7 +787,7 @@ namespace Dune::Functions {
           return NurbsPreBasis<GridView>(gridView, patchData);
         }
 
-       private:
+      private:
         std::array<int, dim> degreeElevate_{};
       };
 

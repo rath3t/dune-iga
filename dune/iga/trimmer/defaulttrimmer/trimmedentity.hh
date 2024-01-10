@@ -38,7 +38,7 @@ namespace Dune {
             typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::ParameterSpaceGridEntitySeed;
         // using LocalParameterSpaceGeometry= typename Trimmer::TrimmerTraits::template
         // Codim<codim_>::LocalParameterSpaceGeometry;
-       public:
+      public:
         TrimmedParameterSpaceGridEntity()                                                      = default;
         TrimmedParameterSpaceGridEntity(const TrimmedParameterSpaceGridEntity& other) noexcept = default;
         TrimmedParameterSpaceGridEntity(TrimmedParameterSpaceGridEntity&& other) noexcept      = default;
@@ -108,7 +108,7 @@ namespace Dune {
             return hostEntity_;
         }
 
-       private:
+      private:
         EntityInfo entityInfo_;
         struct Empty {};
         HostParameterSpaceGridEntity hostEntity_;
@@ -117,7 +117,7 @@ namespace Dune {
 
         std::optional<std::reference_wrapper<const ElementTrimData>> trimData_;
 
-       public:
+      public:
         [[nodiscard]] bool operator==(const TrimmedParameterSpaceGridEntity& other) const {
           if constexpr (codim_ == 0)
             return hostEntity_ == other.hostEntity_;

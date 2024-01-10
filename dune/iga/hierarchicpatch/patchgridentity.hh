@@ -60,7 +60,7 @@ namespace Dune::IGANEW {
 
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
-   private:
+  private:
     // The codimension of this entity wrt the host grid
     // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
 
@@ -70,7 +70,7 @@ namespace Dune::IGANEW {
 
     //@todo Trimmer should also provide a
 
-   public:
+  public:
     typedef typename GridImp::ctype ctype;
 
     typedef typename GridImp::template Codim<codim>::Geometry Geometry;
@@ -144,7 +144,7 @@ namespace Dune::IGANEW {
     // const auto& getHostEntity()const {
     //     return hostEntity_;
     // }
-   private:
+  private:
     ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
   };
@@ -165,7 +165,7 @@ namespace Dune::IGANEW {
   class PatchGridEntity<0, dim, GridImp> : public EntityDefaultImplementation<0, dim, GridImp, PatchGridEntity> {
     friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
 
-   public:
+  public:
     typedef typename GridImp::ctype ctype;
     using Trimmer = typename GridImp::Trimmer;
     // The codimension of this entitypointer wrt the host grid
@@ -337,7 +337,7 @@ namespace Dune::IGANEW {
     // }
     const auto& getHostEntity() const { return hostEntity_; }
 
-   private:
+  private:
     ParameterSpaceGridEntity hostEntity_;
     const GridImp* patchGrid_;
 

@@ -23,11 +23,11 @@ namespace Dune::Vtk {
     using Self  = DiscontinuousIgaDataCollector;
     using Super = UnstructuredDataCollectorInterface<GridView, Self, Partitions::All>;
 
-   public:
+  public:
     using Super::dim;
     using Super::partition;
 
-   public:
+  public:
     DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed)
         : Super(gridView), geometries_(gridView, subSampleFull, subSampleTrimmed) {}
     // Does not subsample
@@ -182,7 +182,7 @@ namespace Dune::Vtk {
       return data;
     }
 
-   protected:
+  protected:
 #if DUNE_VERSION_LT(DUNE_VTK, 2, 10)
     using Super::gridView_;
     const auto& gridView() const { return gridView_; }

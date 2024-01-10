@@ -22,7 +22,7 @@ namespace Dune::IGANEW::DefaultTrim {
         typename GridImp::ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LevelIterator;
     using IteratorImpl = IteratorImplR;  // std::conditional_t<codim==0,IteratorImplR,OLDIteratorImpl>;
 
-   public:
+  public:
     constexpr static int codimension = codim;
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
@@ -89,7 +89,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return parameterSpaceLevelIterator == i.parameterSpaceLevelIterator;
     }
 
-   private:
+  private:
     const GridImp* patchGrid_;
     typename GridImp::GridFamily::TrimmerTraits::GlobalIdSetId id_;
 

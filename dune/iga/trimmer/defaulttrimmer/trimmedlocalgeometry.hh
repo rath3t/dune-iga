@@ -9,7 +9,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
   template <int mydim, int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
   class TrimmedLocalGeometryImpl {
-   public:
+  public:
     using ctype = typename GridImp::ctype;
 
     static constexpr int mydimension = mydim;
@@ -86,7 +86,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return JacobianInverseTransposed{};
     }
 
-   private:
+  private:
     const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype> patchGeometry;
   };
 }  // namespace Dune::IGANEW::DefaultTrim

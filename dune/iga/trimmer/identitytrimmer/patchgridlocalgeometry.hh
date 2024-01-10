@@ -26,7 +26,7 @@ namespace Dune::IGANEW {
   template <int mydim, int coorddim, class GridImp>
   class PatchGridLocalGeometry
       : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridLocalGeometry> {
-   public:
+  public:
     static constexpr int mydimension = mydim;
     using Trimmer                    = typename GridImp::Trimmer;
 
@@ -95,7 +95,7 @@ namespace Dune::IGANEW {
       return localGeometry_.jacobianInverseTransposed(local);
     }
 
-   private:
+  private:
     LocalGeometry localGeometry_;
   };
 

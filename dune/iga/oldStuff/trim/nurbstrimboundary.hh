@@ -13,7 +13,7 @@
 namespace Dune::IGA {
 
   class Boundary {
-   public:
+  public:
     static constexpr int worldDim = 2;
     static constexpr int dim      = 1;
 
@@ -47,7 +47,7 @@ namespace Dune::IGA {
         : nurbsGeometry(lineGeometryFromPoints(a, b)), domain(nurbsGeometry.domain()[0]), endPoints({a, b}) {}
 
     // Helper classes for construction of nurbsGeometry
-   private:
+  private:
     static Geometry geometryFromTrim(Ibra::Curve2D& _curve) {
       const auto _cp = _curve.transformControlPoints()[0];
       std::array<int, dim> dimSize{static_cast<int>(_cp.size())};
@@ -73,7 +73,7 @@ namespace Dune::IGA {
       return Geometry(PatchData(knotSpans, controlNet, std::array<int, 1>{1}));
     }
 
-   public:
+  public:
     [[nodiscard]] int degree() const { return nurbsGeometry.degree()[0]; };
 
     enum class EdgeOrientation { u, v, Unknown };
@@ -111,7 +111,7 @@ namespace Dune::IGA {
   using BoundaryLoop = std::vector<Boundary>;
 
   class TrimData {
-   public:
+  public:
     std::vector<BoundaryLoop> boundaryLoops;
 
     TrimData() = default;

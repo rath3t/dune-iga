@@ -20,7 +20,7 @@ namespace Dune::IGANEW {
     using ControlPointType    = typename PatchData::ControlPointType;
     using ControlPointNetType = typename PatchData::ControlPointNetType;
 
-   public:
+  public:
     static auto read(const std::string& fileName, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0}) {
       std::ifstream ibraInputFile;
       ibraInputFile.open(fileName);
@@ -115,7 +115,7 @@ namespace Dune::IGANEW {
       return std::make_tuple(_patchData, trimData);
     }
 
-   private:
+  private:
     static void constructTrimmingCurves(const Ibra::Brep<dimworld>& brep, PatchTrimData& trimData) {
       const std::vector<Ibra::BrepLoop> loops = brep.loops;
       assert(!loops.empty() && "Only one boundary loop is currently supported");

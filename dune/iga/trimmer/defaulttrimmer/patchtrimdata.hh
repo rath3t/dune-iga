@@ -12,7 +12,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
       const auto& curves() const { return curves_; }
 
-     private:
+    private:
       std::vector<TrimmingCurve> curves_;
     };
 
@@ -26,7 +26,7 @@ namespace Dune::IGANEW::DefaultTrim {
     const auto& loops() const { return loops_; }
     // const auto& allCurves() const { return curves_; }
 
-   private:
+  private:
     std::vector<BoundaryLoop> loops_;
   };
 

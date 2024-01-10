@@ -21,7 +21,7 @@ namespace Dune {
     /** @brief Type used by the grid for coordinates */
     typedef typename PatchGrid::ctype ctype;
 
-   public:
+  public:
     /** @brief Forward setting to trimmer
     @param parameter The parameters
  */

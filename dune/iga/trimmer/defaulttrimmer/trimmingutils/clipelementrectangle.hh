@@ -6,17 +6,16 @@
 #include <variant>
 
 #include <dune/common/float_cmp.hh>
+
 #include <dune/iga/geometrykernel/findintersection.hh>
 
 namespace Dune::IGANEW::DefaultTrim::Impl {
   // enum class error_type { clipperNotSucessfull, malformedCurve };
   static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
 
-  inline auto toCurveIdx = [](const size_t z) { return static_cast<size_t>(std::floor((z/100)-1)); };
+  inline auto toCurveIdx = [](const size_t z) { return static_cast<size_t>(std::floor((z / 100) - 1)); };
 
   struct ClippingResult {
-
-
     explicit ClippingResult(const std::vector<Clipper2Lib::PointD>& oldV) : originalVertices_(oldV) {}
 
     struct HostVertex {
@@ -34,15 +33,15 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     auto isAlreadyThere(const auto& pt) {
       const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
-        return std::visit([&](const auto& vertex) { return FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y); },
-                   vertexVariant);
+        return std::visit(
+            [&](const auto& vertex) { return FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y); },
+            vertexVariant);
       });
       return it != vertices_.end();
     }
     auto isAlreadyThereHV(const size_t hostIdx) {
       const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vV) {
-        if (std::holds_alternative<HostVertex>(vV))
-          return std::get<HostVertex>(vV).hostIdx == hostIdx;
+        if (std::holds_alternative<HostVertex>(vV)) return std::get<HostVertex>(vV).hostIdx == hostIdx;
         return false;
       });
       return it != vertices_.end();
@@ -93,22 +92,18 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       });
 
       // Remove duplicate entries for NewVertices, begin at the first host index
-      const auto it = std::ranges::find_if(vertices_, [](const VertexVariant& vV) {
-        return std::holds_alternative<HostVertex>(vV);
-      });
-      if (it == vertices_.end())
-        DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
+      const auto it = std::ranges::find_if(
+          vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
+      if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
 
       std::ranges::rotate(vertices_, it);
       for (const auto& vV : vertices_) {
-
       }
-
-
     }
 
     std::vector<VertexVariant> vertices_{};
-  private:
+
+   private:
     std::vector<Clipper2Lib::PointD> originalVertices_;
   };
 
@@ -127,16 +122,14 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
-    auto geo = element.geometry();
-    std::array<FieldVector<double, 2>, 4> corners;  // see dune book page 127 Figure 5.12
-    corners[0] = geo.corner(0);
-    corners[1] = geo.corner(1);
-    corners[2] = geo.corner(3);
-    corners[3] = geo.corner(2);
+    auto eleGeo                      = element.geometry();
+    constexpr std::array vIdxMapping = {0u, 1u, 3u, 2u};
 
     PathD eleRect;
-    for (const auto i : std::views::iota(0, 4))
-      eleRect.push_back({corners[i][0], corners[i][1], i});
+    for (const auto i : std::views::iota(0u, 4u)) {
+      auto corner = eleGeo.corner(vIdxMapping[i]);
+      eleRect.emplace_back(corner[0], corner[1], i);
+    }
 
     PathsD trimmingCurves;
     PathD tempPath;
@@ -164,9 +157,8 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     }
 
     // todo should this be hardcoded here?
-    std::array<FieldVector<double, 2>, 4> dirs {FieldVector<double, 2>{1.0, 0.0}, FieldVector<double, 2>{0, 1},
-      FieldVector<double, 2>{-1, 0}, FieldVector<double, 2>{0, -1}};
-
+    std::array dirs{FieldVector<double, 2>{1.0, 0.0}, FieldVector<double, 2>{0, 1}, FieldVector<double, 2>{-1, 0},
+                    FieldVector<double, 2>{0, -1}};
 
     // @todo check z value if same as eleRect -> full
     auto isFullElement = [&](const auto& clippedEdges) { return FloatCmp::eq(Area(clippedEdges), Area(eleRect)); };
@@ -175,8 +167,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     // @todo try this with clipper for non-boundary elements with ClipperD
     const auto intersectResult = Intersect({eleRect}, trimmingCurves, FillRule::NonZero, 2);
 
-    if (intersectResult.empty())
-      return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
+    if (intersectResult.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
     if (isFullElement(intersectResult.front())) {
       matplot::rectangle(eleRect[0].x, eleRect[1].y, eleRect[1].x - eleRect[0].x, eleRect[3].y - eleRect[0].y);
       return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
@@ -187,14 +178,10 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     ClippingResult result(eleRect);
 
     auto checkParallel = [&](const auto& curve, const int edgeIndex) -> bool {
-      if (curve.degree().front() == 1) {
-        FindIntersectionCurveAndLineResult rV;
-        std::tie(rV, std::ignore, std::ignore) = findIntersectionLinearCurveAndLine(curve, corners[edgeIndex],
-          dirs[edgeIndex], {curve.domainMidPoint()[0], 0.5});
-        if (rV == FindIntersectionCurveAndLineResult::linesParallel)
-          return true;
-      }
-      return false;
+      return curve.degree().front() == 1
+             and std::get<0>(findIntersectionLinearCurveAndLine(curve, eleGeo.corner(vIdxMapping[edgeIndex]),
+                                                               dirs[edgeIndex], {curve.domainMidPoint()[0], 0.5}))
+                    == FindIntersectionCurveAndLineResult::linesParallel;
     };
 
     clipper.SetZCallback([&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top,
@@ -217,7 +204,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       // We receive here all intersection points but not the sampled curve points
       // resultClosedPaths should be empty
       assert(resultClosedPaths.empty());
-      assert(resultOpenPaths.size()<=1);
+      assert(resultOpenPaths.size() <= 1);
 
       if (not resultOpenPaths.empty())
         for (const auto& p : resultOpenPaths.front()) {

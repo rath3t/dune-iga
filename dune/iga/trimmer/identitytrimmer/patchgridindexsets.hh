@@ -21,7 +21,7 @@ namespace Dune::IGANEW::IdentityTrim {
             GridImp, PatchGridLevelIndexSet<GridImp>,
             typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::IndexType,
             typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LevelGridView::IndexSet::Types> {
-   public:
+  public:
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid HostGrid;
     typedef typename HostGrid::LevelGridView::IndexSet::Types Types;
 
@@ -88,7 +88,7 @@ namespace Dune::IGANEW::IdentityTrim {
             typename std::remove_const<GridImp>::type::ParameterSpaceGrid::LeafGridView::IndexSet::Types> {
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
-   public:
+  public:
     typedef typename ParameterSpaceGrid::LevelGridView::IndexSet::Types Types;
 
     /*
@@ -156,7 +156,7 @@ namespace Dune::IGANEW::IdentityTrim {
                      typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::GlobalIdSet::IdType> {
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
-   public:
+  public:
     //! constructor stores reference to a grid
     explicit PatchGridGlobalIdSet(const GridImp& g) : grid_(&g) {}
 
@@ -195,10 +195,10 @@ namespace Dune::IGANEW::IdentityTrim {
   class PatchGridLocalIdSet
       : public IdSet<GridImp, PatchGridLocalIdSet<GridImp>,
                      typename std::remove_const<GridImp>::type::ParameterSpaceGrid::Traits::LocalIdSet::IdType> {
-   private:
+  private:
     typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
-   public:
+  public:
     //! define the type used for persistent local ids
     typedef typename ParameterSpaceGrid::Traits::LocalIdSet::IdType IdType;
 

@@ -27,7 +27,7 @@ namespace Dune::IGANEW::DefaultTrim {
     typedef typename GridImp::Trimmer::template Codim<0>::ParameterSpaceGridEntity ParameterSpaceGridEntity;
     using Trimmer = typename GridImp::Trimmer;
 
-   public:
+  public:
     constexpr static int codimension = 0;
 
     typedef typename GridImp::template Codim<0>::Entity Entity;
@@ -82,7 +82,7 @@ namespace Dune::IGANEW::DefaultTrim {
       return currentEntityPtr_ == i.currentEntityPtr_;
     }
 
-   private:
+  private:
     void stackChildren(const ParameterSpaceGridEntity* target) {
       // Load sons of target onto the iterator stack
       // if the given entity is leaf or max level we do not add anything to the stack

@@ -21,7 +21,7 @@ namespace Dune::IGANEW::IdentityTrim {
         typename GridImp::ParameterSpaceGrid::Traits::template Codim<codim>::template Partition<pitype>::LevelIterator
             HostGridLevelIterator;
 
-   public:
+  public:
     constexpr static int codimension = codim;
 
     typedef typename GridImp::template Codim<codim>::Entity Entity;
@@ -50,7 +50,7 @@ namespace Dune::IGANEW::IdentityTrim {
     //! equality
     bool equals(const PatchGridLevelIterator& i) const { return hostLevelIterator_ == i.hostLevelIterator_; }
 
-   private:
+  private:
     const GridImp* patchGrid_;
 
     HostGridLevelIterator hostLevelIterator_;

@@ -7,7 +7,7 @@ namespace Dune {
 
       template <typename TrimmerType_, class... Implementations>
       class LocalGeometryVariant {
-       public:
+      public:
         using Variant                       = std::variant<Implementations...>;
         using ctype                         = std::common_type_t<typename Implementations::ctype...>;
         using FirstElement                  = std::tuple_element_t<0, std::tuple<Implementations...>>;
@@ -100,7 +100,7 @@ namespace Dune {
           return visit([&](const auto& impl) { return impl.jacobianInverseTransposed(local); });
         }
 
-       private:
+      private:
         Variant impl_;
       };
     }  // namespace Trim

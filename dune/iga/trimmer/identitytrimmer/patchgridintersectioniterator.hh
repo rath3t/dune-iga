@@ -34,7 +34,7 @@ namespace Dune::IGANEW::IdentityTrim {
 
     typedef typename GridImp::ParameterSpaceGrid::LeafGridView::IntersectionIterator HostLeafIntersectionIterator;
 
-   public:
+  public:
     typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
 
     PatchGridLeafIntersectionIterator() {}
@@ -52,7 +52,7 @@ namespace Dune::IGANEW::IdentityTrim {
     //! @brief dereferencing
     Intersection dereference() const { return PatchGridLeafIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_); }
 
-   private:
+  private:
     //**********************************************************
     //  private data
     //**********************************************************
@@ -73,7 +73,7 @@ namespace Dune::IGANEW::IdentityTrim {
 
     typedef typename GridImp::ParameterSpaceGrid::LevelGridView::IntersectionIterator HostLevelIntersectionIterator;
 
-   public:
+  public:
     typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
 
     PatchGridLevelIntersectionIterator() {}
@@ -95,7 +95,7 @@ namespace Dune::IGANEW::IdentityTrim {
       return PatchGridLevelIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
     }
 
-   private:
+  private:
     const GridImp* parameterSpaceGrid_          = nullptr;
     HostLevelIntersectionIterator hostIterator_ = {};
   };
