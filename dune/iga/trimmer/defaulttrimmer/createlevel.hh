@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
-#include <matplot/matplot.h>
+
 
 #pragma once
 namespace Dune::IGANEW::DefaultTrim {
@@ -159,7 +159,6 @@ namespace Dune::IGANEW::DefaultTrim {
       int edgeIndex                   = 0;
       int vertexIndex                 = 0;
 
-      auto figure = matplot::figure(true);
 
       for (const auto& ele : elements(gv)) {
         ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};
@@ -167,6 +166,10 @@ namespace Dune::IGANEW::DefaultTrim {
         if (trimData_.has_value()) {
           eleTrimData = trimElement(ele, trimData_.value());
           eleTrimFlag = eleTrimData.flag();
+
+          // Testing Purposes
+          auto resName = "ele_" + std::to_string(unTrimmedElementIndex + trimmedElementIndex);
+          eleTrimData.drawResult(resName, ele.geometry());
         }
 
         auto hostId = globalIdSetParameterSpace.id(ele);
@@ -193,6 +196,7 @@ namespace Dune::IGANEW::DefaultTrim {
             entityContainer.template entity<0>(fatherId, newLevel - 1).entityInfo_.decendantIds.push_back(elementId);
           } else if (eleTrimFlag == ElementTrimFlag::trimmed) {
             // trimmed
+            ++trimmedElementIndex;
           } else {
             // empty
           }
@@ -207,6 +211,7 @@ namespace Dune::IGANEW::DefaultTrim {
             ++unTrimmedElementIndex;
           } else if (eleTrimFlag == ElementTrimFlag::trimmed) {
             // trimmed
+            ++trimmedElementIndex;
           } else {
             // empty
           }
@@ -245,9 +250,6 @@ namespace Dune::IGANEW::DefaultTrim {
           }
         }
       }
-
-      // matplot::save("figure", "svg");
-      matplot::save("figure", "gif");
 
       // save numbers of untrimmed and trimmed elements per level
       entityContainer.numberOfTrimmedElements.push_back(trimmedElementIndex);

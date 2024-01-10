@@ -14,7 +14,9 @@
 #include <dune/common/test/testsuite.hh>
 
 #include <dune/iga/geometrykernel/findintersection.hh>
+#include <dune/iga/geometrykernel/slicecurve.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
+
 using namespace Dune::IGANEW;
 
 auto diagonalCurve() {
@@ -87,6 +89,20 @@ auto test2() {
   return t;
 }
 
+auto testSliceCurve() {
+  Dune::TestSuite t;
+
+  const auto curve2 = diagonalCurve();
+  constexpr std::array testT {0.4, 0.6};
+  const auto slicedCurve = sliceCurve(curve2, testT);
+
+  for (int i = 0; i < 2; ++i) {
+    t.check(Dune::FloatCmp::eq(curve2.global(testT[i]), slicedCurve.corner(i)));
+  }
+
+  return t;
+}
+
 #include <cfenv>
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -97,6 +113,8 @@ int main(int argc, char** argv) try {
 
   t.subTest(test1());
   t.subTest(test2());
+
+  t.subTest(testSliceCurve());
 
   t.report();
 
