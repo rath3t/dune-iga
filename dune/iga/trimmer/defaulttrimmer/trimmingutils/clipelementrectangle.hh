@@ -12,6 +12,7 @@
 namespace Dune::IGANEW::DefaultTrim::Impl {
   // enum class error_type { clipperNotSucessfull, malformedCurve };
   static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
+  constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
 
   inline auto toCurveIdx = [](const size_t z) { return static_cast<size_t>(std::floor((z / 100) - 1)); };
 
@@ -34,7 +35,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     auto isAlreadyThere(const auto& pt) {
       const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
         return std::visit(
-            [&](const auto& vertex) { return FloatCmp::eq(vertex.pt.x, pt.x) and FloatCmp::eq(vertex.pt.y, pt.y); },
+            [&](const auto& vertex) { return FloatCmp::eq(vertex.pt.x, pt.x, 1e-8) and FloatCmp::eq(vertex.pt.y, pt.y, 1e-8); },
             vertexVariant);
       });
       return it != vertices_.end();
@@ -52,9 +53,14 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       if (FloatCmp::eq(pt.x, originalVertices_[pt.z].x) and FloatCmp::eq(pt.y, originalVertices_[pt.z].y) and not isAlreadyThereHV(pt.z))
         vertices_.emplace_back(HostVertex(pt.z, originalVertices_[pt.z]));
     }
+    void addOriginalVertex(const size_t hostIdx) {
+      if (not isAlreadyThereHV(hostIdx))
+        vertices_.emplace_back(HostVertex(hostIdx, originalVertices_[hostIdx]));
+    }
 
     void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
-      vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
+      if (not isAlreadyThere(pt))
+        vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
     }
 
     void finish() {
@@ -92,12 +98,10 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
         return comparePoints(aV, bV, minVertex);
       });
 
-      // Remove duplicate entries for NewVertices, begin at the first host index
-      // const auto it = std::ranges::find_if(
-      //     vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
-      // if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
-
-      //std::ranges::rotate(vertices_, it);
+     const auto it = std::ranges::find_if(
+         vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
+     if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
+      std::ranges::rotate(vertices_, it);
     }
 
     std::vector<VertexVariant> vertices_{};
@@ -114,6 +118,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     if ((e1 == 3 and e2 == 0) or (e1 == 0 and e2 == 3)) return 3;
     assert(false);
   }
+
 
   inline bool goesIn(const std::size_t e1, const std::size_t e2) { return e1 > e2; }
 
@@ -144,7 +149,6 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
         // Add an additional point just outside of the element
         auto localLastPoint = curve.domain()[0][1];
         auto lastPoint      = curve.global(localLastPoint);
-
         auto scale = element.geometry().volume() / 10;
 
         auto dx = curve.jacobian({localLastPoint}) * scale;
@@ -155,12 +159,18 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
       trimmingCurves.push_back(tempPath);
     }
 
-    // todo should this be hardcoded here?
+    // todo should this be hardcoded here -> make a constexpr variable in namespace, trimelement.h needs it to
     std::array dirs{FieldVector<double, 2>{1.0, 0.0}, FieldVector<double, 2>{0, 1}, FieldVector<double, 2>{-1, 0},
                     FieldVector<double, 2>{0, -1}};
 
     // @todo check z value if same as eleRect -> full
     auto isFullElement = [&](const auto& clippedEdges) { return FloatCmp::eq(Area(clippedEdges), Area(eleRect)); };
+
+    auto isHostVertex = [&](const auto& pt) -> std::pair<bool, ptrdiff_t> {
+      auto it = std::ranges::find_if(eleRect, [&](const auto& vertex) {
+        return  FloatCmp::eq(vertex.x, pt.x) and FloatCmp::eq(vertex.y, pt.y); });
+      return std::make_pair(it != eleRect.end(), std::ranges::distance(eleRect.begin(), it));
+    };
 
     // First determine if element is trimmed
     // @todo try this with clipper for non-boundary elements with ClipperD
@@ -185,49 +195,124 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     clipper.SetZCallback([&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top,
                              const PointD& pt) {
-      if (not checkParallel(patchTrimData.loops().front().curves()[toCurveIdx(e2bot.z)], giveEdgeIdx(e1bot.z, e1top.z)))
-        result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), pt, e2bot.z);
+      std::cout << "Z-Callback\n";
+      std::cout << e1bot << " " << e1top << std::endl;
+      std::cout << e2bot << " " << e2top << std::endl;
+      std::cout << pt << std::endl;
+
+      // We are only interested in intersections with the edges
+      if (e1bot.z > 3)
+        return;
+
+      if (auto [isHost, idx] = isHostVertex(pt); isHost) {
+        result.addOriginalVertex(idx);
+        return;
+      }
+
+      const auto edgeIdx = giveEdgeIdx(e1bot.z, e1top.z);
+      const auto curveZ = e2bot.z;
+      const auto curveIdx = toCurveIdx(curveZ);
+
+      // Now check that we don't have a parallel intersection
+      if (checkParallel(patchTrimData.loops().front().curves()[curveIdx], edgeIdx))
+        return;
+
+      result.addNewVertex(edgeIdx, pt, curveZ);
     });
 
     PathsD resultClosedPaths{};
     PathsD resultOpenPaths{};
 
-    for (const auto i : std::views::iota(0, 4)) {
-      // std::cout << "Edge " << i << std::endl;
+    clipper.AddClip(trimmingCurves);
+    clipper.AddSubject({eleRect});
 
-      clipper.Clear();
-      clipper.AddClip(trimmingCurves);
+    clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
 
-      clipper.AddOpenSubject(PathsD{{eleRect[i], eleRect[nextEntityIdx(i, 1)]}});
-      clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
-      // We receive here all intersection points but not the sampled curve points
-      // resultClosedPaths should be empty
-      assert(resultClosedPaths.empty());
-      assert(resultOpenPaths.size() <= 1);
+    // for (const auto i : std::views::iota(0, 4)) {
+    //   // std::cout << "Edge " << i << std::endl;
+    //
+    //   clipper.Clear();
+    //   clipper.AddClip(trimmingCurves);
+    //
+    //   clipper.AddOpenSubject(PathsD{{eleRect[i], eleRect[nextEntityIdx(i, 1)]}});
+    //   clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
+    //   // We receive here all intersection points but not the sampled curve points
+    //   // resultClosedPaths should be empty
+    //   assert(resultClosedPaths.empty());
+    //   assert(resultOpenPaths.size() <= 1);
+    //
+    //   if (not resultOpenPaths.empty())
+    //     for (const auto& p : resultOpenPaths.front()) {
+    //       if (p.z < 4)
+    //         result.addOriginalVertex(p);
+    //       else {
+    //         // Check if this is neeeded
+    //         std::cout << "maybe we need this point\n";
+    //       }
+    //     }
+    // }
 
-      if (not resultOpenPaths.empty())
-        for (const auto& p : resultOpenPaths.front()) {
-          if (p.z < 4)
-            result.addOriginalVertex(p);
-          else {
-            // Check if this is neeeded
-            std::cout << "maybe we need this point\n";
-          }
-        }
+    // auto isPointInTrimmingCurves = [&](const auto& pt1) -> bool {
+    //   return std::ranges::any_of(trimmingCurves, [&](const auto& curve) {
+    //     auto it = std::ranges::find_if(
+    //         curve, [&](const auto& pt2) { return FloatCmp::eq(pt1.x, pt2.x) and FloatCmp::eq(pt1.y, pt2.y); });
+    //     return it != curve.end();
+    //   });
+    // };
+    //
+    // // check if any element vertex is a starting point of one of the trimming curves as the algorihtm cannot find them
+    // // @todo only for boundary elements
+    // for (const auto& cP : eleRect)
+    //   if (isPointInTrimmingCurves(cP)) result.addOriginalVertex(cP);
+
+    for (const auto& pt : resultClosedPaths.front()) {
+      if (auto [isHost, idx] = isHostVertex(pt); isHost)
+        result.addOriginalVertex(idx);
     }
 
-    auto isPointInTrimmingCurves = [&](const auto& pt1) -> bool {
-      return std::ranges::any_of(trimmingCurves, [&](const auto& curve) {
-        auto it = std::ranges::find_if(
-            curve, [&](const auto& pt2) { return FloatCmp::eq(pt1.x, pt2.x) and FloatCmp::eq(pt1.y, pt2.y); });
-        return it != curve.end();
-      });
+    // Add startpoints of trimming curves to the vertices if they are on one of the element edges
+    auto isPointOnLine = [](const auto& pt, const auto& p1, const auto& p2)-> bool {
+      // Check if the points are collinear using the slope formula
+      auto x = pt[0]; auto y = pt[1];
+      auto x1 = p1[0]; auto y1 = p1[1];
+      auto x2 = p2[0]; auto y2 = p2[1];
+
+      // Check if the line is horizontal
+      if (std::abs(y1 - y2) < 1e-6) {
+        return std::abs(y - y1) < 1e-6 && ((x >= x1 && x <= x2) || (x >= x2 && x <= x1));
+      }
+      // Check if the line is vertical
+      if (std::abs(x1 - x2) < 1e-6) {
+        return std::abs(x - x1) < 1e-6 && ((y >= y1 && y <= y2) || (y >= y2 && y <= y1));
+      }
+
+      // Check if the given point lies on the line
+      const double slope = (y2 - y1) / (x2 - x1);
+      return std::abs((y - y1) - slope * (x - x1)) < 1e-6;
     };
 
-    // check if any element vertex is a starting point of one of the trimming curves as the algorihtm cannot find them
-    // @todo only for boundary elements
-    for (const auto& cP : eleRect)
-      if (isPointInTrimmingCurves(cP)) result.addOriginalVertex(cP);
+    for (auto cI = 0; const auto& curve : patchTrimData.loops().front().curves()) {
+      auto pt = curve.corner(0);
+      PointD ptClipper{pt[0], pt[1]};
+
+      // is hostVertex
+      if (auto [isHost, idx] = isHostVertex(ptClipper); isHost) {
+        result.addOriginalVertex(idx);
+        cI++;
+        continue;
+      }
+
+      for (auto e = 0; const auto& edgeIdx : edgeLookUp) {
+        if (isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))) {
+          if (not checkParallel(curve, e))
+            result.addNewVertex(e, ptClipper, (cI+1) * 100);
+        }
+        e++;
+      }
+      cI++;
+    }
+
+
 
     result.finish();
 

@@ -49,6 +49,20 @@ namespace Dune::IGANEW::DefaultTrim {
     auto getTrimmingCurveIdx
         = [&](auto& vV) -> size_t { return static_cast<size_t>(std::floor((getTrimmingCurveZ(vV) / 100) - 1)); };
 
+    auto distance = [](const Clipper2Lib::PointD& p1, const auto& p2) -> double {
+      return std::hypot(p1.x - p2[0], p1.y - p2[1]);
+    };
+
+    auto findGoodStartingPoint = [&](const auto& curve, const Clipper2Lib::PointD& pt, int N = 10) -> double {
+      auto linSpace = Utilities::linspace(curve.domain().front(), N);
+      std::vector<double> distances;
+      std::ranges::transform(linSpace, std::back_inserter(distances), [&](const auto u) {
+        return distance(pt, curve.global(u));
+      });
+      auto min_idx = std::ranges::distance(distances.begin(), std::ranges::min_element(distances));
+      return linSpace[min_idx];
+    };
+
     auto callFindIntersection
         = [&](const size_t tcIdx, const int edgeIdx, auto ip) -> std::pair<double, FieldVector<ScalarType, dim>> {
       // @todo gerneralize for more than one loop
@@ -56,7 +70,7 @@ namespace Dune::IGANEW::DefaultTrim {
       auto pos           = corners[edgeIdx];
       auto dir           = dirs[edgeIdx];
       // @todo make better guess by maybe using z Val with lookup-table
-      auto guessTParam = FieldVector<ScalarType, dim>{curvePatchGeo.domainMidPoint()[0], 0.5};
+      auto guessTParam = FieldVector<ScalarType, 2>{findGoodStartingPoint(curvePatchGeo, ip), 0.5};
 
       auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
       if (success == FindIntersectionCurveAndLineResult::sucess) return std::make_pair(tParam[0], curvePoint);
