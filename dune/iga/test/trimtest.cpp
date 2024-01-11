@@ -25,6 +25,8 @@ auto testExample1(){
 
   // Setup
   using GridFactory = Dune::GridFactory<PatchGrid<2, 2, DefaultTrim::PatchGridFamily>>;
+  using Trimmer = DefaultTrim::TrimmerImpl<2, 2, double>;
+  using ElementTrimData = Trimmer::ElementTrimData;
 
   auto gridFactory = GridFactory();
   gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {0, 0});
@@ -32,10 +34,12 @@ auto testExample1(){
   const Dune::YaspGrid grid{tensorCoordinates};
 
   const auto& patchTrimData = gridFactory.patchTrimData_.value();
-  auto trimmer = DefaultTrim::TrimmerImpl<2, 2, double>{};
+  auto trimmer = Trimmer{};
 
   for (auto& ele : elements(grid.leafGridView())) {
-    auto elementTrimData = trimmer.trimElement(ele, patchTrimData);
+    ElementTrimData elementTrimData = trimmer.trimElement(ele, patchTrimData);
+    auto& vertexInfos = elementTrimData.vertices();
+    auto& edgeInfos = elementTrimData.edges();
   }
 
   return t;
