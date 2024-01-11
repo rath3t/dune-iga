@@ -101,7 +101,7 @@ namespace Dune::IGANEW::DefaultTrim {
       for (auto& curve : edges_) {
         if (curve.geometry.has_value()) {
           std::vector<Vertex> vs;
-          for (double u : Utilities::linspace(curve.geometry.value().domain().front(), 20))
+          for (double u : Utilities::linspace(curve.geometry.value().domain().front(), 40))
             vs.push_back(curve.geometry.value().global(u));
           plotLine(vs);
         } else {

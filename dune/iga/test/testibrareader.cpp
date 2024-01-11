@@ -27,7 +27,7 @@ auto testIbraReader() {
 
   auto gridFactory = GridFactory();
   //gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {1, 1});
-  gridFactory.insertJson("auxiliaryfiles/element_trim_xb.ibra", true, {1, 1});
+  gridFactory.insertJson("auxiliaryfiles/pipe_trim.ibra", true, {1, 1});
 
   auto grid = gridFactory.createGrid();
 

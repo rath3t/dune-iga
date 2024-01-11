@@ -8,68 +8,73 @@
 
 namespace Dune::IGANEW {
 
+  // Curtesy to https://github.com/pradeep-pyro/tinynurbs/blob/master/include/tinynurbs/core/modify.h
   template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
-  auto sliceCurve(const GeoCurve& geoCurve, std::array<ScalarType, 2> t) -> GeoCurve {
-    assert(GeoCurve::mydimension == 1);
+  auto splitCurve(const GeoCurve& geoCurve, ScalarType u) -> std::pair<GeoCurve, GeoCurve> {
+    static_assert(GeoCurve::mydimension == 1);
 
-    auto findMultiplicity = [](auto t_, auto& knotVec) {
-      return std::ranges::count_if(knotVec, [=](double val) { return FloatCmp::eq(t_, val, 1e-8); });
+    auto knotMultiplicity = [](auto& knotVec, auto u_) {
+      return std::ranges::count_if(knotVec, [=](double val) { return FloatCmp::eq(u_, val, 1e-8); });
     };
 
     auto& patchData = geoCurve.patchData();
+    auto knots = patchData.knotSpans.front();
+    auto control_points = patchData.controlPoints.directGetAll();
     auto domain     = geoCurve.domain();
     auto degree     = patchData.degree[0];
 
-    if (FloatCmp::eq(domain[0][0], t[0]) and FloatCmp::eq(domain[0][1], t[1])) return geoCurve;
+    auto span = Splines::findSpan(degree, u, knots);
+    int r = degree - knotMultiplicity(knots, u);
 
-    auto newPatchData      = typename GeoCurve::PatchData();
-    size_t dropCtrptsFront = 0;
-    size_t dropCtrptsBack  = 0;
+    std::vector<ScalarType> newKnots(r);
+    std::ranges::fill(newKnots, u);
+    auto tmpPatchData = Splines::knotRefinement(patchData, newKnots, 0);
 
-    bool skippedFirst = false;
-    for (int i = 0; i < 2; ++i) {
-      if (FloatCmp::eq(domain[0][i], t[i])) {
-        skippedFirst = true;
-        continue;
-      }
+    std::vector<ScalarType> tmpKnots {tmpPatchData.knotSpans.front()};
+    decltype(control_points) tmpCp {tmpPatchData.controlPoints.directGetAll()};
 
-      auto span = Splines::findSpan(degree, t[i], patchData.knotSpans.front());
-      auto ks   = span - degree + 1;
+    std::vector<ScalarType> leftKnots;
+    const int span_l = Splines::findSpan(degree, u, tmpKnots) + 1;
+    for (int i = 0; i < span_l; ++i)
+      leftKnots.push_back(tmpKnots[i]);
+    leftKnots.push_back(u);
 
-      auto r = degree + 1 - findMultiplicity(t[i], patchData.knotSpans.front());
-      std::vector<ScalarType> newKnots(r);
-      std::ranges::fill(newKnots, t[i]);
+    std::vector<ScalarType> rightKnots;
+    for (int i = 0; i < degree + 1; ++i)
+      rightKnots.push_back(u);
+    for (int i  = span_l; i < tmpKnots.size(); ++i)
+      rightKnots.push_back(tmpKnots[i]);
 
-      newPatchData
-          = Splines::knotRefinement(i == 0 or (i == 1 and skippedFirst) ? patchData : newPatchData, newKnots, 0);
+    decltype(control_points) leftControlPoints;
+    const int ks = span - degree + 1;
+    for (int i = 0; i < ks + r; ++i)
+      leftControlPoints.push_back(tmpCp[i]);
 
-      auto& newKnotSpans = newPatchData.knotSpans.front();
+    decltype(control_points) rightControlPoints;
+    for (int i = ks + r - 1; i < tmpCp.size(); ++i)
+      rightControlPoints.push_back(tmpCp[i]);
 
-      auto span2 = Splines::findSpan(degree, t[i], newKnotSpans) + 1;
-      if (i == 1) {
-        auto firstNView                = std::ranges::take_view(newKnotSpans, span2);
-        newPatchData.knotSpans.front() = std::vector<ScalarType>(firstNView.begin(), firstNView.end());
-        dropCtrptsBack                 = patchData.knotSpans.front().size() - (ks + r - 1);
-      } else {
-        auto lastNView
-            = std::ranges::subrange(std::ranges::end(newKnotSpans) - std::min<long>(span2, newKnotSpans.size()),
-                                    std::ranges::end(newKnotSpans));
-        newPatchData.knotSpans.front() = std::vector<ScalarType>(lastNView.begin(), lastNView.end());
-        dropCtrptsFront                = ks + r - 1;
-      }
-    }
 
-    // Get rid of excess control points
-    auto& controlPoints = newPatchData.controlPoints.directGetAll();
+    typename GeoCurve::PatchData leftPatchData{{leftKnots}, typename GeoCurve::ControlPointNetType{leftControlPoints}, patchData.degree};
+    typename GeoCurve::PatchData rightPatchData{{rightKnots}, typename GeoCurve::ControlPointNetType{rightControlPoints}, patchData.degree};
 
-    auto trimmedView
-        = std::ranges::subrange(std::ranges::begin(controlPoints) + std::min(dropCtrptsFront, controlPoints.size()),
-                                std::ranges::end(controlPoints) - std::min(dropCtrptsBack, controlPoints.size()));
+    return std::make_pair(GeoCurve{leftPatchData}, GeoCurve{rightPatchData});
+  }
 
-    newPatchData.controlPoints = typename GeoCurve::ControlPointNetType(
-        std::vector<typename GeoCurve::ControlPointType>(trimmedView.begin(), trimmedView.end()));
+  template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
+  auto sliceCurve(const GeoCurve& geoCurve, std::array<ScalarType, 2> t) -> GeoCurve {
+    static_assert(GeoCurve::mydimension == 1);
 
-    return GeoCurve(newPatchData);
+    auto domain     = geoCurve.domain();
+    if (domain[0].front() == t[0] and domain[0].back() == t[1])
+      return geoCurve;
+    if (domain[0].front() == t[0])
+      return std::get<0>(splitCurve(geoCurve, t[1]));
+    if (domain[0].back() == t[1])
+      return std::get<1>(splitCurve(geoCurve, t[0]));
+
+    auto tmpCurve = std::get<1>(splitCurve(geoCurve, t[0]));
+    return std::get<0>(splitCurve(tmpCurve, t[1]));
   }
 
 }  // namespace Dune::IGANEW

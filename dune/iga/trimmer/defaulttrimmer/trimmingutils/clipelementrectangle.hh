@@ -168,7 +168,7 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
 
     auto isHostVertex = [&](const auto& pt) -> std::pair<bool, ptrdiff_t> {
       auto it = std::ranges::find_if(eleRect, [&](const auto& vertex) {
-        return  FloatCmp::eq(vertex.x, pt.x) and FloatCmp::eq(vertex.y, pt.y); });
+        return  FloatCmp::eq(vertex.x, pt.x, 1e-8) and FloatCmp::eq(vertex.y, pt.y, 1e-8); });
       return std::make_pair(it != eleRect.end(), std::ranges::distance(eleRect.begin(), it));
     };
 
@@ -227,43 +227,6 @@ namespace Dune::IGANEW::DefaultTrim::Impl {
     clipper.AddSubject({eleRect});
 
     clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
-
-    // for (const auto i : std::views::iota(0, 4)) {
-    //   // std::cout << "Edge " << i << std::endl;
-    //
-    //   clipper.Clear();
-    //   clipper.AddClip(trimmingCurves);
-    //
-    //   clipper.AddOpenSubject(PathsD{{eleRect[i], eleRect[nextEntityIdx(i, 1)]}});
-    //   clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
-    //   // We receive here all intersection points but not the sampled curve points
-    //   // resultClosedPaths should be empty
-    //   assert(resultClosedPaths.empty());
-    //   assert(resultOpenPaths.size() <= 1);
-    //
-    //   if (not resultOpenPaths.empty())
-    //     for (const auto& p : resultOpenPaths.front()) {
-    //       if (p.z < 4)
-    //         result.addOriginalVertex(p);
-    //       else {
-    //         // Check if this is neeeded
-    //         std::cout << "maybe we need this point\n";
-    //       }
-    //     }
-    // }
-
-    // auto isPointInTrimmingCurves = [&](const auto& pt1) -> bool {
-    //   return std::ranges::any_of(trimmingCurves, [&](const auto& curve) {
-    //     auto it = std::ranges::find_if(
-    //         curve, [&](const auto& pt2) { return FloatCmp::eq(pt1.x, pt2.x) and FloatCmp::eq(pt1.y, pt2.y); });
-    //     return it != curve.end();
-    //   });
-    // };
-    //
-    // // check if any element vertex is a starting point of one of the trimming curves as the algorihtm cannot find them
-    // // @todo only for boundary elements
-    // for (const auto& cP : eleRect)
-    //   if (isPointInTrimmingCurves(cP)) result.addOriginalVertex(cP);
 
     for (const auto& pt : resultClosedPaths.front()) {
       if (auto [isHost, idx] = isHostVertex(pt); isHost)
