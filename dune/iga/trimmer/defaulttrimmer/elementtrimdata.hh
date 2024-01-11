@@ -31,17 +31,17 @@ namespace Dune::IGANEW::DefaultTrim {
     };
 
     struct EdgeInfo {
-      bool isHost;
-      bool isTrimmed;
-      int idx;
+      bool isHost{};
+      bool isTrimmed{};
+      int idx{};
 
-      std::optional<EdgePatchGeometry> geometry;
+      std::optional<EdgePatchGeometry> geometry{};
     };
 
     explicit ElementTrimDataImpl(auto flag) : flag_(flag) {}
 
     void addEdge(int idx) {
-      edges_.emplace_back(true, false, idx, std::nullopt);
+      edges_.emplace_back(EdgeInfo{.isHost = true, .isTrimmed = false, .idx = idx});
       vertices_.emplace_back(true, idx + 1, std::nullopt);
     }
 

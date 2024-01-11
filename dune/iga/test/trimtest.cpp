@@ -5,8 +5,7 @@
 #  include "config.h"
 #endif
 
-#include <clipper2/clipper.h>
-#include <unordered_set>
+#include <cfenv>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
@@ -14,78 +13,30 @@
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
 
-#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-#include <dune/grid/test/checkentitylifetime.hh>
-#include <dune/grid/test/checkgeometry.hh>
-#include <dune/grid/test/checkiterators.hh>
-#include <dune/grid/test/checkjacobians.hh>
-#include <dune/grid/test/gridcheck.hh>
-
-#include <dune/iga/geometrykernel/geohelper.hh>
-#include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
-#include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
-#include <dune/iga/hierarchicpatch/gridcapabilities.hh>
+#include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/idset.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimelement.hh>
 
 using namespace Dune::IGANEW;
 
-auto diagonalTrimmingCurve(double offset) {
-  const std::array<std::vector<double>, 1> knotSpansCurve = {{
-      {0, 0, 1, 1},
-  }};
-  using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
-
-  const std::vector<ControlPoint> controlPointsCurve
-      = {{{.p = {1 - offset, 1 + offset}, .w = 1}, {.p = {-offset, offset}, .w = 1}}};
-  const std::array orderCurve = {1};
-  auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
-  Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
-  patchDataCurve.knotSpans     = knotSpansCurve;
-  patchDataCurve.degree        = orderCurve;
-  patchDataCurve.controlPoints = controlNetCurve;
-  return Dune::IGANEW::GeometryKernel::NURBSPatch(patchDataCurve);
-}
-
-auto testFactoryWithPlateWithTriangularTrim2D() {
+auto testExample1(){
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  constexpr int gridDim   = 2;
-  constexpr auto dimworld = 2;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
-  const std::array order  = {2, 2};
+  // Setup
+  using GridFactory = Dune::GridFactory<PatchGrid<2, 2, DefaultTrim::PatchGridFamily>>;
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  auto gridFactory = GridFactory();
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {0, 0});
+  const auto tensorCoordinates = GeometryKernel::NURBSPatch{gridFactory.patchData_}.uniqueKnotVector();
+  const Dune::YaspGrid grid{tensorCoordinates};
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  const auto& patchTrimData = gridFactory.patchTrimData_.value();
+  auto trimmer = DefaultTrim::TrimmerImpl<2, 2, double>{};
 
-  const double Lx = 2;
-  const double Ly = 3;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {Lx / 2, 0}, .w = 1}, {.p = {Lx, 0}, .w = 1}},
-         {{.p = {0, Ly / 2}, .w = 1}, {.p = {Lx / 2, Ly / 2}, .w = 1}, {.p = {Lx, Ly / 2}, .w = 1}},
-         {{.p = {0, Ly}, .w = 1}, {.p = {Lx / 2, Ly}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
-
-  std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
-
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-
-  const auto trimCurve = diagonalTrimmingCurve(0.1);
-  using PatchTrimData  = Grid::Trimmer::PatchTrimData;
-  PatchTrimData patchTrimData;
-  patchTrimData.insertTrimCurve(trimCurve);
-
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
-  patchData.knotSpans     = knotSpans;
-  patchData.degree        = order;
-  patchData.controlPoints = controlNet;
-  patchData               = Splines::knotRefinement(patchData, {0.5}, 0);
-  patchData               = Splines::knotRefinement(patchData, {0.5}, 1);
-  Grid grid(patchData, patchTrimData);
-  // grid.globalRefine(1);
-  auto& parameterGrid = grid.parameterSpaceGrid();
-  auto gv             = parameterGrid.leafGridView();
+  for (auto& ele : elements(grid.leafGridView())) {
+    auto elementTrimData = trimmer.trimElement(ele, patchTrimData);
+  }
 
   return t;
 }
@@ -98,7 +49,7 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  t.subTest(testFactoryWithPlateWithTriangularTrim2D());
+  t.subTest(testExample1());
 
   t.report();
 

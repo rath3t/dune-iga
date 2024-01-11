@@ -12,9 +12,7 @@
 namespace Dune::IGANEW::DefaultTrim {
 
   template <int dim, int dimworld, typename ScalarType>
-  auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(
-      const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
-      const PatchTrimData& patchTrimData) {
+  auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const auto& element, const PatchTrimData& patchTrimData) {
     std::cout << "START " << std::endl;
     auto geo = element.geometry();
     std::array<FieldVector<double, 2>, 4> corners;  // see dune book page 127 Figure 5.12

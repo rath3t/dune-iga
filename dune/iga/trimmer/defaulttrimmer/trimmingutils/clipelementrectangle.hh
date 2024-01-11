@@ -116,12 +116,12 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         auto pt = curve.corner(i);
         PointD ptClipper{pt[0], pt[1]};
 
-        if ( auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost)
-          result.addOriginalVertex(idx);
+        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
           const auto& edgeIdx = edgeLookUp[e];
-          if (isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back())) && !checkParallel(curve, e)) {
+          if (isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
+              && !checkParallel(curve, e)) {
             result.addNewVertex(e, ptClipper, (cI + 1) * 100);
             break;
           }

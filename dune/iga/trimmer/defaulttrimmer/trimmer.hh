@@ -429,9 +429,9 @@ namespace Dune::IGANEW {
 
       using ParameterType = Parameter;  ///< Type for trimming parameters.
 
-      static auto trimElement(
-          const typename GridFamily::TrimmerTraits::template Codim<0>::UnTrimmedHostParameterSpaceGridEntity& element,
-          const PatchTrimData& patchTrimData);
+      // \todo replace auto with typename GridFamily::TrimmerTraits::template
+      // Codim<0>::UnTrimmedHostParameterSpaceGridEntity
+      static auto trimElement(const auto& element, const PatchTrimData& patchTrimData);
 
       /**
        * @brief Get the reference element for a given entity.
