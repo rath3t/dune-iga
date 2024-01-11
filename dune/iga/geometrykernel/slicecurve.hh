@@ -17,21 +17,21 @@ namespace Dune::IGANEW {
       return std::ranges::count_if(knotVec, [=](double val) { return FloatCmp::eq(u_, val, 1e-8); });
     };
 
-    auto& patchData = geoCurve.patchData();
-    auto knots = patchData.knotSpans.front();
+    auto& patchData     = geoCurve.patchData();
+    auto knots          = patchData.knotSpans.front();
     auto control_points = patchData.controlPoints.directGetAll();
-    auto domain     = geoCurve.domain();
-    auto degree     = patchData.degree[0];
+    auto domain         = geoCurve.domain();
+    auto degree         = patchData.degree[0];
 
     auto span = Splines::findSpan(degree, u, knots);
-    int r = degree - knotMultiplicity(knots, u);
+    int r     = degree - knotMultiplicity(knots, u);
 
     std::vector<ScalarType> newKnots(r);
     std::ranges::fill(newKnots, u);
     auto tmpPatchData = Splines::knotRefinement(patchData, newKnots, 0);
 
-    std::vector<ScalarType> tmpKnots {tmpPatchData.knotSpans.front()};
-    decltype(control_points) tmpCp {tmpPatchData.controlPoints.directGetAll()};
+    std::vector<ScalarType> tmpKnots{tmpPatchData.knotSpans.front()};
+    decltype(control_points) tmpCp{tmpPatchData.controlPoints.directGetAll()};
 
     std::vector<ScalarType> leftKnots;
     const int span_l = Splines::findSpan(degree, u, tmpKnots) + 1;
@@ -42,7 +42,7 @@ namespace Dune::IGANEW {
     std::vector<ScalarType> rightKnots;
     for (int i = 0; i < degree + 1; ++i)
       rightKnots.push_back(u);
-    for (int i  = span_l; i < tmpKnots.size(); ++i)
+    for (int i = span_l; i < tmpKnots.size(); ++i)
       rightKnots.push_back(tmpKnots[i]);
 
     decltype(control_points) leftControlPoints;
@@ -54,9 +54,10 @@ namespace Dune::IGANEW {
     for (int i = ks + r - 1; i < tmpCp.size(); ++i)
       rightControlPoints.push_back(tmpCp[i]);
 
-
-    typename GeoCurve::PatchData leftPatchData{{leftKnots}, typename GeoCurve::ControlPointNetType{leftControlPoints}, patchData.degree};
-    typename GeoCurve::PatchData rightPatchData{{rightKnots}, typename GeoCurve::ControlPointNetType{rightControlPoints}, patchData.degree};
+    typename GeoCurve::PatchData leftPatchData{
+        {leftKnots}, typename GeoCurve::ControlPointNetType{leftControlPoints}, patchData.degree};
+    typename GeoCurve::PatchData rightPatchData{
+        {rightKnots}, typename GeoCurve::ControlPointNetType{rightControlPoints}, patchData.degree};
 
     return std::make_pair(GeoCurve{leftPatchData}, GeoCurve{rightPatchData});
   }
@@ -65,13 +66,10 @@ namespace Dune::IGANEW {
   auto sliceCurve(const GeoCurve& geoCurve, std::array<ScalarType, 2> t) -> GeoCurve {
     static_assert(GeoCurve::mydimension == 1);
 
-    auto domain     = geoCurve.domain();
-    if (domain[0].front() == t[0] and domain[0].back() == t[1])
-      return geoCurve;
-    if (domain[0].front() == t[0])
-      return std::get<0>(splitCurve(geoCurve, t[1]));
-    if (domain[0].back() == t[1])
-      return std::get<1>(splitCurve(geoCurve, t[0]));
+    auto domain = geoCurve.domain();
+    if (domain[0].front() == t[0] and domain[0].back() == t[1]) return geoCurve;
+    if (domain[0].front() == t[0]) return std::get<0>(splitCurve(geoCurve, t[1]));
+    if (domain[0].back() == t[1]) return std::get<1>(splitCurve(geoCurve, t[0]));
 
     auto tmpCurve = std::get<1>(splitCurve(geoCurve, t[0]));
     return std::get<0>(splitCurve(tmpCurve, t[1]));
