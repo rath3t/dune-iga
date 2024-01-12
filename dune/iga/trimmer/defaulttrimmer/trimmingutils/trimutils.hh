@@ -11,7 +11,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     return std::hypot(p1.x - p2[0], p1.y - p2[1]);
   }
 
-  auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 10) -> double {
+  auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 100) -> double {
     auto linSpace = Utilities::linspace(curve.domain().front(), N);
     std::vector<double> distances;
     std::ranges::transform(linSpace, std::back_inserter(distances),

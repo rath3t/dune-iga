@@ -131,8 +131,11 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
       const auto it = std::ranges::find_if(
           vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
-      if (it == vertices_.end()) DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
-      std::ranges::rotate(vertices_, it);
+      if (it != vertices_.end())
+        std::ranges::rotate(vertices_, it);
+      else
+        std::cout << "Warning, no HostVertex" << std::endl;
+        //DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
     }
 
     std::vector<VertexVariant> vertices_{};

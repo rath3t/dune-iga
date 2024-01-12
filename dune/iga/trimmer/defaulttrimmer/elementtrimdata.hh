@@ -57,6 +57,10 @@ namespace Dune::IGANEW::DefaultTrim {
       edges_.emplace_back(true, true, idx, geometry);
       vertices_.emplace_back(true, v2Idx, std::nullopt);
     }
+    void addEdgeNewNewOnHost(int idx, EdgePatchGeometry& geometry, Vertex& v2) {
+      edges_.emplace_back(true, true, idx, geometry);
+      vertices_.emplace_back(false, newVertexCounter_++, v2);
+    }
 
     /* this is for testing purposes only */
     void drawResult(const std::string& filename, auto eleGeometry) {

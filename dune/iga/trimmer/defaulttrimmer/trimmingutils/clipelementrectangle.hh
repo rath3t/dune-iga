@@ -33,7 +33,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     PathsD trimmingCurves;
     PathD tempPath;
-    constexpr int N = 20;
+    constexpr int N = 80;
     // @todo store param value of sampled points on trimmingCurve
     for (auto loop : patchTrimData.loops()) {
       tempPath.clear();
