@@ -16,17 +16,13 @@ namespace Dune {
     using PatchGrid               = IGANEW::PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
     using TrimmerType             = typename PatchGrid::Trimmer;
     using PatchTrimData           = typename TrimmerType::PatchTrimData;
+
+  public:
     using TrimParameterType       = typename TrimmerType::ParameterType;
 
     /** @brief Type used by the grid for coordinates */
     typedef typename PatchGrid::ctype ctype;
 
-  public:
-    /** @brief Forward setting to trimmer
-    @param parameter The parameters
- */
-    // @todo this is never called and does nothing
-    void setupTrimmer(const TrimParameterType& parameter) { trimmer.setup(parameter); }
 
     /** @brief Insert a patch into the grid
         @param patchData The patch data
@@ -45,6 +41,11 @@ namespace Dune {
     // @todo this does not really add the trimming curve to anything
     void insertTrimmingCurve(const IGANEW::NURBSPatchData<dim - 1, dim, ctype>& curve) { trimCurves.push_back(curve); }
 
+
+    void insertTrimParameters(const TrimParameterType& par) {
+      parameters_ = par;
+    }
+
     /** @brief Insert a patch into the grid
     @param patchData The patch data
     @param patchTrimData Trimming data for this patch
@@ -59,21 +60,19 @@ namespace Dune {
 
        The receiver takes responsibility of the memory allocated for the grid
      */
-    std::unique_ptr<PatchGrid> createGrid() {
+    std::unique_ptr<PatchGrid> createGrid() const {
       if (patchTrimData_) {
-        auto grid = std::make_unique<PatchGrid>(patchData_, patchTrimData_);
-
+        auto grid = std::make_unique<PatchGrid>(patchData_, patchTrimData_, parameters_);
         return grid;
-      } else
-        return std::make_unique<PatchGrid>(patchData_);
-      // create Grid and setup Element trimming inf through additional (private) constructor
+      }
+      return std::make_unique<PatchGrid>(patchData_);
     }
 
     IGANEW::NURBSPatchData<dim, dimworld, ctype> patchData_;
     std::optional<PatchTrimData> patchTrimData_;
     std::vector<IGANEW::NURBSPatchData<dim - 1, dim, ctype>> trimCurves;
     std::string json_;
-    TrimmerType trimmer;
+    TrimParameterType parameters_{};
   };
 
 }  // namespace Dune

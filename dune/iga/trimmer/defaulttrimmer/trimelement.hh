@@ -42,10 +42,6 @@ namespace Dune::IGANEW::DefaultTrim {
           return patchTrimData.getIndices(std::get<Util::ClippingResult::NewVertex>(vV).trimmingCurveZ);
         };
 
-    auto createTrimmingCurveSlice = [&](const TrimmingCurve& curve, double t1, double t2) -> TrimmingCurve {
-      return sliceCurve(curve, {t1, t2});
-    };
-
     ///
     // Here the actual code is starting
     ///
@@ -113,7 +109,7 @@ namespace Dune::IGANEW::DefaultTrim {
           isOnNewEdge = true;
           currentT    = tParam;
         } else {
-          auto elementTrimmingCurve = createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
+          auto elementTrimmingCurve = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
           elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
           isOnNewEdge = false;
           currentT    = std::numeric_limits<double>::infinity();

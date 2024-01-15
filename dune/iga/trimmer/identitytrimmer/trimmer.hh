@@ -266,7 +266,7 @@ namespace Dune::IGANEW {
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      TrimmerImpl(GridImp& grid, const std::optional<typename GridFamily::PatchTrimData>& trimData)
+      TrimmerImpl(GridImp& grid, const std::optional<typename GridFamily::PatchTrimData>& trimData, const ParameterType& par = {})
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
@@ -293,7 +293,8 @@ namespace Dune::IGANEW {
        * @brief Pass parameters to the trimmer.
        * @param par The parameters.
        */
-      void setup(const ParameterType&) {}
+      void setup() {}
+      void setParameters(const ParameterType&) {}
 
       /**
        * @brief Get a const reference to the parameter space grid.

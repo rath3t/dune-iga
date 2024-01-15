@@ -160,7 +160,9 @@ namespace Dune::IGANEW {
     /**
      * @brief Parameter struct representing parameters for the trimming operation.
      */
-    struct Parameter {};
+    struct Parameter {
+      size_t splitter = 100;
+    };
 
     // /**
     //  * @brief ElementTrimData struct representing trim data for an element.
@@ -469,12 +471,14 @@ namespace Dune::IGANEW {
        * @param patch NURBS patch data.
        * @param trimData Optional patch trim data.
        */
-      TrimmerImpl(GridImp& grid, const std::optional<PatchTrimData>& trimData)
+      TrimmerImpl(GridImp& grid, const std::optional<PatchTrimData>& trimData, const ParameterType& par = {})
           : grid_{&grid},
             leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
             localIdSet_(std::make_unique<LocalIdSet>(*grid_)),
-            trimData_{trimData} {
+            trimData_{trimData},
+            parameters_(par) {
+        setup();
         createParameterSpaceGrid();
         setIndices();
       }
@@ -493,11 +497,17 @@ namespace Dune::IGANEW {
 
       GridImp* grid_;
 
+      void setup() {
+        if (trimData_.has_value())
+          trimData_->prepare(parameters_, untrimmedParameterSpaceGrid_);
+      }
       /**
-       * @brief Pass parameters to the trimmer.
+       * @brief Change the parameters to the trimmer.
        * @param par The parameters.
        */
-      void setup(const ParameterType&) {}
+      void setParameters(const ParameterType& par) {
+        parameters_ = par;
+      }
 
       /**
        * @brief Get a const reference to the parameter space grid.
@@ -574,6 +584,8 @@ namespace Dune::IGANEW {
       std::unique_ptr<UntrimmedParameterSpaceGrid> untrimmedParameterSpaceGrid_;
 
       std::optional<PatchTrimData> trimData_;
+
+      ParameterType parameters_;
     };
 
   }  // namespace DefaultTrim

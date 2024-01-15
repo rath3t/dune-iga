@@ -89,6 +89,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     }
 
     // Add startpoints of trimming curves to the vertices if they are on one of the element edges
+    // \todo not exactly sure but i think this only has to check the outer boundary loop
     for (auto cI = 0; cI < patchTrimData.loops().front().curves().size(); ++cI) {
       const auto& curve = patchTrimData.loops().front().curves()[cI];
 

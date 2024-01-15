@@ -47,7 +47,7 @@ namespace Dune::IGANEW::Concept {
     { trimmer.parameterSpaceGrid() } -> std::convertible_to<const typename T::ParameterSpaceGrid&>;
     { trimmer.parameterSpaceGrid() } -> std::convertible_to<typename T::ParameterSpaceGrid&>;
 
-    { trimmer.setup(std::declval<const typename T::ParameterType>()) } -> std::convertible_to<void>;
+    { trimmer.setParameters(std::declval<const typename T::ParameterType>()) } -> std::convertible_to<void>;
 
     // { trimmer.unTrimmedParameterSpaceGrid() } -> std::convertible_to<const typename T::UntrimmedParameterSpaceGrid&>;
     // { trimmer.unTrimmedParameterSpaceGrid() } -> std::convertible_to<typename T::UntrimmedParameterSpaceGrid&>;

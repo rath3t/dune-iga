@@ -21,6 +21,11 @@ namespace Dune::IGANEW::DefaultTrim::Util {
   }
 
   template <typename TrimmingCurve>
+  auto createTrimmingCurveSlice(const TrimmingCurve& curve, double t1, double t2) -> TrimmingCurve {
+    return sliceCurve(curve, {t1, t2});
+  }
+
+  template <typename TrimmingCurve>
   auto createHostGeometry(auto& vertex1, auto& vertex2) -> TrimmingCurve {
     const std::array<std::vector<double>, 1> knotSpans = {{{0, 0, 1, 1}}};
 

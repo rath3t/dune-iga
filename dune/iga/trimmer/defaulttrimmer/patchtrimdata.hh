@@ -7,7 +7,7 @@ namespace Dune::IGANEW::DefaultTrim {
   template <typename GridImp>
   struct PatchTrimDataImpl {
     using TrimmingCurve = typename GridImp::GridFamily::TrimmerTraits::TrimmingCurve;
-    using PatchData = NURBSPatchData<GridImp::GridFamily::patchDim, GridImp::GridFamily::worldDim, typename GridImp::ctype>;
+    using ParameterType = typename GridImp::GridFamily::Trimmer::ParameterType;
 
     struct BoundaryLoop {
       void insertTrimCurve(const TrimmingCurve& curve) { curves_.push_back(curve); }
@@ -21,9 +21,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
 
     class CurveManager {
+      friend PatchTrimDataImpl;
     public:
       using idx_t = u_int64_t;
-      explicit CurveManager(const idx_t splitter = 100) : splitter_(splitter) {}
 
       void addLoop(const BoundaryLoop& loop) {
         Clipper2Lib::PathD path;
@@ -57,17 +57,13 @@ namespace Dune::IGANEW::DefaultTrim {
           loopIdx = std::ranges::distance(loopIndices_.begin(), it);
         }
         // \todo multiplt loop e.g. - size of all loops before
-        size_t curveIdx = static_cast<size_t>(std::floor(val / splitter_) - 1);
+        auto curveIdx = static_cast<size_t>(std::floor(val / splitter_) - 1);
 
         return std::make_pair(loopIdx, curveIdx);
       }
 
-      [[nodiscard]] auto getSplitter() const -> idx_t {
-        return splitter_;
-      }
-
-      Clipper2Lib::PathsD loops_;
     private:
+      Clipper2Lib::PathsD loops_;
       idx_t splitter_{};
       std::vector<idx_t> loopIndices_{};
     };
@@ -82,7 +78,7 @@ namespace Dune::IGANEW::DefaultTrim {
     const auto& loops() const { return loops_; }
     const auto& clipperLoops() const {
       if (not finished_)
-        DUNE_THROW(Dune::GridError, "Call prepare() before quering for loops");
+        DUNE_THROW(Dune::GridError, "Call trimmer.setup() before quering for loops");
       return manager_.loops_;
     }
 
@@ -97,10 +93,12 @@ namespace Dune::IGANEW::DefaultTrim {
       return loops_[indices.first].curves()[indices.second];
     }
     auto getSplitter() const -> typename CurveManager::idx_t {
-      return manager_.getSplitter();
+      return manager_.splitter_;
     }
 
-    void prepare(PatchData* patchData) {
+    template <typename ParameterSpaceGrid>
+    void prepare(const ParameterType& parameters, const std::unique_ptr<ParameterSpaceGrid>& parameterSpaceGrid) {
+      manager_.splitter_ = parameters.splitter;
       std::ranges::for_each(loops_, [&](const auto& loop) { manager_.addLoop(loop);});
 
 

@@ -157,10 +157,10 @@ namespace Dune::IGANEW {
      * @param hostgrid The host grid wrapped by the PatchGrid
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
-                       const std::optional<PatchTrimData>& patchTrimData = std::nullopt)
+                       const std::optional<PatchTrimData>& patchTrimData = std::nullopt,
+                       const typename Trimmer::ParameterType& par = {})
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-          trimmer_(std::make_unique<Trimmer>(*this, patchTrimData)) {
-      // trimmer_->createIdSetAndParameterGrid(*this);
+          trimmer_(std::make_unique<Trimmer>(*this, patchTrimData, par)) {
       patchGeometriesUnElevated = patchGeometries_;
     }
 

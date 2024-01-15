@@ -112,7 +112,6 @@ namespace Dune::IGANEW {
       PatchTrimData trimData{};
       if (trim) {
         constructTrimmingCurves(brep, trimData);
-        trimData.prepare(&_patchData);
       }
 
       return std::make_tuple(_patchData, trimData);
@@ -121,7 +120,6 @@ namespace Dune::IGANEW {
   private:
     static void constructTrimmingCurves(const Ibra::Brep<dimworld>& brep, PatchTrimData& trimData) {
       const std::vector<Ibra::BrepLoop> loops = brep.loops;
-      assert(!loops.empty() && "Only one boundary loop is currently supported");
       for (int i = 0; const Ibra::BrepLoop& loop : loops) {
         trimData.addLoop();
         for (const Ibra::BrepTrim& trim : loop.trims)
