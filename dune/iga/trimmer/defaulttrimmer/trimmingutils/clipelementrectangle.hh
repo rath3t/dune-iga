@@ -17,7 +17,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
-    auto eleGeo                      = element.geometry();
+    auto eleGeo = element.geometry();
 
     PathD eleRect;
     for (const auto i : std::views::iota(0u, 4u)) {
@@ -66,12 +66,11 @@ namespace Dune::IGANEW::DefaultTrim::Util {
             return;
           }
 
-          const auto edgeIdx  = giveEdgeIdx(e1bot.z, e1top.z);
-          const auto curveZ   = e2bot.z;
+          const auto edgeIdx = giveEdgeIdx(e1bot.z, e1top.z);
+          const auto curveZ  = e2bot.z;
 
           // Now check that we don't have a parallel intersection
-          if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx))
-            return;
+          if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
 
           result.addNewVertex(edgeIdx, pt, curveZ);
         });
@@ -97,15 +96,15 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         auto pt = curve.corner(i);
         PointD ptClipper{pt[0], pt[1]};
 
-        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost)
-          result.addOriginalVertex(idx);
+        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
           if (const auto& edgeIdx = edgeLookUp[e];
-            isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
+              isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
               && !checkParallel(curve, e)) {
             // \todo this needs to be done more generically
-            const size_t newIdx = i == 0 ? (cI + 1) * patchTrimData.getSplitter() : (cI + 1) * patchTrimData.getSplitter() + patchTrimData.getSplitter() - 1;
+            const size_t newIdx = i == 0 ? (cI + 1) * patchTrimData.getSplitter()
+                                         : (cI + 1) * patchTrimData.getSplitter() + patchTrimData.getSplitter() - 1;
             result.addNewVertex(e, ptClipper, newIdx);
             break;
           }

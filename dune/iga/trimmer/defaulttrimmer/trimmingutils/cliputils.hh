@@ -137,7 +137,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         std::ranges::rotate(vertices_, it);
       else
         std::cout << "Warning, no HostVertex" << std::endl;
-        //DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
+      // DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
     }
 
     void report() const {

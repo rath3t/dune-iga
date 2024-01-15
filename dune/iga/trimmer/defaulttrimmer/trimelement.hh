@@ -37,10 +37,9 @@ namespace Dune::IGANEW::DefaultTrim {
     auto getPt       = [](auto&& vV) { return vV.pt; };
     auto getHostIdx  = [](const auto& vV) { return std::get<Util::ClippingResult::HostVertex>(vV).hostIdx; };
     auto getEdgeIdx  = [](const auto& vV) { return std::get<Util::ClippingResult::NewVertex>(vV).onEdgeIdx; };
-    auto getTrimmingCurveIdx
-        = [&](auto& vV) -> std::pair<size_t, size_t> {
-          return patchTrimData.getIndices(std::get<Util::ClippingResult::NewVertex>(vV).trimmingCurveZ);
-        };
+    auto getTrimmingCurveIdx = [&](auto& vV) -> std::pair<size_t, size_t> {
+      return patchTrimData.getIndices(std::get<Util::ClippingResult::NewVertex>(vV).trimmingCurveZ);
+    };
 
     ///
     // Here the actual code is starting
@@ -48,9 +47,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
     // State
     std::vector<FieldVector<ScalarType, dim>> foundVertices;
-    bool isOnNewEdge       = false;
+    bool isOnNewEdge          = false;
     std::pair currentCurveIdx = {std::numeric_limits<size_t>::infinity(), std::numeric_limits<size_t>::infinity()};
-    double currentT        = std::numeric_limits<double>::infinity();
+    double currentT           = std::numeric_limits<double>::infinity();
 
     for (const auto i : std::views::iota(0u, result.vertices_.size())) {
       auto vV1 = result.vertices_[i];
@@ -90,9 +89,9 @@ namespace Dune::IGANEW::DefaultTrim {
           currentCurveIdx = getTrimmingCurveIdx(vV1);
           FieldVector<ScalarType, dim> curvePoint;
           std::tie(currentT, curvePoint)
-            = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV1), pt1, corners);
+              = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV1), pt1, corners);
           std::cout << "Found: " << curvePoint << " From Clipping: " << pt1.x << " " << pt1.y << " t: " << currentT
-                  << std::endl;
+                    << std::endl;
           foundVertices.push_back(curvePoint);
         }
         assert(getTrimmingCurveIdx(vV2) == currentCurveIdx);
@@ -109,7 +108,8 @@ namespace Dune::IGANEW::DefaultTrim {
           isOnNewEdge = true;
           currentT    = tParam;
         } else {
-          auto elementTrimmingCurve = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
+          auto elementTrimmingCurve
+              = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
           elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
           isOnNewEdge = false;
           currentT    = std::numeric_limits<double>::infinity();
@@ -124,8 +124,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
         FieldVector<ScalarType, dim> p;
         if (foundVertices.empty())
-          std::tie(std::ignore, p)
-              = Util::callFindIntersection(patchTrimData.getCurve(getTrimmingCurveIdx(vV1)), getEdgeIdx(vV1), pt1, corners);
+          std::tie(std::ignore, p) = Util::callFindIntersection(patchTrimData.getCurve(getTrimmingCurveIdx(vV1)),
+                                                                getEdgeIdx(vV1), pt1, corners);
         else
           p = foundVertices.back();
 

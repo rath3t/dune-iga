@@ -18,11 +18,10 @@ namespace Dune {
     using PatchTrimData           = typename TrimmerType::PatchTrimData;
 
   public:
-    using TrimParameterType       = typename TrimmerType::ParameterType;
+    using TrimParameterType = typename TrimmerType::ParameterType;
 
     /** @brief Type used by the grid for coordinates */
     typedef typename PatchGrid::ctype ctype;
-
 
     /** @brief Insert a patch into the grid
         @param patchData The patch data
@@ -41,10 +40,7 @@ namespace Dune {
     // @todo this does not really add the trimming curve to anything
     void insertTrimmingCurve(const IGANEW::NURBSPatchData<dim - 1, dim, ctype>& curve) { trimCurves.push_back(curve); }
 
-
-    void insertTrimParameters(const TrimParameterType& par) {
-      parameters_ = par;
-    }
+    void insertTrimParameters(const TrimParameterType& par) { parameters_ = par; }
 
     /** @brief Insert a patch into the grid
     @param patchData The patch data

@@ -158,7 +158,7 @@ namespace Dune::IGANEW {
      */
     explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                        const std::optional<PatchTrimData>& patchTrimData = std::nullopt,
-                       const typename Trimmer::ParameterType& par = {})
+                       const typename Trimmer::ParameterType& par        = {})
         : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
           trimmer_(std::make_unique<Trimmer>(*this, patchTrimData, par)) {
       patchGeometriesUnElevated = patchGeometries_;

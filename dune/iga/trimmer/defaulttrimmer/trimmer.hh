@@ -189,11 +189,11 @@ namespace Dune::IGANEW {
     class TrimmerImpl;
     template <int dim, int dimworld, typename ScalarType>
     struct PatchGridFamily {
-      using ctype   = ScalarType;
-      static constexpr  int patchDim = dim;
-      static constexpr  int worldDim = dimworld;
-      using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
-      using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
+      using ctype                   = ScalarType;
+      static constexpr int patchDim = dim;
+      static constexpr int worldDim = dimworld;
+      using Grid                    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
+      using Trimmer                 = TrimmerImpl<dim, dimworld, ScalarType>;
 
       using GlobalIdSet = PatchGridGlobalIdSet<const Grid>;
 
@@ -498,16 +498,13 @@ namespace Dune::IGANEW {
       GridImp* grid_;
 
       void setup() {
-        if (trimData_.has_value())
-          trimData_->prepare(parameters_, untrimmedParameterSpaceGrid_);
+        if (trimData_.has_value()) trimData_->prepare(parameters_, untrimmedParameterSpaceGrid_);
       }
       /**
        * @brief Change the parameters to the trimmer.
        * @param par The parameters.
        */
-      void setParameters(const ParameterType& par) {
-        parameters_ = par;
-      }
+      void setParameters(const ParameterType& par) { parameters_ = par; }
 
       /**
        * @brief Get a const reference to the parameter space grid.

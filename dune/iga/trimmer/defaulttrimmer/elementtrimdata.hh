@@ -121,8 +121,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
     // Getter
     [[nodiscard]] ElementTrimFlag flag() const { return flag_; }
-    [[nodiscard]] const std::vector<VertexInfo>& vertices() const {return vertices_;}
-    [[nodiscard]] const std::vector<EdgeInfo>& edges() const {return edges_;}
+    [[nodiscard]] const std::vector<VertexInfo>& vertices() const { return vertices_; }
+    [[nodiscard]] const std::vector<EdgeInfo>& edges() const { return edges_; }
 
   private:
     ElementTrimFlag flag_;

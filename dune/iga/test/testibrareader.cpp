@@ -28,9 +28,8 @@ auto testIbraReader() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{120});
 
-  // gridFactory.insertJson("auxiliaryfiles/trim_2edges.ibra", true, {0, 0});
   // gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {1, 1});
-
+  gridFactory.insertJson("auxiliaryfiles/trim_2edges.ibra", true, {0, 0});
   // gridFactory.insertJson("auxiliaryfiles/trim_multi.ibra", true, {1, 1});
   gridFactory.insertJson("auxiliaryfiles/element_trim_xb.ibra", true, {1, 1});
   // gridFactory.insertJson("auxiliaryfiles/pipe_trim.ibra", true, {1, 1});

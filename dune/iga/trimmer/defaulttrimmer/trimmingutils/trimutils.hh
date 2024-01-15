@@ -37,11 +37,11 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     return GeometryKernel::NURBSPatch(patchData);
   }
 
-  auto callFindIntersection(const  auto& curvePatchGeo, const int edgeIdx, const auto& ip,
-                            const auto& corners) -> std::pair<double, FieldVector<double, 2>> {
+  auto callFindIntersection(const auto& curvePatchGeo, const int edgeIdx, const auto& ip, const auto& corners)
+      -> std::pair<double, FieldVector<double, 2>> {
     // @todo gerneralize for more than one loop
-    auto pos           = corners[edgeIdx];
-    auto dir           = edgeDirections[edgeIdx];
+    auto pos = corners[edgeIdx];
+    auto dir = edgeDirections[edgeIdx];
 
     auto guessTParam = FieldVector<double, 2>{findGoodStartingPoint(curvePatchGeo, ip), 0.5};
 

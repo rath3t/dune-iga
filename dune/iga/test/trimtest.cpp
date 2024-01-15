@@ -15,17 +15,17 @@
 
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimelement.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 
 using namespace Dune::IGANEW;
 
-auto testExample1(){
+auto testExample1() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   // Setup
-  using GridFactory = Dune::GridFactory<PatchGrid<2, 2, DefaultTrim::PatchGridFamily>>;
-  using Trimmer = DefaultTrim::TrimmerImpl<2, 2, double>;
+  using GridFactory     = Dune::GridFactory<PatchGrid<2, 2, DefaultTrim::PatchGridFamily>>;
+  using Trimmer         = DefaultTrim::TrimmerImpl<2, 2, double>;
   using ElementTrimData = Trimmer::ElementTrimData;
 
   auto gridFactory = GridFactory();
@@ -34,12 +34,12 @@ auto testExample1(){
   const Dune::YaspGrid grid{tensorCoordinates};
 
   const auto& patchTrimData = gridFactory.patchTrimData_.value();
-  auto trimmer = Trimmer{};
+  auto trimmer              = Trimmer{};
 
   for (auto& ele : elements(grid.leafGridView())) {
     ElementTrimData elementTrimData = trimmer.trimElement(ele, patchTrimData);
-    auto& vertexInfos = elementTrimData.vertices();
-    auto& edgeInfos = elementTrimData.edges();
+    auto& vertexInfos               = elementTrimData.vertices();
+    auto& edgeInfos                 = elementTrimData.edges();
   }
 
   return t;
