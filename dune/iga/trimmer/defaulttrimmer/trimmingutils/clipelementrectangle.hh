@@ -13,17 +13,11 @@
 
 namespace Dune::IGANEW::DefaultTrim::Util {
 
-  // static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
-  constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
-
-  inline auto toCurveIdx = [](const size_t z) { return static_cast<size_t>(std::floor((z / 100) - 1)); };
-
   auto clipElementRectangle(const auto& element, const auto& patchTrimData)
       -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
     auto eleGeo                      = element.geometry();
-    constexpr std::array vIdxMapping = {0u, 1u, 3u, 2u};
 
     PathD eleRect;
     for (const auto i : std::views::iota(0u, 4u)) {
@@ -31,21 +25,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       eleRect.emplace_back(corner[0], corner[1], i);
     }
 
-    PathsD trimmingCurves;
-    PathD tempPath;
-    constexpr int N = 80;
-    // @todo store param value of sampled points on trimmingCurve
-    for (auto loop : patchTrimData.loops()) {
-      tempPath.clear();
-      for (int i = 100; auto& curve : loop.curves()) {
-        for (auto v : Utilities::linspace(curve.domain()[0], N)) {
-          auto fV = curve.global({v});
-          tempPath.emplace_back(fV[0], fV[1], i++);
-        }
-        i += 100 - N;
-      }
-      trimmingCurves.push_back(tempPath);
-    }
+    const auto& trimmingCurves = patchTrimData.clipperLoops();
 
     // @todo check z value if same as eleRect -> full
     auto isFullElement
@@ -88,10 +68,10 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
           const auto edgeIdx  = giveEdgeIdx(e1bot.z, e1top.z);
           const auto curveZ   = e2bot.z;
-          const auto curveIdx = toCurveIdx(curveZ);
 
           // Now check that we don't have a parallel intersection
-          if (checkParallel(patchTrimData.loops().front().curves()[curveIdx], edgeIdx)) return;
+          if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx))
+            return;
 
           result.addNewVertex(edgeIdx, pt, curveZ);
         });
@@ -116,13 +96,16 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         auto pt = curve.corner(i);
         PointD ptClipper{pt[0], pt[1]};
 
-        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
+        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost)
+          result.addOriginalVertex(idx);
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
-          const auto& edgeIdx = edgeLookUp[e];
-          if (isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
+          if (const auto& edgeIdx = edgeLookUp[e];
+            isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
               && !checkParallel(curve, e)) {
-            result.addNewVertex(e, ptClipper, (cI + 1) * 100);
+            // \todo this needs to be done more generically
+            const size_t newIdx = i == 0 ? (cI + 1) * patchTrimData.getSplitter() : (cI + 1) * patchTrimData.getSplitter() + patchTrimData.getSplitter() - 1;
+            result.addNewVertex(e, ptClipper, newIdx);
             break;
           }
         }
@@ -131,17 +114,8 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     result.finish();
 
-    std::cout << "Vertices found\n";
-    struct Visitor {
-      void operator()(const ClippingResult::HostVertex& v) const {
-        std::cout << "Pt: " << v.pt << " Host Idx: " << v.hostIdx << std::endl;
-      }
-      void operator()(const ClippingResult::NewVertex& v) const {
-        std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On TC: " << v.trimmingCurveZ << std::endl;
-      }
-    };
-    for (auto& vV : result.vertices_)
-      std::visit(Visitor{}, vV);
+    // While developing
+    result.report();
 
     return std::make_tuple(ElementTrimFlag::trimmed, result);
   }

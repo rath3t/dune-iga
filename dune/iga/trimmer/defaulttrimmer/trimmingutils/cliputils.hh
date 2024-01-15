@@ -15,6 +15,8 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
   constexpr std::array edgeDirections{FieldVector<double, 2>{1.0, 0.0}, FieldVector<double, 2>{0, 1},
                                       FieldVector<double, 2>{-1, 0}, FieldVector<double, 2>{0, -1}};
+  constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
+  constexpr std::array vIdxMapping = {0u, 1u, 3u, 2u};
 
   auto isHostVertex(const auto& pt, const auto& eleRect) -> std::pair<bool, ptrdiff_t> {
     auto it = std::ranges::find_if(eleRect, [&](const auto& vertex) {
@@ -136,6 +138,20 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       else
         std::cout << "Warning, no HostVertex" << std::endl;
         //DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
+    }
+
+    void report() const {
+      std::cout << "Vertices found\n";
+      struct Visitor {
+        void operator()(const ClippingResult::HostVertex& v) const {
+          std::cout << "Pt: " << v.pt << " Host Idx: " << v.hostIdx << std::endl;
+        }
+        void operator()(const ClippingResult::NewVertex& v) const {
+          std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On TC: " << v.trimmingCurveZ << std::endl;
+        }
+      };
+      for (auto& vV : vertices_)
+        std::visit(Visitor{}, vV);
     }
 
     std::vector<VertexVariant> vertices_{};

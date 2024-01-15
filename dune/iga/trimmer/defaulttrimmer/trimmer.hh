@@ -188,6 +188,8 @@ namespace Dune::IGANEW {
     template <int dim, int dimworld, typename ScalarType>
     struct PatchGridFamily {
       using ctype   = ScalarType;
+      static constexpr  int patchDim = dim;
+      static constexpr  int worldDim = dimworld;
       using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
       using Trimmer = TrimmerImpl<dim, dimworld, ScalarType>;
 

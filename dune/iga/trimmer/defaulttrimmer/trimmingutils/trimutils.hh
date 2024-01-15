@@ -2,7 +2,7 @@
 
 namespace Dune::IGANEW::DefaultTrim::Util {
   template <typename ScalarType, int dim>
-  auto approxSamePoint(const Clipper2Lib::PointD& pt1, const Dune::FieldVector<ScalarType, dim>& pt2, const double prec)
+  auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2, const double prec)
       -> bool {
     return FloatCmp::eq(pt1.x, pt2[0], prec) and FloatCmp::eq(pt1.y, pt2[1], prec);
   }
@@ -32,10 +32,9 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     return GeometryKernel::NURBSPatch(patchData);
   }
 
-  auto callFindIntersection(const size_t tcIdx, const int edgeIdx, const auto& ip, const auto& patchTrimData,
+  auto callFindIntersection(const  auto& curvePatchGeo, const int edgeIdx, const auto& ip,
                             const auto& corners) -> std::pair<double, FieldVector<double, 2>> {
     // @todo gerneralize for more than one loop
-    auto curvePatchGeo = patchTrimData.loops().front().curves()[tcIdx];
     auto pos           = corners[edgeIdx];
     auto dir           = edgeDirections[edgeIdx];
 

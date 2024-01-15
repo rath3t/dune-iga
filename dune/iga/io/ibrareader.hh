@@ -110,7 +110,10 @@ namespace Dune::IGANEW {
       }
 
       PatchTrimData trimData{};
-      if (trim) constructTrimmingCurves(brep, trimData);
+      if (trim) {
+        constructTrimmingCurves(brep, trimData);
+        trimData.prepare(&_patchData);
+      }
 
       return std::make_tuple(_patchData, trimData);
     }
