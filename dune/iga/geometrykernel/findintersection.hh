@@ -58,6 +58,7 @@ namespace Dune::IGANEW {
     bool sucess             = false;
     const int maxIterations = 1000;
     FieldVector<ScalarType, 2> curvePoint;
+    auto domain = geoCurve.domain();
 
     const FieldVector lineDerivative = line.jacobian();
     for (int iter = 0; iter < maxIterations; ++iter) {
@@ -80,6 +81,9 @@ namespace Dune::IGANEW {
       Hess.solve(deltaT, grad);
       tParameter -= deltaT;
 
+      // Clamp
+      tParameter[0] = std::clamp(tParameter[0], domain[0].front(), domain[0].back());
+
       // Check for convergence
       if (deltaT.two_norm() < tol) {
         sucess     = true;
@@ -87,7 +91,7 @@ namespace Dune::IGANEW {
         break;
       }
     }
-    auto domain = geoCurve.domain();
+
     if (not domain[0].checkInside(tParameter[0])) sucess = false;
     return std::make_tuple(
         sucess ? FindIntersectionCurveAndLineResult::sucess : FindIntersectionCurveAndLineResult::noSucess, tParameter,

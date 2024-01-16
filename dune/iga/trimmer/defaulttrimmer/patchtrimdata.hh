@@ -44,22 +44,25 @@ namespace Dune::IGANEW::DefaultTrim {
           }
           for (const auto v : Utilities::linspace(curve.domain()[0], splitter_)) {
             auto fV = curve.global({v});
-            path.emplace_back(fV[0], fV[1], ++i);
+            path.emplace_back(fV[0], fV[1], i++);
           }
         }
         loops_.push_back(path);
-        loopIndices_.push_back(loops_.back().back().z);
+        loopIndices_.emplace_back(loops_.back().back().z, loop.curves().size());
       }
 
       [[nodiscard]] auto getIndices(const idx_t val) const -> std::pair<size_t, size_t> {
         size_t loopIdx = 0;
         if (loops_.size() > 1) {
-          auto it = std::ranges::find_if(loopIndices_, [&](const idx_t t) { return val > t; });
+          auto it = std::ranges::find_if(loopIndices_, [&](const std::pair<idx_t, size_t>& t) { return val > t.first; });
           if (it == loopIndices_.end()) DUNE_THROW(Dune::IOError, "Invalid z-Value");
-          loopIdx = std::ranges::distance(loopIndices_.begin(), it);
+          loopIdx = std::ranges::distance(loopIndices_.begin(), it) + 1;
         }
-        // \todo multiplt loop e.g. - size of all loops before
+
         auto curveIdx = static_cast<size_t>(std::floor(val / splitter_) - 1);
+        for (const auto& [_, sizeOfLoop] : std::ranges::take_view(loopIndices_, static_cast<long>(loopIdx))) {
+          curveIdx -= sizeOfLoop;
+        }
 
         return std::make_pair(loopIdx, curveIdx);
       }
@@ -67,7 +70,7 @@ namespace Dune::IGANEW::DefaultTrim {
     private:
       Clipper2Lib::PathsD loops_;
       idx_t splitter_{};
-      std::vector<idx_t> loopIndices_{};
+      std::vector<std::pair<idx_t, size_t>> loopIndices_{};
     };
 
     void addLoop() { loops_.push_back({}); }

@@ -67,7 +67,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
           }
 
           const auto edgeIdx = giveEdgeIdx(e1bot.z, e1top.z);
-          const auto curveZ  = e2bot.z;
+          const auto curveZ  = e2top.z;
 
           // Now check that we don't have a parallel intersection
           if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
