@@ -87,6 +87,13 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       if (auto [isHost, idx] = isHostVertex(pt, eleRect); isHost) result.addOriginalVertex(idx);
     }
 
+    // Now we have to check for points inside the elements
+    for (const auto& pt : patchTrimData.getPointsInPatch(0)) {
+      if (const PointD cp{pt.pt[0], pt.pt[1]}; PointInPolygon(cp, eleRect) == PointInPolygonResult::IsInside) {
+        result.addInsideVertex(cp, pt.curveIdxI, pt.curveIdxJ, 0);
+      }
+    }
+
     // Add startpoints of trimming curves to the vertices if they are on one of the element edges
     // \todo not exactly sure but i think this only has to check the outer boundary loop
     for (auto cI = 0; cI < patchTrimData.loops().front().curves().size(); ++cI) {

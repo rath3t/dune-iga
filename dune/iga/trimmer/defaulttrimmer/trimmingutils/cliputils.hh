@@ -61,8 +61,14 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       Clipper2Lib::PointD pt{};
       size_t trimmingCurveZ{};
     };
+    struct InsideVertex {
+      Clipper2Lib::PointD pt{};
+      size_t curveIdxI{};
+      size_t curveIdxJ{};
+      size_t loopIdx{};
+    };
 
-    using VertexVariant = std::variant<HostVertex, NewVertex>;
+    using VertexVariant = std::variant<HostVertex, NewVertex, InsideVertex>;
 
     auto isAlreadyThere(const auto& pt) {
       const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
@@ -94,6 +100,9 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
       if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
+    }
+    void addInsideVertex(const Clipper2Lib::PointD& pt, const size_t curveIndexI, const size_t curveIndexJ, size_t loopIdx) {
+      vertices_.emplace_back(InsideVertex(pt, curveIndexI, curveIndexJ, loopIdx));
     }
 
     void finish() {
@@ -137,17 +146,19 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         std::ranges::rotate(vertices_, it);
       else
         std::cout << "Warning, no HostVertex" << std::endl;
-      // DUNE_THROW(Dune::NotImplemented, "Algorithm needs at least one HostVertex to work");
     }
 
     void report() const {
       std::cout << "Vertices found\n";
       struct Visitor {
-        void operator()(const ClippingResult::HostVertex& v) const {
+        void operator()(const HostVertex& v) const {
           std::cout << "Pt: " << v.pt << " Host Idx: " << v.hostIdx << std::endl;
         }
-        void operator()(const ClippingResult::NewVertex& v) const {
+        void operator()(const NewVertex& v) const {
           std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On TC: " << v.trimmingCurveZ << std::endl;
+        }
+        void operator()(const InsideVertex& v) const {
+          std::cout << " Pt: " << v.pt << " On TC: " << v.curveIdxI << " and " << v.curveIdxJ << std::endl;
         }
       };
       for (auto& vV : vertices_)

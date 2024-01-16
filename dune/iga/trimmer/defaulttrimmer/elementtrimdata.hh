@@ -63,17 +63,21 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
     /* this is for testing purposes only */
-    void drawResult(const std::string& filename, auto eleGeometry) {
-      if (static_cast<int>(flag_) != 2) return;
+    void drawResult(const std::string& filename, auto eleGeometry, bool newFig = true) {
+      if (static_cast<int>(flag_) == 1) return;
 
-      auto figure = matplot::figure(true);
+      if (newFig)
+        auto figure = matplot::figure(true);
+
       matplot::hold("on");
 
       constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
       constexpr std::array idxLookUp = {0, 1, 3, 2};
 
-      auto plotEllipse = [](const Vertex& v) {
-        constexpr auto w = 0.025;
+      const double scale = eleGeometry.volume() / 5;
+
+      auto plotEllipse = [&](const Vertex& v) {
+        const auto w = 0.025 * scale;
         const auto c     = matplot::ellipse(v[0] - (w / 2), v[1] - (w / 2), w, w);
         c->color("blue");
       };
@@ -116,7 +120,8 @@ namespace Dune::IGANEW::DefaultTrim {
       }
 
       matplot::axis(matplot::equal);
-      matplot::save(filename, "gif");
+      if (newFig)
+        matplot::save(filename, "gif");
     }
 
     // Getter

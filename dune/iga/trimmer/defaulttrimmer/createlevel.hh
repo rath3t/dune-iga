@@ -158,6 +158,9 @@ namespace Dune::IGANEW::DefaultTrim {
       int edgeIndex                   = 0;
       int vertexIndex                 = 0;
 
+
+      auto figure = matplot::figure(true);
+
       for (const auto& ele : elements(gv)) {
         ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};
         ElementTrimData eleTrimData{eleTrimFlag};
@@ -167,7 +170,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
           // Testing Purposes
           auto resName = "ele_" + std::to_string(unTrimmedElementIndex + trimmedElementIndex);
-          eleTrimData.drawResult(resName, ele.geometry());
+          eleTrimData.drawResult(resName, ele.geometry(), false);
         }
 
         auto hostId = globalIdSetParameterSpace.id(ele);
@@ -248,6 +251,7 @@ namespace Dune::IGANEW::DefaultTrim {
           }
         }
       }
+      matplot::save("grid", "gif");
 
       // save numbers of untrimmed and trimmed elements per level
       entityContainer.numberOfTrimmedElements.push_back(trimmedElementIndex);

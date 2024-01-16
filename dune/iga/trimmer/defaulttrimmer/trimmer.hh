@@ -498,7 +498,8 @@ namespace Dune::IGANEW {
       GridImp* grid_;
 
       void setup() {
-        if (trimData_.has_value()) trimData_->prepare(parameters_, untrimmedParameterSpaceGrid_);
+        if (trimData_.has_value())
+          trimData_->prepare(parameters_, grid_->tensorProductCoordinates(0));
       }
       /**
        * @brief Change the parameters to the trimmer.

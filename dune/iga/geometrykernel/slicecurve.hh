@@ -67,9 +67,9 @@ namespace Dune::IGANEW {
     static_assert(GeoCurve::mydimension == 1);
 
     auto domain = geoCurve.domain();
-    if (domain[0].front() == t[0] and domain[0].back() == t[1]) return geoCurve;
-    if (domain[0].front() == t[0]) return std::get<0>(splitCurve(geoCurve, t[1]));
-    if (domain[0].back() == t[1]) return std::get<1>(splitCurve(geoCurve, t[0]));
+    if (FloatCmp::eq(domain[0].front(), t[0]) and FloatCmp::eq(domain[0].back(), t[1])) return geoCurve;
+    if (FloatCmp::eq(domain[0].front(),t[0])) return std::get<0>(splitCurve(geoCurve, t[1]));
+    if (FloatCmp::eq(domain[0].back(),t[1])) return std::get<1>(splitCurve(geoCurve, t[0]));
 
     auto tmpCurve = std::get<1>(splitCurve(geoCurve, t[0]));
     return std::get<0>(splitCurve(tmpCurve, t[1]));

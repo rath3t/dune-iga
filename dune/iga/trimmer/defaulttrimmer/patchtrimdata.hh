@@ -8,6 +8,7 @@ namespace Dune::IGANEW::DefaultTrim {
   struct PatchTrimDataImpl {
     using TrimmingCurve = typename GridImp::GridFamily::TrimmerTraits::TrimmingCurve;
     using ParameterType = typename GridImp::GridFamily::Trimmer::ParameterType;
+    using ctype = typename GridImp::GridFamily::ctype;
 
     struct BoundaryLoop {
       void insertTrimCurve(const TrimmingCurve& curve) { curves_.push_back(curve); }
@@ -16,6 +17,12 @@ namespace Dune::IGANEW::DefaultTrim {
 
     private:
       std::vector<TrimmingCurve> curves_;
+    };
+
+    struct PointInPatch {
+      FieldVector<ctype, 2> pt;
+      size_t curveIdxI;
+      size_t curveIdxJ;
     };
 
     class CurveManager {
@@ -88,15 +95,38 @@ namespace Dune::IGANEW::DefaultTrim {
     }
     auto getSplitter() const -> typename CurveManager::idx_t { return manager_.splitter_; }
 
-    template <typename ParameterSpaceGrid>
-    void prepare(const ParameterType& parameters, const std::unique_ptr<ParameterSpaceGrid>& parameterSpaceGrid) {
+    auto getPointsInPatch(size_t loopIndex) const -> const std::vector<PointInPatch>& {
+      return pointsInPatch_.at(loopIndex);
+    }
+
+    void prepare(const ParameterType& parameters, const std::array<std::vector<ctype>, 2>& coordinates) {
       manager_.splitter_ = parameters.splitter;
       std::ranges::for_each(loops_, [&](const auto& loop) { manager_.addLoop(loop); });
+
+      std::array domainU{coordinates[0].front(), coordinates[0].back()};
+      std::array domainV{coordinates[1].front(), coordinates[1].back()};
+
+      // Determine points of the outer boundary that are not on the edges
+      auto isInsidePatch = [&](const FieldVector<ctype, 2>& pt) {
+        const bool isInsideU = FloatCmp::gt(pt[0], domainU.front()) and FloatCmp::lt(pt[0], domainU.back());
+        const bool isInsideV = FloatCmp::gt(pt[1], domainV.front()) and FloatCmp::lt(pt[1], domainV.back());
+
+        return isInsideU and isInsideV;
+      };
+
+      pointsInPatch_.push_back({});
+      for (size_t i = 0; const auto& curve : loops_.front().curves()) {
+        if (const auto pt = curve.corner(1); isInsidePatch(pt)) {
+          pointsInPatch_.front().emplace_back(pt, i, (i + 1) % loops_.front().curves().size());
+        }
+        ++i;
+      }
 
       finished_ = true;
     }
 
   private:
+    std::vector<std::vector<PointInPatch>> pointsInPatch_;
     bool finished_ = false;
     std::vector<BoundaryLoop> loops_;
     CurveManager manager_;
