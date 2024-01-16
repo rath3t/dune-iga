@@ -90,7 +90,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   const double r = 1.0;
   gridFactory.insertPatch(patchData);
   gridFactory.insertTrimmingCurve(diagonalTrimmingCurve());
-  gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
+  gridFactory.insertTrimParameters({.dummy = 10, .trimPrecision = 1e-6});
   auto grid       = gridFactory.createGrid();
   auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
 
@@ -146,7 +146,7 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
   const double r = 1.0;
   gridFactory.insertPatch(patchData);
   gridFactory.insertTrimmingCurve(diagonalTrimmingCurve());
-  gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
+  gridFactory.insertTrimParameters({.dummy = 10, .trimPrecision = 1e-6});
   auto grid       = gridFactory.createGrid();
   auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
 

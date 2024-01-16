@@ -350,7 +350,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
   using Trimmer         = Grid::Trimmer;
   using ElementTrimData = Trimmer::ElementTrimData;
 
-  auto range = Dune::range(3);
+  auto range = Dune::range(4);
   for (auto refx : range) {
     std::vector<int> yR(
         range.begin(),
@@ -361,6 +361,8 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
       auto brep        = readJson<2>(filename);
       std::cout << "Refinement level: (" << refx << ", " << refy << ")" << std::endl;
       gridFactory.insertJson(filename, true, {refx, refy});
+      auto igaGrid = gridFactory.createGrid();
+      auto patchTrimData=igaGrid->trimmer().patchTrimData();
       const auto tensorCoordinates = GeometryKernel::NURBSPatch{gridFactory.patchData_}.uniqueKnotVector();
       Dune::YaspGrid gridH{tensorCoordinates};
       Dune::SubGrid<2, decltype(gridH)> grid(gridH);
@@ -368,7 +370,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
       grid.insertLeaf();
       grid.createEnd();
 
-      const auto& patchTrimData = gridFactory.patchTrimData_.value();
+     // const auto& patchTrimData = gridFactory.patchTrimData_.value();
       assert(patchTrimData.loops().size() == 1);
       const auto& firstLoop = patchTrimData.loops()[0];
       t.load(std::memory_order_relaxed)->check(firstLoop.curves().size() == expectedValues.firstLoopCurvesSize)
@@ -404,7 +406,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
           << expectedValues.notAffineCounter;
       // std::cout << resTrimPatch.trimmingCurveTotalLength << std::endl;
       // std::cout << resTrimPatch.trimmingCurveCurvedLength << std::endl;
-      // std::cout << resTrimPatch.straightLength << std::endl;
+      //  std::cout << resTrimPatch.straightLength << std::endl;
       t.load(std::memory_order_relaxed)
               ->check(
                   Dune::FloatCmp::eq(resTrimPatch.trimmingCurveTotalLength, expectedValues.trimmingCurveTotalLength))
@@ -423,7 +425,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
 
       std::atomic<double> trimmedEdgeLengthsAccumulated{0};
       std::for_each(
-          std::execution::par, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
+          std::execution::par_unseq, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
             ElementTrimData elementTrimData = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele, patchTrimData);
             auto [subTestEle, trimmedEdgeLength]
                 = elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
@@ -442,7 +444,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
           << "trimmedEdgeLengthsAccumulated is " << trimmedEdgeLengthsAccumulated << " but should be "
           << resTrimPatch.trimmingCurveCurvedLength;
 
-      gridFactory.createGrid();
+
     });
   }
 
@@ -450,7 +452,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
 }
 
 #include <cfenv>
-#include <tbb/parallel_for.h>
+
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
   std::cout << std::thread::hardware_concurrency() << "\n";
@@ -469,6 +471,19 @@ int main(int argc, char** argv) try {
                                                                      .trimmingCurveTotalLength  = 4,
                                                                      .firstLoopCurvesSize       = 4,
                                                                      .notAffineCounter          = 0})));
+  t.subTest(
+    checkTrim("auxiliaryfiles/trim_2edges.ibra", ExpectedValues({.straightLength            = 31.94725845850641,
+                                                                     .trimmingCurveCurvedLength = 6.323120188237797,
+                                                                     .trimmingCurveTotalLength  = 38.27037864674421,
+                                                                     .firstLoopCurvesSize       = 6,
+                                                                     .notAffineCounter          = 2})));
+
+  t.subTest(
+  checkTrim("auxiliaryfiles/trim_multi.ibra", ExpectedValues({.straightLength            = 27.06623257317474,
+                                                                   .trimmingCurveCurvedLength = 7.461084509983623,
+                                                                   .trimmingCurveTotalLength  = 38.27037864674421,
+                                                                   .firstLoopCurvesSize       = 5,
+                                                                   .notAffineCounter          = 1})));
   t.subTest(
       checkTrim("auxiliaryfiles/element_trim_xb.ibra", ExpectedValues({.straightLength            = 2.791977909806771,
                                                                        .trimmingCurveCurvedLength = 1.6273832575204,

@@ -99,7 +99,7 @@ auto checkSubEntities(const RE& re) {
 }
 
 template <class RE>
-auto checkCheckInside(const RE& re, int minsamples = 10000, int maxsamples = 100000) {
+auto checkCheckInside(const RE& re, int maxsamples = 100000) {
   Dune::TestSuite t("checkCheckInside for reference element ");
 
   // int insideCounter=0;

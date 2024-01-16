@@ -98,6 +98,8 @@ namespace Dune::IGANEW {
       static const bool hasHostEntity = true;
 
       struct TrimmerTraits {
+        using ParameterType = Parameter;  ///< Type for trimming parameters.
+
         using PatchTrimData = PatchTrimDataImpl<dim, ScalarType>;
         using ParameterSpaceGrid
             = YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>;  ///< Type of the Parametric grid
@@ -191,6 +193,8 @@ namespace Dune::IGANEW {
         return PatchGridLevelIntersectionIterator<const GridImp>(
             grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().getHostEntity()));
       }
+
+
 
       //! Reference to one past the last neighbor
       PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {

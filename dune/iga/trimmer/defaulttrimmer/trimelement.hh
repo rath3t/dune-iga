@@ -77,9 +77,9 @@ namespace Dune::IGANEW::DefaultTrim {
       if (isHostVertex(vV1) and isNewVertex(vV2)) {
         currentCurveIdx = getTrimmingCurveIdx(vV2);
         auto [tParam, curvePoint]
-            = Util::callFindIntersection(currentCurveIdx, getEdgeIdx(vV2), pt2, patchTrimData, corners);
-        // std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
-        //           << std::endl;
+                = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
+        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
+                  << std::endl;
 
         FieldVector<ScalarType, dim> p
             = foundVertices.empty() ? FieldVector<ScalarType, dim>{pt1.x, pt1.y} : foundVertices.back();
@@ -105,9 +105,9 @@ namespace Dune::IGANEW::DefaultTrim {
         assert(getTrimmingCurveIdx(vV2) == currentCurveIdx);
 
         auto [tParam, curvePoint]
-            = Util::callFindIntersection(currentCurveIdx, getEdgeIdx(vV2), pt2, patchTrimData, corners);
-        // std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
-        //           << std::endl;
+        = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
+        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
+                  << std::endl;
 
         if (currentT > tParam) {
           assert(getEdgeIdx(vV1) == getEdgeIdx(vV2));

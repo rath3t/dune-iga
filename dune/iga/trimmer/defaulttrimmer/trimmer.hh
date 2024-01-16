@@ -164,7 +164,7 @@ namespace Dune::IGANEW {
       int dummy            = 7;      ///< Dummy variable.
       double trimPrecision = 1e-10;  ///< Precision for trimming.
     };
-  
+
 
     // /**
     //  * @brief ElementTrimData struct representing trim data for an element.
@@ -224,6 +224,7 @@ namespace Dune::IGANEW {
       static const bool hasHostEntity = true;
 
       struct TrimmerTraits {
+        using ParameterType = Parameter;  ///< Type for trimming parameters.
         using ParameterSpaceGrid
             = Dune::SubGrid<dim,
                             YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;  ///< Type of the Parametric grid
@@ -536,6 +537,7 @@ namespace Dune::IGANEW {
         // @todo Trim move the refine here from the grid
         ;
       }
+      auto& patchTrimData() const{ return *trimData_; }
 
     protected:
     protected:
