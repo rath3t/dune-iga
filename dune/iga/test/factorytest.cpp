@@ -23,17 +23,18 @@
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
+using namespace Dune;
 using namespace Dune::IGANEW;
 
 auto testFactoryWithTorus() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  using Grid = Dune::IGANEW::PatchGrid<1, 3, DefaultTrim::Trimmer>;
-  GridFactory<Grid> gridFactory;
+  using Grid = Dune::IGANEW::PatchGrid<1, 3, IdentityTrim::PatchGridFamily>;
+  Dune::GridFactory<Grid> gridFactory;
   const double r = 1.0;
   auto circle    = makeCircularArc(r);
   gridFactory.insertPatch(circle);
-  gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
   auto grid = gridFactory.createGrid();
 
   // @todo Trim add tests
@@ -62,7 +63,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 2;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::Trimmer>;
+  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
@@ -118,7 +119,7 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::Trimmer>;
+  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
@@ -176,7 +177,7 @@ auto testFactoryWithPlateWithCircularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::Trimmer>;
+  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, IdentityTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
@@ -203,7 +204,7 @@ auto testFactoryWithPlateWithCircularTrim3D() {
   const double r = 1.0;
   gridFactory.insertPatch(patchData);
   gridFactory.insertTrimmingCurve(makeCircularArc2D(1.0));
-  gridFactory.setupTrimmer({.dummy = 10, .trimPrecision = 1e-6});
+
   auto grid       = gridFactory.createGrid();
   auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
 

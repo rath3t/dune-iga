@@ -34,8 +34,10 @@ namespace Dune::IGANEW::Utilities {
     /** @brief Returns the center of the domain */
     ScalarType center() const { return (left() + right()) / ScalarType(2.0); }
 
-    /** @brief Returns the size of the domain */
-    ScalarType size() const { return right() - left(); }
+    /** @brief Returns the volume of the domain */
+    ScalarType volume() const { return right() - left(); }
+
+    constexpr typename std::array<ScalarType, 2>::size_type size() const noexcept requires(0 == 2) { return 0; }
 
     /** @brief Checks if value in inside*/
     bool checkInside(ScalarType val) const { return val > left() and val < right(); }
@@ -143,7 +145,45 @@ namespace Dune::IGANEW::Utilities {
    */
   template <std::floating_point T>
   T mapToRange(T value, const Domain<T>& input, const Domain<T>& output) {
-    return (value - input.left()) * output.size() / input.size() + output.left();
+    return (value - input.left()) * output.volume() / input.volume() + output.left();
+  }
+
+  /**
+   * @brief Maps a value from one domain to another.
+   *
+   * This function maps a value from the input domain to the corresponding
+   * value in the output domain. It linearly scales and shifts the input value
+   * to fit within the output domain.
+   *
+   * @tparam T The floating-point type of the value and domains (e.g., double).
+   * @param value The value to be mapped from the input domain to the output domain.
+   * @param input The domain representing the range of the input value.
+   * @param output The domain representing the desired range for the output value.
+   * @return The mapped value within the output domain.
+   *
+   * Example:
+   * @code
+   * Domain<double> inputDomain(0.0, 1.0);
+   * Domain<double> outputDomain(10.0, 20.0);
+   * double inputValue = 0.5;
+   * double mappedValue = mapToRange(inputValue, inputDomain, outputDomain); // mappedValue is now 15.0
+   * @endcode
+   */
+  template <std::floating_point T, int size>
+  Dune::FieldVector<T, size> mapToRange(const Dune::FieldVector<T, size>& value,
+                                        const std::array<Domain<T>, size>& input,
+                                        const std::array<Domain<T>, size>& output) {
+    Dune::FieldVector<T, size> res;
+    for (int i = 0; i < size; ++i)
+      res = mapToRange(value[i], input[i], output[i]);
+    return res;
+  }
+
+  template <std::floating_point T, int size, size_t size2>
+  Dune::FieldVector<T, size> mapToRange(const Dune::FieldVector<T, size>& value,
+                                        const std::array<Domain<T>, size2>& input,
+                                        const std::array<Domain<T>, size2>& output) {
+    return mapToRange<T, size>(value, input, output);
   }
 
   /**

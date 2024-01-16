@@ -273,17 +273,17 @@ namespace Dune::IGANEW {
             globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
             localIdSet_(std::make_unique<LocalIdSet>(*grid_)) {
         createParameterSpaceGrid();
-        setIndices();
+        update(grid_);
       }
 
       TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
-        this->grid_               = other.grid_;
-        this->parameterSpaceGrid_ = other.parameterSpaceGrid_;
+        this->grid_               = std::move(other.grid_);
+        this->parameterSpaceGrid_ = std::move(other.parameterSpaceGrid_);
         leafIndexSet_             = std::make_unique<LeafIndexSet>(this->grid_);
         globalIdSet_              = std::make_unique<GlobalIdSet>(this->grid_);
         localIdSet_               = std::make_unique<LocalIdSet>(this->grid_);
 
-        setIndices();
+        update(grid_);
 
         return *this;
       }
@@ -330,7 +330,7 @@ namespace Dune::IGANEW {
        */
       auto globalRefine(int refCount) {
         parameterSpaceGrid().globalRefine(refCount);
-        setIndices();
+        update(grid_);
 
         // @todo Trim move the refine here from the grid
         ;
@@ -339,7 +339,8 @@ namespace Dune::IGANEW {
     protected:
     protected:
       //! compute the grid indices and ids
-      void setIndices() {
+      void update(GridImp* grid) {
+        grid_ = grid;
         localIdSet_->update();
 
         globalIdSet_->update();

@@ -3,13 +3,16 @@
 #pragma once
 #include <ranges>
 
+#include "elementtrimdata.hh"
 #include "trimmedlocalgeometry.hh"
+
+#include <dune/common/reservedvector.hh>
 
 namespace Dune {
   namespace IGANEW {
     namespace DefaultTrim {
-      template <int mydim_, typename ScalarType>
-      struct ElementTrimData;
+      // template <int mydim_, typename ScalarType>
+      // struct ElementTrimData;
 
       // template <int mydim_, typename ScalarType>
       // struct ElementTrimData;
@@ -37,20 +40,20 @@ namespace Dune {
       public:
         //! The dimension of the reference element.
         static constexpr int mydimension = dim;
+        static constexpr int dimension   = mydimension;
         //! The coordinate field type.
-        using Trimmer                       = typename GridImp::Trimmer;
-        using ctype                         = typename Trimmer::ctype;
-        using ParameterSpaceGrid            = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
-        using TrimDataType                  = ElementTrimData<mydimension, ctype>;
-        using TrimDataTypeOptionalReference = std::optional<std::reference_wrapper<const TrimDataType>>;
+        using Trimmer            = typename GridImp::Trimmer;
+        using ctype              = typename Trimmer::ctype;
+        using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
+        using TrimDataType       = typename GridImp::Trimmer::TrimmerTraits::ElementTrimData;
 
         /** @brief Collection of types depending on the codimension */
         template <int codim>
         struct Codim {
           //! type of geometry embedding a subentity into the reference element
 
-          using Geometry = TrimmedLocalGeometry<mydimension - codim, mydimension, const GridImp,
-                                                LocalGeometryTag::InReferenceElement>;
+          using Geometry = TrimmedLocalGeometryImpl<mydimension - codim, mydimension, const GridImp,
+                                                    LocalGeometryTag::InReferenceElement>;
         };
 
         //! The coordinate field type.
@@ -66,9 +69,20 @@ namespace Dune {
          *
          *  @param[in]  c  codimension whose size is desired
          */
-        int size(int c) const {
-          // @todo Trim
-          if (not trimData_) return cubeGeometry.size(c);
+        int size(int codim) const {
+          if (trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.size(codim);
+          if (trimData_.flag() == ElementTrimFlag::trimmed) {
+            switch (codim) {
+              case 0:
+                return 1;
+              case 1:
+                return trimData_.edges().size();
+              case 2:
+                return trimData_.vertices().size();
+              default:
+                assert(false && "Wrong codim requested");
+            }
+          }
           assert(false);
         }
 
@@ -84,8 +98,32 @@ namespace Dune {
          *  @param[in]  cc  codimension whose size is desired (0 <= cc <= dim)
          */
         int size(int i, int c, int cc) const {
-          // @todo Trim
-          if (not trimData_) return cubeGeometry.size(i, c, cc);
+          // auto subEntityName = [](std::size_t codim)-> std::string {
+          //   return codim==0 ? "element" : codim==1 ? "edges" :  "vertices" ;
+          // };
+          // std::cout<<"The size of  "<<subEntityName(cc)<<" with codim "<<cc<<" of the "<<i<<"-th
+          // "<<subEntityName(c)<<" of codim "<<c<<" is requested."<< " i: "<<i<<" c: "<<c<<" cc: "<<cc<<std::endl;
+          //
+          // std::cout<<"size i: "<<i<<" c: "<<c<<" cc: "<<cc<<std::endl;
+          if (trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.size(i, c, cc);
+
+          if (trimData_.flag() == ElementTrimFlag::trimmed) {
+            if (cc < c)
+              return 0;
+            else if (c == cc)  // Number ofs element of the element 1
+            {
+              return 1;
+            } else if (i == 0 and c == 0 and cc == 1)  // Number of edges of the element
+            {
+              return edgeIndices.size();
+            } else if (i == 0 and c == 0 and cc == 2)  // Number of vertices of the element
+            {
+              return trimData_.vertices().size();
+            } else if (c == 1 and cc == 2)  // Number of vertices of an edge
+            {
+              return 2;
+            }
+          }
           assert(false);
         }
 
@@ -103,8 +141,37 @@ namespace Dune {
          *  @param[in]  cc  codimension of subentity S (c <= cc <= dim)
          */
         int subEntity(int i, int c, int ii, int cc) const {
-          // @todo Trim
-          if (not trimData_) return cubeGeometry.subEntity(i, c, ii, cc);
+          // auto subEntityName = [](std::size_t codim)-> std::string {
+          //   return codim==0 ? "element" : codim==1 ? "edges" :  "vertex" ;
+          // };
+          // std::cout<<"The index of the "<<ii<<"-th "<<subEntityName(cc)<<" with codim "<<cc<<" of the "<<i<<"-th
+          // "<<subEntityName(c)<<" of codim "<<c<<" is requested."<< " i: "<<i<<" c: "<<c<<" ii: "<<ii<<" cc:
+          // "<<cc<<std::endl;
+          //
+          if (trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.subEntity(i, c, ii, cc);
+          if (trimData_.flag() == ElementTrimFlag::trimmed) {
+            if (cc < c)
+              return 0;
+            else if (i == 0 and c == cc)  // Index of the element of the element is a single 0
+            {
+              return 0;
+            } else if (i == 0 and c == 0 and cc == 1)  // Get index edge of the element
+            {
+              return ii;
+            } else if (i == 0 and c == 0 and cc == 2)  // Index of vertex of the element
+            {
+              return ii;
+            } else if (c == 1 and cc == 2)  // Index of vertex of an edge
+            {
+              return ii == 0 ? i : (i + 1 < edgeIndices.size() ? i + 1 : 0);
+              // if we are the left vertex the index is the same as the edge index,
+              // if we are the right vertex the index is the edge index +1
+              // if we are the one after the last vertex, we are the first vertex (with index 0)
+            } else if (c == cc)  // Index of entity of the entity
+            {
+              return i;
+            }
+          }
           assert(false);
         }
 
@@ -127,10 +194,105 @@ namespace Dune {
          *  \returns An iterable range of numbers of the sub-subentities.
          */
         auto subEntities(int i, int c, int cc) const {
-          // @todo TRIM this should return something usefull
-          if (not trimData_) return cubeGeometry.subEntities(i, c, cc);
+          // auto subEntityName = [](std::size_t codim)-> std::string {
+          //   return codim==0 ? "element" : codim==1 ? "edges" :  "vertices" ;
+          // };
+          // std::cout<<"The range numbers of "<<subEntityName(cc)<<" with codim "<<cc<<" of the "<<i<<"-th
+          // "<<subEntityName(c)<<" of codim "<<c<<" is requested."<<" i: "<<i<<" c: "<<c<<" cc: "<<cc<<std::endl;
+
+          if (trimData_.flag() == ElementTrimFlag::full) {
+            auto range = cubeGeometry.subEntities(i, c, cc);
+            return SubEntityRangeImpl(range.begin(), range.end(), true, i, c, cc);
+          }
+          if (trimData_.flag() == ElementTrimFlag::trimmed) {
+            if (cc < c)
+              return SubEntityRangeImpl(dummyArray.begin(), dummyArray.end());
+            else if (i == 0 and c == 0
+                     and cc == 0)  // iterate over the entity itself (only one element in storage with value zero)
+            {
+              SubEntityRangeImpl range(elementIndexDummy.begin(), elementIndexDummy.end());
+              return range;
+            } else
+
+                if (i == 0 and c == 0 and cc == 1)  // iterate over the edges of the element
+            {
+              SubEntityRangeImpl range(edgeIndices.begin(), edgeIndices.end());
+              return range;
+            } else if (c == 0 and cc == 2)  // iterate over the vertices of the element
+            {
+              SubEntityRangeImpl range(verticesIndices.begin(), verticesIndices.end() - 1);
+              return range;
+            }
+
+            else if (c == 1 and cc == 2)  // iterate over the vertices of edge
+            {
+              SubEntityRangeImpl range(verticesIndices.begin() + i, verticesIndices.begin() + i + 2);
+              return range;
+            }
+
+            else if (c == cc)  // iterate over the vertices of edge
+            {
+              if (c == 2) {
+                SubEntityRangeImpl range(verticesIndices.begin() + i, verticesIndices.begin() + i + 1);
+                return range;
+              } else if (cc == 1) {
+                SubEntityRangeImpl range(edgeIndices.begin() + i, edgeIndices.begin() + i + 1);
+                return range;
+              }
+            }
+          }
+
           assert(false);
         }
+
+        class SubEntityRangeImpl : public Dune::IteratorRange<const unsigned int*> {
+          using Base = typename Dune::IteratorRange<const unsigned int*>;
+
+        public:
+          using iterator       = Base::iterator;
+          using const_iterator = Base::const_iterator;
+
+          SubEntityRangeImpl(const iterator& begin, const iterator& end, bool host, int i, int c, int cc)
+              : Base(begin, end),
+                host_(host),
+                size_(end - begin),
+                i_{i},
+                c_{c},
+                cc_{cc}
+
+          {}
+
+          SubEntityRangeImpl(const iterator& begin, const iterator& end) : Base(begin, end), size_(end - begin) {}
+
+          SubEntityRangeImpl() : size_(0) {}
+
+          std::size_t size() const { return size_; }
+
+          bool contains(std::size_t i) const {
+            if (host_)
+              return cubeGeometry.subEntities(i_, c_, cc_).contains(i);
+            else {
+              if (size_ == 0)
+                return false;
+              else if (size_ == 2)  // two vertices at one edge case
+              {
+                const int back  = *(end() - 1);
+                const int front = *begin();
+                return i == front or i == back;
+              }
+              return size_ == 0 ? false : i >= *begin() and i <= *(end() - 1);  // general case
+            }
+          }
+
+        private:
+          const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
+              ReferenceElements<ctype, mydimension>::cube()};
+          std::size_t size_;
+          bool host_{};
+          int i_{};
+          int c_{};
+          int cc_{};
+        };
 
         /** @brief obtain the type of subentity (i,c)
          *
@@ -143,9 +305,8 @@ namespace Dune {
         GeometryType type(int i, int c) const {
           // @todo This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
           // be none
-          if (c == 0 and not trimData_) return GeometryTypes::none(mydimension);
-
-          if (trimData_) assert(false);
+          if (c == 0 and not trimData_.flag() != ElementTrimFlag::full) return GeometryTypes::none(mydimension);
+          if (c == 0 and trimData_.flag() == ElementTrimFlag::full) return GeometryTypes::cube(mydimension);
 
           return GeometryTypes::cube(mydimension);
         }
@@ -156,7 +317,7 @@ namespace Dune {
         GeometryType type() const {
           // @todo for some cases we could also return triangle or something else, but im not sure if
           //  this is too complicated and also unnecessary
-          if (not trimData_) return GeometryTypes::cube(mydimension);
+          if (trimData_.flag() == ElementTrimFlag::full) return GeometryTypes::cube(mydimension);
 
           assert(false);
           return GeometryTypes::none(mydimension);
@@ -175,7 +336,8 @@ namespace Dune {
           // @todo this functions could be a bit complicated
           //  we have to implement https://en.wikipedia.org/wiki/Center_of_mass#A_continuous_volume
           //  M as the volume and rho(R)=1
-          if (not trimData_) return cubeGeometry.position(i, c);
+          if (not trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.position(i, c);
+
           assert(false);
         }
 
@@ -195,8 +357,8 @@ namespace Dune {
           return true;
   */
         bool checkInside(const Coordinate& local) const {
-          if (not trimData_) cubeGeometry.checkInside(local);
-          return trimData_->checkInside(local);
+          if (trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.checkInside(local);
+          return trimData_.checkInside(local);
         }
 
         /** @brief obtain the embedding of subentity (i,codim) into the reference
@@ -224,7 +386,8 @@ namespace Dune {
         /** @brief obtain the volume of the reference element */
         CoordinateField volume() const {
           // @todo trim, integrate on the trimmed patch
-          if (not trimData_) return cubeGeometry.volume();
+          if (trimData_.flag() == ElementTrimFlag::full) return cubeGeometry.volume();
+          return trimData_.volume();
         }
 
         /** @brief obtain the integration outer normal of the reference element
@@ -248,7 +411,20 @@ namespace Dune {
          */
         TrimmedReferenceElement() = default;
 
-        explicit TrimmedReferenceElement(TrimDataTypeOptionalReference trimData) : trimData_{trimData} {}
+        explicit TrimmedReferenceElement(const TrimDataType& trimData) : trimData_{trimData} {
+          if (trimData_.flag() == ElementTrimFlag::trimmed) {
+            edgeIndices.resize(trimData_.edges().size());
+            for (auto eI : Dune::range(trimData_.edges().size()))
+              edgeIndices[eI] = eI;
+
+            verticesIndices.resize(trimData_.vertices().size() + 1);
+            for (auto vI : Dune::range(trimData_.vertices().size())) {
+              verticesIndices[vI] = vI;
+            }
+            // to mimic a circular vector we add the first vertex at the end
+            verticesIndices.back() = 0;
+          }
+        }
 
         //! Compares for equality with another reference element.
         bool operator==(const TrimmedReferenceElement& r) const {
@@ -267,7 +443,12 @@ namespace Dune {
         }
 
       private:
-        TrimDataTypeOptionalReference trimData_;
+        Dune::ReservedVector<unsigned int, 32> edgeIndices;
+        Dune::ReservedVector<unsigned int, 32> verticesIndices;
+        std::array<unsigned int, 1> elementIndexDummy{{0}};
+        std::array<unsigned int, 2> verteEdgeIndexDummy{{0, 1}};
+        std::array<unsigned int, 0> dummyArray;
+        ElementTrimDataImpl<GridImp> trimData_;
         const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
             ReferenceElements<ctype, mydimension>::cube()};
         // @todo mayby store here all the trimming information anyway?

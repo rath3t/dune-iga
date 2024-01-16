@@ -49,7 +49,7 @@ namespace Dune::IGANEW {
      * @tparam PatchGeometry Type of the patch geometry.
      * @tparam TrimmerType_ Type of the trimmer.
      */
-    template <int codim, typename PatchGeometry, typename TrimmerType_>
+    template <int codim, typename PatchGeometry, typename TrimmerType_, typename LocalParameterSpaceGeometry = void>
     struct PatchGeometryLocalView {
       using ctype                        = typename PatchGeometry::ctype;  ///< Scalar type for coordinates.
       static constexpr int gridDimension = PatchGeometry::mydimension;  ///< Dimension of the underlying geometry grid.
@@ -62,16 +62,23 @@ namespace Dune::IGANEW {
       using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;  ///< Type of the parameter space grid.
 
       static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension;  ///< Dimension of the world.
+      static constexpr std::integral auto coorddimension = worlddimension;                 ///< Dimension of the world.
 
       using LocalCoordinate  = FieldVector<ctype, mydimension>;           ///< Type for local coordinates.
       using GlobalCoordinate = typename PatchGeometry::GlobalCoordinate;  ///< Type for global coordinates.
       using JacobianTransposed
-          = FieldMatrix<ctype, mydimension, worlddimension>;  ///< Type for the transposed Jacobian matrix.
+          = FieldMatrix<ctype, mydimension, coorddimension>;  ///< Type for the transposed Jacobian matrix.
       using PatchJacobianTransposed =
           typename PatchGeometry::JacobianTransposed;        ///< Type for the transposed Jacobian matrix of the patch.
       using PatchHessian = typename PatchGeometry::Hessian;  ///< Type for the Hessian matrix of the patch.
 
-      using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
+    private:
+      static constexpr bool isParameterSpaceGeometryProvided = not std::is_same_v<LocalParameterSpaceGeometry, void>;
+
+    public:
+      using ParameterSpaceGeometry
+          = std::conditional_t<isParameterSpaceGeometryProvided, LocalParameterSpaceGeometry,
+                               typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry>;
 
       //! if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
       //! and
@@ -108,10 +115,10 @@ namespace Dune::IGANEW {
       using JacobianTransposedInParameterSpace = typename ParameterSpaceGeometry::JacobianTransposed;
       using GlobalInParameterSpace             = typename ParameterSpaceGeometry::GlobalCoordinate;
 
-      using Hessian                   = FieldMatrix<ctype, numberOfSecondDerivatives, worlddimension>;
-      using Jacobian                  = FieldMatrix<ctype, worlddimension, mydimension>;
-      using JacobianInverseTransposed = FieldMatrix<ctype, worlddimension, mydimension>;
-      using JacobianInverse           = FieldMatrix<ctype, mydimension, worlddimension>;
+      using Hessian                   = FieldMatrix<ctype, numberOfSecondDerivatives, coorddimension>;
+      using Jacobian                  = FieldMatrix<ctype, coorddimension, mydimension>;
+      using JacobianInverseTransposed = FieldMatrix<ctype, coorddimension, mydimension>;
+      using JacobianInverse           = FieldMatrix<ctype, mydimension, coorddimension>;
       using MatrixHelper              = typename PatchGeometry::MatrixHelper;
       using Volume                    = ctype;
 
@@ -183,7 +190,7 @@ namespace Dune::IGANEW {
        */
       [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
         auto jT = jacobianTransposed(local);
-        return MatrixHelper::template sqrtDetAAT<mydimension, worlddimension>(jT);
+        return MatrixHelper::template sqrtDetAAT<mydimension, coorddimension>(jT);
       }
 
       /**
@@ -191,14 +198,15 @@ namespace Dune::IGANEW {
        * @return Volume of the patch.
        */
       [[nodiscard]] double volume() const {
-        if constexpr (not Trimmer::Triangulation::isAlwaysTrivial) {
+        if constexpr (not Trimmer::isAlwaysTrivial) {
           // @todo: Implement integration of trimmed quantities and new edge geometries.
         } else {
           const auto& rule = QuadratureRules<ctype, mydimension>::rule(
               GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchGeometry_->patchData_.degree)));
           Volume vol = 0.0;
           for (auto& gp : rule)
-            vol += integrationElement(gp.position()) * gp.weight();
+            vol += integrationElement(globalInParameterSpace(gp.position())) * gp.weight()
+                   * parameterSpaceGeometry->volume();
           return vol;
         }
       }
@@ -211,11 +219,8 @@ namespace Dune::IGANEW {
 
       /** @brief Return world coordinates of the k-th corner of the element */
       [[nodiscard]] GlobalCoordinate corner(int k) const {
-        LocalCoordinate localcorner;
-        for (size_t i = 0; i < mydimension; i++)
-          localcorner[i] = (k & (1 << i)) ? 1 : 0;
-
-        return global(localcorner);
+        checkState();
+        return GeometryKernel::position(parameterSpaceGeometry->corner(k), nurbsLocalView_, localControlPointNet);
       }
 
       /**
@@ -236,8 +241,18 @@ namespace Dune::IGANEW {
       [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
         JacobianTransposed Jt = jacobianTransposed(local);
         JacobianInverseTransposed jacobianInverseTransposed;
-        MatrixHelper::template rightInvA<mydimension, worlddimension>(Jt, jacobianInverseTransposed);
+        MatrixHelper::template rightInvA<mydimension, coorddimension>(Jt, jacobianInverseTransposed);
         return jacobianInverseTransposed;
+      }
+
+      /**
+       * @brief Get the inverse Jacobian matrix at a local coordinate.
+       * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
+       * dimension
+       * @return inverse Jacobian matrix.
+       */
+      [[nodiscard]] JacobianInverse jacobianInverse(const LocalCoordinate& local) const {
+        return transpose(jacobianInverseTransposed(local));
       }
 
       /**
@@ -371,6 +386,17 @@ namespace Dune::IGANEW {
       [[nodiscard]] bool affine() const {
         // @todo check when this is true
         return false;
+      }
+
+      /**
+       * @brief Get the polynomial degree of the patch in each dimension.
+       * \remark This does return the degree of the underlying patch and not of the mapping of the local view.
+       * @return Array of degrees for each dimension.
+       */
+      [[nodiscard]] std::array<int, mydimension> degree() const { return patchGeometry_->degree(); }
+
+      friend auto referenceElement(const PatchGeometryLocalView& geo) {
+        return referenceElement(*geo.parameterSpaceGeometry);
       }
 
     private:

@@ -18,8 +18,8 @@ foreach(programSourceFile ${programSourceFiles})
            -ftemplate-backtrace-limit=0)
 
   target_link_libraries(
-    ${programName} PUBLIC Eigen3::Eigen Clipper2Z
-                          nlohmann_json::nlohmann_json earcut_hpp::earcut_hpp)
+    ${programName} PUBLIC Eigen3::Eigen Clipper2Z nlohmann_json::nlohmann_json
+                          earcut_hpp::earcut_hpp)
   add_dependencies(AllExamples ${programName})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})

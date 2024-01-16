@@ -1,13 +1,26 @@
 # SPDX-FileCopyrightText: 2023 The dune-iga developers
 # mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
 
-#set(TESTS gridtests trimmedgridtests hierarchictests)
-set(TESTS gridtests testbsplines testnurbsbasis factorytest trimtest testfindintersection testibrareader)
+# set(TESTS gridtests trimmedgridtests hierarchictests)
+set(TESTS
+    gridtests
+    testbsplines
+    testnurbsbasis
+    factorytest
+    trimtest
+    testfindintersection
+    testibrareader)
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+find_package(Threads REQUIRED)
+
 foreach(_test ${TESTS})
   dune_add_test(SOURCES ${_test}.cpp TIMEOUT 10000 LABELS cpp)
-#  add_dune_PkgConfig_Clipper2Lib_flags(${_test})
+  # add_dune_PkgConfig_Clipper2Lib_flags(${_test})
   target_compile_options(${_test} PRIVATE -g)
+  target_link_libraries(${_test} PUBLIC Threads::Threads)
 
   target_link_libraries(
     ${_test} PRIVATE Clipper2Z nlohmann_json::nlohmann_json

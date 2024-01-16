@@ -7,6 +7,8 @@
 #endif
 #include <iostream>
 
+#include "testhelper.hh"
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
@@ -34,13 +36,7 @@
 using namespace Dune;
 using namespace Dune::IGANEW;
 using namespace Dune::IGANEW;
-template <typename T, int worldDim, int Items>
-struct Compare {
-  constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
-                            const std::array<FieldVector<double, worldDim>, Items>& rhs) const {
-    return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
-  };
-};
+
 auto checkUniqueEdges(const auto& gridView) {
   Dune::TestSuite t;
 

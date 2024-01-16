@@ -21,6 +21,7 @@
 #include "patchgridleafiterator.hh"
 #include "patchgridleveliterator.hh"
 #include "patchtrimdata.hh"
+#include "referenceelement.hh"
 #include "trimmedentity.hh"
 #include "trimmedlocalgeometry.hh"
 
@@ -64,8 +65,6 @@ namespace Dune::IGANEW {
   }
 
   namespace DefaultTrim {
-
-    enum class ElementTrimFlag { full, empty, trimmed };
 
     template <typename HostIdType>
     struct IdType {
@@ -161,8 +160,11 @@ namespace Dune::IGANEW {
      * @brief Parameter struct representing parameters for the trimming operation.
      */
     struct Parameter {
-      size_t splitter = 100;
+            size_t splitter = 100;
+      int dummy            = 7;      ///< Dummy variable.
+      double trimPrecision = 1e-10;  ///< Precision for trimming.
     };
+  
 
     // /**
     //  * @brief ElementTrimData struct representing trim data for an element.
@@ -225,11 +227,14 @@ namespace Dune::IGANEW {
         using ParameterSpaceGrid
             = Dune::SubGrid<dim,
                             YaspGrid<dim, TensorProductCoordinates<ScalarType, dim>>>;  ///< Type of the Parametric grid
-        using HostIdType    = typename ParameterSpaceGrid::GlobalIdSet::IdType;
-        using GlobalIdSetId = IdType<HostIdType>;
-        using PatchTrimData = PatchTrimDataImpl<const Grid>;  ///< Patch trim data type.
-        using TrimmingCurve = GeometryKernel::NURBSPatch<dim - 1, dim, ctype>;
-        using ElementInfo   = EntityInfoImpl<HostIdType, 0>;
+        using HostIdType           = typename ParameterSpaceGrid::GlobalIdSet::IdType;
+        using GlobalIdSetId        = IdType<HostIdType>;
+        using PatchTrimData        = PatchTrimDataImpl<const Grid>;  ///< Patch trim data type.
+        using TrimmingCurve        = GeometryKernel::NURBSPatch<dim - 1, dim, ctype>;
+        using ElementInfo          = EntityInfoImpl<HostIdType, 0>;
+        using ReferenceElementType = TrimmedReferenceElement<2, const Grid>;
+
+        using ElementTrimData = ElementTrimDataImpl<const Grid>;  ///< Element trim data type.
 
         template <int codim>
         struct Codim {
@@ -412,9 +417,9 @@ namespace Dune::IGANEW {
       using ReferenceElementType =
           typename Dune::Geo::ReferenceElements<ctype, mydimension>::ReferenceElement;  ///< Reference element type.
 
-      using ElementTrimData = ElementTrimDataImpl<GridFamily>;                    ///< Element trim data type.
-      using PatchTrimData   = typename GridFamily::TrimmerTraits::PatchTrimData;  ///< Patch trim data type.
-      using TrimmingCurve   = typename GridFamily::TrimmerTraits::TrimmingCurve;  ///< Patch trim data type.
+      using ElementTrimData = typename GridFamily::TrimmerTraits::ElementTrimData;  ///< Element trim data type.
+      using PatchTrimData   = typename GridFamily::TrimmerTraits::PatchTrimData;    ///< Patch trim data type.
+      using TrimmingCurve   = typename GridFamily::TrimmerTraits::TrimmingCurve;    ///< Patch trim data type.
       using ElementTrimDataContainer
           = ElementTrimDataContainerImpl<ParameterSpaceGrid>;  ///< Container for element trim data.
 
@@ -480,7 +485,7 @@ namespace Dune::IGANEW {
             parameters_(par) {
         setup();
         createParameterSpaceGrid();
-        setIndices();
+        update(grid_);
       }
 
       TrimmerImpl& operator=(TrimmerImpl&& other) noexcept {
@@ -490,7 +495,7 @@ namespace Dune::IGANEW {
         globalIdSet_              = std::make_unique<GlobalIdSet>(this->grid_);
         localIdSet_               = std::make_unique<LocalIdSet>(this->grid_);
 
-        setIndices();
+        update(grid_);
 
         return *this;
       }
@@ -526,7 +531,7 @@ namespace Dune::IGANEW {
       void globalRefine(int refCount) {
         if (refCount == 0) return;
         refineParameterSpaceGrid(refCount);
-        setIndices();
+        update(grid_);
 
         // @todo Trim move the refine here from the grid
         ;
@@ -535,7 +540,8 @@ namespace Dune::IGANEW {
     protected:
     protected:
       //! compute the grid indices and ids
-      void setIndices() {
+      void update(GridImp* grid) {
+        grid_ = grid;
         localIdSet_->update();
 
         globalIdSet_->update();

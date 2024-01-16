@@ -78,7 +78,7 @@ namespace Dune::IGANEW {
     double domainFractionFactor = 4;
     ctype domainFraction        = 1;
     for (int j = 0; j < dim; ++j)
-      domainFraction *= domain[j].size();
+      domainFraction *= domain[j].volume();
     domainFraction /= domainFractionFactor;
     int i;
     auto [oldEnergy, R, H] = energyGradAndHess(u);

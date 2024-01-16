@@ -53,10 +53,10 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     clipper.SetZCallback(
         [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
-          std::cout << "Z-Callback\n";
-          std::cout << e1bot << " " << e1top << std::endl;
-          std::cout << e2bot << " " << e2top << std::endl;
-          std::cout << pt << std::endl;
+          // std::cout << "Z-Callback\n";
+          // std::cout << e1bot << " " << e1top << std::endl;
+          // std::cout << e2bot << " " << e2top << std::endl;
+          // std::cout << pt << std::endl;
 
           // We are only interested in intersections with the edges
           if (e1bot.z > 3) return;

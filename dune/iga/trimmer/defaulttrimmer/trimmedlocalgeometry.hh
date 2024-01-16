@@ -87,6 +87,6 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
   private:
-    const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype> patchGeometry;
+    GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype> patchGeometry;
   };
 }  // namespace Dune::IGANEW::DefaultTrim

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #pragma once
+
+#include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
 namespace Dune::IGANEW::DefaultTrim {
   template <int dim, int dimworld, typename ScalarType>
   void TrimmerImpl<dim, dimworld, ScalarType>::createLevel(GridImp& grid, int lvl) {
@@ -163,14 +165,15 @@ namespace Dune::IGANEW::DefaultTrim {
 
       for (const auto& ele : elements(gv)) {
         ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};
-        ElementTrimData eleTrimData{eleTrimFlag};
+        ElementTrimData eleTrimData(eleTrimFlag, ele);
         if (trimData_.has_value()) {
           eleTrimData = trimElement(ele, trimData_.value());
           eleTrimFlag = eleTrimData.flag();
 
           // Testing Purposes
           auto resName = "ele_" + std::to_string(unTrimmedElementIndex + trimmedElementIndex);
-          eleTrimData.drawResult(resName, ele.geometry(), false);
+          eleTrimData.drawResult(resName, true);
+          eleTrimData.drawResult(resName, false);
         }
 
         auto hostId = globalIdSetParameterSpace.id(ele);

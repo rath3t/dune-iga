@@ -42,6 +42,7 @@ namespace Dune::IGANEW::GeometryKernel {
   public:
     static constexpr std::integral auto worlddimension = dimworld_;
     static constexpr std::integral auto mydimension    = dim_;
+    static constexpr std::integral auto coorddimension = worlddimension;
 
     using ctype                        = ScalarType;
     using LocalCoordinate              = FieldVector<ctype, mydimension>;
@@ -67,13 +68,12 @@ namespace Dune::IGANEW::GeometryKernel {
                               typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
     using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
     using NurbsLocalView = typename Nurbs::LocalView;
-    template <int codim, typename TrimmerType_>
-    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_>;
+    template <int codim, typename TrimmerType_, typename ParameterSpaceGeometry = void>
+    using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_, ParameterSpaceGeometry>;
 
-    template <int codim, typename NURBSPatch, typename TrimmerType_>
+    template <int codim, typename NURBSPatch, typename TrimmerType_, typename ParameterSpaceGeo>
     friend struct PatchGeometryLocalView;
 
-  private:
     /* @brief Helper class to compute a matrix pseudo-inverse. */
     using MatrixHelper = typename MultiLinearGeometryTraits<ctype>::MatrixHelper;
 
@@ -87,9 +87,9 @@ namespace Dune::IGANEW::GeometryKernel {
      * @tparam TrimmerType Type of the trimmer.
      * @return Local view of the patch.
      */
-    template <int codim, typename TrimmerType>
+    template <int codim, typename TrimmerType, typename ParameterSpaceGeometry = void>
     auto localView() const {
-      return GeometryLocalView<codim, TrimmerType>(*this);
+      return GeometryLocalView<codim, TrimmerType, ParameterSpaceGeometry>(*this);
     }
 
     /**
@@ -130,11 +130,17 @@ namespace Dune::IGANEW::GeometryKernel {
      * @return Volume of the patch.
      */
     [[nodiscard]] double volume() const {
+      auto dom                = domain();
+      double volParamterSpace = 1.0;
+      for (int i = 0; i < mydimension; ++i)
+        volParamterSpace *= dom[i].volume();
       const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(
           this->type(), mydimension * (*std::ranges::max_element(patchData_.degree)));
       ctype vol = 0.0;
+      const std::array<Utilities::Domain<double>, mydimension> input{};
       for (auto& gp : rule) {
-        vol += integrationElement(gp.position()) * gp.weight();
+        vol += integrationElement(Utilities::mapToRange(gp.position(), input, domain())) * gp.weight()
+               * volParamterSpace;
       }
       return vol;
     }
@@ -189,6 +195,18 @@ namespace Dune::IGANEW::GeometryKernel {
     }
 
     /**
+     * @brief Compute the inverse Jacobian transposed matrix for a given local coordinate.
+     * @param u Local coordinates for each dimension in the [knotSpan.front(), knotSpan.back()] domain.
+     * @return Inverse Jacobian transposed matrix.
+     */
+    [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
+      JacobianTransposed Jt = jacobianTransposed(local);
+      JacobianInverseTransposed jacobianInverseTransposed;
+      MatrixHelper::template rightInvA<mydimension, coorddimension>(Jt, jacobianInverseTransposed);
+      return jacobianInverseTransposed;
+    }
+
+    /**
      * @brief Compute the Hessian matrix for a given local coordinate.
      * @param u Local coordinates for each dimension in the [knotSpan.front(), knotSpan.back()] domain.
      * @return Hessian matrix.
@@ -204,6 +222,16 @@ namespace Dune::IGANEW::GeometryKernel {
      * @return Jacobian matrix.
      */
     [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const { return transpose(jacobianTransposed(local)); }
+
+    /**
+     * @brief Get the inverse Jacobian matrix at a local coordinate.
+     * @param local Local coordinate, i.e. a tuple where each coordinate is in [knotSpan.front(), knotSpan.back()]
+     * domain for each local view dimension
+     * @return inverse Jacobian matrix.
+     */
+    [[nodiscard]] JacobianInverse jacobianInverse(const LocalCoordinate& local) const {
+      return transpose(jacobianInverseTransposed(local));
+    }
 
     /**
      * @brief Compute the integration element for a given local coordinate.
@@ -236,6 +264,17 @@ namespace Dune::IGANEW::GeometryKernel {
      * @return Array of degrees for each dimension.
      */
     [[nodiscard]] std::array<int, mydimension> degree() const { return patchData_.degree; }
+
+    /**
+     * @brief Check if the patch is affine.
+     * @return Boolean value
+     */
+    [[nodiscard]] bool affine() const {
+      for (int i = 0; i < mydimension; ++i)
+        if (std::ranges::count(patchData_.knotSpans[i], patchData_.knotSpans[i].front()) > 2) return false;
+
+      return true;
+    }
 
     /**
      * @brief Get the domain midpoint of the patch.
@@ -277,6 +316,10 @@ namespace Dune::IGANEW::GeometryKernel {
 
     /* @brief Get the patch data of the NURBS patch. */
     auto& patchData() { return patchData_; }
+
+    friend auto referenceElement(const NURBSPatch& geo) {
+      return referenceElement<double, mydimension>(Dune::GeometryTypes::cube(mydimension));
+    }
 
   private:
     /* @brief Calculate NURBS and control point net for a given local coordinate. */

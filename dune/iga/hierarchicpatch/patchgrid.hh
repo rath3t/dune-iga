@@ -164,7 +164,13 @@ namespace Dune::IGANEW {
       patchGeometriesUnElevated = patchGeometries_;
     }
 
-    PatchGrid& operator=(PatchGrid&& other) = default;
+    PatchGrid& operator=(PatchGrid&& other) noexcept {
+      patchGeometries_          = std::move(other.patchGeometries_);
+      patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
+      trimmer_                  = std::move(other.trimmer_);
+      trimmer_->update(this);
+      return *this;
+    }
 
     /** @brief Return maximum level defined in this grid.
      *

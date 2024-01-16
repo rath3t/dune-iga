@@ -58,8 +58,8 @@ namespace Dune::IGANEW::GeometryKernel {
 
         if (!invertible) return LocalCoordinate(std::numeric_limits<ctype>::max());
         x -= dx;
-        // if local is outside of maximum knot vector span bound, thus we clamp it to it and return
-        // clamp result into boundaries
+        // if local is outside of maximum knot vector span bound, we clamp it to it and return
+        // clamped result
         if (Dune::IGANEW::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
           break;
         }
