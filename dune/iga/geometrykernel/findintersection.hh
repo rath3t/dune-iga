@@ -3,6 +3,7 @@
 #pragma once
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
+
 namespace Dune::IGANEW {
 
   enum class FindIntersectionCurveAndLineResult { noSucess, sucess, linesParallel };
@@ -33,8 +34,11 @@ namespace Dune::IGANEW {
     FieldVector<ScalarType, dim> sol;
     linearSystem.solve(sol, b);
 
+    // Map the solution to the knotSpan
+    sol[0] = geoCurve.domain()[0].front() + sol[0];
+
     // Check if point is in domain
-    if (not geoCurve.domain()[0].checkInside(tParameter[0]))
+    if (not geoCurve.domain()[0].checkInside(sol[0]))
       return std::make_tuple(FindIntersectionCurveAndLineResult::noSucess, sol, geoCurve.global(sol[0]));
     return std::make_tuple(FindIntersectionCurveAndLineResult::sucess, sol, geoCurve.global(sol[0]));
   }

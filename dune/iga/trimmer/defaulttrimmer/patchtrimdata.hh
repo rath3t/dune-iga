@@ -15,6 +15,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
       const auto& curves() const { return curves_; }
 
+      [[nodiscard]] size_t size() const { return curves_.size(); }
+
     private:
       std::vector<TrimmingCurve> curves_;
     };
@@ -34,7 +36,7 @@ namespace Dune::IGANEW::DefaultTrim {
       void addLoop(const BoundaryLoop& loop) {
         Clipper2Lib::PathD path;
         for (idx_t i = loops_.empty() ? splitter_ : loops_.back().back().z + 1; const auto& curve : loop.curves()) {
-          if (curve.degree().front() == 1) {
+          if (curve.degree().front() == 1 and loops_.empty()) {
             auto p1 = curve.corner(0);
             auto p2 = curve.corner(1);
             path.emplace_back(p1[0], p1[1], i);
@@ -117,12 +119,14 @@ namespace Dune::IGANEW::DefaultTrim {
         return isInsideU and isInsideV;
       };
 
-      pointsInPatch_.push_back({});
-      for (size_t i = 0; const auto& curve : loops_.front().curves()) {
-        if (const auto pt = curve.corner(1); isInsidePatch(pt)) {
-          pointsInPatch_.front().emplace_back(pt, i, (i + 1) % loops_.front().curves().size());
+      for (const auto& loop : loops()) {
+        pointsInPatch_.push_back({});
+        for (size_t i = 0; const auto& curve : loop.curves()) {
+          if (const auto pt = curve.corner(1); isInsidePatch(pt)) {
+            pointsInPatch_.back().emplace_back(pt, i, (i + 1) % loop.size());
+          }
+          ++i;
         }
-        ++i;
       }
 
       finished_ = true;

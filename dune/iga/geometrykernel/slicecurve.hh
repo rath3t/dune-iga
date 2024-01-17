@@ -8,10 +8,11 @@
 
 namespace Dune::IGANEW {
 
-  // Curtesy to https://github.com/pradeep-pyro/tinynurbs/blob/master/include/tinynurbs/core/modify.h
+  // Inspired by https://github.com/pradeep-pyro/tinynurbs/blob/master/include/tinynurbs/core/modify.h
   template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
   auto splitCurve(const GeoCurve& geoCurve, ScalarType u) -> std::pair<GeoCurve, GeoCurve> {
     static_assert(GeoCurve::mydimension == 1);
+    using ControlPointType = typename GeoCurve::ControlPointType;
 
     auto knotMultiplicity = [](auto& knotVec, auto u_) {
       return std::ranges::count_if(knotVec, [=](double val) { return FloatCmp::eq(u_, val, 1e-8); });
@@ -19,7 +20,6 @@ namespace Dune::IGANEW {
 
     auto& patchData     = geoCurve.patchData();
     auto knots          = patchData.knotSpans.front();
-    auto control_points = patchData.controlPoints.directGetAll();
     auto domain         = geoCurve.domain();
     auto degree         = patchData.degree[0];
 
@@ -46,12 +46,12 @@ namespace Dune::IGANEW {
     // append the rest of the old knots as they are
     rightKnots.insert(rightKnots.end(), std::next(tmpKnots.begin(), span_l), tmpKnots.end());
 
-    decltype(control_points) leftControlPoints;
+    std::vector<ControlPointType> leftControlPoints;
     const int ks = span - degree + 1;
     // add all controlpoints that live left of u, which is the range [0,ks+r[ of controlpoints
     leftControlPoints.insert(leftControlPoints.end(), tmpCp.begin(), std::next(tmpCp.begin(), ks + r));
 
-    decltype(control_points) rightControlPoints;
+     std::vector<ControlPointType> rightControlPoints;
     // add all controlpoints that live right of u, which is the range [ks+r-1,end[ of controlpoints
     rightControlPoints.insert(rightControlPoints.end(), std::next(tmpCp.begin(), ks + r - 1), tmpCp.end());
 

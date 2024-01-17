@@ -28,35 +28,35 @@ auto testIbraReader() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
 
-  gridFactory.insertJson("auxiliaryfiles/element_trim_xb.ibra", true, {3, 3});
-  auto grid = gridFactory.createGrid();
+  const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/element_trim_xb.ibra", 0, 3},
+  {"auxiliaryfiles/element_trim.ibra", 0, 3}, {"auxiliaryfiles/trim_2edges.ibra", 0, 3}, {"auxiliaryfiles/trim_multi.ibra", 0, 3},
+  {"auxiliaryfiles/surface-hole.ibra", 1, 3}, {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
+    {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}};
 
-  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {3, 3});
-  auto grid2 = gridFactory.createGrid();
-
-  gridFactory.insertJson("auxiliaryfiles/trim_2edges.ibra", true, {3, 3});
-  auto grid3 = gridFactory.createGrid();
-
-  gridFactory.insertJson("auxiliaryfiles/trim_multi.ibra", true, {3, 3});
-  auto grid4 = gridFactory.createGrid();
-
-  return t;
-}
-
-auto testIbraReaderWithHole() {
-  Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-
-  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
-  using GridFactory = Dune::GridFactory<PatchGrid>;
-
-  auto gridFactory = GridFactory();
-  gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
-
-  gridFactory.insertJson("auxiliaryfiles/surface-hole.ibra", true, {1, 1});
-  auto grid = gridFactory.createGrid();
+  for (auto& [name, min, max] : testCases) {
+    for (int i = min; i <= max; i++) {
+      gridFactory.insertJson(name, true, {i, i});
+      t.checkNoThrow([&]{auto grid = gridFactory.createGrid();});
+    }
+  }
 
   return t;
 }
+
+// auto testIbraReaderWithSquareHole() {
+//   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
+//
+//   using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+//   using GridFactory = Dune::GridFactory<PatchGrid>;
+//
+//   auto gridFactory = GridFactory();
+//   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
+//   gridFactory.insertJson("auxiliaryfiles/surface-hole-square.ibra", true, {2, 2});
+//
+//   t.checkNoThrow([&]{auto grid = gridFactory.createGrid();});
+//
+//   return t;
+// }
 
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -64,8 +64,8 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  // t.subTest(testIbraReader());
-  t.subTest(testIbraReaderWithHole());
+
+  t.subTest(testIbraReader());
 
   // auto success = t.report();
 

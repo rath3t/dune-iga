@@ -110,11 +110,26 @@ namespace Dune::IGANEW::DefaultTrim {
                   << std::endl;
 
         if (currentT > tParam) {
-          assert(getEdgeIdx(vV1) == getEdgeIdx(vV2));
-          auto trimmedEdge = Util::createHostGeometry<TrimmingCurve>(foundVertices.back(), curvePoint);
-          elementTrimData.addEdgeNewNewOnHost(getEdgeIdx(vV2), trimmedEdge, curvePoint);
-          isOnNewEdge = true;
-          currentT    = tParam;
+          // There is an extra case when the current curve is on an inner loop wich only consists of one curve
+          if (currentCurveIdx.first > 0 and patchTrimData.loops()[currentCurveIdx.first].size() == 1) {
+            auto curve = patchTrimData.getCurve(currentCurveIdx);
+            if (auto cp = curve.patchData().controlPoints.directGetAll();
+              FloatCmp::eq(cp.front().p, cp.back().p)) {
+              auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, curve.domain()[0].back());
+              elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+              isOnNewEdge = false;
+              currentT    = std::numeric_limits<double>::infinity();
+            } else {
+              DUNE_THROW(Dune::GridError, "Something doesn't add up");
+            }
+          } else if (getEdgeIdx(vV1) == getEdgeIdx(vV2)) {
+            auto trimmedEdge = Util::createHostGeometry<TrimmingCurve>(foundVertices.back(), curvePoint);
+            elementTrimData.addEdgeNewNewOnHost(getEdgeIdx(vV2), trimmedEdge, curvePoint);
+            isOnNewEdge = true;
+            currentT    = tParam;
+          } else {
+            DUNE_THROW(Dune::GridError, "Something doesn't add up");
+          }
         } else {
           auto elementTrimmingCurve
               = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
@@ -127,7 +142,7 @@ namespace Dune::IGANEW::DefaultTrim {
         continue;
       }
       // Fourth case edge begins on a newVertex and ends in a HostVertex
-      if (isNewVertex(vV1), isHostVertex(vV2)) {
+      if (isNewVertex(vV1) and isHostVertex(vV2)) {
         auto v2 = Dune::FieldVector<ScalarType, dim>{pt2.x, pt2.y};
 
         FieldVector<ScalarType, dim> p;
@@ -144,7 +159,7 @@ namespace Dune::IGANEW::DefaultTrim {
         continue;
       }
       // Additional cases to cover inside vertices
-      if (isNewVertex(vV1), isInsideVertex(vV2)) {
+      if (isNewVertex(vV1) and isInsideVertex(vV2)) {
         if (foundVertices.empty()) {
           currentCurveIdx = getTrimmingCurveIdx(vV1);
           FieldVector<ScalarType, dim> curvePoint;
@@ -162,7 +177,7 @@ namespace Dune::IGANEW::DefaultTrim {
         foundVertices.push_back(curvePoint);
         continue;
       }
-      if (isInsideVertex(vV1), isNewVertex(vV2)) {
+      if (isInsideVertex(vV1) and isNewVertex(vV2)) {
         const auto& curve = patchTrimData.loops()[getLoopIdx(vV1)].curves()[getCurveJ(vV1)];
         currentT = curve.domain().front().front();
         auto [tParam, curvePoint]

@@ -69,8 +69,8 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
     /* this is for testing purposes only */
-    void drawResult(const std::string& filename, bool inParameterSpace) {
-      if (static_cast<int>(flag_) != 2) return;
+    void drawResult(const std::string& filename, bool inParameterSpace, bool newFig = true) {
+      if (static_cast<int>(flag_) == 1) return;
       auto eleGeometry      = hostEntity_.geometry();
       auto lowerLeftCorner  = inParameterSpace ? eleGeometry.corner(0) : Dune::FieldVector<double, 2>({0, 0});
       auto upperRightCorner = eleGeometry.corner(3);
@@ -78,7 +78,8 @@ namespace Dune::IGANEW::DefaultTrim {
           {inParameterSpace ? 1.0 / (upperRightCorner[0] - lowerLeftCorner[0]) : 1,
            inParameterSpace ? 1.0 / (upperRightCorner[1] - lowerLeftCorner[1]) : 1});
 
-      auto figure = matplot::figure(true);
+      if (newFig)
+        auto figure = matplot::figure(true);
       matplot::hold("on");
 
       constexpr std::array idxLookUp = {0, 1, 3, 2};
@@ -145,7 +146,8 @@ namespace Dune::IGANEW::DefaultTrim {
       }
 
       matplot::axis(matplot::equal);
-      matplot::save(filename + (inParameterSpace ? "inParameterSpace" : ""), "gif");
+      if (newFig)
+        matplot::save(filename + (inParameterSpace ? "inParameterSpace" : ""), "gif");
     }
     bool checkInside(const Dune::FieldVector<double, 2>& local) const {
       Clipper2Lib::PointD p(local[0], local[1]);

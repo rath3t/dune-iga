@@ -105,7 +105,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       vertices_.emplace_back(InsideVertex(pt, curveIndexI, curveIndexJ, loopIdx));
     }
 
-    void finish() {
+    void finish(const auto& patchTrimData) {
       // Sort the points in counter clockwise manner such that the first point is in the lower left
       auto getPoint = [](auto&& vertexVariant) { return vertexVariant.pt; };
 
@@ -140,12 +140,49 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         return comparePoints(aV, bV, minVertex);
       });
 
-      const auto it = std::ranges::find_if(
+      // Resort that we always start on a hostVertex (\todo is this needed)
+      if (const auto it = std::ranges::find_if(
           vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
-      if (it != vertices_.end())
+          it != vertices_.end())
         std::ranges::rotate(vertices_, it);
       else
         std::cout << "Warning, no HostVertex" << std::endl;
+
+      // Now resort InsideVertices (sometimes they end up on the wrong position)
+      for (const auto i : std::views::iota(0ul, vertices_.size())) {
+        const auto vV = vertices_[i];
+        if (std::holds_alternative<InsideVertex>(vV)) {
+          const auto& insideVertex = std::get<InsideVertex>(vV);
+          auto it = vertices_.begin() + i;
+          const size_t indexBeforeIt = it == vertices_.begin() ? vertices_.size() - 1 : std::ranges::distance(vertices_.begin(), it) -1;
+          if (std::holds_alternative<NewVertex>(vertices_[indexBeforeIt])) {
+            // Check if indices line up correctly
+            auto [loopIdx, curveIdx] = patchTrimData.getIndices(std::get<NewVertex>(vertices_[indexBeforeIt]).trimmingCurveZ);
+            if (loopIdx == insideVertex.loopIdx and curveIdx == insideVertex.curveIdxI) {
+              continue;
+            }
+          }
+          // If we end up here resort the vertex to a correct place
+          // Search correct vertex
+          auto newIt = std::ranges::find_if(vertices_, [&](const VertexVariant& checkvV) {
+            if (std::holds_alternative<NewVertex>(checkvV)) {
+              auto [loopIdx, curveIdx] = patchTrimData.getIndices(std::get<NewVertex>(checkvV).trimmingCurveZ);
+              return (loopIdx == insideVertex.loopIdx and curveIdx == insideVertex.curveIdxI);
+            }
+            return false;
+          });
+          if (newIt == vertices_.end())
+            DUNE_THROW(Dune::GridError, "this shouldnt have happend");
+          // Add the insideVertex at newIt+1
+          auto newIdx = std::distance(vertices_.begin(), newIt+1);
+          if (newIdx < i) {
+            vertices_.insert(newIt+1, insideVertex);
+            vertices_.erase(it + 1);
+          } else {
+            std::rotate(it, it + 1, newIt+1);
+          }
+        }
+      }
     }
 
     void report() const {

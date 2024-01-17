@@ -88,14 +88,15 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     }
 
     // Now we have to check for points inside the elements
-    for (const auto& pt : patchTrimData.getPointsInPatch(0)) {
-      if (const PointD cp{pt.pt[0], pt.pt[1]}; PointInPolygon(cp, eleRect) == PointInPolygonResult::IsInside) {
-        result.addInsideVertex(cp, pt.curveIdxI, pt.curveIdxJ, 0);
+    for (auto i : std::views::iota(0ul, patchTrimData.loops().size())) {
+      for (const auto& pt : patchTrimData.getPointsInPatch(i)) {
+        if (const PointD cp{pt.pt[0], pt.pt[1]}; PointInPolygon(cp, eleRect) == PointInPolygonResult::IsInside) {
+          result.addInsideVertex(cp, pt.curveIdxI, pt.curveIdxJ, i);
+        }
       }
     }
 
     // Add startpoints of trimming curves to the vertices if they are on one of the element edges
-    // \todo not exactly sure but i think this only has to check the outer boundary loop
     for (auto cI = 0; cI < patchTrimData.loops().front().curves().size(); ++cI) {
       const auto& curve = patchTrimData.loops().front().curves()[cI];
 
@@ -119,7 +120,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       }
     }
 
-    result.finish();
+    result.finish(patchTrimData);
 
     // While developing
     result.report();

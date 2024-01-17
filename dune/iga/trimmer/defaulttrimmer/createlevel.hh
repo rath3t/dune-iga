@@ -172,8 +172,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
           // Testing Purposes
           auto resName = "ele_" + std::to_string(unTrimmedElementIndex + trimmedElementIndex);
-          eleTrimData.drawResult(resName, true);
-          eleTrimData.drawResult(resName, false);
+          // eleTrimData.drawResult(resName, true);
+          // eleTrimData.drawResult(resName, false);
+          eleTrimData.drawResult(resName, false, false);
         }
 
         auto hostId = globalIdSetParameterSpace.id(ele);
