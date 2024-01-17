@@ -617,6 +617,8 @@ namespace Dune::IGANEW::Splines {
   template <std::integral auto dim, std::integral auto dimworld, typename ScalarType>
   auto knotRefinement(const NURBSPatchData<dim, dimworld, ScalarType>& oldData, const std::vector<double>& newKnots,
                       const int refinementDirection) {
+    if (newKnots.empty())
+      return oldData;
     assert(std::ranges::is_sorted(newKnots)
            && "You passed a non-sorted vector of new knots. Sort it first or check if you passed the correct vector.");
     using NurbsPatchData = NURBSPatchData<dim, dimworld, ScalarType>;

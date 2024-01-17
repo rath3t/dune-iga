@@ -15,8 +15,9 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
   auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 100) -> double {
     auto linSpace = Utilities::linspace(curve.domain().front(), N);
-    std::vector<double> distances;
-    std::ranges::transform(linSpace, std::back_inserter(distances),
+          auto distances
+                =
+    std::ranges::transform_view(linSpace,
                            [&](const auto u) { return distance(pt, curve.global(u)); });
     auto min_idx = std::ranges::distance(distances.begin(), std::ranges::min_element(distances));
     return linSpace[min_idx];
@@ -45,7 +46,8 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     auto pos = corners[edgeIdx];
     auto dir = edgeDirections[edgeIdx];
 
-    auto guessTParam = FieldVector<double, 2>{findGoodStartingPoint(curvePatchGeo, ip), 0.5};
+    double lineGuess = (edgeIdx==0 or edgeIdx ==2)?(ip.x-pos[0])/dir[0]:(ip.y-pos[1])/dir[1];
+    auto guessTParam = FieldVector<double, 2>{findGoodStartingPoint(curvePatchGeo, ip), lineGuess};
 
     auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
     if (success == FindIntersectionCurveAndLineResult::sucess) return std::make_pair(tParam[0], curvePoint);
@@ -53,7 +55,9 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       DUNE_THROW(Dune::GridError, "Couldn't find intersection Point, lines are parallel");
     }
 
-    assert(Util::approxSamePoint(ip, curvePoint, 1e-4) && "Intersection Point and Curve Point are not the same");
+    if(not Util::approxSamePoint(ip, curvePoint, 1e-4) ) {
+      DUNE_THROW(Dune::GridError, "Intersection Point and Curve Point are not the same. The intersection point is " << ip<< " but the point on the curve is " << curvePoint);
+    }
 
     auto domain = curvePatchGeo.domain();
     if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0].front()})))

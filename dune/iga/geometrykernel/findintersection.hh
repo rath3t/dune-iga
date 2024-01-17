@@ -47,7 +47,7 @@ namespace Dune::IGANEW {
 
     struct Line {
       FieldVector<ScalarType, dim> operator()(ScalarType t) { return pos + t * dir; }
-      FieldVector<ScalarType, dim> jacobian() { return dir; }
+      const FieldVector<ScalarType, dim>& jacobian() { return dir; }
 
       const FieldVector<ScalarType, dim>& pos;
       const FieldVector<ScalarType, dim>& dir;
@@ -60,7 +60,7 @@ namespace Dune::IGANEW {
     FieldVector<ScalarType, 2> curvePoint;
     auto domain = geoCurve.domain();
 
-    const FieldVector lineDerivative = line.jacobian();
+    const FieldVector<ScalarType, dim>& lineDerivative = line.jacobian();
     for (int iter = 0; iter < maxIterations; ++iter) {
       curvePoint                              = geoCurve.global(tParameter[0]);
       const FieldVector curveDerivative       = geoCurve.jacobianTransposed(tParameter[0])[0];
