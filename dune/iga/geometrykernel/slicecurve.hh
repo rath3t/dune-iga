@@ -31,28 +31,29 @@ namespace Dune::IGANEW {
     auto tmpPatchData = Splines::knotRefinement(patchData, newKnots, 0);
 
     std::vector<ScalarType> tmpKnots{tmpPatchData.knotSpans.front()};
-    decltype(control_points) tmpCp{tmpPatchData.controlPoints.directGetAll()};
+    const auto&  tmpCp=tmpPatchData.controlPoints.directGetAll();
 
     std::vector<ScalarType> leftKnots;
     const int span_l = Splines::findSpan(degree, u, tmpKnots) + 1;
-    for (int i = 0; i < span_l; ++i)
-      leftKnots.push_back(tmpKnots[i]);
+    // insert all old knots left of u
+    leftKnots.insert(leftKnots.end(), tmpKnots.begin(), std::next(tmpKnots.begin(), span_l));
+    // append u once since we already inserted it above r times, so we need to insert it r+1 times, which provides C^0 continuity there
     leftKnots.push_back(u);
 
     std::vector<ScalarType> rightKnots;
-    for (int i = 0; i < degree + 1; ++i)
-      rightKnots.push_back(u);
-    for (int i = span_l; i < tmpKnots.size(); ++i)
-      rightKnots.push_back(tmpKnots[i]);
+    // insert u degree+1 times at the front to provide C^0 continuity there
+    rightKnots.insert(rightKnots.end(), degree + 1, u);
+    // append the rest of the old knots as they are
+    rightKnots.insert(rightKnots.end(), std::next(tmpKnots.begin(), span_l), tmpKnots.end());
 
     decltype(control_points) leftControlPoints;
     const int ks = span - degree + 1;
-    for (int i = 0; i < ks + r; ++i)
-      leftControlPoints.push_back(tmpCp[i]);
+    // add all controlpoints that live left of u, which is the range [0,ks+r[ of controlpoints
+    leftControlPoints.insert(leftControlPoints.end(), tmpCp.begin(), std::next(tmpCp.begin(), ks + r));
 
     decltype(control_points) rightControlPoints;
-    for (int i = ks + r - 1; i < tmpCp.size(); ++i)
-      rightControlPoints.push_back(tmpCp[i]);
+    // add all controlpoints that live right of u, which is the range [ks+r-1,end[ of controlpoints
+    rightControlPoints.insert(rightControlPoints.end(), std::next(tmpCp.begin(), ks + r - 1), tmpCp.end());
 
     typename GeoCurve::PatchData leftPatchData{
         {leftKnots}, typename GeoCurve::ControlPointNetType{leftControlPoints}, patchData.degree};
