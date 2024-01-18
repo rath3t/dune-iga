@@ -23,7 +23,7 @@ namespace Dune::IGANEW {
     const FieldMatrix<ScalarType, dim, 2> linearSystem({curveP1 - curveP0, -dir});
     const FieldVector<ScalarType, dim> b = pos - curveP0;
 
-    try {
+    if (not FloatCmp::eq(linearSystem.determinant(), 0.0, tol)) {
       FieldVector<ScalarType, dim> sol;
       transpose(linearSystem).solve(sol, b);
       // Map the solution to the knotSpan, thus [0,1] to [domain.left(), domain.right()]
@@ -31,12 +31,11 @@ namespace Dune::IGANEW {
 
       // Check if point is in domain
       if (not geoCurve.domain()[0].checkInside(sol[0]))
-        return std::make_tuple(FindIntersectionCurveAndLineResult::disjoint, sol, geoCurve.global(sol[0]));
+        return std::make_tuple(FindIntersectionCurveAndLineResult::disjoint, sol, curveP0);
       return std::make_tuple(FindIntersectionCurveAndLineResult::intersect, sol, geoCurve.global(sol[0]));
-    } catch (const FMatrixError&) {
-      // If system is not solvable, the lines are paralell and therefore have no intersection
-      return std::make_tuple(FindIntersectionCurveAndLineResult::parallel, tParameter, curveP0);
     }
+    // If system is not solvable, the lines are paralell and therefore have no intersection
+    return std::make_tuple(FindIntersectionCurveAndLineResult::parallel, tParameter, curveP0);
   }
 
   template <typename GeoCurve, typename ScalarType, int dim>

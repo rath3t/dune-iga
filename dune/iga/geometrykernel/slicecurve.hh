@@ -9,29 +9,27 @@
 namespace Dune::IGANEW {
 
   // Inspired by https://github.com/pradeep-pyro/tinynurbs/blob/master/include/tinynurbs/core/modify.h
-  template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
+  template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype> requires (GeoCurve::mydimension == 1)
   auto splitCurve(const GeoCurve& geoCurve, ScalarType u) -> std::pair<GeoCurve, GeoCurve> {
-    static_assert(GeoCurve::mydimension == 1);
     using ControlPointType = typename GeoCurve::ControlPointType;
+    using PatchData = typename GeoCurve::PatchData;
+    using ControlPointNetType = typename GeoCurve::ControlPointNetType;
 
-    auto knotMultiplicity = [](auto& knotVec, auto u_) {
-      return std::ranges::count_if(knotVec, [=](double val) { return FloatCmp::eq(u_, val, 1e-8); });
-    };
-
-    auto& patchData     = geoCurve.patchData();
+    const PatchData& patchData     = geoCurve.patchData();
     auto knots          = patchData.knotSpans.front();
     auto domain         = geoCurve.domain();
     auto degree         = patchData.degree[0];
 
-    auto span = Splines::findSpan(degree, u, knots);
-    int r     = degree - knotMultiplicity(knots, u);
+    const int span = Splines::findSpan(degree, u, knots);
+    const int multiplicity = std::ranges::count_if(knots, [=](double val) { return u == val ; });
+    const int r     = degree - multiplicity;
 
     std::vector<ScalarType> newKnots(r);
     std::ranges::fill(newKnots, u);
     auto tmpPatchData = Splines::knotRefinement(patchData, newKnots, 0);
 
     std::vector<ScalarType> tmpKnots{tmpPatchData.knotSpans.front()};
-    const auto&  tmpCp=tmpPatchData.controlPoints.directGetAll();
+    const auto&  tmpCp = tmpPatchData.controlPoints.directGetAll();
 
     std::vector<ScalarType> leftKnots;
     const int span_l = Splines::findSpan(degree, u, tmpKnots) + 1;
@@ -55,18 +53,23 @@ namespace Dune::IGANEW {
     // add all controlpoints that live right of u, which is the range [ks+r-1,end[ of controlpoints
     rightControlPoints.insert(rightControlPoints.end(), std::next(tmpCp.begin(), ks + r - 1), tmpCp.end());
 
-    typename GeoCurve::PatchData leftPatchData{
-        {leftKnots}, typename GeoCurve::ControlPointNetType{leftControlPoints}, patchData.degree};
-    typename GeoCurve::PatchData rightPatchData{
-        {rightKnots}, typename GeoCurve::ControlPointNetType{rightControlPoints}, patchData.degree};
+    assert(std::ranges::is_sorted(leftKnots) && "The left knotvector should be sorted, but is not.");
+    assert(std::ranges::is_sorted(rightKnots) && "The right knotvector should be sorted, but is not.");
+
+    assert(std::ranges::count(leftKnots.begin(), leftKnots.begin() + degree + 1, leftKnots.front()) == degree + 1);
+    assert(std::ranges::count(leftKnots.end() - degree - 1, leftKnots.end(), leftKnots.back()) == degree + 1);
+
+    assert(std::ranges::count(rightKnots.begin(), rightKnots.begin() + degree + 1, rightKnots.front()) == degree + 1);
+    assert(std::ranges::count(rightKnots.end() - degree - 1, rightKnots.end(), rightKnots.back()) == degree + 1);
+
+    PatchData leftPatchData{{leftKnots}, ControlPointNetType{leftControlPoints}, patchData.degree};
+    PatchData rightPatchData{{rightKnots}, ControlPointNetType{rightControlPoints}, patchData.degree};
 
     return std::make_pair(GeoCurve{leftPatchData}, GeoCurve{rightPatchData});
   }
 
-  template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
+  template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype> requires (GeoCurve::mydimension == 1)
   auto sliceCurve(const GeoCurve& geoCurve, std::array<ScalarType, 2> t) -> GeoCurve {
-    static_assert(GeoCurve::mydimension == 1);
-
     auto domain = geoCurve.domain();
     if (FloatCmp::eq(domain[0].front(), t[0]) and FloatCmp::eq(domain[0].back(), t[1])) return geoCurve;
     if (FloatCmp::eq(domain[0].front(),t[0])) return std::get<0>(splitCurve(geoCurve, t[1]));

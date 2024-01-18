@@ -13,7 +13,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     return std::hypot(p1.x - p2[0], p1.y - p2[1]);
   }
 
-  auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 100) -> double {
+  auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 200) -> double {
     auto linSpace = Utilities::linspace(curve.domain().front(), N);
           auto distances
                 =
@@ -53,10 +53,6 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     if (success == FindIntersectionCurveAndLineResult::intersect) return std::make_pair(tParam[0], curvePoint);
     if (success == FindIntersectionCurveAndLineResult::parallel) {
       DUNE_THROW(Dune::GridError, "Couldn't find intersection Point, lines are parallel");
-    }
-
-    if(not Util::approxSamePoint(ip, curvePoint, 1e-4) ) {
-      DUNE_THROW(Dune::GridError, "Intersection Point and Curve Point are not the same. The intersection point is " << ip<< " but the point on the curve is " << curvePoint);
     }
 
     auto domain = curvePatchGeo.domain();
