@@ -20,8 +20,7 @@ namespace Dune::IGANEW {
     auto domain         = geoCurve.domain();
     auto degree         = patchData.degree[0];
 
-    const int span = Splines::findSpan(degree, u, knots);
-    const int multiplicity = std::ranges::count_if(knots, [=](double val) { return u == val ; });
+    auto [multiplicity, span] = Splines::multiplicity(knots, u);
     const int r     = degree - multiplicity;
 
     std::vector<ScalarType> newKnots(r);

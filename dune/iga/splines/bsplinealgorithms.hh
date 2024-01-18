@@ -16,7 +16,7 @@ namespace Dune::IGANEW::Splines {
    * @tparam Range knotvector range
    * @param p polynomial degree of the underlying spline
    * @param u span value which is searched for
-   * @param U range where to search (knotvector
+   * @param U range where to search
    * @param offset adjust range where to start searching to improve efficiency
    * @return
    */
@@ -38,6 +38,56 @@ namespace Dune::IGANEW::Splines {
     for (auto i = 0; i < dim; ++i)
       res[i] = findSpan(p[i], u[i], U[i]);
     return res;
+  }
+
+  /**
+   * @brief Finds the multiplicity in a B-spline knot vector within the specified range.
+   *
+   * This function determines the multiplicity of a given span value 'u' within the knot vector 'U' in the specified range.
+   * The knot vector 'U' is assumed to be non-decreasing. The function returns a pair containing the multiplicity of the
+   * knot at position 'u' and the corresponding span index, which is the findSpan result.
+   *
+   * @tparam Range Random access range type representing the knot vector.
+   * @param U The knot vector range.
+   * @param u The span value to search for.
+   * @return A pair containing the multiplicity of the knot at position 'u' and the corresponding span index.
+   *
+   * @note The knot vector 'U' should be non-decreasing.
+   *
+   * @example
+   * @code
+   *
+   * std::vector<double> v({0,0,0,1,1,1,2,2,3,3,3});
+   * std::vector<double> vUnique;
+   *
+   * std::ranges::unique_copy(v, std::back_inserter(vUnique));
+   *
+   * for (double u: vUnique)
+   * {
+   *   auto [m, span] = multiplicity(v, u);
+   *   std::cout << u << " is at pos (" << span << ") with multiplicity: " << m << "\n";
+   * }
+   * @endcode
+   *
+   * The above code results in the following console output:
+   * @code
+   * 0 is at pos (2) with multiplicity: 3
+   * 1 is at pos (5) with multiplicity: 3
+   * 2 is at pos (7) with multiplicity: 2
+   * 3 is at pos (7) with multiplicity: 3
+   * @endcode
+   */
+  template <std::ranges::random_access_range Range>
+  auto multiplicity(Range&& U,typename std::remove_cvref_t<Range>::value_type u) {
+
+    auto [lit,rit] =std::ranges::equal_range(U, u);
+    auto rightPos = std::distance(U.begin(), rit) ;
+    const int multiplicity = static_cast<long int>(std::distance(lit, rit));
+    if (u >= U.back())
+      return std::make_pair(multiplicity,static_cast<long int>(rightPos-multiplicity-1));  // if the coordinate is to big we return to the last non-end span
+    if (u <= U[0])
+      return std::make_pair(multiplicity,static_cast<long int>(multiplicity-1));
+    return std::make_pair(multiplicity,static_cast<long int>(std::distance(U.begin(), rit) - 1));
   }
 
   /** @brief One dimensional b-spline basis
