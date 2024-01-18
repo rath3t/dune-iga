@@ -149,6 +149,31 @@ namespace Dune::IGANEW::Utilities {
   }
 
   /**
+ * @brief Maps a value from the domain [0,1] to another.
+ *
+ * This function maps a value from the input domain to the corresponding
+ * value in the output domain. It linearly scales and shifts the input value
+ * to fit within the output domain.
+ *
+ * @tparam T The floating-point type of the value and domains (e.g., double).
+ * @param value The value to be mapped from the input domain to the output domain.
+ * @param output The domain representing the desired range for the output value.
+ * @return The mapped value within the output domain.
+ *
+ * Example:
+ * @code
+ * Domain<double> inputDomain(0.0, 1.0);
+ * Domain<double> outputDomain(10.0, 20.0);
+ * double inputValue = 0.5;
+ * double mappedValue = mapToRange(inputValue, inputDomain, outputDomain); // mappedValue is now 15.0
+ * @endcode
+ */
+  template <std::floating_point T>
+  T mapToRangeFromZeroToOne(T value, const Domain<T>& output) {
+    return value * output.volume() + output.left();
+  }
+
+  /**
    * @brief Maps a value from one domain to another.
    *
    * This function maps a value from the input domain to the corresponding

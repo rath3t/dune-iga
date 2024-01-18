@@ -50,8 +50,8 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     auto guessTParam = FieldVector<double, 2>{findGoodStartingPoint(curvePatchGeo, ip), lineGuess};
 
     auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
-    if (success == FindIntersectionCurveAndLineResult::sucess) return std::make_pair(tParam[0], curvePoint);
-    if (success == FindIntersectionCurveAndLineResult::linesParallel) {
+    if (success == FindIntersectionCurveAndLineResult::intersect) return std::make_pair(tParam[0], curvePoint);
+    if (success == FindIntersectionCurveAndLineResult::parallel) {
       DUNE_THROW(Dune::GridError, "Couldn't find intersection Point, lines are parallel");
     }
 

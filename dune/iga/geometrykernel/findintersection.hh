@@ -1,46 +1,42 @@
 // SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
+#define DUNE_FMatrix_WITH_CHECKING
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
 namespace Dune::IGANEW {
 
-  enum class FindIntersectionCurveAndLineResult { noSucess, sucess, linesParallel };
+  enum class FindIntersectionCurveAndLineResult { disjoint, intersect, parallel };
 
   template <typename GeoCurve, typename ScalarType, int dim>
+    requires(dim == 2)
   auto findIntersectionLinearCurveAndLine(const GeoCurve& geoCurve, const FieldVector<ScalarType, dim>& pos,
                                           const FieldVector<ScalarType, dim>& dir,
                                           FieldVector<ScalarType, 2> tParameter, ScalarType tol = 1e-10) {
     assert(geoCurve.degree()[0] == 1 && "Curve has to be linear to be calling this function");
+    assert(geoCurve.patchData().controlPoints.size() == 2 && "The linear curve should only have two control points");
 
-    const FieldVector curveDerivative = geoCurve.jacobianTransposed(tParameter[0])[0];
-    const FieldVector curvePos        = geoCurve.global({geoCurve.domain()[0].front()});
+    const auto& curveP0 = geoCurve.patchData().controlPoints.directGet(0).p;
+    const auto& curveP1 = geoCurve.patchData().controlPoints.directGet(1).p;
 
-    FieldMatrix<ScalarType, dim, 2> linearSystem;
-    FieldVector<ScalarType, dim> b;
+    const FieldMatrix<ScalarType, dim, 2> linearSystem({curveP1 - curveP0, -dir});
+    const FieldVector<ScalarType, dim> b = pos - curveP0;
 
-    for (int i = 0; i < dim; i++) {
-      linearSystem[i][0] = curveDerivative[i];
-      linearSystem[i][1] = -dir[i];
-      b[i]               = pos[i] - curvePos[i];
+    try {
+      FieldVector<ScalarType, dim> sol;
+      transpose(linearSystem).solve(sol, b);
+      // Map the solution to the knotSpan, thus [0,1] to [domain.left(), domain.right()]
+      sol[0] = mapToRangeFromZeroToOne(sol[0], geoCurve.domain()[0]);
+
+      // Check if point is in domain
+      if (not geoCurve.domain()[0].checkInside(sol[0]))
+        return std::make_tuple(FindIntersectionCurveAndLineResult::disjoint, sol, geoCurve.global(sol[0]));
+      return std::make_tuple(FindIntersectionCurveAndLineResult::intersect, sol, geoCurve.global(sol[0]));
+    } catch (const FMatrixError&) {
+      // If system is not solvable, the lines are paralell and therefore have no intersection
+      return std::make_tuple(FindIntersectionCurveAndLineResult::parallel, tParameter, curveP0);
     }
-
-    // If system is not solvable, the lines are paralell and therefore have no intersection
-    if (FloatCmp::eq(linearSystem.determinant(), 0.0, tol))
-      return std::make_tuple(FindIntersectionCurveAndLineResult::linesParallel, tParameter,
-                             geoCurve.global(tParameter[0]));
-
-    FieldVector<ScalarType, dim> sol;
-    linearSystem.solve(sol, b);
-
-    // Map the solution to the knotSpan
-    sol[0] = geoCurve.domain()[0].front() + sol[0];
-
-    // Check if point is in domain
-    if (not geoCurve.domain()[0].checkInside(sol[0]))
-      return std::make_tuple(FindIntersectionCurveAndLineResult::noSucess, sol, geoCurve.global(sol[0]));
-    return std::make_tuple(FindIntersectionCurveAndLineResult::sucess, sol, geoCurve.global(sol[0]));
   }
 
   template <typename GeoCurve, typename ScalarType, int dim>
@@ -98,7 +94,9 @@ namespace Dune::IGANEW {
 
     if (not domain[0].checkInside(tParameter[0])) sucess = false;
     return std::make_tuple(
-        sucess ? FindIntersectionCurveAndLineResult::sucess : FindIntersectionCurveAndLineResult::noSucess, tParameter,
-        curvePoint);
+        sucess ? FindIntersectionCurveAndLineResult::intersect : FindIntersectionCurveAndLineResult::disjoint,
+        tParameter, curvePoint);
   }
 }  // namespace Dune::IGANEW
+
+#undef DUNE_FMatrix_WITH_CHECKING

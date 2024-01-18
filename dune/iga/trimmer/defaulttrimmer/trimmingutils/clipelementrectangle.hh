@@ -48,7 +48,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
              and std::get<0>(findIntersectionLinearCurveAndLine(curve, eleGeo.corner(vIdxMapping[edgeIndex]),
                                                                 edgeDirections[edgeIndex],
                                                                 {curve.domainMidPoint()[0], 0.5}))
-                     == FindIntersectionCurveAndLineResult::linesParallel;
+                     == FindIntersectionCurveAndLineResult::parallel;
     };
 
     clipper.SetZCallback(
