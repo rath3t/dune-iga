@@ -52,7 +52,7 @@ auto testIbraReader3d() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{200});
 
-  const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/shell-hole.ibra", 0, 1}};
+  const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/shell-hole.ibra", 0, 2}};
 
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {

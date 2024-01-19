@@ -61,7 +61,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
           // We are only interested in intersections with the edges
           if (e1bot.z > 3) return;
 
-          if (auto [isHost, idx] = isHostVertex(pt, eleRect); isHost) {
+          if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost) {
             result.addOriginalVertex(idx);
             return;
           }
@@ -84,7 +84,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
 
     for (const auto& pt : resultClosedPaths.front()) {
-      if (auto [isHost, idx] = isHostVertex(pt, eleRect); isHost) result.addOriginalVertex(idx);
+      if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost) result.addOriginalVertex(idx);
     }
 
     // Now we have to check for points inside the elements
@@ -104,7 +104,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         auto pt = curve.corner(i);
         PointD ptClipper{pt[0], pt[1]};
 
-        if (auto [isHost, idx] = isHostVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
+        if (auto [isHost, idx] = isCornerVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
           if (const auto& edgeIdx = edgeLookUp[e];

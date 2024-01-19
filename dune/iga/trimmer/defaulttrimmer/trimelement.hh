@@ -16,46 +16,39 @@ namespace Dune::IGANEW::DefaultTrim {
     // std::cout << "START " << std::endl;
     auto geo = element.geometry();
     std::array<FieldVector<double, 2>, 4> corners;  // see dune book page 127 Figure 5.12
-    corners[0] = geo.corner(0);
-    corners[1] = geo.corner(1);
-    corners[2] = geo.corner(3);
-    corners[3] = geo.corner(2);
+    for (auto i : std::views::iota(0, geo.corners())) {
+      corners[i] = geo.corner(Util::vIdxMapping[i]);
+    }
 
     auto [flag, result] = Util::clipElementRectangle(element, patchTrimData);
 
-    // Create ElementTrimData with exact intersection Points and a geometry representation of the element edges
     ElementTrimData elementTrimData(flag, element);
-
     if (flag != ElementTrimFlag::trimmed) return elementTrimData;
 
-    /*
-     * Visitors to get vertex properties
-     */
-
-    auto nextEntity  = [&](const int i) { return (i + 1) % result.vertices_.size(); };
-    auto isNewVertex = [](const auto& vV) { return std::holds_alternative<Util::ClippingResult::NewVertex>(vV); };
-    auto isHostVertex = [](const auto& vV) { return std::holds_alternative<Util::ClippingResult::HostVertex>(vV); };
-    auto isInsideVertex = [](const auto& vV) { return std::holds_alternative<Util::ClippingResult::InsideVertex>(vV); };
-    auto getPt       = [](auto&& vV) { return vV.pt; };
-    auto getHostIdx  = [](const auto& vV) { return std::get<Util::ClippingResult::HostVertex>(vV).hostIdx; };
-    auto getEdgeIdx  = [](const auto& vV) { return std::get<Util::ClippingResult::NewVertex>(vV).onEdgeIdx; };
-    auto getCurveI = [](const auto& vV) {return std::get<Util::ClippingResult::InsideVertex>(vV).curveIdxI; };
-    auto getCurveJ = [](const auto& vV) {return std::get<Util::ClippingResult::InsideVertex>(vV).curveIdxJ; };
-    auto getLoopIdx = [](const auto& vV) {return std::get<Util::ClippingResult::InsideVertex>(vV).loopIdx; };
+    auto nextEntity          = [&](const int i) { return (i + 1) % result.vertices_.size(); };
     auto getTrimmingCurveIdx = [&](auto& vV) -> std::pair<size_t, size_t> {
       return patchTrimData.getIndices(std::get<Util::ClippingResult::NewVertex>(vV).trimmingCurveZ);
     };
 
-    ///
-    // Here the actual code is starting
-    ///
+    auto throwGridError = [] {
+      DUNE_THROW(Dune::GridError, "TrimElement wasn't successfull. Could not connect element trim curves");
+    };
 
-    // Major todo: Create fallback to straight line if alog is not able to find correct Trimming CurveIdx
+    auto assertPoint = [&](const Clipper2Lib::PointD& ip, const FieldVector<ScalarType, dim>& curvePt, double prec = 0.1) {
+      if (not (FloatCmp::eq(ip.x, curvePt[0], prec) and FloatCmp::eq(ip.y, curvePt[1], prec))) {
+        std::cout << "Found ClipperPoint " << ip << " does not coincide with determined point on Curve " << curvePt << std::endl;
+        throwGridError();
+      }
+    };
+
+
+    using namespace Util;
+
+    // Major todo: Create fallback to straight line if algorithm is not able to find correct Trimming CurveIdx
     // Also todo: Make a second algo that just connects the points as lines (as template?)
 
     // State
     std::vector<FieldVector<ScalarType, dim>> foundVertices;
-    bool isOnNewEdge          = false;
     std::pair currentCurveIdx = {std::numeric_limits<size_t>::infinity(), std::numeric_limits<size_t>::infinity()};
     double currentT           = std::numeric_limits<double>::infinity();
 
@@ -70,16 +63,14 @@ namespace Dune::IGANEW::DefaultTrim {
       if (isHostVertex(vV1) and isHostVertex(vV2)) {
         elementTrimData.addEdge(Util::giveEdgeIdx(getHostIdx(vV1), getHostIdx(vV2)));
         foundVertices.push_back({pt2.x, pt2.y});
-        continue;
       }
 
       // Second case edge begins on a hostVertes and ends on a newVertex
-      if (isHostVertex(vV1) and isNewVertex(vV2)) {
+      else if (isHostVertex(vV1) and isNewVertex(vV2)) {
         currentCurveIdx = getTrimmingCurveIdx(vV2);
         auto [tParam, curvePoint]
-                = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
-        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
-                  << std::endl;
+            = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
+        assertPoint(pt2, curvePoint);
 
         FieldVector<ScalarType, dim> p
             = foundVertices.empty() ? FieldVector<ScalarType, dim>{pt1.x, pt1.y} : foundVertices.back();
@@ -87,62 +78,59 @@ namespace Dune::IGANEW::DefaultTrim {
         elementTrimData.addEdgeHostNew(getEdgeIdx(vV2), trimmedEdge, curvePoint);
         foundVertices.push_back(curvePoint);
 
-        isOnNewEdge = true;
         currentT    = tParam;
-        continue;
       }
       // Third case newVertex - newVertex
-      if (isNewVertex(vV1) and isNewVertex(vV2)) {
+      else if (isNewVertex(vV1) && isNewVertex(vV2)) {
+        // If there is no Vertex yet found add search for vV1 and add it to the foundVertices, also set currentCurveIdx
         if (foundVertices.empty()) {
           currentCurveIdx = getTrimmingCurveIdx(vV1);
-          FieldVector<ScalarType, dim> curvePoint;
-          std::tie(currentT, curvePoint)
+          auto [currentT, curvePoint]
               = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV1), pt1, corners);
-          std::cout << "Found: " << curvePoint << " From Clipping: " << pt1.x << " " << pt1.y << " t: " << currentT
-                    << std::endl;
+          assertPoint(pt1, curvePoint);
+
           foundVertices.push_back(curvePoint);
         }
-        assert(getTrimmingCurveIdx(vV2) == currentCurveIdx);
+        if (getTrimmingCurveIdx(vV2) != currentCurveIdx)
+          throwGridError();
 
         auto [tParam, curvePoint]
-        = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
-        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
-                  << std::endl;
+            = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
+        assertPoint(pt2, curvePoint);
 
+        // If currentT > tParam it can have 2 reasons. 1) the trim id only on one side of the element, and it has to connect back
+        // or 2) if the trimming curve consist only of one curve where it has the same front and back Controlpoint, so sometimes
+        // the wrong tParam (front or back) gets determined
         if (currentT > tParam) {
-          // There is an extra case when the current curve is on an inner loop wich only consists of one curve
-          if (currentCurveIdx.first > 0 and patchTrimData.loops()[currentCurveIdx.first].size() == 1) {
+          bool success = false;
+          if (currentCurveIdx.first > 0 && patchTrimData.loops()[currentCurveIdx.first].size() == 1) {
             auto curve = patchTrimData.getCurve(currentCurveIdx);
-            if (auto cp = curve.patchData().controlPoints.directGetAll();
-              FloatCmp::eq(cp.front().p, cp.back().p)) {
+            if (auto cp = curve.patchData().controlPoints.directGetAll(); FloatCmp::eq(cp.front().p, cp.back().p)) {
               auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, curve.domain()[0].back());
               elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
-              isOnNewEdge = false;
               currentT    = std::numeric_limits<double>::infinity();
-            } else {
-              DUNE_THROW(Dune::GridError, "Something doesn't add up");
+              success = true;
             }
           } else if (getEdgeIdx(vV1) == getEdgeIdx(vV2)) {
             auto trimmedEdge = Util::createHostGeometry<TrimmingCurve>(foundVertices.back(), curvePoint);
             elementTrimData.addEdgeNewNewOnHost(getEdgeIdx(vV2), trimmedEdge, curvePoint);
-            isOnNewEdge = true;
             currentT    = tParam;
-          } else {
-            DUNE_THROW(Dune::GridError, "Something doesn't add up");
+            success = true;
           }
+          if (not success)
+            throwGridError();
         } else {
           auto elementTrimmingCurve
               = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
           elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
-          isOnNewEdge = false;
           currentT    = std::numeric_limits<double>::infinity();
         }
-        foundVertices.push_back(curvePoint);
 
-        continue;
+        foundVertices.push_back(curvePoint);
       }
+
       // Fourth case edge begins on a newVertex and ends in a HostVertex
-      if (isNewVertex(vV1) and isHostVertex(vV2)) {
+      else if (isNewVertex(vV1) and isHostVertex(vV2)) {
         auto v2 = Dune::FieldVector<ScalarType, dim>{pt2.x, pt2.y};
 
         FieldVector<ScalarType, dim> p;
@@ -155,40 +143,38 @@ namespace Dune::IGANEW::DefaultTrim {
         auto trimmedEdge = Util::createHostGeometry<TrimmingCurve>(p, v2);
         elementTrimData.addEdgeNewHost(getEdgeIdx(vV1), trimmedEdge, getHostIdx(vV2));
 
-        foundVertices.push_back({pt2.x, pt2.y});
-        continue;
+        foundVertices.push_back(v2);
       }
       // Additional cases to cover inside vertices
-      if (isNewVertex(vV1) and isInsideVertex(vV2)) {
+      else if (isNewVertex(vV1) and isInsideVertex(vV2)) {
         if (foundVertices.empty()) {
           currentCurveIdx = getTrimmingCurveIdx(vV1);
           FieldVector<ScalarType, dim> curvePoint;
           std::tie(currentT, curvePoint)
               = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV1), pt1, corners);
-          std::cout << "Found: " << curvePoint << " From Clipping: " << pt1.x << " " << pt1.y << " t: " << currentT
-                    << std::endl;
+          assertPoint(pt1, curvePoint);
+
           foundVertices.push_back(curvePoint);
         }
-        const auto& curve = patchTrimData.loops()[getLoopIdx(vV2)].curves()[getCurveI(vV2)];
-        double tParam = curve.domain().front().back();
+        const auto& curve         = patchTrimData.loops()[getLoopIdx(vV2)].curves()[getCurveI(vV2)];
+        double tParam             = curve.domain().front().back();
         auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, tParam);
-        auto curvePoint = curve.corner(1);
+        auto curvePoint           = curve.corner(1);
         elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
         foundVertices.push_back(curvePoint);
-        continue;
       }
-      if (isInsideVertex(vV1) and isNewVertex(vV2)) {
-        const auto& curve = patchTrimData.loops()[getLoopIdx(vV1)].curves()[getCurveJ(vV1)];
-        currentT = curve.domain().front().front();
-        auto [tParam, curvePoint]
-            = Util::callFindIntersection(curve, getEdgeIdx(vV2), pt2, corners);
-        std::cout << "Found: " << curvePoint << " From Clipping: " << pt2.x << " " << pt2.y << " t: " << tParam
-                  << std::endl;
-        auto elementTrimmingCurve
-              = Util::createTrimmingCurveSlice(curve, currentT, tParam);
+      else if (isInsideVertex(vV1) and isNewVertex(vV2)) {
+        const auto& curve         = patchTrimData.loops()[getLoopIdx(vV1)].curves()[getCurveJ(vV1)];
+        currentT                  = curve.domain().front().front();
+        auto [tParam, curvePoint] = Util::callFindIntersection(curve, getEdgeIdx(vV2), pt2, corners);
+        assertPoint(pt2, curvePoint);
+
+        auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, tParam);
         elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
         foundVertices.push_back(curvePoint);
-        continue;
+      }
+      else {
+        throwGridError();
       }
     }
     elementTrimData.finalize();
