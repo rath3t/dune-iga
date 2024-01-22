@@ -317,6 +317,102 @@ namespace Dune::IGANEW::GeometryKernel {
     /* @brief Get the patch data of the NURBS patch. */
     auto& patchData() { return patchData_; }
 
+    struct ConnectionResult {
+      bool isConnected;
+      int boundary;
+      operator bool() const { return isConnected; }
+    };
+
+    /**
+     * @brief Check if the patch is connected at the given boundary.
+     *
+     * @details This function checks if the patch is connected at the specified boundary. The boundary index is
+     * determined by the vertex numbering for lines, the edge numbering for quadrilaterals, and the face numbering for
+     * cubes. For more details, refer to DUNE Book Chapter 5.5.
+     *
+     * @param boundary The index of the boundary to check (vertex for lines, edge for quadrilaterals, face for cubes).
+     * @param tol Absolute tolerance for comparing control points. Default is 1e-8.
+     *
+     * @return A ConnectionResult object indicating whether the patch is connected at the specified boundary.
+     *         The isConnected member is true if the patch is connected, and the boundary member is the index of the
+     * adjacent boundary if connected, or -1 if not connected.
+     *
+     * @tparam boundary The boundary index to check.
+     * @tparam tol Absolute tolerance for comparing control points. Default is 1e-8.
+     *
+     * @throws Dune::NotImplemented If the dimension is greater than 3 (higher dimensions not implemented yet).
+     */
+    ConnectionResult isConnectedAtBoundary(int boundary, double tol = 1e-8) const {
+      const auto& cps = patchData_.controlPoints;
+      if constexpr (mydimension == 1) {
+        if (auto cp = cps.directGetAll();
+            FloatCmp::eq<FieldVector<ctype, coorddimension>, FloatCmp::CmpStyle::absolute>(cp.front().p, cp.back().p,
+                                                                                           tol))
+          return ConnectionResult(true, !boundary);
+        else
+          return ConnectionResult(false, -1);
+      } else if constexpr (mydimension == 2) {
+        auto edgeRange = [&cps](int b) {
+          switch (b) {
+            case 0:
+              return cps.hyperSurfFront({1});
+            case 1:
+              return cps.hyperSurfBack({1});
+            case 2:
+              return cps.hyperSurfFront({0});
+            case 3:
+              return cps.hyperSurfBack({0});
+            default:
+              assert("No valid boundary index");
+          }
+          __builtin_unreachable();
+        };
+
+        auto theEdgeToCheck = edgeRange(boundary);
+        for (auto i : Dune::range(4)) {
+          if (boundary == i) continue;
+          if (std::ranges::equal(theEdgeToCheck, edgeRange(i), [tol](auto f, auto s) {
+                return FloatCmp::eq<FieldVector<ctype, coorddimension>, FloatCmp::CmpStyle::absolute>(f.p, s.p, tol);
+              }))
+            return ConnectionResult(true, i);
+        }
+        return ConnectionResult(false, -1);
+      } else if constexpr (mydimension == 3) {
+        auto edgeRange = [&cps](int b) {
+          switch (b) {
+            case 0:
+              return cps.hyperSurfFront({1, 2});
+            case 1:
+              return cps.hyperSurfBack({1, 2});
+            case 2:
+              return cps.hyperSurfFront({0, 1});
+            case 3:
+              return cps.hyperSurfBack({0, 1});
+            case 4:
+              return cps.hyperSurfFront({0, 2});
+            case 5:
+              return cps.hyperSurfBack({0, 2});
+            default:
+              assert("No valid boundary index");
+          }
+          __builtin_unreachable();
+        };
+
+        auto theEdgeToCheck = edgeRange(boundary);
+        for (auto i : Dune::range(6)) {
+          if (boundary == i) continue;
+          if (std::ranges::equal(theEdgeToCheck, edgeRange(i), [tol](auto f, auto s) {
+                return FloatCmp::eq<FieldVector<ctype, coorddimension>, FloatCmp::CmpStyle::absolute>(f.p, s.p, tol);
+              }))
+            return ConnectionResult(true, i);
+        }
+        return ConnectionResult(false, -1);
+      } else
+        DUNE_THROW(Dune::NotImplemented,
+                   "Higher dimensions not implemented yet. But should be straight-forward to do so, somebody just has "
+                   "to come up with a resenable indexing of hyper surfaces.");
+    }
+
     friend auto referenceElement(const NURBSPatch& geo) {
       return referenceElement<double, mydimension>(Dune::GeometryTypes::cube(mydimension));
     }

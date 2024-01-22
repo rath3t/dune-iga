@@ -456,6 +456,7 @@ namespace Dune::IGANEW {
     auto untrimmedElementNumbers(int lvl) const { return patchGeometries_[lvl].numberOfSpans(); }
 
     const auto& trimmer() const { return *trimmer_; }
+    const auto& patchGeometry(int i) const { return patchGeometries_.at(i); }
 
   private:
     PatchGrid() = default;

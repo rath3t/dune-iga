@@ -16,13 +16,9 @@
 namespace Dune::IGANEW {
 
   namespace Impl {
-    template <std::integral auto netdim, typename ValueType>
+    template <std::integral auto netdim, typename ValueType, bool isConst = false>
     class HyperSurfaceIterator;
 
-    template <std::integral auto netdim1, typename ValueType1>
-    HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
-    template <std::integral auto netdim1, typename ValueType1>
-    HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l, int inc);
   }  // namespace Impl
 
   /**
@@ -366,8 +362,13 @@ namespace Dune::IGANEW {
 
     Impl::HyperSurfaceIterator<netdim, value_type> hyperSurfBegin(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
-      return Impl::HyperSurfaceIterator(*this, direction, 0);
+      return Impl::HyperSurfaceIterator<netdim, value_type, false>(*this, direction, 0);
     }
+
+    auto hyperSurfFront(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
+      return *this->hyperSurfBegin(direction);
+    }
+
     Impl::HyperSurfaceIterator<netdim, value_type> hyperSurfEnd(
         const std::array<int, (std::size_t)(netdim - 1)>& direction) {
       int directionEnd;
@@ -380,7 +381,58 @@ namespace Dune::IGANEW {
       } else
         directionEnd = this->strideSizes()[0];
 
-      return Impl::HyperSurfaceIterator(*this, direction, directionEnd);
+      return Impl::HyperSurfaceIterator<netdim, value_type, false>(*this, direction, directionEnd);
+    }
+
+    auto hyperSurfBack(const std::array<int, (std::size_t)(netdim - 1)>& direction) {
+      int directionEnd;
+      if constexpr (netdim != 0) {
+        for (int dirI = 0, i = 0; i < netdim; ++i) {
+          if (dirI < direction.size() && i == direction.at(dirI++)) continue;
+          directionEnd = this->strideSizes()[i] - 1;
+          break;
+        }
+      } else
+        directionEnd = this->strideSizes()[0] - 1;
+
+      return *Impl::HyperSurfaceIterator<netdim, value_type, false>(*this, direction, directionEnd);
+    }
+
+    Impl::HyperSurfaceIterator<netdim, value_type, true> hyperSurfBegin(
+        const std::array<int, (std::size_t)(netdim - 1)>& direction) const {
+      return Impl::HyperSurfaceIterator<netdim, value_type, true>(*this, direction, 0);
+    }
+
+    auto hyperSurfFront(const std::array<int, (std::size_t)(netdim - 1)>& direction) const {
+      return *this->hyperSurfBegin(direction);
+    }
+    Impl::HyperSurfaceIterator<netdim, value_type, true> hyperSurfEnd(
+        const std::array<int, (std::size_t)(netdim - 1)>& direction) const {
+      int directionEnd;
+      if constexpr (netdim != 0) {
+        for (int dirI = 0, i = 0; i < netdim; ++i) {
+          if (dirI < direction.size() && i == direction.at(dirI++)) continue;
+          directionEnd = this->strideSizes()[i];
+          break;
+        }
+      } else
+        directionEnd = this->strideSizes()[0];
+
+      return Impl::HyperSurfaceIterator<netdim, value_type, true>(*this, direction, directionEnd);
+    }
+
+    auto hyperSurfBack(const std::array<int, (std::size_t)(netdim - 1)>& direction) const {
+      int directionBack;
+      if constexpr (netdim != 0) {
+        for (int dirI = 0, i = 0; i < netdim; ++i) {
+          if (dirI < direction.size() && i == direction.at(dirI++)) continue;
+          directionBack = this->strideSizes()[i] - 1;
+          break;
+        }
+      } else
+        directionBack = this->strideSizes()[0] - 1;
+
+      return *Impl::HyperSurfaceIterator<netdim, value_type, true>(*this, direction, directionBack);
     }
 
   private:
@@ -393,11 +445,12 @@ namespace Dune::IGANEW {
       -> MultiDimensionalNet<netdim, value_type>;
 
   namespace Impl {
-    template <std::integral auto netdim, typename ValueType>
+    template <std::integral auto netdim, typename ValueType, bool isConst>
     class HyperSurfaceIterator {
     public:
-      HyperSurfaceIterator(MultiDimensionalNet<netdim, ValueType>& net, const std::array<int, netdim - 1>& direction,
-                           int at)
+      using MDNetType = std::conditional_t<isConst, const MultiDimensionalNet<netdim, ValueType>,
+                                           MultiDimensionalNet<netdim, ValueType>>;
+      HyperSurfaceIterator(MDNetType& net, const std::array<int, netdim - 1>& direction, int at)
           : net_{&net}, direction_{direction}, at_{at} {
         std::array<int, netdim - 1> indicesSurface;
         for (int i = 0; i < indicesSurface.size(); ++i)
@@ -454,7 +507,7 @@ namespace Dune::IGANEW {
         else
           multiIndex[0] = at_;
 
-        auto objectExtractor = [ multiIndex, this ](auto mI) mutable -> auto& {
+        auto objectExtractor = [ multiIndex, *this ](auto mI) mutable -> auto& {
           if constexpr (netdim != 1)
             for (int i = 0; i < direction_.size(); ++i)
               multiIndex[direction_[i]] = mI[i];
@@ -466,25 +519,18 @@ namespace Dune::IGANEW {
 
       auto operator->() { return *this; }
 
+      friend HyperSurfaceIterator operator+(const HyperSurfaceIterator& l, int inc) {
+        return HyperSurfaceIterator(*(l.net_), l.direction_, l.at_ + inc);
+      }
+
+      friend HyperSurfaceIterator operator-(const HyperSurfaceIterator& l, int inc) { return l + (-inc); }
+
     private:
-      MultiDimensionalNet<netdim, ValueType>* net_;
+      MDNetType* net_;
       std::array<int, netdim - 1> direction_;
       int at_;
-      template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator+(const HyperSurfaceIterator<netdim1, ValueType1>& l,
-                                                                 int inc);
-      template <std::integral auto netdim1, typename ValueType1>
-      friend HyperSurfaceIterator<netdim1, ValueType1> operator-(const HyperSurfaceIterator<netdim1, ValueType1>& l,
-                                                                 int inc);
     };
-    template <std::integral auto netdim, typename ValueType>
-    HyperSurfaceIterator<netdim, ValueType> operator+(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {
-      return HyperSurfaceIterator<netdim, ValueType>(*(l.net_), l.direction_, l.at_ + inc);
-    }
-    template <std::integral auto netdim, typename ValueType>
-    HyperSurfaceIterator<netdim, ValueType> operator-(const HyperSurfaceIterator<netdim, ValueType>& l, const int inc) {
-      return l + (-inc);
-    }
+
   }  // namespace Impl
 
   template <std::integral auto netdim, typename lValueType, typename rValueType>

@@ -98,32 +98,31 @@ namespace Dune::IGANEW::DefaultTrim {
             = Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), getEdgeIdx(vV2), pt2, corners);
         assertPoint(pt2, curvePoint);
 
-        // If currentT > tParam it can have 2 reasons. 1) the trim id only on one side of the element, and it has to connect back
-        // or 2) if the trimming curve consist only of one curve where it has the same front and back Controlpoint, so sometimes
-        // the wrong tParam (front or back) gets determined
+        // If currentT > tParam it can have 2 reasons. 1) the trim id only on one side of the element, and it has to
+        // connect back or 2) if the trimming curve consist only of one curve where it has the same front and back
+        // Controlpoint, so sometimes the wrong tParam (front or back) gets determined
         if (currentT > tParam) {
           bool success = false;
           if (currentCurveIdx.first > 0 && patchTrimData.loops()[currentCurveIdx.first].size() == 1) {
             auto curve = patchTrimData.getCurve(currentCurveIdx);
-            if (auto cp = curve.patchData().controlPoints.directGetAll(); FloatCmp::eq(cp.front().p, cp.back().p)) {
+            if (curve.isConnectedAtBoundary(0)) {
               auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, curve.domain()[0].back());
               elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
-              currentT    = std::numeric_limits<double>::infinity();
-              success = true;
+              currentT = std::numeric_limits<double>::infinity();
+              success  = true;
             }
           } else if (getEdgeIdx(vV1) == getEdgeIdx(vV2)) {
             auto trimmedEdge = Util::createHostGeometry<TrimmingCurve>(foundVertices.back(), curvePoint);
             elementTrimData.addEdgeNewNewOnHost(getEdgeIdx(vV2), trimmedEdge, curvePoint);
-            currentT    = tParam;
-            success = true;
+            currentT = tParam;
+            success  = true;
           }
-          if (not success)
-            throwGridError();
+          if (not success) throwGridError();
         } else {
           auto elementTrimmingCurve
               = Util::createTrimmingCurveSlice(patchTrimData.getCurve(currentCurveIdx), currentT, tParam);
           elementTrimData.addEdgeNewNew(elementTrimmingCurve, curvePoint);
-          currentT    = std::numeric_limits<double>::infinity();
+          currentT = std::numeric_limits<double>::infinity();
         }
 
         foundVertices.push_back(curvePoint);

@@ -184,6 +184,21 @@ auto testNurbsGridCylinder() {
 
   TestSuite testSuite;
 
+  auto patchGeo = grid.patchGeometry(0);
+
+  // Since this is only a quarter of a cylinder no glueing should be present
+  auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(0);
+  testSuite.check(!glued) << "The edge " << 0 << " should be glued!";
+  testSuite.check(edgeIndex == -1);
+  auto [glued2, edgeIndex2] = patchGeo.isConnectedAtBoundary(0);
+  testSuite.check(!glued2) << "The edge " << 2 << " shouldn't be glued!";
+  testSuite.check(edgeIndex == -1);
+
+  Dune::RefinementIntervals refinementIntervals1(3);
+  SubsamplingVTKWriter<decltype(grid.leafGridView())> vtkWriter(grid.leafGridView(), refinementIntervals1);
+  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-Zylinder");
+
   testSuite.subTest(thoroughGridCheck(grid));
   return testSuite;
 }
@@ -205,6 +220,33 @@ auto testHierarchicPatch() {
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
   Dune::IGANEW::PatchGrid<2, 3, GridFamily> patch(nurbsPatchData);
+
+  auto glueIndicator = [](int i) {
+    switch (i) {
+      case 0:
+        return 1;
+      case 1:
+        return 0;
+      case 2:
+        return 3;
+      case 3:
+        return 2;
+      default:
+        DUNE_THROW(RangeError, "Invalid index");
+    }
+  };
+  auto patchGeo = patch.patchGeometry(0);
+  for (auto i : Dune::range(4)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(glued) << "The edge " << i << " should be glued!";
+    t.check(edgeIndex == glueIndicator(i))
+        << "The edge " << i << " should be glued to edge " << glueIndicator(i) << " but is glued to " << edgeIndex;
+  }
+
+  Dune::RefinementIntervals refinementIntervals1(3);
+  SubsamplingVTKWriter<decltype(patch.leafGridView())> vtkWriter(patch.leafGridView(), refinementIntervals1);
+  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-Torus");
 
   t.subTest(thoroughGridCheck(patch));
 
@@ -326,6 +368,13 @@ auto testNURBSGridCurve() {
 
   TestSuite t;
   IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
+
+  auto patchGeo = grid.patchGeometry(0);
+
+  auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(0);
+  t.check(glued) << "The edge " << 0 << " should be glued!";
+  t.check(edgeIndex == -1);
+
   grid.globalRefine(3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
@@ -389,6 +438,13 @@ auto testNURBSGridSurface() {
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
+  auto patchGeo = grid.patchGeometry(0);
+  for (auto i : Dune::range(4)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(!glued) << "The edge " << i << " shouldn't be glued!";
+    t.check(edgeIndex == -1);
+  }
+
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
   vtkWriter.write("NURBSGridTest-Surface");
@@ -451,6 +507,14 @@ auto test3DGrid() {
 
   auto gridView = grid.leafGridView();
   TestSuite t;
+  auto patchGeo = grid.patchGeometry(0);
+
+  for (auto i : Dune::range(6)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(!glued) << "The surface " << i << " shouldn't be glued!";
+    t.check(edgeIndex == -1);
+  }
+
   t.subTest(checkUniqueEdges(gridView));
   t.subTest(checkUniqueSurfaces(gridView));
 
