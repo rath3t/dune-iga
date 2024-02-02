@@ -140,7 +140,6 @@ namespace Dune::IGANEW::DefaultTrim {
     auto getCurve(const std::pair<size_t, size_t>& indices) const -> const TrimmingCurve& {
       return loops_[indices.first].curves()[indices.second];
     }
-    auto getSplitter() const -> typename CurveManager::idx_t { return manager_.splitter_; }
 
     auto getPointsInPatch(size_t loopIndex) const -> const std::vector<Impl::PointInPatch<ctype>>& {
       return pointsInPatch_.at(loopIndex);

@@ -17,7 +17,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       -> std::tuple<ElementTrimFlag, ClippingResult> {
     using namespace Clipper2Lib;
 
-    auto eleGeo = element.geometry();
+    auto eleGeo                          = element.geometry();
     static constexpr int numberOfCorners = 4;
 
     PathD eleRect;
@@ -27,19 +27,6 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     }
 
     const auto& trimmingCurves = patchTrimData.clipperLoops();
-
-    // @todo check z value if same as eleRect -> full
-    auto isFullElement
-        = [&](const auto& clippedEdges) { return FloatCmp::eq(Area(clippedEdges), Area(eleRect), 1e-8); };
-
-    // First determine if element is trimmed
-    const auto intersectResult = Intersect({eleRect}, trimmingCurves, FillRule::NonZero, 8);
-
-    if (intersectResult.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
-    if (isFullElement(intersectResult.front())) {
-      assert(intersectResult.size()==1 && "If the element is full, there should be only one path");
-      return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
-    }
 
     // Element is trimmed
     ClipperD clipper(8);
@@ -53,30 +40,31 @@ namespace Dune::IGANEW::DefaultTrim::Util {
                      == IntersectionCurveAndLine::parallel;
     };
 
-    clipper.SetZCallback(
-        [&](const PointD& rectangleFirstPoint, const PointD& rectangleSecondPoint, const PointD& firstTrimmingCurvePoint, const PointD& secondTrimmingCurvePoint,
-          const PointD& intersectionPoint) {
+    clipper.SetZCallback([&](const PointD& rectangleFirstPoint, const PointD& rectangleSecondPoint,
+                             const PointD& firstTrimmingCurvePoint, const PointD& secondTrimmingCurvePoint,
+                             const PointD& intersectionPoint) {
+      assert(rectangleFirstPoint.z < 4 && "Intersection should only occur with the rectangle edges");
+      assert(rectangleSecondPoint.z < 4 && "Intersection should only occur with the rectangle edges");
 
-          // We are only interested in intersections with the edges
-          // if (rectangleFirstPoint.z > 3) return;
-          assert(rectangleFirstPoint.z < 4 && "Intersection should only occur with the rectangle edges");
+      const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
+      if (isHost) {
+        result.addOriginalVertex(idx);
+        return;
+      }
 
-          auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
-          if (isHost) {
-            result.addOriginalVertex(idx);
-            return;
-          }
+      const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z, rectangleSecondPoint.z);
+      assert(patchTrimData.getIndices(firstTrimmingCurvePoint.z).first
+                 == patchTrimData.getIndices(secondTrimmingCurvePoint.z).first
+             && "The points of the trimming curves should be on the same loop");
+      assert(firstTrimmingCurvePoint.z==secondTrimmingCurvePoint.z or secondTrimmingCurvePoint.z== intersectionPoint.z or firstTrimmingCurvePoint.z== intersectionPoint.z &&
+  "The indices of the trimming curves should be the same or the intersection point should be on one of the two second curves");
+      const auto curveZ = secondTrimmingCurvePoint.z;
 
-          const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z, rectangleSecondPoint.z);
-          assert(firstTrimmingCurvePoint.z==secondTrimmingCurvePoint.z &&
-            "The z values of the trimming curve points should have a difference of 1, since they should belong to the same curve");
-          const auto curveZ  = secondTrimmingCurvePoint.z;
+      // Now check that we don't have a parallel intersection
+      if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
 
-          // Now check that we don't have a parallel intersection
-          if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
-
-          result.addNewVertex(edgeIdx, intersectionPoint, curveZ);
-        });
+      result.addNewVertex(edgeIdx, intersectionPoint, curveZ);
+    });
 
     PathsD resultClosedPaths{};
     PathsD resultOpenPaths{};
@@ -85,6 +73,18 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     clipper.AddSubject({eleRect});
 
     clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
+    assert(resultOpenPaths.empty() && "There should be no open paths in the clipping result");
+
+    auto isFullElement
+        = [&](const auto& clippedEdges) {
+          return clippedEdges.size()==4 and (clippedEdges[0].z < 4 and clippedEdges[1].z <4 and clippedEdges[2].z <4 and clippedEdges[3].z <4);
+        };
+
+    if (resultClosedPaths.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
+    if (isFullElement(resultClosedPaths.front())) {
+      assert(resultClosedPaths.size() == 1 && "If the element is full, there should be only one path");
+      return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
+    }
 
     for (const auto& pt : resultClosedPaths.front()) {
       if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost) result.addOriginalVertex(idx);

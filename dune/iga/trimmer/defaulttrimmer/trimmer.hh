@@ -562,7 +562,7 @@ namespace Dune::IGANEW {
         leafIndexSet_->update(*grid_);
       }
 
-      void createLevel(GridImp& grid, int lvl);
+      // void createLevel(GridImp& grid, int lvl);
       void refineParameterSpaceGrid(int refCount, bool initFlag = false);
 
       /** @brief Return maximum level defined in this grid.
