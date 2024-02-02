@@ -15,7 +15,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
   constexpr std::array edgeDirections{FieldVector<double, 2>{1.0, 0.0}, FieldVector<double, 2>{0, 1},
                                       FieldVector<double, 2>{-1, 0}, FieldVector<double, 2>{0, -1}};
   constexpr std::array<std::array<int, 2>, 4> edgeLookUp{std::array{0, 1}, {1, 3}, {3, 2}, {2, 0}};
-  constexpr std::array vIdxMapping = {0u, 1u, 3u, 2u};
+  constexpr std::array vertexIndexMapping = {0u, 1u, 3u, 2u};
 
   auto isCornerVertex(const auto& pt, const auto& eleRect) -> std::pair<bool, ptrdiff_t> {
     auto it = std::ranges::find_if(eleRect, [&](const auto& vertex) {

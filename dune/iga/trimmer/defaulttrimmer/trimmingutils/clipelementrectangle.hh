@@ -18,11 +18,12 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     using namespace Clipper2Lib;
 
     auto eleGeo = element.geometry();
+    static constexpr int numberOfCorners = 4;
 
     PathD eleRect;
-    for (const auto i : std::views::iota(0u, 4u)) {
-      auto corner = eleGeo.corner(vIdxMapping[i]);
-      eleRect.emplace_back(corner[0], corner[1], i);
+    for (const auto vertexIndex : Dune::range(numberOfCorners)) {
+      auto corner = eleGeo.corner(vertexIndexMapping[vertexIndex]);
+      eleRect.emplace_back(corner[0], corner[1], vertexIndex);
     }
 
     const auto& trimmingCurves = patchTrimData.clipperLoops();
@@ -36,6 +37,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     if (intersectResult.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
     if (isFullElement(intersectResult.front())) {
+      assert(intersectResult.size()==1 && "If the element is full, there should be only one path");
       return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
     }
 
@@ -44,35 +46,36 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     ClippingResult result(eleRect);
 
     auto checkParallel = [&](const auto& curve, const int edgeIndex) -> bool {
-      return curve.degree().front() == 1
-             and std::get<0>(findIntersectionLinearCurveAndLine(curve, eleGeo.corner(vIdxMapping[edgeIndex]),
+      return curve.affine()
+             and std::get<0>(findIntersectionLinearCurveAndLine(curve, eleGeo.corner(vertexIndexMapping[edgeIndex]),
                                                                 edgeDirections[edgeIndex],
                                                                 {curve.domainMidPoint()[0], 0.5}))
-                     == FindIntersectionCurveAndLineResult::parallel;
+                     == IntersectionCurveAndLine::parallel;
     };
 
     clipper.SetZCallback(
-        [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
-          // std::cout << "Z-Callback\n";
-          // std::cout << e1bot << " " << e1top << std::endl;
-          // std::cout << e2bot << " " << e2top << std::endl;
-          // std::cout << pt << std::endl;
+        [&](const PointD& rectangleFirstPoint, const PointD& rectangleSecondPoint, const PointD& firstTrimmingCurvePoint, const PointD& secondTrimmingCurvePoint,
+          const PointD& intersectionPoint) {
 
           // We are only interested in intersections with the edges
-          if (e1bot.z > 3) return;
+          // if (rectangleFirstPoint.z > 3) return;
+          assert(rectangleFirstPoint.z < 4 && "Intersection should only occur with the rectangle edges");
 
-          if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost) {
+          auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
+          if (isHost) {
             result.addOriginalVertex(idx);
             return;
           }
 
-          const auto edgeIdx = giveEdgeIdx(e1bot.z, e1top.z);
-          const auto curveZ  = e2top.z;
+          const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z, rectangleSecondPoint.z);
+          assert(firstTrimmingCurvePoint.z==secondTrimmingCurvePoint.z &&
+            "The z values of the trimming curve points should have a difference of 1, since they should belong to the same curve");
+          const auto curveZ  = secondTrimmingCurvePoint.z;
 
           // Now check that we don't have a parallel intersection
           if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
 
-          result.addNewVertex(edgeIdx, pt, curveZ);
+          result.addNewVertex(edgeIdx, intersectionPoint, curveZ);
         });
 
     PathsD resultClosedPaths{};
@@ -88,7 +91,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     }
 
     // Now we have to check for points inside the elements
-    for (auto i : std::views::iota(0ul, patchTrimData.loops().size())) {
+    for (auto i : Dune::range(patchTrimData.loops().size())) {
       for (const auto& pt : patchTrimData.getPointsInPatch(i)) {
         if (const PointD cp{pt.pt[0], pt.pt[1]}; PointInPolygon(cp, eleRect) == PointInPolygonResult::IsInside) {
           result.addInsideVertex(cp, pt.curveIdxI, pt.curveIdxJ, i);
@@ -104,16 +107,17 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         auto pt = curve.corner(i);
         PointD ptClipper{pt[0], pt[1]};
 
-        if (auto [isHost, idx] = isCornerVertex(ptClipper, eleRect); isHost) result.addOriginalVertex(idx);
+        auto [isHost, idx] = isCornerVertex(ptClipper, eleRect);
+        if (isHost) {
+          result.addOriginalVertex(idx);
+          continue;
+        }
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
           if (const auto& edgeIdx = edgeLookUp[e];
               isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
               && !checkParallel(curve, e)) {
-            // \todo this needs to be done more generically
-            const size_t newIdx = i == 0 ? (cI + 1) * patchTrimData.getSplitter()
-                                         : (cI + 1) * patchTrimData.getSplitter() + patchTrimData.getSplitter() - 1;
-            result.addNewVertex(e, ptClipper, newIdx);
+            result.addNewVertex(e, ptClipper, patchTrimData.getZValue(cI,0));
             break;
           }
         }

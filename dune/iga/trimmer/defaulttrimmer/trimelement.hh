@@ -15,10 +15,10 @@ namespace Dune::IGANEW::DefaultTrim {
   auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const auto& element, const PatchTrimData& patchTrimData) {
     // std::cout << "START " << std::endl;
     auto geo = element.geometry();
-    std::array<FieldVector<double, 2>, 4> corners;  // see dune book page 127 Figure 5.12
-    for (auto i : std::views::iota(0, geo.corners())) {
-      corners[i] = geo.corner(Util::vIdxMapping[i]);
-    }
+    static constexpr int numberOfCorners = 4;
+    std::array<FieldVector<double, 2>, numberOfCorners> corners;  // see dune book page 127 Figure 5.12
+    for (auto i : Dune::range(numberOfCorners))
+      corners[i] = geo.corner(Util::vertexIndexMapping[i]);
 
     auto [flag, result] = Util::clipElementRectangle(element, patchTrimData);
 

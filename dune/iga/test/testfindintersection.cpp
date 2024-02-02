@@ -55,7 +55,7 @@ auto test1() {
   std::cout << std::setprecision(16) << std::endl;
   auto [success, tParameter, curvePoint] = Dune::IGANEW::findIntersectionCurveAndLine(
       curve1, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
-  t.check(success == FindIntersectionCurveAndLineResult::intersect) << "No intersection found";
+  t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
   t.check(Dune::FloatCmp::eq(tParameter[1], -0.3041666666666666))
       << "tLine is " << tParameter[1] << " but should be " << -0.3041666666666666;
@@ -72,7 +72,7 @@ auto test2() {
   std::cout << std::setprecision(16) << std::endl;
   auto [success, tParameter, curvePoint] = Dune::IGANEW::findIntersectionCurveAndLine(
       curve2, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
-  t.check(success == FindIntersectionCurveAndLineResult::intersect) << "No intersection found";
+  t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
   t.check(Dune::FloatCmp::eq(tParameter[0], 0.4166666666666667))
       << "tCurve is " << tParameter[0] << " but should be " << 0.4166666666666667;
@@ -83,7 +83,7 @@ auto test2() {
   // Parallel line
   std::tie(success, tParameter, curvePoint)
       = Dune::IGANEW::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
-  t.check(success == FindIntersectionCurveAndLineResult::parallel);
+  t.check(success == IntersectionCurveAndLine::parallel);
 
   return t;
 }

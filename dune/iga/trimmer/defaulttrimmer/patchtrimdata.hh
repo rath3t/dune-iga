@@ -4,12 +4,8 @@
 
 namespace Dune::IGANEW::DefaultTrim {
 
-  template <typename GridImp>
-  struct PatchTrimDataImpl {
-    using TrimmingCurve = typename GridImp::GridFamily::TrimmerTraits::TrimmingCurve;
-    using ParameterType = typename GridImp::GridFamily::Trimmer::ParameterType;
-    using ctype = typename GridImp::GridFamily::ctype;
-
+  namespace Impl {
+    template<typename TrimmingCurve>
     struct BoundaryLoop {
       void insertTrimCurve(const TrimmingCurve& curve) { curves_.push_back(curve); }
 
@@ -21,58 +17,99 @@ namespace Dune::IGANEW::DefaultTrim {
       std::vector<TrimmingCurve> curves_;
     };
 
+    template <typename ctype>
     struct PointInPatch {
       FieldVector<ctype, 2> pt;
       size_t curveIdxI;
       size_t curveIdxJ;
     };
 
+
+
+    class CurveLoopIndexEncoder {
+      static constexpr int loopBits = 4;
+      static constexpr u_int64_t loopMask{(1ULL << loopBits) - 1};
+    public:
+
+      static int64_t encode(int curveIndex, int loopIndex)  {
+        // the left hand side shifts the curve index value away from loop values and then inserts the curve index
+        // example  curveBits = 4 and loopBits = 3;
+        // curveIndex = 3 and loopIndex = 2 = 00010_b
+        // curveIndex = 3 = 00011_b
+        // curveIndex<< loopBits  = 11000_b
+        // curveIndex<< loopBits  = 11000_b
+        // (curveIndex<< loopBits) | loopIndex  = 11000_b | 00010_b = 11010_b = 26
+        return (static_cast<u_int64_t>(curveIndex) << loopBits) | loopIndex;
+      }
+
+      static std::pair<int, int> decode(int64_t singleIndex)  {
+        // example  curveBits = 4 and loopBits = 3;
+        // loopMask = 00111
+        // example  singleIndex = 11010_b = 26
+        // curveIndex = 3 and loopIndex = 2 = 00010_b
+        // curveIndex = 3 = 00011_b
+        // loopMask =
+        // (singleIndex >> loopBits)  = 00011_b = curveIndex
+        int curveIndex = (singleIndex >> loopBits);
+        // since the loop index is stored in the right-most bits, we only have to apply the bitwise and, which returns simply the loop index
+        // 11010_b AND
+        // 00111_b
+        // 00010_b = 2
+        int loopIndex = singleIndex & loopMask;
+        return {loopIndex,curveIndex};
+      }
+
+    };
+  }
+
+  template <typename GridImp>
+  struct PatchTrimDataImpl {
+    using TrimmingCurve = typename GridImp::GridFamily::TrimmerTraits::TrimmingCurve;
+    using ParameterType = typename GridImp::GridFamily::Trimmer::ParameterType;
+    using ctype = typename GridImp::GridFamily::ctype;
+
+
+
     class CurveManager {
       friend PatchTrimDataImpl;
 
     public:
       using idx_t = u_int64_t;
+      static constexpr idx_t indexOffSet = 4; //Since the first 4 values are reserved for the corners of the untrimmed square all indices start at 4
 
-      void addLoop(const BoundaryLoop& loop) {
+      void addLoop(const Impl::BoundaryLoop<TrimmingCurve>& loop) {
         Clipper2Lib::PathD path;
-        for (idx_t i = loops_.empty() ? splitter_ : loops_.back().back().z + 1; const auto& curve : loop.curves()) {
-          if (curve.degree().front() == 1 and loops_.empty()) {
+        // since the first
+        for (int curveIndex=0; const auto& curve : loop.curves()) {
+          auto index= getZValue(curveIndex,loops_.size());
+          if (curve.affine() == 1 and loops_.empty()) {
             auto p1 = curve.corner(0);
             auto p2 = curve.corner(1);
-            path.emplace_back(p1[0], p1[1], i);
-            path.emplace_back(p2[0], p2[1], i + splitter_ - 1);
-            i += splitter_;
-            continue;
+            path.emplace_back(p1[0], p1[1], index);
+            path.emplace_back(p2[0], p2[1], index );
+          }else {
+            for (const auto v : Utilities::linspace(curve.domain()[0], splitter_)) {
+              auto fV = curve.global({v});
+              path.emplace_back(fV[0], fV[1], index);
+            }
           }
-          for (const auto v : Utilities::linspace(curve.domain()[0], splitter_)) {
-            auto fV = curve.global({v});
-            path.emplace_back(fV[0], fV[1], i++);
-          }
+          ++curveIndex;
         }
         loops_.push_back(path);
-        loopIndices_.emplace_back(loops_.back().back().z, loop.curves().size());
       }
 
       [[nodiscard]] auto getIndices(const idx_t val) const -> std::pair<size_t, size_t> {
-        size_t loopIdx = 0;
-        if (loops_.size() > 1) {
-          auto it = std::ranges::find_if(loopIndices_, [&](const std::pair<idx_t, size_t>& t) { return val > t.first; });
-          if (it == loopIndices_.end()) DUNE_THROW(Dune::IOError, "Invalid z-Value");
-          loopIdx = std::ranges::distance(loopIndices_.begin(), it) + 1;
-        }
+        return Impl::CurveLoopIndexEncoder::decode(val-indexOffSet);
+      }
 
-        auto curveIdx = static_cast<size_t>(std::floor(val / splitter_) - 1);
-        for (const auto& [_, sizeOfLoop] : std::ranges::take_view(loopIndices_, static_cast<long>(loopIdx))) {
-          curveIdx -= sizeOfLoop;
-        }
-
-        return std::make_pair(loopIdx, curveIdx);
+      [[nodiscard]] auto getZValue(int edgeIndex, int loopIndex )const {
+        return Impl::CurveLoopIndexEncoder::encode(edgeIndex, loopIndex)+indexOffSet;
       }
 
     private:
       Clipper2Lib::PathsD loops_;
       idx_t splitter_{};
-      std::vector<std::pair<idx_t, size_t>> loopIndices_{};
+
     };
 
     void addLoop() { loops_.push_back({}); }
@@ -91,6 +128,11 @@ namespace Dune::IGANEW::DefaultTrim {
     auto getIndices(const typename CurveManager::idx_t val) const -> std::pair<size_t, size_t> {
       return manager_.getIndices(val);
     }
+
+    auto getZValue(int edgeIndex, int loopIndex ) const  {
+      return manager_.getZValue(edgeIndex,loopIndex);
+    }
+
     auto getCurve(const typename CurveManager::idx_t val) const -> const TrimmingCurve& {
       auto [loopIdx, curveIdx] = manager_.getIndices(val);
       return loops_[loopIdx].curves()[curveIdx];
@@ -100,7 +142,7 @@ namespace Dune::IGANEW::DefaultTrim {
     }
     auto getSplitter() const -> typename CurveManager::idx_t { return manager_.splitter_; }
 
-    auto getPointsInPatch(size_t loopIndex) const -> const std::vector<PointInPatch>& {
+    auto getPointsInPatch(size_t loopIndex) const -> const std::vector<Impl::PointInPatch<ctype>>& {
       return pointsInPatch_.at(loopIndex);
     }
 
@@ -133,9 +175,9 @@ namespace Dune::IGANEW::DefaultTrim {
     }
 
   private:
-    std::vector<std::vector<PointInPatch>> pointsInPatch_;
+    std::vector<std::vector<Impl::PointInPatch<ctype>>> pointsInPatch_;
     bool finished_ = false;
-    std::vector<BoundaryLoop> loops_;
+    std::vector<Impl::BoundaryLoop<TrimmingCurve>> loops_;
     CurveManager manager_;
   };
 

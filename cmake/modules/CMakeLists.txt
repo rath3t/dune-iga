@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-set(modules "DuneIgaMacros.cmake")
+set(modules DuneIgaMacros.cmake AddAutoDiffFlags.cmake AddClipperLibFlags.cmake AddEarCutFlags.cmake AddEigenFlags.cmake AddMatplotppFlags.cmake AddnLohmannJsonFlags.cmake)
 
 install(FILES ${modules} DESTINATION ${DUNE_INSTALL_MODULEDIR})

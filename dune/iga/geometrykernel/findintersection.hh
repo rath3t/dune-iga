@@ -7,7 +7,7 @@
 
 namespace Dune::IGANEW {
 
-  enum class FindIntersectionCurveAndLineResult { disjoint, intersect, parallel };
+  enum class IntersectionCurveAndLine { disjoint, intersect, parallel };
 
   template <typename GeoCurve, typename ScalarType, int dim>
     requires(dim == 2)
@@ -31,11 +31,11 @@ namespace Dune::IGANEW {
 
       // Check if point is in domain
       if (not geoCurve.domain()[0].checkInside(sol[0]))
-        return std::make_tuple(FindIntersectionCurveAndLineResult::disjoint, sol, curveP0);
-      return std::make_tuple(FindIntersectionCurveAndLineResult::intersect, sol, geoCurve.global(sol[0]));
+        return std::make_tuple(IntersectionCurveAndLine::disjoint, sol, curveP0);
+      return std::make_tuple(IntersectionCurveAndLine::intersect, sol, geoCurve.global(sol[0]));
     }
     // If system is not solvable, the lines are paralell and therefore have no intersection
-    return std::make_tuple(FindIntersectionCurveAndLineResult::parallel, tParameter, curveP0);
+    return std::make_tuple(IntersectionCurveAndLine::parallel, tParameter, curveP0);
   }
 
   template <typename GeoCurve, typename ScalarType, int dim>
@@ -93,7 +93,7 @@ namespace Dune::IGANEW {
 
     if (not domain[0].checkInside(tParameter[0])) sucess = false;
     return std::make_tuple(
-        sucess ? FindIntersectionCurveAndLineResult::intersect : FindIntersectionCurveAndLineResult::disjoint,
+        sucess ? IntersectionCurveAndLine::intersect : IntersectionCurveAndLine::disjoint,
         tParameter, curvePoint);
   }
 }  // namespace Dune::IGANEW

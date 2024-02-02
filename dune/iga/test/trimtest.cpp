@@ -338,7 +338,8 @@ struct ExpectedValues {
   int notAffineCounter;
 };
 
-auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
+template< typename ExecutionPolicy>
+auto checkTrim(std::string filename, const ExpectedValues& expectedValues, ExecutionPolicy&& policy) {
   // Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   // Setup
@@ -355,7 +356,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
     std::vector<int> yR(
         range.begin(),
         range.end());  // copy into vector sicne for_each does not work with iota_view and parallel execution
-    std::for_each(std::execution::par_unseq, yR.begin(), yR.end(), [&](auto refy) {
+    std::for_each(policy, yR.begin(), yR.end(), [&](auto refy) {
       std::cout << "Thread: " << std::this_thread::get_id() << std::endl;
       auto gridFactory = GridFactory();
       auto brep        = readJson<2>(filename);
@@ -425,7 +426,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues) {
 
       std::atomic<double> trimmedEdgeLengthsAccumulated{0};
       std::for_each(
-          std::execution::par_unseq, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
+          policy, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
             ElementTrimData elementTrimData = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele, patchTrimData);
             auto [subTestEle, trimmedEdgeLength]
                 = elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
@@ -465,31 +466,31 @@ int main(int argc, char** argv) try {
                                                                     .trimmingCurveCurvedLength = 0.9765154639613303,
                                                                     .trimmingCurveTotalLength  = 3.61447516007258,
                                                                     .firstLoopCurvesSize       = 5,
-                                                                    .notAffineCounter          = 1})));
+                                                                    .notAffineCounter          = 1}),std::execution::seq));
   t.subTest(checkTrim("auxiliaryfiles/element.ibra", ExpectedValues({.straightLength            = 4,
                                                                      .trimmingCurveCurvedLength = 0,
                                                                      .trimmingCurveTotalLength  = 4,
                                                                      .firstLoopCurvesSize       = 4,
-                                                                     .notAffineCounter          = 0})));
+                                                                     .notAffineCounter          = 0}),std::execution::seq));
   t.subTest(
     checkTrim("auxiliaryfiles/trim_2edges.ibra", ExpectedValues({.straightLength            = 31.94725845850641,
                                                                      .trimmingCurveCurvedLength = 6.323120188237797,
                                                                      .trimmingCurveTotalLength  = 38.27037864674421,
                                                                      .firstLoopCurvesSize       = 6,
-                                                                     .notAffineCounter          = 2})));
+                                                                     .notAffineCounter          = 2}),std::execution::seq));
 
   t.subTest(
   checkTrim("auxiliaryfiles/trim_multi.ibra", ExpectedValues({.straightLength            = 27.06623257317474,
                                                                    .trimmingCurveCurvedLength = 7.461084509983623,
                                                                    .trimmingCurveTotalLength  = 38.27037864674421,
                                                                    .firstLoopCurvesSize       = 5,
-                                                                   .notAffineCounter          = 1})));
+                                                                   .notAffineCounter          = 1}),std::execution::seq));
   t.subTest(
       checkTrim("auxiliaryfiles/element_trim_xb.ibra", ExpectedValues({.straightLength            = 2.791977909806771,
                                                                        .trimmingCurveCurvedLength = 1.6273832575204,
                                                                        .trimmingCurveTotalLength  = 4.419361167327171,
                                                                        .firstLoopCurvesSize       = 5,
-                                                                       .notAffineCounter          = 1})));
+                                                                       .notAffineCounter          = 1}),std::execution::seq));
 
   return t.exit();
 } catch (Dune::Exception& e) {
