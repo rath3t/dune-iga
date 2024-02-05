@@ -58,12 +58,14 @@ namespace Dune::IGANEW::DefaultTrim::Util {
              && "The points of the trimming curves should be on the same loop");
       assert(firstTrimmingCurvePoint.z==secondTrimmingCurvePoint.z or secondTrimmingCurvePoint.z== intersectionPoint.z or firstTrimmingCurvePoint.z== intersectionPoint.z &&
   "The indices of the trimming curves should be the same or the intersection point should be on one of the two second curves");
-      const auto curveZ = secondTrimmingCurvePoint.z;
+      const auto vertexZValue = secondTrimmingCurvePoint.z;
 
       // Now check that we don't have a parallel intersection
-      if (checkParallel(patchTrimData.getCurve(curveZ), edgeIdx)) return;
+      if (checkParallel(patchTrimData.getCurve(vertexZValue), edgeIdx)) {
+        return;
+      }
 
-      result.addNewVertex(edgeIdx, intersectionPoint, curveZ);
+      result.addNewVertex(edgeIdx, intersectionPoint, vertexZValue);
     });
 
     PathsD resultClosedPaths{};

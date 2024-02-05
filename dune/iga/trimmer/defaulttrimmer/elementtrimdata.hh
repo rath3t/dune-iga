@@ -70,7 +70,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     /* this is for testing purposes only */
     void drawResult(const std::string& filename, bool inParameterSpace, bool newFig = true) {
-      if (static_cast<int>(flag_) == 1) return;
+      if (flag_ == ElementTrimFlag::empty) return;
       auto eleGeometry      = hostEntity_.geometry();
       auto lowerLeftCorner  = inParameterSpace ? eleGeometry.corner(0) : Dune::FieldVector<double, 2>({0, 0});
       auto upperRightCorner = eleGeometry.corner(3);
@@ -146,8 +146,9 @@ namespace Dune::IGANEW::DefaultTrim {
       }
 
       matplot::axis(matplot::equal);
+      static int elleC=0;
       if (newFig)
-        matplot::save(filename + (inParameterSpace ? "inParameterSpace" : ""), "gif");
+        matplot::save(filename +std::to_string(elleC++)+ (inParameterSpace ? "inParameterSpace" : ""), "gif");
     }
     bool checkInside(const Dune::FieldVector<double, 2>& local) const {
       Clipper2Lib::PointD p(local[0], local[1]);
