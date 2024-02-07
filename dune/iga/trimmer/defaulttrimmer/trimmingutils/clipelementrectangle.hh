@@ -117,7 +117,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
         for (auto e = 0; e < edgeLookUp.size(); ++e) {
           if (const auto& edgeIdx = edgeLookUp[e];
-              isPointOnLine(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
+              GeometryKernel::isPointOnLineSegment(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
               && !checkParallel(curve, e)) {
             result.addNewVertex(e, ptClipper, patchTrimData.getZValue(cI,0));
             break;

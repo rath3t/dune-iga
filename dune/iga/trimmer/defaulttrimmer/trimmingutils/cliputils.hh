@@ -24,29 +24,6 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     return std::make_pair(it != eleRect.end(), std::ranges::distance(eleRect.begin(), it));
   }
 
-  auto isPointOnLine(const auto& pt, const auto& p1, const auto& p2) -> bool {
-    // Check if the points are collinear using the slope formula
-    auto x  = pt[0];
-    auto y  = pt[1];
-    auto x1 = p1[0];
-    auto y1 = p1[1];
-    auto x2 = p2[0];
-    auto y2 = p2[1];
-
-    // Check if the line is horizontal
-    if (std::abs(y1 - y2) < 1e-6) {
-      return std::abs(y - y1) < 1e-6 && ((x >= x1 && x <= x2) || (x >= x2 && x <= x1));
-    }
-    // Check if the line is vertical
-    if (std::abs(x1 - x2) < 1e-6) {
-      return std::abs(x - x1) < 1e-6 && ((y >= y1 && y <= y2) || (y >= y2 && y <= y1));
-    }
-
-    // Check if the given point lies on the line
-    const double slope = (y2 - y1) / (x2 - x1);
-    return std::abs((y - y1) - slope * (x - x1)) < 1e-6;
-  }
-
   struct ClippingResult {
     explicit ClippingResult(const std::vector<Clipper2Lib::PointD>& oldV) : originalVertices_(oldV) {}
 

@@ -12,7 +12,7 @@
 
 #include <dune/geometry/quadraturerules.hh>
 
-#include <dune/iga/geometrykernel/higherorderalgorithms.hh>
+#include <dune/iga/geometrykernel/algorithms.hh>
 #include <dune/iga/hierarchicpatch/enums.hh>
 // #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
 // #include <dune/iga/hierarchicpatch/patchgridentity.hh>

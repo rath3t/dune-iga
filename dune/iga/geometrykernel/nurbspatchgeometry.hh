@@ -18,7 +18,7 @@
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/iga/geometrykernel/geohelper.hh>
-#include <dune/iga/geometrykernel/higherorderalgorithms.hh>
+#include <dune/iga/geometrykernel/algorithms.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometrylocalview.hh>
 
 namespace Dune {

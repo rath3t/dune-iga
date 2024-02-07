@@ -178,4 +178,39 @@ namespace Dune::IGANEW::GeometryKernel {
     return dot(basis, localControlPointNet);
   }
 
+  /**
+ * @brief Checks if a point lies on a line defined by two other points with a specified tolerance.
+ *
+ * @details This function determines if a given point, specified by the local coordinates 'pt',
+ * lies on the line defined by two other points 'p1' and 'p2'. It uses the slope formula to check if
+ * the points are collinear and then verifies if the given point lies on the line within the specified tolerance.
+ *
+ * @tparam Coordinate Type representing the local coordinates of points.
+ * @tparam Tolerance Type representing the tolerance for comparing coordinates.
+ *
+ * @param p The point to check.
+ * @param linePoint0 First point defining the line.
+ * @param linePoint1 Second point defining the line.
+ * @param tol Tolerance for comparing coordinates. Default is 1e-6.
+ *
+ * @return bool - True if the point lies on the line, false otherwise.
+ */
+  template <typename Coordinate, std::floating_point Tolerance=double_t>
+  auto isPointOnLineSegment(const Coordinate& p, const Coordinate& linePoint0, const Coordinate& linePoint1,Tolerance tol =1e-6) -> bool {
+    const auto crossProductZ = [](const Coordinate& a, const Coordinate& b) {
+      return  a[0]*b[1] - a[1]*b[0];
+    };
+    if (std::abs(crossProductZ(linePoint1-linePoint0,p-linePoint0)) < tol) {
+      // The lines "linePoint1-linePoint0" and "p-linePoint0" are collinear, now check if p is within the line segment
+      auto withinRange = [](auto a, auto b, auto c) {
+        const auto& [left,right] = std::minmax(b, c);
+        return a >= left and a <= right;
+      };
+
+      if (withinRange(p[0], linePoint0[0], linePoint1[0]) and withinRange(p[1], linePoint0[1], linePoint1[1]))
+        return true;
+    }
+    return false;
+  }
+
 }  // namespace Dune::IGANEW::GeometryKernel
