@@ -64,13 +64,13 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     DUNE_THROW(Dune::GridError, "Couldn't find intersection Point");
   };
 
-  inline auto isNewVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::NewVertex>(vV); };
-  inline auto isHostVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::HostVertex>(vV); };
-  inline auto isInsideVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::InsideVertex>(vV); };
-  inline auto getPt       = [](auto&& vV) { return vV.pt; };
-  inline auto getHostIdx  = [](const auto& vV) { return std::get<ClippingResult::HostVertex>(vV).hostIdx; };
-  inline auto getEdgeIdx  = [](const auto& vV) { return std::get<ClippingResult::NewVertex>(vV).onEdgeIdx; };
-  inline auto getCurveI = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).curveIdxI; };
-  inline auto getCurveJ = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).curveIdxJ; };
-  inline auto getLoopIdx = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).loopIdx; };
+  // inline auto isNewVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::NewVertex>(vV); };
+  // inline auto isHostVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::HostVertex>(vV); };
+  // inline auto isInsideVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::InsideVertex>(vV); };
+  // inline auto getPt       = [](auto&& vV) { return vV.pt; };
+  // inline auto getHostIdx  = [](const auto& vV) { return std::get<ClippingResult::HostVertex>(vV).hostIdx; };
+  // inline auto getEdgeIdx  = [](const auto& vV) { return std::get<ClippingResult::NewVertex>(vV).onEdgeIdx; };
+  // inline auto getCurveI = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).curveIdxI; };
+  // inline auto getCurveJ = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).curveIdxJ; };
+  // inline auto getLoopIdx = [](const auto& vV) {return std::get<ClippingResult::InsideVertex>(vV).loopIdx; };
 }  // namespace Dune::IGANEW::DefaultTrim::Util

@@ -36,7 +36,7 @@ auto testIbraReader() {
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {
       gridFactory.insertJson(name, true, {i, i});
-      t.checkNoThrow([&]{auto grid = gridFactory.createGrid();})<<"createGrid should not throw";
+      gridFactory.createGrid();
     }
   }
 
