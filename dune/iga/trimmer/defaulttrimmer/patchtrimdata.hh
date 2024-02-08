@@ -28,21 +28,41 @@ namespace Dune::IGANEW::DefaultTrim {
 
     class CurveLoopIndexEncoder {
       static constexpr int loopBits = 4;
+      static constexpr int curveBits = 8;
+      static constexpr int sampleBits = 12;
+
       static constexpr u_int64_t loopMask{(1ULL << loopBits) - 1};
+      static constexpr u_int64_t curveMask{(1ULL << curveBits) - 1};
+      static constexpr u_int64_t sampleMask{(1ULL << sampleBits) - 1};
     public:
 
-      static int64_t encode(int curveIndex, int loopIndex)  {
+      static int64_t encode(int loopIndex,int curveIndex,  int sampleIndex)  {
         // the left hand side shifts the curve index value away from loop values and then inserts the curve index
-        // example  curveBits = 4 and loopBits = 3;
-        // curveIndex = 3 and loopIndex = 2 = 00010_b
+        // example  curveBits = 4 and loopBits = 3 and sampleBits=12;
+        // curveIndex = 3 and loopIndex = 2 = 00010_b , sampleIndex= 200= 11001000_b
         // curveIndex = 3 = 00011_b
-        // curveIndex<< loopBits  = 11000_b
-        // curveIndex<< loopBits  = 11000_b
-        // (curveIndex<< loopBits) | loopIndex  = 11000_b | 00010_b = 11010_b = 26
-        return (static_cast<u_int64_t>(curveIndex) << loopBits) | loopIndex;
+        // curveIndex<< (loopBits+ sampleBits)  = 110,000,000,000,000,000_b // shift the curve index 16 bits to the left
+        // loopIndex<< sampleBits  =                   10,000,000,000,000_b // shift the loop index 12 bits to the left
+        // sampleIndex =                                       11,001,000_b // shift the loop index 12 bits to the left
+        // bitwise or of the three values:        110,010,000,011,001,000_b //
+        // (curveIndex<< loopBits) | loopIndex  = 11000_b | 00010_b = 11010_b = 205000_d
+        return (static_cast<u_int64_t>(curveIndex) << (loopBits + sampleBits)) |
+               (static_cast<u_int64_t>(loopIndex) << sampleBits) |
+               sampleIndex;
       }
 
-      static std::pair<int, int> decode(int64_t singleIndex)  {
+      struct IndexResult {
+        int loop;
+        int curve;
+        int sample;
+
+        friend std::ostream& operator<<(std::ostream& os, const IndexResult& res) {
+          os << "Loop: " << res.loop << " Curve: " << res.curve << " Sample: " << res.sample;
+          return os;
+        }
+      };
+
+      static IndexResult decode(int64_t singleIndex)  {
         // example  curveBits = 4 and loopBits = 3;
         // loopMask = 00111
         // example  singleIndex = 11010_b = 26
@@ -50,13 +70,16 @@ namespace Dune::IGANEW::DefaultTrim {
         // curveIndex = 3 = 00011_b
         // loopMask =
         // (singleIndex >> loopBits)  = 00011_b = curveIndex
-        int curveIndex = (singleIndex >> loopBits);
-        // since the loop index is stored in the right-most bits, we only have to apply the bitwise and, which returns simply the loop index
+        // since the sample index is stored in the right-most bits, we only have to apply the bitwise and, which returns simply the sample index
         // 11010_b AND
         // 00111_b
         // 00010_b = 2
-        int loopIndex = singleIndex & loopMask;
-        return {loopIndex,curveIndex};
+        int sampleIndex = singleIndex & sampleMask;
+        const int loopAndCurveIndex = singleIndex >> sampleBits;
+        int loopIndex = loopAndCurveIndex & loopMask;
+        int curveIndex = (loopAndCurveIndex >> loopBits) & curveMask;
+        return {loopIndex,curveIndex, sampleIndex};
+
       }
 
     };
@@ -81,16 +104,16 @@ namespace Dune::IGANEW::DefaultTrim {
         Clipper2Lib::PathD path;
         // since the first
         for (int curveIndex=0; const auto& curve : loop.curves()) {
-          auto index= getZValue(curveIndex,loops_.size());
+
           if (curve.affine() == 1 and loops_.empty()) {
             auto p1 = curve.corner(0);
             auto p2 = curve.corner(1);
-            path.emplace_back(p1[0], p1[1], index);
-            path.emplace_back(p2[0], p2[1], index );
+            path.emplace_back(p1[0], p1[1], getZValue(loops_.size(),curveIndex,0));
+            path.emplace_back(p2[0], p2[1], getZValue(loops_.size(),curveIndex,1) );
           }else {
-            for (const auto v : Utilities::linspace(curve.domain()[0], splitter_)) {
+            for (int vi=0;const auto v : Utilities::linspace(curve.domain()[0], splitter_)) {
               auto fV = curve.global({v});
-              path.emplace_back(fV[0], fV[1], index);
+              path.emplace_back(fV[0], fV[1], getZValue(loops_.size(),curveIndex,vi++));
             }
           }
           ++curveIndex;
@@ -98,12 +121,12 @@ namespace Dune::IGANEW::DefaultTrim {
         loops_.push_back(path);
       }
 
-      [[nodiscard]] auto getIndices(const idx_t val) const -> std::pair<size_t, size_t> {
+      [[nodiscard]] auto getIndices(const idx_t val) const -> Impl::CurveLoopIndexEncoder::IndexResult {
         return Impl::CurveLoopIndexEncoder::decode(val-indexOffSet);
       }
 
-      [[nodiscard]] auto getZValue(int edgeIndex, int loopIndex )const {
-        return Impl::CurveLoopIndexEncoder::encode(edgeIndex, loopIndex)+indexOffSet;
+      [[nodiscard]] auto getZValue(int loopIndex, int curveIndex,int sampleIndex )const {
+        return Impl::CurveLoopIndexEncoder::encode(loopIndex,curveIndex,sampleIndex )+indexOffSet;
       }
 
     private:
@@ -125,20 +148,19 @@ namespace Dune::IGANEW::DefaultTrim {
       return manager_.loops_;
     }
 
-    auto getIndices(const typename CurveManager::idx_t val) const -> std::pair<size_t, size_t> {
+    auto getIndices(const typename CurveManager::idx_t val) const -> Impl::CurveLoopIndexEncoder::IndexResult {
       return manager_.getIndices(val);
     }
 
-    auto getZValue(int edgeIndex, int loopIndex ) const  {
-      return manager_.getZValue(edgeIndex,loopIndex);
+    auto getZValue(int loopIndex, int edgeIndex, int sampleIndex ) const  {
+      return manager_.getZValue(loopIndex,edgeIndex,sampleIndex);
     }
 
     auto getCurve(const typename CurveManager::idx_t val) const -> const TrimmingCurve& {
-      auto [loopIdx, curveIdx] = manager_.getIndices(val);
-      return loops_[loopIdx].curves()[curveIdx];
+      return getCurve(manager_.getIndices(val));
     }
-    auto getCurve(const std::pair<size_t, size_t>& indices) const -> const TrimmingCurve& {
-      return loops_[indices.first].curves()[indices.second];
+    auto getCurve(const Impl::CurveLoopIndexEncoder::IndexResult& indices) const -> const TrimmingCurve& {
+      return loops_[indices.loop].curves()[indices.curve];
     }
 
     auto getPointsInPatch(size_t loopIndex) const -> const std::vector<Impl::PointInPatch<ctype>>& {

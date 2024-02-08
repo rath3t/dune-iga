@@ -26,7 +26,7 @@ namespace Dune::IGANEW::DefaultTrim {
     if (flag != ElementTrimFlag::trimmed) return elementTrimData;
 
     auto nextEntity          = [&](const int i) { return (i + 1) % result.vertices_.size(); };
-    auto getTrimmingCurveIdx = [&](auto& vV) -> std::pair<size_t, size_t> {
+    auto getTrimmingCurveIdx = [&](auto& vV) -> auto {
       return patchTrimData.getIndices(std::get<Util::ClippingResult::NewVertex>(vV).trimmingCurveZ);
     };
 
@@ -49,7 +49,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
     // State
     std::vector<FieldVector<ScalarType, dim>> foundVertices;
-    std::pair currentCurveIdx = {std::numeric_limits<size_t>::infinity(), std::numeric_limits<size_t>::infinity()};
+    Impl::CurveLoopIndexEncoder::IndexResult currentCurveIdx = {std::numeric_limits<size_t>::infinity(), std::numeric_limits<size_t>::infinity(),std::numeric_limits<size_t>::infinity()};
     double currentT           = std::numeric_limits<double>::infinity();
 
     for (const auto i : std::views::iota(0u, result.vertices_.size())) {
@@ -91,7 +91,7 @@ namespace Dune::IGANEW::DefaultTrim {
 
           foundVertices.push_back(curvePoint);
         }
-        if (getTrimmingCurveIdx(vV2) != currentCurveIdx)
+        if (getTrimmingCurveIdx(vV2).curve != currentCurveIdx.curve and getTrimmingCurveIdx(vV2).loop != currentCurveIdx.loop)
           throwGridError();
 
         auto [tParam, curvePoint]
@@ -103,7 +103,7 @@ namespace Dune::IGANEW::DefaultTrim {
         // Controlpoint, so sometimes the wrong tParam (front or back) gets determined
         if (currentT > tParam) {
           bool success = false;
-          if (currentCurveIdx.first > 0 && patchTrimData.loops()[currentCurveIdx.first].size() == 1) {
+          if (currentCurveIdx.loop > 0 && patchTrimData.loops()[currentCurveIdx.loop].size() == 1) {
             auto curve = patchTrimData.getCurve(currentCurveIdx);
             if (curve.isConnectedAtBoundary(0)) {
               auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, curve.domain()[0].back());

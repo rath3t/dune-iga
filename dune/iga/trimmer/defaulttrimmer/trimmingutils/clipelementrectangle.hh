@@ -53,10 +53,21 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       }
 
       const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z, rectangleSecondPoint.z);
-      assert(patchTrimData.getIndices(firstTrimmingCurvePoint.z).first
-                 == patchTrimData.getIndices(secondTrimmingCurvePoint.z).first
-             && "The points of the trimming curves should be on the same loop");
-      assert(firstTrimmingCurvePoint.z==secondTrimmingCurvePoint.z or secondTrimmingCurvePoint.z== intersectionPoint.z or firstTrimmingCurvePoint.z== intersectionPoint.z &&
+
+      auto firstTrimmingCurveIndices = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
+      auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
+
+
+      auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
+      std::cout << "First Curve: " <<firstTrimmingCurvePoint.z<<" "<< firstTrimmingCurveIndices << std::endl;
+            std::cout << "Second Curve: " <<secondTrimmingCurvePoint.z<<" "<< secondTrimmingCurveIndices << std::endl;
+      std::cout << "Intersection: " <<intersectionPoint.z<<" "<< intersectionIndices << std::endl;
+
+      assert(firstTrimmingCurveIndices.loop
+     == secondTrimmingCurveIndices.loop
+ && "The points of the trimming curves should be on the same loop");
+
+      assert(firstTrimmingCurveIndices.curve==secondTrimmingCurveIndices.curve or secondTrimmingCurveIndices.curve== intersectionIndices.curve or firstTrimmingCurveIndices.curve== intersectionIndices.curve &&
   "The indices of the trimming curves should be the same or the intersection point should be on one of the two second curves");
       const auto vertexZValue = secondTrimmingCurvePoint.z;
 
@@ -119,7 +130,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
           if (const auto& edgeIdx = edgeLookUp[e];
               GeometryKernel::isPointOnLineSegment(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back()))
               && !checkParallel(curve, e)) {
-            result.addNewVertex(e, ptClipper, patchTrimData.getZValue(cI,0));
+            result.addNewVertex(e, ptClipper, patchTrimData.getZValue(0,cI,std::numeric_limits<u_int64_t>::infinity()));
             break;
           }
         }

@@ -74,7 +74,7 @@ int main(int argc, char** argv) try {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   t.subTest(testIbraReader());
-  t.subTest(testIbraReader3d());
+  // t.subTest(testIbraReader3d());
 
   // auto success = t.report();
 

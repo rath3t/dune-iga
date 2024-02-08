@@ -87,10 +87,11 @@ namespace Dune::IGANEW::DefaultTrim::Util {
           // Check vertex before if they line up correctly
           const auto vertexBefore = std::get_if<NewVertex>(&vertices_[indexBeforeIt]);
           const auto vertexAfter = std::get_if<NewVertex>(&vertices_[indexAfterIt]);
-          if (vertexBefore && vertexAfter && patchTrimData.getIndices(vertexBefore->trimmingCurveZ)
-                     == std::make_pair(insideVertex->loopIdx, insideVertex->curveIdxI) ) {
 
-            continue;
+          if (vertexBefore && vertexAfter ) {
+            auto indices = patchTrimData.getIndices(vertexBefore->trimmingCurveZ);
+            if(indices.loop == insideVertex->loopIdx and indices.curve == insideVertex->curveIdxI)
+              continue;
           }
           // If we end up here sort the vertex to a correct place
           auto correctVertexIt = findCorrespondingVertexIt(*insideVertex, patchTrimData);
@@ -171,9 +172,13 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     auto findCorrespondingVertexIt(const InsideVertex& insideVertex, const auto& patchTrimData) {
       return std::ranges::find_if(vertices_, [&](const VertexVariant& vV) {
-        return std::holds_alternative<NewVertex>(vV)
-               && patchTrimData.getIndices(std::get<NewVertex>(vV).trimmingCurveZ)
-                      == std::make_pair(insideVertex.loopIdx, insideVertex.curveIdxI);
+
+        if(std::holds_alternative<NewVertex>(vV)) {
+          const auto indices = patchTrimData.getIndices(std::get<NewVertex>(vV).trimmingCurveZ);
+          return indices.loop == insideVertex.loopIdx and indices.curve== insideVertex.curveIdxI;
+        }else
+        return false;
+
       });
     }
 
