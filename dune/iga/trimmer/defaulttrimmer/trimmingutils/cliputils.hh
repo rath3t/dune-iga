@@ -27,37 +27,48 @@ namespace Dune::IGANEW::DefaultTrim::Util {
   struct ClippingResult {
     explicit ClippingResult(const std::vector<Clipper2Lib::PointD>& oldV) : originalVertices_(oldV) {}
 
-    struct HostVertex {
-      size_t hostIdx{};
+    struct Vertex {
+      struct HostVertexImpl {
+        size_t hostIdx{};
+      };
+      struct NewVertexImpl {
+        int onEdgeIdx{};
+        u_int64_t trimmingCurveZ{};
+      };
+      struct InsideVertex {
+
+        size_t curveIdxI{};
+        size_t curveIdxJ{};
+        size_t loopIdx{};
+      };
+      using VertexVariant = std::variant<HostVertexImpl, NewVertexImpl, InsideVertex>;
+      VertexVariant vertexData;
       Clipper2Lib::PointD pt{};
+      // std::optional<size_t> hostIdx;
+      // std::optional<size_t> onEdgeIdx;
+
+      static Vertex HostVertex(const Clipper2Lib::PointD& pt,size_t hostIdx) { return Vertex{.pt=pt,.vertexData=HostVertexImpl(hostIdx)}; }
+      static Vertex NewVertex(int onEdgeIdx,const Clipper2Lib::PointD& pt,u_int64_t trimmingCurveZ) { return Vertex{.pt=pt,.vertexData=NewVertexImpl(onEdgeIdx,trimmingCurveZ)}; }
+      static Vertex NewVertex(int onEdgeIdx,const Clipper2Lib::PointD& pt,u_int64_t trimmingCurveZ) { return Vertex{.pt=pt,.vertexData=NewVertexImpl(onEdgeIdx,trimmingCurveZ)}; }
     };
 
-    struct NewVertex {
-      int onEdgeIdx{};
-      Clipper2Lib::PointD pt{};
-      size_t trimmingCurveZ{};
-    };
-    struct InsideVertex {
-      Clipper2Lib::PointD pt{};
-      size_t curveIdxI{};
-      size_t curveIdxJ{};
-      size_t loopIdx{};
-    };
 
-    using VertexVariant = std::variant<HostVertex, NewVertex, InsideVertex>;
+
+
+
 
     void addOriginalVertex(const Clipper2Lib::PointD& pt) {
       assert(pt.z < 4);
       if (FloatCmp::eq(pt.x, originalVertices_[pt.z].x) and FloatCmp::eq(pt.y, originalVertices_[pt.z].y)
           and not isAlreadyThere(pt.z))
-        vertices_.emplace_back(HostVertex(pt.z, originalVertices_[pt.z]));
+        vertices_.emplace_back(Vertex::HostVertex(originalVertices_[pt.z],pt.z));
     }
     void addOriginalVertex(const size_t hostIdx) {
-      if (not isAlreadyThere(hostIdx)) vertices_.emplace_back(HostVertex(hostIdx, originalVertices_[hostIdx]));
+      if (not isAlreadyThere(hostIdx)) vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx],hostIdx));
     }
 
     void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
-      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
+      if (not isAlreadyThere(pt)) vertices_.emplace_back(Vertex::NewVertex(edgeIdx, pt, trimmingCurveZ));
     }
     void addInsideVertex(const Clipper2Lib::PointD& pt, const size_t curveIndexI, const size_t curveIndexJ,
                          size_t loopIdx) {
@@ -126,13 +137,13 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         std::visit(Visitor{}, vV);
     }
 
-    std::vector<VertexVariant> vertices_{};
+    std::vector<Vertex> vertices_{};
 
   private:
     std::vector<Clipper2Lib::PointD> originalVertices_;
 
     auto isAlreadyThere(const Clipper2Lib::PointD& pt) -> bool {
-      const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
+      const auto it = std::ranges::find_if(vertices_, [&](const Vertex& vertexVariant) {
         return std::visit(
             [&](const auto& vertex) {
               return FloatCmp::eq(vertex.pt.x, pt.x, 1e-8) and FloatCmp::eq(vertex.pt.y, pt.y, 1e-8);
@@ -142,7 +153,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
       return it != vertices_.end();
     }
     auto isAlreadyThere(const size_t hostIdx) -> bool {
-      const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vV) {
+      const auto it = std::ranges::find_if(vertices_, [&](const Vertex& vV) {
         if (std::holds_alternative<HostVertex>(vV)) return std::get<HostVertex>(vV).hostIdx == hostIdx;
         return false;
       });
