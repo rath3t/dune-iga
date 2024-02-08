@@ -63,20 +63,12 @@ namespace Dune::IGANEW::DefaultTrim {
       };
 
       static IndexResult decode(int64_t singleIndex)  {
-        // example  curveBits = 4 and loopBits = 3;
-        // loopMask = 00111
-        // example  singleIndex = 11010_b = 26
-        // curveIndex = 3 and loopIndex = 2 = 00010_b
-        // curveIndex = 3 = 00011_b
-        // loopMask =
-        // (singleIndex >> loopBits)  = 00011_b = curveIndex
-        // since the sample index is stored in the right-most bits, we only have to apply the bitwise and, which returns simply the sample index
-        // 11010_b AND
-        // 00111_b
-        // 00010_b = 2
+        // since the sample index is stored in the right-most bits, we only have to apply the bitwise "and" with sampleMask, which returns simply the sample index
         int sampleIndex = singleIndex & sampleMask;
+        // shift single index to have the loop index at the rightmost position and apply the bitwise and with the loop mask
         const int loopAndCurveIndex = singleIndex >> sampleBits;
         int loopIndex = loopAndCurveIndex & loopMask;
+        // shift again to have the curve index at the rightmost position and apply the bitwise and with the curve mask
         int curveIndex = (loopAndCurveIndex >> loopBits) & curveMask;
         return {loopIndex,curveIndex, sampleIndex};
 
@@ -98,8 +90,8 @@ namespace Dune::IGANEW::DefaultTrim {
 
     public:
       using idx_t = u_int64_t;
-      static constexpr idx_t indexOffSet = 4; //Since the first 4 values are reserved for the corners of the untrimmed square all indices start at 4
-
+      static constexpr idx_t indexOffSet = 5; //Since the 0 is reserved for untouched points and the following 4
+      //values are reserved for the corners of the untrimmed square all indices start at 5
       void addLoop(const Impl::BoundaryLoop<TrimmingCurve>& loop) {
         Clipper2Lib::PathD path;
         // since the first
@@ -122,6 +114,9 @@ namespace Dune::IGANEW::DefaultTrim {
       }
 
       [[nodiscard]] auto getIndices(const idx_t val) const -> Impl::CurveLoopIndexEncoder::IndexResult {
+        if(val==0) // untouched point usually created by Clipperlib as Intersection point
+          return Impl::CurveLoopIndexEncoder::IndexResult{-1,-1,-1};
+        assert(val>=indexOffSet && "Passed index not decodable, since it is smaller than the offset and non-zero, which usually means that the point is a host vertex");
         return Impl::CurveLoopIndexEncoder::decode(val-indexOffSet);
       }
 

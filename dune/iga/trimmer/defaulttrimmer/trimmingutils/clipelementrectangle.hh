@@ -23,7 +23,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     PathD eleRect;
     for (const auto vertexIndex : Dune::range(numberOfCorners)) {
       auto corner = eleGeo.corner(vertexIndexMapping[vertexIndex]);
-      eleRect.emplace_back(corner[0], corner[1], vertexIndex);
+      eleRect.emplace_back(corner[0], corner[1], vertexIndex+1);
     }
 
     const auto& trimmingCurves = patchTrimData.clipperLoops();
@@ -43,8 +43,8 @@ namespace Dune::IGANEW::DefaultTrim::Util {
     clipper.SetZCallback([&](const PointD& rectangleFirstPoint, const PointD& rectangleSecondPoint,
                              const PointD& firstTrimmingCurvePoint, const PointD& secondTrimmingCurvePoint,
                              const PointD& intersectionPoint) {
-      assert(rectangleFirstPoint.z < 4 && "Intersection should only occur with the rectangle edges");
-      assert(rectangleSecondPoint.z < 4 && "Intersection should only occur with the rectangle edges");
+      assert(rectangleFirstPoint.z> 0 and rectangleFirstPoint.z < 5 && "Intersection should only occur with the rectangle edges");
+      assert(rectangleSecondPoint.z> 0 and rectangleSecondPoint.z < 5 && "Intersection should only occur with the rectangle edges");
 
       const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
       if (isHost) {
@@ -52,7 +52,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         return;
       }
 
-      const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z, rectangleSecondPoint.z);
+      const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z-1, rectangleSecondPoint.z-1);
 
       auto firstTrimmingCurveIndices = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
       auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
@@ -90,7 +90,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     auto isFullElement
         = [&](const auto& clippedEdges) {
-          return clippedEdges.size()==4 and (clippedEdges[0].z < 4 and clippedEdges[1].z <4 and clippedEdges[2].z <4 and clippedEdges[3].z <4);
+          return clippedEdges.size()==4 and (clippedEdges[0].z < 5 and clippedEdges[1].z <5 and clippedEdges[2].z <5 and clippedEdges[3].z <5);
         };
 
     if (resultClosedPaths.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
