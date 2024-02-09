@@ -27,80 +27,109 @@ namespace Dune::IGANEW::DefaultTrim::Util {
   struct ClippingResult {
     explicit ClippingResult(const std::vector<Clipper2Lib::PointD>& oldV) : originalVertices_(oldV) {}
 
-    struct HostVertex {
-      size_t hostIdx{};
+    struct Vertex {
+      struct HostVertexImpl {
+        size_t hostIdx{};
+      };
+      struct NewVertexImpl {
+        int onEdgeIdx{};
+        u_int64_t trimmingCurveZ{};
+      };
+      struct InsideVertexImpl {
+
+        size_t curveIdxI{};
+        size_t curveIdxJ{};
+        size_t loopIdx{};
+      };
+      using VertexVariant = std::variant<HostVertexImpl, NewVertexImpl, InsideVertexImpl>;
       Clipper2Lib::PointD pt{};
+      VertexVariant vertexData;
+      // std::optional<size_t> hostIdx;
+      // std::optional<size_t> onEdgeIdx;
+
+      bool isHost() const {        return std::holds_alternative<HostVertexImpl>(vertexData);      }
+      bool isInside() const {        return std::holds_alternative<InsideVertexImpl>(vertexData);      }
+      bool isNew() const {        return std::holds_alternative<NewVertexImpl>(vertexData);      }
+      auto loop() const {    assert(isInside());    return std::get<InsideVertexImpl>(vertexData).loopIdx;      }
+      auto formerCurve() const {    assert(isInside());    return std::get<InsideVertexImpl>(vertexData).curveIdxI;      }
+      auto subsequentCurve() const {    assert(isInside());    return std::get<InsideVertexImpl>(vertexData).curveIdxJ;      }
+      auto zValue() const {    assert(isNew());    return std::get<NewVertexImpl>(vertexData).trimmingCurveZ;      }
+      auto hostId() const {    assert(isHost());    return std::get<HostVertexImpl>(vertexData).hostIdx;      }
+      auto edgeId() const {    assert(isNew());    return std::get<NewVertexImpl>(vertexData).onEdgeIdx;      }
+      static Vertex HostVertex(const Clipper2Lib::PointD& pt,size_t hostIdx) { return Vertex{.pt=pt,.vertexData=HostVertexImpl(hostIdx)}; }
+      static Vertex NewVertex(int onEdgeIdx,const Clipper2Lib::PointD& pt,u_int64_t trimmingCurveZ) { return Vertex{.pt=pt,.vertexData=NewVertexImpl(onEdgeIdx,trimmingCurveZ)}; }
+      static Vertex InsideVertex(const Clipper2Lib::PointD& pt,size_t curveIdxI,size_t curveIdxJ,size_t loopIdx) { return Vertex{.pt=pt,.vertexData=InsideVertexImpl(curveIdxI,curveIdxJ,loopIdx)}; }
+      friend std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {
+        os << "Vertex: " << vertex.pt << " ";
+        if (vertex.isHost()) os << "HostVertex: " << std::get<HostVertexImpl>(vertex.vertexData).hostIdx;
+        if (vertex.isNew()) os << "NewVertex: " << std::get<NewVertexImpl>(vertex.vertexData).onEdgeIdx << " " << std::get<NewVertexImpl>(vertex.vertexData).trimmingCurveZ;
+        if (vertex.isInside()) os << "InsideVertex: " << std::get<InsideVertexImpl>(vertex.vertexData).curveIdxI << " " << std::get<InsideVertexImpl>(vertex.vertexData).curveIdxJ << " " << std::get<InsideVertexImpl>(vertex.vertexData).loopIdx;
+        return os;
+      }
+
     };
 
-    struct NewVertex {
-      int onEdgeIdx{};
-      Clipper2Lib::PointD pt{};
-      size_t trimmingCurveZ{};
-    };
-    struct InsideVertex {
-      Clipper2Lib::PointD pt{};
-      size_t curveIdxI{};
-      size_t curveIdxJ{};
-      size_t loopIdx{};
-    };
 
-    using VertexVariant = std::variant<HostVertex, NewVertex, InsideVertex>;
+
+
+
 
     void addOriginalVertex(const Clipper2Lib::PointD& pt) {
-      assert(pt.z < 4);
+      assert(pt.z < 5);
       if (FloatCmp::eq(pt.x, originalVertices_[pt.z].x) and FloatCmp::eq(pt.y, originalVertices_[pt.z].y)
           and not isAlreadyThere(pt.z))
-        vertices_.emplace_back(HostVertex(pt.z, originalVertices_[pt.z]));
+        vertices_.emplace_back(Vertex::HostVertex(originalVertices_[pt.z],pt.z));
     }
     void addOriginalVertex(const size_t hostIdx) {
-      if (not isAlreadyThere(hostIdx)) vertices_.emplace_back(HostVertex(hostIdx, originalVertices_[hostIdx]));
+      if (not isAlreadyThere(hostIdx)) vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx],hostIdx));
     }
 
     void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
-      if (not isAlreadyThere(pt)) vertices_.emplace_back(NewVertex(edgeIdx, pt, trimmingCurveZ));
+      if (not isAlreadyThere(pt)) vertices_.emplace_back(Vertex::NewVertex(edgeIdx, pt, trimmingCurveZ));
     }
     void addInsideVertex(const Clipper2Lib::PointD& pt, const size_t curveIndexI, const size_t curveIndexJ,
                          size_t loopIdx) {
-      vertices_.emplace_back(InsideVertex(pt, curveIndexI, curveIndexJ, loopIdx));
+      vertices_.emplace_back(Vertex::InsideVertex(pt, curveIndexI, curveIndexJ, loopIdx));
     }
 
     void finish(const auto& patchTrimData) {
       // Sort the points in counter clockwise manner such that the first point is in the lower left
       const auto minVertex = lowerLeftVertex();
-      std::ranges::sort(vertices_, [&](const VertexVariant& aV, const VertexVariant& bV) {
+      std::ranges::sort(vertices_, [&](const Vertex& aV, const Vertex& bV) {
         return comparePoints(aV, bV, minVertex);
       });
 
       // Resort that we always start on a hostVertex (if there is one)
       if (const auto it = std::ranges::find_if(
-              vertices_, [](const VertexVariant& vV) { return std::holds_alternative<HostVertex>(vV); });
+              vertices_, [](const Vertex& vV) { return vV.isHost(); });
           it != vertices_.end())
         std::ranges::rotate(vertices_, it);
 
       // Now resort InsideVertices (sometimes they end up on the wrong position)
       for (const auto i : std::views::iota(0ul, vertices_.size())) {
-        if (const auto insideVertex = std::get_if<InsideVertex>(&vertices_[i])) {
+        if (vertices_[i].isInside()) {
+          const auto insideVertex = vertices_[i];
           auto it = vertices_.begin() + static_cast<long>(i);
           const size_t indexBeforeIt = it == vertices_.begin() ? vertices_.size() - 1 : std::ranges::distance(vertices_.begin(), it) - 1;
           const size_t indexAfterIt = it == std::prev(vertices_.end()) ? 0 : std::ranges::distance(vertices_.begin(), it) + 1;
 
           // Check vertex before if they line up correctly
-          const auto vertexBefore = std::get_if<NewVertex>(&vertices_[indexBeforeIt]);
-          const auto vertexAfter = std::get_if<NewVertex>(&vertices_[indexAfterIt]);
+          const auto vertexBefore = vertices_[indexBeforeIt];
+          const auto vertexAfter = vertices_[indexAfterIt];
 
-          if (vertexBefore && vertexAfter ) {
-            auto indices = patchTrimData.getIndices(vertexBefore->trimmingCurveZ);
-            if(indices.loop == insideVertex->loopIdx and indices.curve == insideVertex->curveIdxI)
+          if (vertexBefore.isNew() and vertexAfter.isNew() ) {
+            auto indices = patchTrimData.getIndices(vertexBefore.zValue());
+            if(indices.loop == insideVertex.loop() and indices.curve == insideVertex.formerCurve())
               continue;
           }
           // If we end up here sort the vertex to a correct place
-          auto correctVertexIt = findCorrespondingVertexIt(*insideVertex, patchTrimData);
+          auto correctVertexIt = findCorrespondingVertexIt(insideVertex, patchTrimData);
           assert(correctVertexIt != vertices_.end() && "No corresponding newVertex found");
 
           // Add the insideVertex at correctVertexIt+1
           const auto correctItForInsideVertex = correctVertexIt + 1;
           if (std::distance(vertices_.begin(), correctItForInsideVertex) < i) {
-            vertices_.insert(correctItForInsideVertex, *insideVertex);
+            vertices_.insert(correctItForInsideVertex, insideVertex);
             vertices_.erase(vertices_.begin() + static_cast<long>(i+1));
           } else {
             std::ranges::rotate(it, it + 1, correctItForInsideVertex);
@@ -111,55 +140,40 @@ namespace Dune::IGANEW::DefaultTrim::Util {
 
     void report() const {
       std::cout << "Vertices found\n";
-      struct Visitor {
-        void operator()(const HostVertex& v) const {
-          std::cout << "Pt: " << v.pt << " Host Idx: " << v.hostIdx << std::endl;
-        }
-        void operator()(const NewVertex& v) const {
-          std::cout << "Edge: " << v.onEdgeIdx << " Pt: " << v.pt << " On TC: " << v.trimmingCurveZ << std::endl;
-        }
-        void operator()(const InsideVertex& v) const {
-          std::cout << " Pt: " << v.pt << " On TC: " << v.curveIdxI << " and " << v.curveIdxJ << std::endl;
-        }
-      };
+
       for (auto& vV : vertices_)
-        std::visit(Visitor{}, vV);
+        std::cout<<vV<<std::endl;
     }
 
-    std::vector<VertexVariant> vertices_{};
+    std::vector<Vertex> vertices_{};
 
   private:
     std::vector<Clipper2Lib::PointD> originalVertices_;
 
     auto isAlreadyThere(const Clipper2Lib::PointD& pt) -> bool {
-      const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vertexVariant) {
-        return std::visit(
-            [&](const auto& vertex) {
-              return FloatCmp::eq(vertex.pt.x, pt.x, 1e-8) and FloatCmp::eq(vertex.pt.y, pt.y, 1e-8);
-            },
-            vertexVariant);
+      const auto it = std::ranges::find_if(vertices_, [&](const Vertex& vertex) {
+        return FloatCmp::eq(vertex.pt.x, pt.x, 1e-8) and FloatCmp::eq(vertex.pt.y, pt.y, 1e-8);
       });
       return it != vertices_.end();
     }
     auto isAlreadyThere(const size_t hostIdx) -> bool {
-      const auto it = std::ranges::find_if(vertices_, [&](const VertexVariant& vV) {
-        if (std::holds_alternative<HostVertex>(vV)) return std::get<HostVertex>(vV).hostIdx == hostIdx;
+      const auto it = std::ranges::find_if(vertices_, [&](const Vertex& vV) {
+        if (vV.isHost()) return vV.hostId() == hostIdx;
         return false;
       });
       return it != vertices_.end();
     }
 
-    inline static auto getPoint = [](auto&& vertexVariant) { return vertexVariant.pt; };
 
     // Sort the points based on polar angle with respect to the reference point
     inline static auto comparePoints
-        = [](const VertexVariant& aV, const VertexVariant& bV, const VertexVariant& referenceV) -> bool {
+        = [](const Vertex& aV, const Vertex& bV, const Vertex& referenceV) -> bool {
       auto polarAngle
           = [](const auto& p, const auto& reference) -> double { return atan2(p.y - reference.y, p.x - reference.x); };
 
-      const auto a         = std::visit(getPoint, aV);
-      const auto b         = std::visit(getPoint, bV);
-      const auto reference = std::visit(getPoint, referenceV);
+      const auto a         = aV.pt;
+      const auto b         = bV.pt;
+      const auto reference = referenceV.pt;
       const double angleA  = polarAngle(a, reference);
       const double angleB  = polarAngle(b, reference);
 
@@ -170,22 +184,22 @@ namespace Dune::IGANEW::DefaultTrim::Util {
              < (b.x - reference.x) * (b.x - reference.x) + (b.y - reference.y) * (b.y - reference.y);
     };
 
-    auto findCorrespondingVertexIt(const InsideVertex& insideVertex, const auto& patchTrimData) {
-      return std::ranges::find_if(vertices_, [&](const VertexVariant& vV) {
+    auto findCorrespondingVertexIt(const Vertex& insideVertex, const auto& patchTrimData) {
+      return std::ranges::find_if(vertices_, [&](const Vertex& vV) {
 
-        if(std::holds_alternative<NewVertex>(vV)) {
-          const auto indices = patchTrimData.getIndices(std::get<NewVertex>(vV).trimmingCurveZ);
-          return indices.loop == insideVertex.loopIdx and indices.curve== insideVertex.curveIdxI;
+        if(vV.isNew()) {
+          const auto indices = patchTrimData.getIndices(vV.zValue());
+          return indices.loop == insideVertex.loop() and indices.curve== insideVertex.formerCurve();
         }else
         return false;
 
       });
     }
 
-    [[nodiscard]] const VertexVariant& lowerLeftVertex() const {
-      return *std::ranges::min_element(vertices_, [&](const VertexVariant& aV, const VertexVariant& bV) {
-        const auto a = std::visit(getPoint, aV);
-        const auto b = std::visit(getPoint, bV);
+    [[nodiscard]] const Vertex& lowerLeftVertex() const {
+      return *std::ranges::min_element(vertices_, [&](const Vertex& aV, const Vertex& bV) {
+        const auto a = aV.pt;
+        const auto b = bV.pt;
         return (a.y < b.y) || (a.y == b.y && a.x < b.x);
       });
     }

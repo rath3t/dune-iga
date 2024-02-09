@@ -94,8 +94,7 @@ namespace Dune::IGANEW::DefaultTrim::Util {
         };
 
     if (resultClosedPaths.empty()) return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
-    if (isFullElement(resultClosedPaths.front())) {
-      assert(resultClosedPaths.size() == 1 && "If the element is full, there should be only one path");
+    if (resultClosedPaths.size() == 1 and isFullElement(resultClosedPaths.front())) {
       return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
     }
 
