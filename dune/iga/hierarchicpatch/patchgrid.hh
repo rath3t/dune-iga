@@ -444,10 +444,9 @@ public:
 
   //! Returns the hostgrid entity encapsulated in given PatchGrid entity
   template <int codim>
-  requires
-  const GridFamily::template hasHostEntity<codim> typename GridFamily::TrimmerTraits::template Codim<
-      codim>::ParameterSpaceGridEntity&
-  getHostEntity(const typename Traits::template Codim<codim>::Entity& e) const {
+  requires(GridFamily::template hasHostEntity<codim>)
+  const typename GridFamily::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
+      const typename Traits::template Codim<codim>::Entity& e) const {
     return e.impl().getHostEntity();
   }
 

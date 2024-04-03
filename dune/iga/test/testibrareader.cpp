@@ -27,13 +27,14 @@ auto testIbraReader() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
 
-  const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/element_trim_xb.ibra", 0, 3},
+  const std::vector testCases{std::tuple<std::string, int, int>
+                              {"auxiliaryfiles/element_trim_xb.ibra", 0, 3},
                               {"auxiliaryfiles/element_trim.ibra", 0, 3},
-                              /*{"auxiliaryfiles/trim_2edges.ibra", 0, 3},
+                              {"auxiliaryfiles/trim_2edges.ibra", 0, 3},
                               {"auxiliaryfiles/trim_multi.ibra", 0, 3},
                               {"auxiliaryfiles/surface-hole.ibra", 1, 3},
                               {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
-                              {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}*/};
+                              {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}};
 
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {
