@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 
 #include <dune/common/exceptions.hh>
@@ -10,14 +10,12 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
-
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
@@ -43,14 +41,18 @@ auto testFactoryWithTorus() {
 }
 
 auto diagonalTrimmingCurve() {
-  const std::array<std::vector<double>, 1> knotSpansCurve = {{
-      {0, 0, 1, 1},
-  }};
-  using ControlPoint                                      = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  const std::array<std::vector<double>, 1> knotSpansCurve = {
+      {
+       {0, 0, 1, 1},
+       }
+  };
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPointsCurve = {{{.p = {0, 0}, .w = 1}, {.p = {1, 1}, .w = 1}}};
-  const std::array orderCurve                        = {1};
-  auto controlNetCurve = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
+  const std::vector<ControlPoint> controlPointsCurve = {
+      {{.p = {0, 0}, .w = 1}, {.p = {1, 1}, .w = 1}}
+  };
+  const std::array orderCurve = {1};
+  auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
@@ -66,16 +68,19 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const double Lx = 2;
-  const double Ly = 3;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {Lx / 2, 0}, .w = 1}, {.p = {Lx, 0}, .w = 1}},
-         {{.p = {0, Ly / 2}, .w = 1}, {.p = {Lx / 2, Ly / 2}, .w = 1}, {.p = {Lx, Ly / 2}, .w = 1}},
-         {{.p = {0, Ly}, .w = 1}, {.p = {Lx / 2, Ly}, .w = 1}, {.p = {Lx, Ly}, .w = 1}}};
+  const double Lx                                            = 2;
+  const double Ly                                            = 3;
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {     {.p = {0, 0}, .w = 1},      {.p = {Lx / 2, 0}, .w = 1},      {.p = {Lx, 0}, .w = 1}},
+      {{.p = {0, Ly / 2}, .w = 1}, {.p = {Lx / 2, Ly / 2}, .w = 1}, {.p = {Lx, Ly / 2}, .w = 1}},
+      {    {.p = {0, Ly}, .w = 1},     {.p = {Lx / 2, Ly}, .w = 1},     {.p = {Lx, Ly}, .w = 1}}
+  };
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -122,16 +127,19 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
   using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const double Lx = 2;
-  const double Ly = 3;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {Lx / 2, 0, 0}, .w = 1}, {.p = {Lx, 0, 0}, .w = 1}},
-         {{.p = {0, Ly / 2, 0}, .w = 1}, {.p = {Lx / 2, Ly / 2, 0}, .w = 1}, {.p = {Lx, Ly / 2, 0}, .w = 1}},
-         {{.p = {0, Ly, 0}, .w = 1}, {.p = {Lx / 2, Ly, 0}, .w = 1}, {.p = {Lx, Ly, 0}, .w = 1}}};
+  const double Lx                                            = 2;
+  const double Ly                                            = 3;
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {     {.p = {0, 0, 0}, .w = 1},      {.p = {Lx / 2, 0, 0}, .w = 1},      {.p = {Lx, 0, 0}, .w = 1}},
+      {{.p = {0, Ly / 2, 0}, .w = 1}, {.p = {Lx / 2, Ly / 2, 0}, .w = 1}, {.p = {Lx, Ly / 2, 0}, .w = 1}},
+      {    {.p = {0, Ly, 0}, .w = 1},     {.p = {Lx / 2, Ly, 0}, .w = 1},     {.p = {Lx, Ly, 0}, .w = 1}}
+  };
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -180,16 +188,19 @@ auto testFactoryWithPlateWithCircularTrim3D() {
   using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, IdentityTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const double Lx = 2;
-  const double Ly = 3;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {Lx / 2, 0, 0}, .w = 1}, {.p = {Lx, 0, 0}, .w = 1}},
-         {{.p = {0, Ly / 2, 0}, .w = 1}, {.p = {Lx / 2, Ly / 2, 0}, .w = 1}, {.p = {Lx, Ly / 2, 0}, .w = 1}},
-         {{.p = {0, Ly, 0}, .w = 1}, {.p = {Lx / 2, Ly, 0}, .w = 1}, {.p = {Lx, Ly, 0}, .w = 1}}};
+  const double Lx                                            = 2;
+  const double Ly                                            = 3;
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {     {.p = {0, 0, 0}, .w = 1},      {.p = {Lx / 2, 0, 0}, .w = 1},      {.p = {Lx, 0, 0}, .w = 1}},
+      {{.p = {0, Ly / 2, 0}, .w = 1}, {.p = {Lx / 2, Ly / 2, 0}, .w = 1}, {.p = {Lx, Ly / 2, 0}, .w = 1}},
+      {    {.p = {0, Ly, 0}, .w = 1},     {.p = {Lx / 2, Ly, 0}, .w = 1},     {.p = {Lx, Ly, 0}, .w = 1}}
+  };
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 

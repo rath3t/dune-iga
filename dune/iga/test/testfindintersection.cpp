@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 
 #include <iomanip>
@@ -12,7 +12,6 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/iga/geometrykernel/findintersection.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 #include <dune/iga/geometrykernel/slicecurve.hh>
@@ -22,9 +21,10 @@ using namespace Dune::IGANEW;
 auto diagonalCurve() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 0, 1, 1, 1}}};
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
-  const std::vector<ControlPoint> controlPointsCurve
-      = {{{.p = {0, 0}, .w = 1}, {.p = {0.6, 0.4}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
+  using ControlPoint                                 = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  const std::vector<ControlPoint> controlPointsCurve = {
+      {{.p = {0, 0}, .w = 1}, {.p = {0.6, 0.4}, .w = 1}, {.p = {1.2, -7}, .w = 1}}
+  };
   const std::array orderCurve = {2};
   auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
@@ -38,8 +38,10 @@ auto diagonalLine() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 1, 1}}};
 
   using ControlPoint                                 = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
-  const std::vector<ControlPoint> controlPointsCurve = {{{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}};
-  const std::array orderCurve                        = {1};
+  const std::vector<ControlPoint> controlPointsCurve = {
+      {{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}
+  };
+  const std::array orderCurve = {1};
 
   auto controlNetCurve = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
   Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
@@ -81,8 +83,8 @@ auto test2() {
   t.check(Dune::FloatCmp::eq(curvePoint, {0.5, -2.916666666666667})) << "The obtained point is wrong";
 
   // Parallel line
-  std::tie(success, tParameter, curvePoint)
-      = Dune::IGANEW::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
+  std::tie(success, tParameter, curvePoint) =
+      Dune::IGANEW::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::parallel);
 
   return t;

@@ -2,23 +2,21 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
-
-#include <cfenv>
-#include <thread>
 
 #include "testhelper.hh"
 #include "testreferenceelement.hh"
+
+#include <cfenv>
+#include <thread>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/geometry/test/checkgeometry.hh>
-
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
@@ -28,7 +26,8 @@ using namespace Dune::IGANEW;
 
 using Grid = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
 
-struct PatchTrimDataResults {
+struct PatchTrimDataResults
+{
   double trimmingCurveTotalLength  = 0;
   double trimmingCurveCurvedLength = 0;
   int notAffineCounter             = 0;
@@ -36,7 +35,8 @@ struct PatchTrimDataResults {
 };
 
 template <Concept::Vector VectorType>
-requires(VectorType::dimension == 2) double cross(const VectorType& a, const VectorType& b) {
+requires(VectorType::dimension == 2)
+double cross(const VectorType& a, const VectorType& b) {
   return a[0] * b[1] - a[1] * b[0];
 }
 
@@ -76,10 +76,13 @@ requires(VectorType::dimension == 2) double cross(const VectorType& a, const Vec
 //                                     std::array<Dune::FieldVector<double, 2>,2>({{1, 1},{0,1}}),
 //                                     std::array<Dune::FieldVector<double, 2>,2>({{0, 1},{0,0}})};
 
-struct GeomWrapper {
+struct GeomWrapper
+{
   using CurveLocalViewType = Grid::Trimmer::TrimmingCurve;
-  GeomWrapper(const CurveLocalViewType& curve) : variant(curve) {}
-  GeomWrapper(const Dune::MultiLinearGeometry<double, 1, 2>& curve) : variant(curve) {}
+  GeomWrapper(const CurveLocalViewType& curve)
+      : variant(curve) {}
+  GeomWrapper(const Dune::MultiLinearGeometry<double, 1, 2>& curve)
+      : variant(curve) {}
 
   using Variant = std::variant<CurveLocalViewType, Dune::MultiLinearGeometry<double, 1, 2>>;
 
@@ -191,7 +194,9 @@ auto edgeGeometry(const Edge& edge, const HostGrid& grid, const typename Grid::T
       auto currentVertexCoord = edge.isTrimmed ? edge.geometry->corner(i) : hostEdgeGeometry.corner(i);
       pair[i]                 = currentVertexCoord;
     }
-    Dune::MultiLinearGeometry<double, 1, 2> edgeCube{Dune::GeometryTypes::line, std::vector{pair[0], pair[1]}};
+    Dune::MultiLinearGeometry<double, 1, 2> edgeCube{
+        Dune::GeometryTypes::line, std::vector{pair[0], pair[1]}
+    };
     return GeomWrapper(edgeCube);
   }
 }
@@ -200,10 +205,10 @@ template <typename GridElement, typename GridView>
 auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::ElementTrimData& eleTrimData,
                                    const GridView& gridView, const PatchTrimDataResults& resTrimPatch) {
   int eleIndex = gridView.indexSet().index(ele);
-  Dune::TestSuite t("elementTrimDataObstacleCourse for element " + std::to_string(eleIndex) + std::string(" Flag: ")
-                        + (eleTrimData.flag() == DefaultTrim::ElementTrimFlag::empty
-                               ? "empty"
-                               : (eleTrimData.flag() == DefaultTrim::ElementTrimFlag::full ? "full" : "trimmed")),
+  Dune::TestSuite t("elementTrimDataObstacleCourse for element " + std::to_string(eleIndex) + std::string(" Flag: ") +
+                        (eleTrimData.flag() == DefaultTrim::ElementTrimFlag::empty
+                             ? "empty"
+                             : (eleTrimData.flag() == DefaultTrim::ElementTrimFlag::full ? "full" : "trimmed")),
                     Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   if (eleTrimData.flag() != DefaultTrim::ElementTrimFlag::empty) {
@@ -225,8 +230,9 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
 
     t.check(eleTrimData.edges().size() == eleTrimData.vertices().size())
         << "The number of edges should be the number of vertices";
-    for (int edgeIndex = 0, untrimmedEdgeIndex = 0; auto &edge : eleTrimData.edges()) {
-      if (edge.isHost) ++hostEdgesCounter;
+    for (int edgeIndex = 0, untrimmedEdgeIndex = 0; auto& edge : eleTrimData.edges()) {
+      if (edge.isHost)
+        ++hostEdgesCounter;
       auto edgeGeo = edgeGeometry(edge, gridView.grid(), eleTrimData);
       std::visit([&](auto& var) { t.check(Dune::checkGeometry(var)); }, edgeGeo.variant);
       if (edge.isTrimmed)
@@ -263,8 +269,8 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
       }
 
       if (not edge.isHost) {
-        const auto& rule
-            = Dune::QuadratureRules<double, 1>::rule(Dune::GeometryTypes::cube(1), edgeGeo.degree()[0] + 20);
+        const auto& rule =
+            Dune::QuadratureRules<double, 1>::rule(Dune::GeometryTypes::cube(1), edgeGeo.degree()[0] + 20);
         for (auto& gp : rule)
 
           lengthOfTrimmedCurves += edgeGeo.integrationElement(gp.position()) * gp.weight();
@@ -273,7 +279,7 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
       oldVertexCoordPair[0] = pair[0];
       oldVertexCoordPair[1] = pair[1];
 
-      //  check that edges are unique
+      // check that edges are unique
       const bool inserted = edgeSet.insert(pair).second;
       t.require(inserted) << "Duplicate edge detected in Element " << eleIndex << " Edges: " << pair[0] << ", "
                           << pair[1];
@@ -283,14 +289,16 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
       // windingNumber+=windingNumberOfCurve( edgeGeo,ele.geometry().global({0.5,0.5}));
 
       ++edgeIndex;
-      if (edge.isHost) ++untrimmedEdgeIndex;
+      if (edge.isHost)
+        ++untrimmedEdgeIndex;
     }
 
     std::set<Dune::FieldVector<double, 2>> vertexSet;
     int hostVertexCounter = 0;
 
     for (int vertexIndex = 0; auto& vertex : eleTrimData.vertices()) {
-      if (vertex.isHost) ++hostVertexCounter;
+      if (vertex.isHost)
+        ++hostVertexCounter;
       if (not vertex.isHost)
         t.check(vertex.geometry.has_value()) << "Trimmed edge should have the geometry";
       else
@@ -301,8 +309,8 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
     int nonHostEdges    = totalEdges - hostEdgesCounter;
     int nonHostVertices = totalVertices - hostVertexCounter;
     t.check(nonHostEdges + 1 == nonHostVertices)
-        << "Each non-host edge produces two non-host vertices."
-        << "There are nonHostEdges " << nonHostEdges << " and nonHostVertices " << nonHostVertices;
+        << "Each non-host edge produces two non-host vertices." << "There are nonHostEdges " << nonHostEdges
+        << " and nonHostVertices " << nonHostVertices;
 
     // windingNumber /= 2*std::numbers::pi_v<double>;
     // t.check(Dune::FloatCmp::eq(windingNumber,1.0,1e-10) or Dune::FloatCmp::eq(windingNumber,1.0,1e-10))<<"The winding
@@ -330,7 +338,8 @@ auto computeControlPointsFromMatrix(const Dune::DynamicMatrix<double>& cps, cons
   return controlNet;
 }
 
-struct ExpectedValues {
+struct ExpectedValues
+{
   double straightLength;
   double trimmingCurveCurvedLength;
   double trimmingCurveTotalLength;
@@ -338,13 +347,13 @@ struct ExpectedValues {
   int notAffineCounter;
 };
 
-template< typename ExecutionPolicy>
+template <typename ExecutionPolicy>
 auto checkTrim(std::string filename, const ExpectedValues& expectedValues, ExecutionPolicy&& policy) {
   // Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   // Setup
-  std::atomic<std::shared_ptr<Dune::TestSuite>> t
-      = std::make_shared<Dune::TestSuite>(filename, Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
+  std::atomic<std::shared_ptr<Dune::TestSuite>> t =
+      std::make_shared<Dune::TestSuite>(filename, Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   using GridFactory = Dune::GridFactory<Grid>;
 
@@ -355,15 +364,15 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
   for (auto refx : range) {
     std::vector<int> yR(
         range.begin(),
-        range.end());  // copy into vector sicne for_each does not work with iota_view and parallel execution
+        range.end()); // copy into vector sicne for_each does not work with iota_view and parallel execution
     std::for_each(policy, yR.begin(), yR.end(), [&](auto refy) {
       std::cout << "Thread: " << std::this_thread::get_id() << std::endl;
       auto gridFactory = GridFactory();
       auto brep        = readJson<2>(filename);
       std::cout << "Refinement level: (" << refx << ", " << refy << ")" << std::endl;
       gridFactory.insertJson(filename, true, {refx, refy});
-      auto igaGrid = gridFactory.createGrid();
-      auto patchTrimData=igaGrid->trimmer().patchTrimData();
+      auto igaGrid                 = gridFactory.createGrid();
+      auto patchTrimData           = igaGrid->trimmer().patchTrimData();
       const auto tensorCoordinates = GeometryKernel::NURBSPatch{gridFactory.patchData_}.uniqueKnotVector();
       Dune::YaspGrid gridH{tensorCoordinates};
       Dune::SubGrid<2, decltype(gridH)> grid(gridH);
@@ -371,7 +380,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
       grid.insertLeaf();
       grid.createEnd();
 
-     // const auto& patchTrimData = gridFactory.patchTrimData_.value();
+      // const auto& patchTrimData = gridFactory.patchTrimData_.value();
       assert(patchTrimData.loops().size() == 1);
       const auto& firstLoop = patchTrimData.loops()[0];
       t.load(std::memory_order_relaxed)->check(firstLoop.curves().size() == expectedValues.firstLoopCurvesSize)
@@ -425,14 +434,13 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
       auto gridView = grid.leafGridView();
 
       std::atomic<double> trimmedEdgeLengthsAccumulated{0};
-      std::for_each(
-          policy, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
-            ElementTrimData elementTrimData = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele, patchTrimData);
-            auto [subTestEle, trimmedEdgeLength]
-                = elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
-            trimmedEdgeLengthsAccumulated.fetch_add(trimmedEdgeLength, std::memory_order_relaxed);
-            t.load(std::memory_order_relaxed)->subTest(subTestEle);
-          });
+      std::for_each(policy, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
+        ElementTrimData elementTrimData = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele, patchTrimData);
+        auto [subTestEle, trimmedEdgeLength] =
+            elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
+        trimmedEdgeLengthsAccumulated.fetch_add(trimmedEdgeLength, std::memory_order_relaxed);
+        t.load(std::memory_order_relaxed)->subTest(subTestEle);
+      });
       // for (const auto& ele : elements(gridView)) {
       //   ElementTrimData elementTrimData      = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele,
       //   patchTrimData); auto [subTestEle, trimmedEdgeLength] = elementTrimDataObstacleCourse(ele, elementTrimData,
@@ -444,8 +452,6 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
                                          resTrimPatch.trimmingCurveCurvedLength, 1e-2))
           << "trimmedEdgeLengthsAccumulated is " << trimmedEdgeLengthsAccumulated << " but should be "
           << resTrimPatch.trimmingCurveCurvedLength;
-
-
     });
   }
 
@@ -461,36 +467,42 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  t.subTest(
-      checkTrim("auxiliaryfiles/element_trim.ibra", ExpectedValues({.straightLength            = 2.63795969611125,
-                                                                    .trimmingCurveCurvedLength = 0.9765154639613303,
-                                                                    .trimmingCurveTotalLength  = 3.61447516007258,
-                                                                    .firstLoopCurvesSize       = 5,
-                                                                    .notAffineCounter          = 1}),std::execution::seq));
-  t.subTest(checkTrim("auxiliaryfiles/element.ibra", ExpectedValues({.straightLength            = 4,
-                                                                     .trimmingCurveCurvedLength = 0,
-                                                                     .trimmingCurveTotalLength  = 4,
-                                                                     .firstLoopCurvesSize       = 4,
-                                                                     .notAffineCounter          = 0}),std::execution::seq));
-  t.subTest(
-    checkTrim("auxiliaryfiles/trim_2edges.ibra", ExpectedValues({.straightLength            = 31.94725845850641,
-                                                                     .trimmingCurveCurvedLength = 6.323120188237797,
-                                                                     .trimmingCurveTotalLength  = 38.27037864674421,
-                                                                     .firstLoopCurvesSize       = 6,
-                                                                     .notAffineCounter          = 2}),std::execution::seq));
+  t.subTest(checkTrim("auxiliaryfiles/element_trim.ibra",
+                      ExpectedValues({.straightLength            = 2.63795969611125,
+                                      .trimmingCurveCurvedLength = 0.9765154639613303,
+                                      .trimmingCurveTotalLength  = 3.61447516007258,
+                                      .firstLoopCurvesSize       = 5,
+                                      .notAffineCounter          = 1}),
+                      std::execution::seq));
+  t.subTest(checkTrim("auxiliaryfiles/element.ibra",
+                      ExpectedValues({.straightLength            = 4,
+                                      .trimmingCurveCurvedLength = 0,
+                                      .trimmingCurveTotalLength  = 4,
+                                      .firstLoopCurvesSize       = 4,
+                                      .notAffineCounter          = 0}),
+                      std::execution::seq));
+  t.subTest(checkTrim("auxiliaryfiles/trim_2edges.ibra",
+                      ExpectedValues({.straightLength            = 31.94725845850641,
+                                      .trimmingCurveCurvedLength = 6.323120188237797,
+                                      .trimmingCurveTotalLength  = 38.27037864674421,
+                                      .firstLoopCurvesSize       = 6,
+                                      .notAffineCounter          = 2}),
+                      std::execution::seq));
 
-  t.subTest(
-  checkTrim("auxiliaryfiles/trim_multi.ibra", ExpectedValues({.straightLength            = 27.06623257317474,
-                                                                   .trimmingCurveCurvedLength = 7.461084509983623,
-                                                                   .trimmingCurveTotalLength  = 38.27037864674421,
-                                                                   .firstLoopCurvesSize       = 5,
-                                                                   .notAffineCounter          = 1}),std::execution::seq));
-  t.subTest(
-      checkTrim("auxiliaryfiles/element_trim_xb.ibra", ExpectedValues({.straightLength            = 2.791977909806771,
-                                                                       .trimmingCurveCurvedLength = 1.6273832575204,
-                                                                       .trimmingCurveTotalLength  = 4.419361167327171,
-                                                                       .firstLoopCurvesSize       = 5,
-                                                                       .notAffineCounter          = 1}),std::execution::seq));
+  t.subTest(checkTrim("auxiliaryfiles/trim_multi.ibra",
+                      ExpectedValues({.straightLength            = 27.06623257317474,
+                                      .trimmingCurveCurvedLength = 7.461084509983623,
+                                      .trimmingCurveTotalLength  = 38.27037864674421,
+                                      .firstLoopCurvesSize       = 5,
+                                      .notAffineCounter          = 1}),
+                      std::execution::seq));
+  t.subTest(checkTrim("auxiliaryfiles/element_trim_xb.ibra",
+                      ExpectedValues({.straightLength            = 2.791977909806771,
+                                      .trimmingCurveCurvedLength = 1.6273832575204,
+                                      .trimmingCurveTotalLength  = 4.419361167327171,
+                                      .firstLoopCurvesSize       = 5,
+                                      .notAffineCounter          = 1}),
+                      std::execution::seq));
 
   return t.exit();
 } catch (Dune::Exception& e) {

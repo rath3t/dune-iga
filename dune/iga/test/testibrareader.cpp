@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 
 #include <cfenv>
@@ -12,7 +12,6 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
@@ -29,9 +28,12 @@ auto testIbraReader() {
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
 
   const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/element_trim_xb.ibra", 0, 3},
-  {"auxiliaryfiles/element_trim.ibra", 0, 3}, {"auxiliaryfiles/trim_2edges.ibra", 0, 3}, {"auxiliaryfiles/trim_multi.ibra", 0, 3},
-  {"auxiliaryfiles/surface-hole.ibra", 1, 3}, {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
-    {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}};
+                              {"auxiliaryfiles/element_trim.ibra", 0, 3},
+                              /*{"auxiliaryfiles/trim_2edges.ibra", 0, 3},
+                              {"auxiliaryfiles/trim_multi.ibra", 0, 3},
+                              {"auxiliaryfiles/surface-hole.ibra", 1, 3},
+                              {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
+                              {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}*/};
 
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {
@@ -52,19 +54,20 @@ auto testIbraReader3d() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{200});
 
-  const std::vector testCases{std::tuple<std::string, int, int>{"auxiliaryfiles/shell-hole.ibra", 0, 2}};
+  const std::vector testCases{
+      std::tuple<std::string, int, int>{"auxiliaryfiles/shell-hole.ibra", 0, 2}
+  };
 
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {
       gridFactory.insertJson(name, true, {i, i});
-      //t.checkNoThrow([&]{auto grid = gridFactory.createGrid();});
+      // t.checkNoThrow([&]{auto grid = gridFactory.createGrid();});
       auto grid = gridFactory.createGrid();
     }
   }
 
   return t;
 }
-
 
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);

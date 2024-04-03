@@ -1,26 +1,25 @@
-PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+PathD // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-
-#include <clipper2/clipper.core.h>
 
 #include "nurbstrimboundary.hh"
 #include "nurbstrimmer.hh"
 #include "subgridhelpers.hh"
 
-#include <dune/geometry/multilineargeometry.hh>
-#include <dune/geometry/virtualrefinement.hh>
-
-#include <dune/grid/uggrid.hh>
+#include <clipper2/clipper.core.h>
 
 #include "dune/iga/geometry/geohelper.hh"
+#include <dune/geometry/multilineargeometry.hh>
+#include <dune/geometry/virtualrefinement.hh>
+#include <dune/grid/uggrid.hh>
 
     namespace Dune::IGA {
 
   /** @brief representation of the subgrid of trimmed elements in the reference space */
   template <int dim>
-  class TrimmedSubGrid {
+  class TrimmedSubGrid
+  {
   public:
     using Point   = Dune::FieldVector<double, dim>;
     using Element = MultiLinearGeometry<double, dim, dim>;
@@ -81,11 +80,13 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
         }
         loop = newLoop;
       };
-      if (outerBoundaries_.size() < 3) divideLoop(outerBoundaries_, partsForSize(outerBoundaries_.size()));
+      if (outerBoundaries_.size() < 3)
+        divideLoop(outerBoundaries_, partsForSize(outerBoundaries_.size()));
 
       if (innerBoundaries_)
         for (auto& innerLoop : innerBoundaries_.value())
-          if (innerLoop.size() < 3) divideLoop(innerLoop, partsForSize(innerLoop.size()));
+          if (innerLoop.size() < 3)
+            divideLoop(innerLoop, partsForSize(innerLoop.size()));
     }
 
   public:
@@ -117,7 +118,8 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
   public:
     auto createRefinedGrid(int refinementSteps) const
         -> std::tuple<decltype(elements_), decltype(vertices_), decltype(indices_)> {
-      if (refinementSteps == 0) return {elements_, vertices_, indices_};
+      if (refinementSteps == 0)
+        return {elements_, vertices_, indices_};
 
       decltype(elements_) refElements{};
       decltype(vertices_) refVertices{};
@@ -143,11 +145,11 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
       auto determineOuterBoundaryIndices = [nBoundaries = (unsigned int)boundaries.first.size()](unsigned int bIndex) {
         return std::vector<unsigned int>{bIndex, (bIndex + 1) % nBoundaries};
       };
-      auto determineInnerBoundaryIndices
-          = [](unsigned int bIndex, unsigned int nBoundariesInLoop, unsigned int innerIndex) {
-              auto increment = ((innerIndex + 1) % nBoundariesInLoop) - innerIndex;
-              return std::vector<unsigned int>{bIndex, bIndex + increment};
-            };
+      auto determineInnerBoundaryIndices = [](unsigned int bIndex, unsigned int nBoundariesInLoop,
+                                              unsigned int innerIndex) {
+        auto increment = ((innerIndex + 1) % nBoundariesInLoop) - innerIndex;
+        return std::vector<unsigned int>{bIndex, bIndex + increment};
+      };
 
       unsigned int bIndex = 0;
       for (auto& boundary : boundaries.first)
@@ -189,4 +191,4 @@ PathD  // SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-s
       return {refElements, refVertices, refIndices};
     }
   };
-}  // namespace Dune::IGA
+} // namespace Dune::IGA

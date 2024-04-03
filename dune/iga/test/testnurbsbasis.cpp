@@ -3,17 +3,14 @@
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 
 #include <dune/common/test/testsuite.hh>
-
-#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
-
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/test/basistest.hh>
-
+#include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
@@ -22,8 +19,8 @@ using namespace Dune;
 
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
-  //  First test
-  //  A B-Spline surface of dimWorld 3
+  // First test
+  // A B-Spline surface of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -39,24 +36,27 @@ auto testNurbsBasis() {
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
   Dune::IGANEW::NURBSPatchData<dim, dimworld> nurbsPatchData;
-  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  nurbsPatchData.knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
-  nurbsPatchData.controlPoints
-      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
-         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
-         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+  nurbsPatchData.controlPoints = {
+      {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
+      {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
+  };
   nurbsPatchData.degree = order;
 
   IGANEW::PatchGrid grid(nurbsPatchData);
-  //  grid.globalRefine(1);
+  // grid.globalRefine(1);
   grid.globalRefineInDirection({2, 0});
   grid.degreeElevateOnAllLevels({2, 2});
-  //  grid.globalRefineInDirection(1, 3);
+  // grid.globalRefineInDirection(1, 3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 

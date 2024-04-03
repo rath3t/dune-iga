@@ -3,27 +3,8 @@
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
-
-#include <dune/common/exceptions.hh>
-#include <dune/common/float_cmp.hh>
-#include <dune/common/fvector.hh>
-#include <dune/common/parallel/mpihelper.hh>
-#include <dune/common/test/testsuite.hh>
-
-#include <dune/geometry/quadraturerules.hh>
-
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
-#include <dune/grid/test/checkentitylifetime.hh>
-#include <dune/grid/test/checkgeometry.hh>
-#include <dune/grid/test/checkindexset.hh>
-#include <dune/grid/test/checkiterators.hh>
-#include <dune/grid/test/gridcheck.hh>
-
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
-#include <dune/functions/functionspacebases/test/basistest.hh>
-#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
 
 #include "dune/iga/gridcapabilities.hh"
 #include "dune/iga/io/ibra/ibrareader.hh"
@@ -32,7 +13,21 @@
 #include "dune/iga/nurbsgrid.hh"
 #include "dune/iga/nurbspatchgeometry.hh"
 #include "dune/iga/trim/nurbstrimmer.hh"
-
+#include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
+#include <dune/common/fvector.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/test/testsuite.hh>
+#include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/test/basistest.hh>
+#include <dune/functions/gridfunctions/analyticgridviewfunction.hh>
+#include <dune/geometry/quadraturerules.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/grid/test/checkentitylifetime.hh>
+#include <dune/grid/test/checkgeometry.hh>
+#include <dune/grid/test/checkindexset.hh>
+#include <dune/grid/test/checkiterators.hh>
+#include <dune/grid/test/gridcheck.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
@@ -52,8 +47,12 @@ auto testPatchGeometryCurve() {
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {-4, -4}, .w = 1}, {.p = {-3, 2.8}, .w = 2.5}, {.p = {2, -4}, .w = 1}, {.p = {4, 4}, .w = 1}};
+  const std::vector<ControlPoint> controlPoints = {
+      { .p = {-4, -4},   .w = 1},
+      {.p = {-3, 2.8}, .w = 2.5},
+      {  .p = {2, -4},   .w = 1},
+      {   .p = {4, 4},   .w = 1}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -102,7 +101,9 @@ auto testPatchGeometryCurve() {
 
   // Check corners
   t.check(geometry.corners() == 2);
-  std::array<FieldVector<double, 2>, 2> expectedCorners{{FieldVector<double, 2>{-4, -4}, FieldVector<double, 2>{4, 4}}};
+  std::array<FieldVector<double, 2>, 2> expectedCorners{
+      {FieldVector<double, 2>{-4, -4}, FieldVector<double, 2>{4, 4}}
+  };
   for (int i = 0; i < 2; ++i)
     t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]));
 
@@ -116,14 +117,17 @@ auto testPatchGeometrySurface() {
   const auto dimworld              = 3;
   const std::array<int, dim> order = {2, 2};
 
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 1}, .w = 1}, {.p = {1, 0, 1}, .w = 1}, {.p = {2, 0, 2}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}, {.p = {2, 1, 0}, .w = 1}},
-         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 1}, {.p = {2, 2, 2}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 1}, .w = 1}, {.p = {1, 0, 1}, .w = 1}, {.p = {2, 0, 2}, .w = 1}},
+      {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}, {.p = {2, 1, 0}, .w = 1}},
+      {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 1}, {.p = {2, 2, 2}, .w = 1}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -163,7 +167,8 @@ auto testPatchGeometrySurface() {
 
   std::array<FieldVector<double, 3>, 4> expectedCorners{
       {FieldVector<double, 3>{0, 0, 1}, FieldVector<double, 3>{0, 2, 1}, FieldVector<double, 3>{2, 0, 2},
-       FieldVector<double, 3>{2, 2, 2}}};
+       FieldVector<double, 3>{2, 2, 2}}
+  };
   for (int i = 0; i < 4; ++i)
     t.check(Dune::FloatCmp::eq(geometry.corner(i), expectedCorners[i]))
         << "u2 check failed " << geometry.corner(i) << " Expected: " << expectedCorners[i];
@@ -202,7 +207,12 @@ auto testIbraReader() {
 
   // Enumerate elements and check position of centers
   auto gV = grid->leafGridView();
-  std::vector<FieldVector<double, 2>> expectedElementCenters{{0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75}};
+  std::vector<FieldVector<double, 2>> expectedElementCenters{
+      {0.25, 0.25},
+      {0.75, 0.25},
+      {0.25, 0.75},
+      {0.75, 0.75}
+  };
   const auto& indexSet = grid->leafGridView().indexSet();
   for (auto& ele : elements(gV))
     t.check(ele.geometry().center() == expectedElementCenters[indexSet.index(ele)]);
@@ -230,7 +240,8 @@ auto testDataCollectorAndVtkWriter() {
     auto grid = IbraReader<2, 2>::read("auxiliaryfiles/" + fileName + ".ibra");
 
     for (auto r : std::views::iota(0, 4)) {
-      if (r > 0) grid->globalRefine(1);
+      if (r > 0)
+        grid->globalRefine(1);
 
       const auto gv = grid->leafGridView();
       auto lambaGV  = Dune::Functions::makeAnalyticGridViewFunction(lambdaf, gv);
@@ -261,7 +272,8 @@ auto testExampleSuite() {
 
   auto testLoop = [&]<int worldDim = 2>(const auto& _grid, int testRuns, std::string&& name) {
     for (auto i : std::views::iota(0, testRuns)) {
-      if (i != 0) _grid->globalRefine(1);
+      if (i != 0)
+        _grid->globalRefine(1);
 
       t.check(_grid->reportTrimError(), "Trim Error: " + name);
 
@@ -385,7 +397,8 @@ void checkSumWeights(const auto& gridView, auto& t) {
   Dune::QuadratureRule<double, 2> rule;
 
   for (auto& ele : elements(gridView)) {
-    if (not ele.impl().isTrimmed()) continue;
+    if (not ele.impl().isTrimmed())
+      continue;
 
     auto untrimmedArea = 1;
     auto trimmedArea   = ele.impl().elementSubGrid()->calculateArea();
@@ -456,7 +469,8 @@ auto testNurbsBasis() {
 
   auto runBasisChecks = [&](const auto& _grid, int testRuns) {
     for (auto i : std::views::iota(0, testRuns)) {
-      if (i != 0) _grid->globalRefine(1);
+      if (i != 0)
+        _grid->globalRefine(1);
 
       auto gridView = _grid->leafGridView();
       Dune::Functions::NurbsBasis<decltype(gridView)> basis(gridView);
@@ -520,7 +534,8 @@ void createOutputFolder() {
   if (fs::exists(OUTPUT_FOLDER) and fs::is_directory(OUTPUT_FOLDER))
     return;
   else {
-    if (not fs::create_directory(OUTPUT_FOLDER)) DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
+    if (not fs::create_directory(OUTPUT_FOLDER))
+      DUNE_THROW(Dune::IOError, "Couldn't create output folder!");
   }
 }
 

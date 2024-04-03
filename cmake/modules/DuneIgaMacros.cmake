@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers
-# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 find_package(Eigen3 3.3.9 REQUIRED)
 include(AddEigenFlags)
@@ -13,8 +13,7 @@ pkg_check_modules(Clipper2Z REQUIRED IMPORTED_TARGET Clipper2Z)
 find_library(Clipper2Z_LIB Clipper2Z HINTS ${PKG_Clipper2Z_LIBDIR} REQUIRED)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Clipper2Z DEFAULT_MSG Clipper2Z_INCLUDEDIR
-                                  Clipper2Z_LIB)
+find_package_handle_standard_args(Clipper2Z DEFAULT_MSG Clipper2Z_INCLUDEDIR Clipper2Z_LIB)
 
 include(AddClipperLibFlags)
 

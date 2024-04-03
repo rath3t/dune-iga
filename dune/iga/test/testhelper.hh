@@ -8,7 +8,8 @@
 #include <dune/common/fvector.hh>
 
 template <typename T, int worldDim, int Items>
-struct Compare {
+struct Compare
+{
   constexpr bool operator()(const std::array<Dune::FieldVector<double, worldDim>, Items>& lhs,
                             const std::array<Dune::FieldVector<double, worldDim>, Items>& rhs) const {
     return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));

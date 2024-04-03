@@ -11,59 +11,60 @@
 
 namespace Dune::IGANEW::DefaultTrim {
 
+/**
+ * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
+ * @ingroup PatchGrid
+ *
+ */
+template <int codim, class GridImp>
+class PatchGridEntitySeed
+{
+protected:
+  using Trimmer = typename GridImp::Trimmer;
+  friend Trimmer;
+  // Entity type of the hostgrid
+  using EntityImp = typename Trimmer::TrimmerTraits::template Codim<codim>::EntityImp;
+  using Entity    = typename GridImp::template Codim<codim>::Entity;
+
+  // EntitySeed type of the hostgrid
+  using ParameterSpaceGridEntitySeed = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntitySeed;
+  using EntityInfo                   = typename Trimmer::TrimmerTraits::template Codim<codim>::EntityInfo;
+
+public:
+  constexpr static int codimension = codim;
+
   /**
-   * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
-   * @ingroup PatchGrid
-   *
+   * @brief Construct an empty (i.e. isValid() == false) seed.
    */
-  template <int codim, class GridImp>
-  class PatchGridEntitySeed {
-  protected:
-    using Trimmer = typename GridImp::Trimmer;
-    friend Trimmer;
-    // Entity type of the hostgrid
-    using EntityImp = typename Trimmer::TrimmerTraits::template Codim<codim>::EntityImp;
-    using Entity    = typename GridImp::template Codim<codim>::Entity;
+  PatchGridEntitySeed() = default;
 
-    // EntitySeed type of the hostgrid
-    using ParameterSpaceGridEntitySeed = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntitySeed;
-    using EntityInfo                   = typename Trimmer::TrimmerTraits::template Codim<codim>::EntityInfo;
+  /**
+   * @brief Create EntitySeed from hostgrid Entity
+   *
+   * We call hostEntity.seed() directly in the constructor
+   * of PatchGridEntitySeed to allow for return value optimization.
+   */
+  explicit PatchGridEntitySeed(const EntityImp& ent)
+      : lvl_(ent.getHostEntity().entityInfo_.lvl),
+        indexInLvlStorage_{ent.getHostEntity().entityInfo_.indexInLvlStorage} {}
 
-  public:
-    constexpr static int codimension = codim;
+  /**
+   * @brief Get stored ParameterSpaceGridEntitySeed
+   */
+  // const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
 
-    /**
-     * @brief Construct an empty (i.e. isValid() == false) seed.
-     */
-    PatchGridEntitySeed() = default;
+  /**
+   * @brief Check whether it is safe to create an Entity from this Seed
+   */
+  bool isValid() const { return indexInLvlStorage_ != -1; }
 
-    /**
-     * @brief Create EntitySeed from hostgrid Entity
-     *
-     * We call hostEntity.seed() directly in the constructor
-     * of PatchGridEntitySeed to allow for return value optimization.
-     */
-    explicit PatchGridEntitySeed(const EntityImp& ent)
-        : lvl_(ent.getHostEntity().entityInfo_.lvl),
-          indexInLvlStorage_{ent.getHostEntity().entityInfo_.indexInLvlStorage} {}
+private:
+  auto data() const { return std::make_pair(lvl_, indexInLvlStorage_); }
 
-    /**
-     * @brief Get stored ParameterSpaceGridEntitySeed
-     */
-    // const ParameterSpaceGridEntitySeed& hostEntitySeed() const { return hostEntitySeed_; }
+  int lvl_;
+  int indexInLvlStorage_{-1};
+};
 
-    /**
-     * @brief Check whether it is safe to create an Entity from this Seed
-     */
-    bool isValid() const { return indexInLvlStorage_ != -1; }
-
-  private:
-    auto data() const { return std::make_pair(lvl_, indexInLvlStorage_); }
-
-    int lvl_;
-    int indexInLvlStorage_{-1};
-  };
-
-}  // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGANEW::DefaultTrim
 
 // #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH
