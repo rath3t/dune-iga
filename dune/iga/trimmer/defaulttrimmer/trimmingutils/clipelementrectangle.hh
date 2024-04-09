@@ -59,9 +59,9 @@ auto clipElementRectangle(const auto& element,
     auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
 
     auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
-    std::cout << "First Curve: " << firstTrimmingCurvePoint.z << " " << firstTrimmingCurveIndices << std::endl;
-    std::cout << "Second Curve: " << secondTrimmingCurvePoint.z << " " << secondTrimmingCurveIndices << std::endl;
-    std::cout << "Intersection: " << intersectionPoint.z << " " << intersectionIndices << std::endl;
+    // std::cout << "First Curve: " << firstTrimmingCurvePoint.z << " " << firstTrimmingCurveIndices << std::endl;
+    // std::cout << "Second Curve: " << secondTrimmingCurvePoint.z << " " << secondTrimmingCurveIndices << std::endl;
+    // std::cout << "Intersection: " << intersectionPoint.z << " " << intersectionIndices << std::endl;
 
     assert(firstTrimmingCurveIndices.loop == secondTrimmingCurveIndices.loop &&
            "The points of the trimming curves should be on the same loop");
@@ -151,7 +151,7 @@ auto clipElementRectangle(const auto& element,
   result.finish(patchTrimData);
 
   // While developing
-  result.report();
+  // result.report();
 
   return std::make_tuple(ElementTrimFlag::trimmed, result);
 }

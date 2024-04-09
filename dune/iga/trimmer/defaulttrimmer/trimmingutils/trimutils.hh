@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include <clipper2/clipper.core.h>
+#include <ranges>
+
+#include "dune/iga/geometrykernel/findintersection.hh"
+#include "dune/iga/geometrykernel/nurbspatchgeometry.hh"
+#include "dune/iga/trimmer/defaulttrimmer/trimmingutils/cliputils.hh"
+#include <dune/common/float_cmp.hh>
+#include <dune/iga/geometrykernel/geohelper.hh>
+
 namespace Dune::IGANEW::DefaultTrim::Util {
 template <typename ScalarType, int dim>
 auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2,
@@ -63,13 +72,4 @@ auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip
   DUNE_THROW(Dune::GridError, "Couldn't find intersection Point");
 };
 
-// inline auto isNewVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::NewVertex>(vV); };
-// inline auto isHostVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::HostVertex>(vV); };
-// inline auto isInsideVertex = [](const auto& vV) { return std::holds_alternative<ClippingResult::InsideVertex>(vV);
-// }; inline auto getPt       = [](auto&& vV) { return vV.pt; }; inline auto getHostIdx  = [](const auto& vV) { return
-// std::get<ClippingResult::HostVertex>(vV).hostIdx; }; inline auto getEdgeIdx  = [](const auto& vV) { return
-// std::get<ClippingResult::NewVertex>(vV).onEdgeIdx; }; inline auto getCurveI = [](const auto& vV) {return
-// std::get<ClippingResult::InsideVertex>(vV).curveIdxI; }; inline auto getCurveJ = [](const auto& vV) {return
-// std::get<ClippingResult::InsideVertex>(vV).curveIdxJ; }; inline auto getLoopIdx = [](const auto& vV) {return
-// std::get<ClippingResult::InsideVertex>(vV).loopIdx; };
 } // namespace Dune::IGANEW::DefaultTrim::Util

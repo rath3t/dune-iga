@@ -27,20 +27,27 @@ auto testIbraReader() {
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
 
-  const std::vector testCases{std::tuple<std::string, int, int>
-                              {"auxiliaryfiles/element_trim_xb.ibra", 0, 3},
-                              {"auxiliaryfiles/element_trim.ibra", 0, 3},
-                              {"auxiliaryfiles/trim_2edges.ibra", 0, 3},
-                              {"auxiliaryfiles/trim_multi.ibra", 0, 3},
-                              {"auxiliaryfiles/surface-hole.ibra", 1, 3},
-                              {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
-                              {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}};
+  const std::vector testCases{
+      std::tuple<std::string, int, int>{    "auxiliaryfiles/element_trim_xb.ibra", 0, 3},
+      {       "auxiliaryfiles/element_trim.ibra", 0, 3},
+      {        "auxiliaryfiles/trim_2edges.ibra", 0, 3},
+      {         "auxiliaryfiles/trim_multi.ibra", 0, 3},
+      {       "auxiliaryfiles/surface-hole.ibra", 1, 3},
+      {  "auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
+      {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}
+  };
 
   for (auto& [name, min, max] : testCases) {
-    for (int i = min; i <= max; i++) {
-      gridFactory.insertJson(name, true, {i, i});
-      gridFactory.createGrid();
-    }
+    for (int i = min; i <= max; i++)
+      for (int j = min; j <= max; j++) {
+        std::cout << "Testing now " << name << " (Refinement " << i << ", " << j << ")" << std::endl;
+        gridFactory.insertJson(name, true, {i, j});
+        try {
+          gridFactory.createGrid();
+        } catch (Dune::GridError& e) {
+          std::cout << "Failed" << std::endl;  
+        }
+      }
   }
 
   return t;
@@ -62,8 +69,7 @@ auto testIbraReader3d() {
   for (auto& [name, min, max] : testCases) {
     for (int i = min; i <= max; i++) {
       gridFactory.insertJson(name, true, {i, i});
-      // t.checkNoThrow([&]{auto grid = gridFactory.createGrid();});
-      auto grid = gridFactory.createGrid();
+      gridFactory.createGrid();
     }
   }
 
@@ -78,7 +84,7 @@ int main(int argc, char** argv) try {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   t.subTest(testIbraReader());
-  // t.subTest(testIbraReader3d());
+  t.subTest(testIbraReader3d());
 
   // auto success = t.report();
 

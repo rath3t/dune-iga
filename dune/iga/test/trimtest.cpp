@@ -309,8 +309,8 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
     int nonHostEdges    = totalEdges - hostEdgesCounter;
     int nonHostVertices = totalVertices - hostVertexCounter;
     t.check(nonHostEdges + 1 == nonHostVertices)
-        << "Each non-host edge produces two non-host vertices." << "There are nonHostEdges " << nonHostEdges
-        << " and nonHostVertices " << nonHostVertices;
+        << "Each non-host edge produces two non-host vertices."
+        << "There are nonHostEdges " << nonHostEdges << " and nonHostVertices " << nonHostVertices;
 
     // windingNumber /= 2*std::numbers::pi_v<double>;
     // t.check(Dune::FloatCmp::eq(windingNumber,1.0,1e-10) or Dune::FloatCmp::eq(windingNumber,1.0,1e-10))<<"The winding
@@ -362,16 +362,24 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
 
   auto range = Dune::range(4);
   for (auto refx : range) {
-    std::vector<int> yR(
-        range.begin(),
-        range.end()); // copy into vector sicne for_each does not work with iota_view and parallel execution
+    // copy into vector sicne for_each does not work with iota_view and parallel execution
+    std::vector<int> yR(range.begin(), range.end());
+
     std::for_each(policy, yR.begin(), yR.end(), [&](auto refy) {
       std::cout << "Thread: " << std::this_thread::get_id() << std::endl;
       auto gridFactory = GridFactory();
       auto brep        = readJson<2>(filename);
-      std::cout << "Refinement level: (" << refx << ", " << refy << ")" << std::endl;
+      std::cout << "Grid: " << filename << " Refinement level: (" << refx << ", " << refy << ")" << std::endl;
       gridFactory.insertJson(filename, true, {refx, refy});
-      auto igaGrid                 = gridFactory.createGrid();
+
+      std::unique_ptr<Grid> igaGrid{};
+      try {
+        igaGrid = gridFactory.createGrid();
+      } catch (Dune::GridError& e) {
+        t.load(std::memory_order_relaxed)->check(false) << "Grid Creation failed ...\n";    
+        return;
+      }
+  	
       auto patchTrimData           = igaGrid->trimmer().patchTrimData();
       const auto tensorCoordinates = GeometryKernel::NURBSPatch{gridFactory.patchData_}.uniqueKnotVector();
       Dune::YaspGrid gridH{tensorCoordinates};

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dune/iga/trimmer/defaulttrimmer/trimmer.hh"
 #include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
 namespace Dune::IGANEW::DefaultTrim {
 // template <int dim, int dimworld, typename ScalarType>

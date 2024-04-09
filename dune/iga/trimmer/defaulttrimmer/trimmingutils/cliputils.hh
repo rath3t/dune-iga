@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <array>
+#include <clipper2/clipper.core.h>
+#include <ranges>
+#include <variant>
+
+#include <dune/common/float_cmp.hh>
+#include <dune/grid/common/exceptions.hh>
+
 namespace Dune::IGANEW::DefaultTrim::Util {
 
 inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {

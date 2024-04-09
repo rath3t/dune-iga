@@ -165,11 +165,11 @@ struct ElementTrimDataImpl
   }
   bool checkInside(const Dune::FieldVector<double, 2>& local) const {
     Clipper2Lib::PointD p(local[0], local[1]);
-    const auto result = Clipper2Lib::PointInPolygon<double>(p, path);
+    const auto result = Clipper2Lib::PointInPolygon<double>(p, path_);
     return result == Clipper2Lib::PointInPolygonResult::IsInside or result == Clipper2Lib::PointInPolygonResult::IsOn;
   }
 
-  double volume() const { return Clipper2Lib::Area(path); }
+  double volume() const { return Clipper2Lib::Area(path_); }
 
   // Getter
   [[nodiscard]] ElementTrimFlag flag() const { return flag_; }
@@ -204,7 +204,7 @@ private:
         for (const auto v : Utilities::linspace(edge.geometry->domain()[0], 100)) {
           auto fV = edge.geometry->global({v}) - lowerLeftCorner;
           scaling.mv(fV, fV);
-          path.emplace_back(fV[0], fV[1]);
+          path_.emplace_back(fV[0], fV[1]);
         }
       } else {
         auto cornerIdx = edgeLookUp[edge.idx];
@@ -214,8 +214,8 @@ private:
         scaling.mv(firstVertex, firstVertex);
         scaling.mv(secondVertex, secondVertex);
 
-        path.emplace_back(firstVertex[0], firstVertex[1]);
-        path.emplace_back(secondVertex[0], secondVertex[1]);
+        path_.emplace_back(firstVertex[0], firstVertex[1]);
+        path_.emplace_back(secondVertex[0], secondVertex[1]);
       }
     }
   }
@@ -223,7 +223,7 @@ private:
   HostEntity hostEntity_;
   std::vector<VertexInfo> vertices_{};
   std::vector<EdgeInfo> edges_;
-  Clipper2Lib::PathD path;
+  Clipper2Lib::PathD path_;
 
   int newVertexCounter_ = 4;
   int newEdgeCounter_   = 4;

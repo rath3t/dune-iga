@@ -25,10 +25,10 @@
 #include "trimmedentity.hh"
 #include "trimmedlocalgeometry.hh"
 
-#include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/geometry/referenceelements.hh>
 #include <dune/grid/concepts.hh>
 #include <dune/grid/yaspgrid.hh>
+#include <dune/iga/hierarchicpatch/patchgridfwd.hh>
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 #include <dune/iga/trimmer/identitytrimmer/patchgridlocalgeometry.hh>
