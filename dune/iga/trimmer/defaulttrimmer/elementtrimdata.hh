@@ -95,6 +95,8 @@ struct ElementTrimDataImpl
       auto figure = matplot::figure(true);
     matplot::hold("on");
 
+    matplot::text(eleGeometry.center()[0], eleGeometry.center()[1], std::to_string(edges_.size()))->font("Arial").font_size(18);
+
     constexpr std::array idxLookUp = {0, 1, 3, 2};
 
     const double scale = eleGeometry.volume() / 5;
@@ -105,7 +107,7 @@ struct ElementTrimDataImpl
       c->color("blue");
     };
 
-    auto plotLine = [](std::vector<Vertex>& vs, bool thin = false) {
+    auto plotLine = [&](std::vector<Vertex>& vs, bool thin = false) {
       std::vector<double> x;
       std::ranges::transform(vs, std::back_inserter(x), [](auto& v) { return v[0]; });
 
@@ -115,6 +117,12 @@ struct ElementTrimDataImpl
         matplot::plot(x, y)->line_width(0.5).color("grey");
       else
         matplot::plot(x, y)->line_width(2).color("red");
+
+      // Annotate
+      if (thin)
+        return;
+      matplot::text(x.front(), y.front(), "S")->font("Arial").color("blue").font_size(18);
+
     };
 
     for (auto c : edgeLookUp) {

@@ -13,6 +13,9 @@ namespace Dune::IGANEW {
     auto eleTrimDatas = trimmer.trimElements();
 
     auto figure = matplot::figure(true);
+    figure->size(1000, 1000);
+
+
     for (auto& eleTrimData : eleTrimDatas)
       eleTrimData.drawResult("resName", false, false);
 

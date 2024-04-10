@@ -144,6 +144,25 @@ public:
     }
     return vol;
   }
+  /**
+   * @brief High precision method to obtain the length if nubspatch has gridDim == 1
+   */
+  [[nodiscard]] double curveLength() const requires (mydimension == 1) {
+    if (affine())
+      return (corner(1) - corner(0)).two_norm();
+
+
+    auto dom                = domain();
+    double volParamterSpace = dom[0].volume();
+
+    const auto rule = Dune::QuadratureRules<ctype, mydimension>::rule(this->type(), 4 * *std::ranges::max_element(patchData_.degree));
+    ctype vol = 0.0;
+    const std::array<Utilities::Domain<double>, mydimension> input{};
+    for (auto& gp : rule) {
+      vol += integrationElement(Utilities::mapToRange(gp.position(), input, domain())) * gp.weight() * volParamterSpace;
+    }
+    return vol;
+  }
 
   /**
    * @brief Get the number of corners of the patch.
