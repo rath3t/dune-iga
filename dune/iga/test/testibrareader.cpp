@@ -15,6 +15,7 @@
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/io/griddrawer.hh>
 
 using namespace Dune::IGANEW;
 
@@ -37,15 +38,17 @@ auto testIbraReader() {
       {"auxiliaryfiles/surface-hole-square.ibra", 1, 3}
   };
 
-  for (auto& [name, min, max] : testCases) {
+  for (auto& [file_name, min, max] : testCases) {
     for (int i = min; i <= max; i++)
       for (int j = min; j <= max; j++) {
+        auto name = file_name.substr(file_name.find_last_of('/') + 1);
         std::cout << "Testing now " << name << " (Refinement " << i << ", " << j << ")" << std::endl;
-        gridFactory.insertJson(name, true, {i, j});
+        gridFactory.insertJson(file_name, true, {i, j});
         try {
-          gridFactory.createGrid();
-        } catch (Dune::GridError& e) {
-          std::cout << "Failed" << std::endl;  
+          auto grid = gridFactory.createGrid();
+          drawGrid(grid.get(), "out/" + name + + "_" + std::to_string(i) + "_" + std::to_string(j) + ".gif");
+        } catch (Dune::GridError&) {
+          t.check(false) << "Grid Creation failed ...\n";
         }
       }
   }

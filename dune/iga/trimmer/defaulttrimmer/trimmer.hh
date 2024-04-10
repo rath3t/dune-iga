@@ -552,6 +552,25 @@ namespace DefaultTrim {
     }
     auto& patchTrimData() const { return *trimData_; }
 
+    /**
+     * Creates trimInfos for each element at the requested level (or max level if not specified)
+     * Question: Should this data be saved ?? @todo Add execution policy
+     * @param level_
+     * @return
+     */
+    std::vector<ElementTrimData> trimElements(std::optional<int> level_ = std::nullopt) const {
+      int level = level_.value_or(maxLevel());
+      std::vector<ElementTrimData> elementTrimDatas;
+      auto gv  = parameterSpaceGrid_->levelGridView(level);
+      for (const auto& ele : elements(gv)) {
+        if (trimData_.has_value())
+          elementTrimDatas.push_back(trimElement(ele, trimData_.value()));
+        else
+          elementTrimDatas.emplace_back(ElementTrimFlag::full, ele);
+      }
+      return elementTrimDatas;
+    }
+
   protected:
   protected:
     //! compute the grid indices and ids
@@ -577,6 +596,7 @@ namespace DefaultTrim {
     }
 
     // void createLevel(GridImp& grid, int lvl);
+
     void refineParameterSpaceGrid(int refCount, bool initFlag = false);
 
     /** @brief Return maximum level defined in this grid.

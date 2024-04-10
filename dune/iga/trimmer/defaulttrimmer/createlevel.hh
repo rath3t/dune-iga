@@ -5,6 +5,7 @@
 
 #include "dune/iga/trimmer/defaulttrimmer/trimmer.hh"
 #include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
+
 namespace Dune::IGANEW::DefaultTrim {
 // template <int dim, int dimworld, typename ScalarType>
 // void TrimmerImpl<dim, dimworld, ScalarType>::createLevel(GridImp& grid, int lvl) {
@@ -162,21 +163,13 @@ void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCou
     int edgeIndex                   = 0;
     int vertexIndex                 = 0;
 
-    auto figure = matplot::figure(true);
+    auto& indexSet = gv.indexSet();
+    const auto elementTrimDatas = trimElements(newLevel);
 
     for (const auto& ele : elements(gv)) {
-      ElementTrimFlag eleTrimFlag{ElementTrimFlag::full};
-      ElementTrimData eleTrimData(eleTrimFlag, ele);
-      if (trimData_.has_value()) {
-        eleTrimData = trimElement(ele, trimData_.value());
-        eleTrimFlag = eleTrimData.flag();
 
-        // Testing Purposes
-        auto resName = "ele_" + std::to_string(unTrimmedElementIndex + trimmedElementIndex);
-        // eleTrimData.drawResult(resName, true);
-        // eleTrimData.drawResult(resName, false);
-        eleTrimData.drawResult(resName, false, false);
-      }
+      const ElementTrimData eleTrimData = elementTrimDatas[indexSet.index(ele)];
+      const ElementTrimFlag eleTrimFlag = eleTrimData.flag();
 
       auto hostId = globalIdSetParameterSpace.id(ele);
 
@@ -256,7 +249,6 @@ void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCou
         }
       }
     }
-    matplot::save("grid", "gif");
 
     // save numbers of untrimmed and trimmed elements per level
     entityContainer.numberOfTrimmedElements.push_back(trimmedElementIndex);
