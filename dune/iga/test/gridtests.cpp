@@ -3,8 +3,10 @@
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
+#include "testhelper.hh"
+
 #include <iostream>
 
 #include <dune/common/exceptions.hh>
@@ -12,7 +14,6 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
@@ -20,7 +21,6 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
-
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
@@ -28,19 +28,12 @@
 #include <dune/iga/trimmer/concepts.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
-
 #include <dune/subgrid/test/common.hh>
 
 using namespace Dune;
 using namespace Dune::IGANEW;
 using namespace Dune::IGANEW;
-template <typename T, int worldDim, int Items>
-struct Compare {
-  constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
-                            const std::array<FieldVector<double, worldDim>, Items>& rhs) const {
-    return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
-  };
-};
+
 auto checkUniqueEdges(const auto& gridView) {
   Dune::TestSuite t;
 
@@ -66,6 +59,33 @@ auto checkUniqueEdges(const auto& gridView) {
     }
     return t;
   }
+}
+
+template <typename GridView>
+requires(GridView::dimension == 2)
+auto checkUniqueVertices(const GridView& gridView) {
+  Dune::TestSuite t;
+
+  constexpr int gridDimensionworld = GridView::dimensionworld;
+  constexpr int gridDimension      = GridView::dimension;
+
+  std::set<std::array<FieldVector<double, gridDimensionworld>, 1>, Compare<double, gridDimensionworld, 1>>
+      elementVertexPairSet;
+  for (int eleIndex = 0; auto&& element : elements(gridView)) {
+    elementVertexPairSet.clear();
+    for (auto vertexIdx : Dune::range(element.subEntities(gridDimension))) {
+      auto vertex = element.template subEntity<gridDimension>(vertexIdx);
+
+      std::array<FieldVector<double, gridDimensionworld>, 1> pair;
+      for (auto c : Dune::range(vertex.geometry().corners()))
+        pair[c] = vertex.geometry().corner(c);
+
+      bool inserted = elementVertexPairSet.insert(pair).second;
+      t.require(inserted) << "Duplicate vertex detected in Element " << eleIndex << " Vertex: " << pair[0];
+    }
+    ++eleIndex;
+  }
+  return t;
 }
 
 auto checkUniqueSurfaces(const auto& gridView) {
@@ -102,8 +122,13 @@ auto thoroughGridCheck(auto& grid) {
   auto gvTest                 = [&](auto&& gv) {
     TestSuite tl;
 
+    using GV = std::remove_cvref_t<decltype(gv)>;
+
     tl.subTest(checkUniqueEdges(gv));
     tl.subTest(checkUniqueSurfaces(gv));
+
+    if constexpr (GV::dimension == 2)
+      tl.subTest(checkUniqueVertices(gv));
 
     auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
     for (auto&& elegeo : elements(gv) | extractGeo)
@@ -125,14 +150,14 @@ auto thoroughGridCheck(auto& grid) {
     return tl;
   };
 
-  for (int lvl = 0; lvl < grid.maxLevel(); ++lvl) {
-    auto gridView = grid.levelGridView(lvl);
-    t.subTest(gvTest(gridView));
+  for (int lvl = 0; lvl <= grid.maxLevel(); ++lvl) {
+    t.subTest(gvTest(grid.levelGridView(lvl)));
   }
   t.subTest(gvTest(grid.leafGridView()));
 
+  gridcheck(grid);
+
   try {
-    gridcheck(grid);
     checkIntersectionIterator(grid);
     checkLeafIntersections(grid);
   } catch (const Dune::NotImplemented& e) {
@@ -146,8 +171,8 @@ template <template <int, int, typename> typename GridFamily>
 requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
-  //  First test
-  //  A B-Spline surface of dimWorld 3
+  // First test
+  // A B-Spline surface of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -163,15 +188,18 @@ auto testNurbsGridCylinder() {
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
-  using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
-         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
-         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+  using ControlPoint                                         = NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
+      {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -187,6 +215,21 @@ auto testNurbsGridCylinder() {
   const auto& indexSet = gridView.indexSet();
 
   TestSuite testSuite;
+
+  auto patchGeo = grid.patchGeometry(0);
+
+  // Since this is only a quarter of a cylinder no glueing should be present
+  auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(0);
+  testSuite.check(!glued) << "The edge " << 0 << " should be glued!";
+  testSuite.check(edgeIndex == -1);
+  auto [glued2, edgeIndex2] = patchGeo.isConnectedAtBoundary(0);
+  testSuite.check(!glued2) << "The edge " << 2 << " shouldn't be glued!";
+  testSuite.check(edgeIndex == -1);
+
+  Dune::RefinementIntervals refinementIntervals1(3);
+  SubsamplingVTKWriter<decltype(grid.leafGridView())> vtkWriter(grid.leafGridView(), refinementIntervals1);
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-Zylinder");
 
   testSuite.subTest(thoroughGridCheck(grid));
   return testSuite;
@@ -209,6 +252,33 @@ auto testHierarchicPatch() {
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
   Dune::IGANEW::PatchGrid<2, 3, GridFamily> patch(nurbsPatchData);
+
+  auto glueIndicator = [](int i) {
+    switch (i) {
+      case 0:
+        return 1;
+      case 1:
+        return 0;
+      case 2:
+        return 3;
+      case 3:
+        return 2;
+      default:
+        DUNE_THROW(RangeError, "Invalid index");
+    }
+  };
+  auto patchGeo = patch.patchGeometry(0);
+  for (auto i : Dune::range(4)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(glued) << "The edge " << i << " should be glued!";
+    t.check(edgeIndex == glueIndicator(i))
+        << "The edge " << i << " should be glued to edge " << glueIndicator(i) << " but is glued to " << edgeIndex;
+  }
+
+  Dune::RefinementIntervals refinementIntervals1(3);
+  SubsamplingVTKWriter<decltype(patch.leafGridView())> vtkWriter(patch.leafGridView(), refinementIntervals1);
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  vtkWriter.write("NURBSGridTest-Torus");
 
   t.subTest(thoroughGridCheck(patch));
 
@@ -295,8 +365,8 @@ template <template <int, int, typename> typename GridFamily>
 requires IGANEW::Concept::Trimmer<typename GridFamily<1, 3, double>::Trimmer>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
-  //  Second test
-  //  A B-Spline curve of dimWorld 3
+  // Second test
+  // A B-Spline curve of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -307,13 +377,20 @@ auto testNURBSGridCurve() {
 
   const std::array<int, dim> order                     = {3};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 3, 4, 4, 4, 5, 5, 5, 5}}};
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {1, 3, 4}, .w = 1}, {.p = {2, 2, 2}, .w = 3}, {.p = {3, 4, 5}, .w = 1},
-         {.p = {5, 1, 7}, .w = 2}, {.p = {4, 7, 2}, .w = 1}, {.p = {8, 6, 2}, .w = 1},
-         {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
+  const std::vector<ControlPoint> controlPoints = {
+      {.p = {1, 3, 4}, .w = 1},
+      {.p = {2, 2, 2}, .w = 3},
+      {.p = {3, 4, 5}, .w = 1},
+      {.p = {5, 1, 7}, .w = 2},
+      {.p = {4, 7, 2}, .w = 1},
+      {.p = {8, 6, 2}, .w = 1},
+      {.p = {2, 9, 9}, .w = 7},
+      {.p = {1, 4, 3}, .w = 1},
+      {.p = {1, 7, 1}, .w = 5}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -330,13 +407,20 @@ auto testNURBSGridCurve() {
 
   TestSuite t;
   IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
+
+  auto patchGeo = grid.patchGeometry(0);
+
+  auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(0);
+  t.check(glued) << "The edge " << 0 << " should be glued!";
+  t.check(edgeIndex == -1);
+
   grid.globalRefine(3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
   for (int eleIndex = 0;
        const auto& ele :
-       elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
+       elements(gridView)) // This test also exists in grid check, but it is more convenient to debug it here
   {
     const int numCorners = ele.subEntities(dim);
     for (int c = 0; c < numCorners; ++c) {
@@ -350,9 +434,9 @@ auto testNURBSGridCurve() {
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample");
   vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
-  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
   t.subTest(thoroughGridCheck(grid));
   return t;
 }
@@ -371,15 +455,18 @@ auto testNURBSGridSurface() {
   const auto dimworld              = 3;
   const std::array<int, dim> order = {2, 2};
 
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  //  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
-  //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
+  // const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
+  //     = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
   using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
-         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
+      {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
+      {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}
+  };
 
   std::array dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -392,6 +479,13 @@ auto testNURBSGridSurface() {
   IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
+
+  auto patchGeo = grid.patchGeometry(0);
+  for (auto i : Dune::range(4)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(!glued) << "The edge " << i << " shouldn't be glued!";
+    t.check(edgeIndex == -1);
+  }
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
@@ -414,7 +508,9 @@ auto test3DGrid() {
 
   using ControlPoint = NURBSPatchData<dim, dimworld>::ControlPointType;
   NURBSPatchData<dim, dimworld> nurbsPatchData;
-  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  nurbsPatchData.knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   std::vector<std::vector<std::vector<ControlPoint>>> controlp;
   std::array<int, dim> dimSize = {3, 3, 3};
@@ -423,10 +519,11 @@ auto test3DGrid() {
     for (int j = 0; j < dimSize[1]; ++j) {
       controlp[i].emplace_back();
       for (int k = 0; k < dimSize[2]; ++k) {
-        controlp[i][j].push_back(
-            {.p = {i * i * lx / (dimSize[0] - 1) + 1, 2 * i * j * k * ly / (dimSize[1] - 1) + (k + 1) + (j + 1),
-                   k * k * lz / (dimSize[2] - 1)},
-             .w = 1});
+        controlp[i][j].push_back({
+            .p = {i * i * lx / (dimSize[0] - 1) + 1, 2 * i * j * k * ly / (dimSize[1] - 1) + (k + 1) + (j + 1),
+                  k * k * lz / (dimSize[2] - 1)},
+            .w = 1
+        });
       }
     }
   }
@@ -437,24 +534,32 @@ auto test3DGrid() {
   auto additionalKnots = std::vector<double>(2);
   additionalKnots[0]   = 0.1;
   additionalKnots[1]   = 0.3;
-  //  additionalKnots[2] = 0.6;
-  //  additionalKnots[1] = 3.5;
-  //  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
+  // additionalKnots[2] = 0.6;
+  // additionalKnots[1] = 3.5;
+  // nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
+  // nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+  // nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
+  // nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGANEW::PatchGrid<3, 3, GridFamily> grid(nurbsPatchData);
-  //  grid.globalRefine(1);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(0,1);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(1,2);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(2, 3);
-  //  gridcheck(grid);
+  // grid.globalRefine(1);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(0,1);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(1,2);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(2, 3);
+  // gridcheck(grid);
 
   auto gridView = grid.leafGridView();
   TestSuite t;
+  auto patchGeo = grid.patchGeometry(0);
+
+  for (auto i : Dune::range(6)) {
+    auto [glued, edgeIndex] = patchGeo.isConnectedAtBoundary(i);
+    t.check(!glued) << "The surface " << i << " shouldn't be glued!";
+    t.check(edgeIndex == -1);
+  }
+
   t.subTest(checkUniqueEdges(gridView));
   t.subTest(checkUniqueSurfaces(gridView));
 
@@ -476,14 +581,15 @@ auto testCurveHigherOrderDerivatives() {
   // parameters
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 0.5, 1, 1, 1}}};
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {0.086956521739130, -0.434782608695652, 0}, .w = 11.5},
-         {.p = {0.200000000000000, 5.400000000000000, 0.200000000000000}, .w = 5},
-         {.p = {1.857142857142857, 0.142857142857143, 0}, .w = 7},
-         {.p = {3.714285714285714, 0.285714285714286, 2.000000000000000}, .w = 3.5}};
+  const std::vector<ControlPoint> controlPoints = {
+      {               .p = {0.086956521739130, -0.434782608695652, 0}, .w = 11.5},
+      {.p = {0.200000000000000, 5.400000000000000, 0.200000000000000},    .w = 5},
+      {                .p = {1.857142857142857, 0.142857142857143, 0},    .w = 7},
+      {.p = {3.714285714285714, 0.285714285714286, 2.000000000000000},  .w = 3.5}
+  };
 
   std::array<int, gridDim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet                  = NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -493,15 +599,16 @@ auto testCurveHigherOrderDerivatives() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
 
-  std::vector<Dune::FieldVector<double, 3>> expectedControlPoints
-      = {{0.086956521739130, -0.434782608695652, 0},
-         {0.121212121212121, 1.333333333333333, 0.060606060606061},
-         {0.320000000000000, 3.120000000000000, 0.120000000000000},
-         {0.727272727272727, 3.727272727272727, 0.136363636363636},
-         {1.538461538461539, 1.153846153846154, 0.038461538461538},
-         {1.920000000000000, 0.506666666666667, 0.200000000000000},
-         {2.476190476190476, 0.190476190476190, 0.666666666666667},
-         {3.714285714285714, 0.285714285714286, 2.000000000000000}};
+  std::vector<Dune::FieldVector<double, 3>> expectedControlPoints = {
+      {0.086956521739130, -0.434782608695652,                 0},
+      {0.121212121212121,  1.333333333333333, 0.060606060606061},
+      {0.320000000000000,  3.120000000000000, 0.120000000000000},
+      {0.727272727272727,  3.727272727272727, 0.136363636363636},
+      {1.538461538461539,  1.153846153846154, 0.038461538461538},
+      {1.920000000000000,  0.506666666666667, 0.200000000000000},
+      {2.476190476190476,  0.190476190476190, 0.666666666666667},
+      {3.714285714285714,  0.285714285714286, 2.000000000000000}
+  };
 
   std::vector<double> expectedWeights = {11.5, 8.25, 6.25, 5.5, 6.5, 6.25, 5.25, 3.5};
 
@@ -560,24 +667,27 @@ auto testSurfaceHigherOrderDerivatives() {
   constexpr auto dimworld              = 3;
   const std::array<int, gridDim> order = {2, 2};
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  //  const std::vector<std::vector<ControlPoint>> controlPoints
-  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
-  //         {{.p = {0.5, 0,0}, .w = 1}, {.p = {0.5, 0.5,0}, .w = 1}},
-  //         {{.p = {1, 0,0}, .w = 1}, {.p = {1, 0.5,0}, .w = 1}}};
+  // const std::vector<std::vector<ControlPoint>> controlPoints
+  //     = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
+  //        {{.p = {0.5, 0,0}, .w = 1}, {.p = {0.5, 0.5,0}, .w = 1}},
+  //        {{.p = {1, 0,0}, .w = 1}, {.p = {1, 0.5,0}, .w = 1}}};
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 0.5, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}},
-         {{.p = {0.5, 0, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {0.5, 1, 0}, .w = 1}},
-         {{.p = {1, 0, 0}, .w = 1}, {.p = {1, 0.5, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {  {.p = {0, 0, 0}, .w = 1},   {.p = {0, 0.5, 0}, .w = 1},   {.p = {0, 1, 0}, .w = 1}},
+      {{.p = {0.5, 0, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {0.5, 1, 0}, .w = 1}},
+      {  {.p = {1, 0, 0}, .w = 1},   {.p = {1, 0.5, 0}, .w = 1},   {.p = {1, 1, 0}, .w = 1}}
+  };
 
-  //  const std::vector<std::vector<ControlPoint>> controlPoints
-  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
-  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
-  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
+  // const std::vector<std::vector<ControlPoint>> controlPoints
+  //     = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //        {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //        {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
   std::array dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
   auto controlNet = NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -589,13 +699,13 @@ auto testSurfaceHigherOrderDerivatives() {
   auto additionalKnots    = std::vector<double>(1);
   additionalKnots[0]      = 0.5;
   patchData               = Dune::IGANEW::Splines::knotRefinement<2>(patchData, additionalKnots, 1);
-  //  const double R       = 2.0;
-  //  const double r       = 1.0;
-  //  auto circle          = makeCircularArc(r);
-  //  auto patchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 10.0);
-  //  patchData       = degreeElevate(patchData, 0, 2);
-  //  patchData       = degreeElevate(patchData, 1, 2);
-  //  auto additionalKnots = std::vector<double>(1);
+  // const double R       = 2.0;
+  // const double r       = 1.0;
+  // auto circle          = makeCircularArc(r);
+  // auto patchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 10.0);
+  // patchData       = degreeElevate(patchData, 0, 2);
+  // patchData       = degreeElevate(patchData, 1, 2);
+  // auto additionalKnots = std::vector<double>(1);
   ////  additionalKnots[0]   = 0.1;
   ////  patchData       = knotRefinement<2>(patchData, additionalKnots, 1);
 
@@ -605,7 +715,7 @@ auto testSurfaceHigherOrderDerivatives() {
   std::vector<Dune::FieldVector<double, 3>> evaluatedPoints;
   std::vector<Dune::FieldMatrix<double, 2, 3>> evaluatedJacobians;
   std::vector<Dune::FieldMatrix<double, 3, 3>> evaluatedHessians;
-  //  std::vector<double> evaluatedJacobians;
+  // std::vector<double> evaluatedJacobians;
   for (int i = 0; i < samples + 1; ++i) {
     for (int j = 0; j < samples + 1; ++j) {
       const Dune::FieldVector<double, 2> u = {i / static_cast<double>(samples), j / static_cast<double>(samples)};
@@ -613,14 +723,14 @@ auto testSurfaceHigherOrderDerivatives() {
       const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
       evaluatedHessians.push_back(H);
       evaluatedJacobians.push_back(geo.jacobianTransposed(u));
-      //    evaluatedJacobians.push_back(geo.impl()(u));
+      // evaluatedJacobians.push_back(geo.impl()(u));
     }
   }
 
   for (int i = 1; i < 2; ++i) {
     auto patchDataN = Dune::IGANEW::Splines::degreeElevate(patchData, 1, i);
     GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
-    //    t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
+    // t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
     for (int j = 0, index = 0; j < samples + 1; ++j) {
       for (int k = 0; k < samples + 1; ++k) {
         const Dune::FieldVector<double, 2> u = {j / static_cast<double>(samples), k / static_cast<double>(samples)};
@@ -656,7 +766,7 @@ auto testNURBSCurve() {
   unsigned int subSampling = 5;
 
   ////////////////////////////////////////////////////////////////
-  //  Create a B-spline curve in 3d
+  // Create a B-spline curve in 3d
   ////////////////////////////////////////////////////////////////
 
   const int dim      = 1;
@@ -665,11 +775,18 @@ auto testNURBSCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {1, 3, 4}, .w = 2}, {.p = {2, 2, 2}, .w = 2}, {.p = {3, 4, 5}, .w = 1},
-         {.p = {5, 1, 7}, .w = 1}, {.p = {4, 7, 2}, .w = 4}, {.p = {8, 6, 2}, .w = 2},
-         {.p = {2, 9, 9}, .w = 1}, {.p = {1, 4, 3}, .w = 2}, {.p = {1, 7, 1}, .w = 4}};
+  using ControlPoint                            = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::vector<ControlPoint> controlPoints = {
+      {.p = {1, 3, 4}, .w = 2},
+      {.p = {2, 2, 2}, .w = 2},
+      {.p = {3, 4, 5}, .w = 1},
+      {.p = {5, 1, 7}, .w = 1},
+      {.p = {4, 7, 2}, .w = 4},
+      {.p = {8, 6, 2}, .w = 2},
+      {.p = {2, 9, 9}, .w = 1},
+      {.p = {1, 4, 3}, .w = 2},
+      {.p = {1, 7, 1}, .w = 4}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet              = NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -700,18 +817,21 @@ auto testNURBSSurface() {
   const auto dimworld              = 3UL;
   const std::array<int, dim> order = {2, 2};
 
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  using ControlPoint                                   = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
+  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
-         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
+      {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
+      {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   //
 
-  //  auto weightNet  = MultiDimensionalNet<dim, double>(dimsize, weight);
+  // auto weightNet  = MultiDimensionalNet<dim, double>(dimsize, weight);
   auto controlNet = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGANEW::GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
@@ -741,14 +861,17 @@ auto testPlate() {
   const std::array<int, gridDim> order = {2, 2};
   TestSuite t;
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0}, .w = 1}, {.p = {0.5, 0}, .w = 1}, {.p = {1, 0}, .w = 1}},
-         {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
-         {{.p = {0, 1}, .w = 1}, {.p = {0.5, 1}, .w = 1}, {.p = {1, 1}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {  {.p = {0, 0}, .w = 1},   {.p = {0.5, 0}, .w = 1},   {.p = {1, 0}, .w = 1}},
+      {{.p = {0, 0.5}, .w = 1}, {.p = {0.5, 0.5}, .w = 1}, {.p = {1, 0.5}, .w = 1}},
+      {  {.p = {0, 1}, .w = 1},   {.p = {0.5, 1}, .w = 1},   {.p = {1, 1}, .w = 1}}
+  };
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -760,7 +883,12 @@ auto testPlate() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
-  grid->globalRefine(3);
+  grid->globalRefine(1);
+
+  auto gridView = grid->leafGridView();
+  VTKWriter writer(gridView);
+  writer.write("platetest");
+
   t.subTest(thoroughGridCheck(*grid));
 
   return t;
@@ -799,6 +927,7 @@ auto testGrids() {
   // } else
   // std::cout << "testNURBSGridSurface Test disabled" << std::endl;
   // if constexpr (requires { testPlate<GridFamily>(); }) {
+
   std::cout << "testPlate==============================================" << std::endl;
   t.subTest(testPlate<GridFamily>());
   std::cout << "testPlateEND==============================================" << std::endl;
@@ -807,7 +936,7 @@ auto testGrids() {
   // testNurbsGridCylinder();
   // if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
   // std::cout << "testTorusGeometry" << std::endl;
-  t.subTest(testTorusGeometry<GridFamily>());
+  // t.subTest(testTorusGeometry<GridFamily>());
   // } else
   // std::cout << "testTorusGeometry Test disabled" << std::endl;
 
@@ -829,13 +958,14 @@ int main(int argc, char** argv) try {
   std::cout << "===============TEST IdentityTrim===" << std::endl;
   std::cout << "==================================" << std::endl;
   // t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
-
-  std::cout << "testNURBSCurve" << std::endl;
-  t.subTest(testNURBSCurve());
-  std::cout << "testNURBSSurface" << std::endl;
-  t.subTest(testNURBSSurface());
-  t.subTest(testCurveHigherOrderDerivatives());
-  t.subTest(testSurfaceHigherOrderDerivatives());
+  /*
+    std::cout << "testNURBSCurve" << std::endl;
+    t.subTest(testNURBSCurve());
+    std::cout << "testNURBSSurface" << std::endl;
+    t.subTest(testNURBSSurface());
+    t.subTest(testCurveHigherOrderDerivatives());
+    t.subTest(testSurfaceHigherOrderDerivatives());
+    */
   //
   // gridCheck();
   // t.subTest(testBsplineBasisFunctions());

@@ -2,139 +2,157 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include "cliputils.hh"
+
 #include <clipper2/clipper.h>
 #include <variant>
 
-namespace Dune::IGANEW::DefaultTrim {
+#include "dune/iga/geometrykernel/algorithms.hh"
+#include "dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh"
+#include <dune/common/float_cmp.hh>
+#include <dune/iga/geometrykernel/findintersection.hh>
 
-  enum class error_type { clipperNotSucessfull, malformedCurve };
+namespace Dune::IGANEW::DefaultTrim::Util {
 
-  struct ClippingResult {
-    std::size_t nVertices{};
-    std::size_t newVertices = 4;
-    std::array<bool, 4> edgesVisited{false, false, false, false};
+auto clipElementRectangle(const auto& element,
+                          const auto& patchTrimData) -> std::tuple<ElementTrimFlag, ClippingResult> {
+  using namespace Clipper2Lib;
 
-    struct HostVertex {
-      std::size_t idx{};
-      std::size_t originalIdx{};
-      Clipper2Lib::PointD pt{};
-    };
+  auto eleGeo                          = element.geometry();
+  static constexpr int numberOfCorners = 4;
 
-    struct NewVertex {
-      std::size_t idx{};
-      int onEdgeIdx{};
-      bool goesIn{};
-      std::size_t boundaryCurveIdx{};
-      Clipper2Lib::PointD pt{};
-    };
+  PathD eleRect;
+  for (const auto vertexIndex : Dune::range(numberOfCorners)) {
+    auto corner = eleGeo.corner(vertexIndexMapping[vertexIndex]);
+    eleRect.emplace_back(corner[0], corner[1], vertexIndex + 1);
+  }
 
-    static int nextEntityIdx(const int i, const int x) { return (i + x) % 4; }
+  const auto& trimmingCurves = patchTrimData.clipperLoops();
 
-    using VertexVariant = std::variant<HostVertex, NewVertex>;
-    std::vector<VertexVariant> vertices{};
+  // Element is trimmed
+  ClipperD clipper(8);
+  ClippingResult result(eleRect);
 
-    void addOriginalVertex(const size_t originalIdx, const Clipper2Lib::PointD& pt) {
-      vertices.emplace_back(HostVertex(nVertices++, originalIdx, pt));
-    }
-
-    void addNewVertex(const int edgeIdx, const bool goesIn, const std::size_t boundaryCurveIdx,
-                      const Clipper2Lib::PointD& pt) {
-      edgesVisited[edgeIdx] = true;
-      vertices.emplace_back(NewVertex(nVertices++, edgeIdx, goesIn, boundaryCurveIdx, pt));
-    }
-
-    void finish(const Clipper2Lib::PathD& eleRect) {
-      // For now
-      if (vertices.empty()) {
-        for (const auto i : std::views::iota(0u, 4u))
-          addOriginalVertex(i, eleRect[i]);
-        return;
-      }
-
-      // For now only 2 Intersections, on different edges
-      assert(std::get<1>(vertices[0]).goesIn and vertices.size() == 2 and not std::get<1>(vertices[1]).goesIn);
-
-      const auto idx1 = std::get<1>(vertices[0]).onEdgeIdx;
-      auto idx2       = std::get<1>(vertices[1]).onEdgeIdx;
-
-      while (idx2 != idx1) {
-        idx2 = nextEntityIdx(idx2, 1);
-        addOriginalVertex(idx2, eleRect[idx2]);
-      }
-
-      // Now sort counter-clockwise
-    }
+  auto checkParallel = [&](const auto& curve, const int edgeIndex) -> bool {
+    return curve.affine() and std::get<0>(findIntersectionLinearCurveAndLine(
+                                  curve, eleGeo.corner(vertexIndexMapping[edgeIndex]), edgeDirections[edgeIndex],
+                                  {curve.domainMidPoint()[0], 0.5})) == IntersectionCurveAndLine::parallel;
   };
 
-  inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {
-    assert(e1 < 4 and e2 < 4);
-    if ((e1 == 0 and e2 == 1) or (e1 == 1 and e2 == 0)) return 0;
-    if ((e1 == 1 and e2 == 2) or (e1 == 2 and e2 == 1)) return 1;
-    if ((e1 == 2 and e2 == 3) or (e1 == 3 and e2 == 2)) return 2;
-    if ((e1 == 3 and e2 == 0) or (e1 == 0 and e2 == 3)) return 3;
-    __builtin_unreachable();
-  }
+  clipper.SetZCallback([&](const PointD& rectangleFirstPoint, const PointD& rectangleSecondPoint,
+                           const PointD& firstTrimmingCurvePoint, const PointD& secondTrimmingCurvePoint,
+                           const PointD& intersectionPoint) {
+    assert(rectangleFirstPoint.z > 0 and rectangleFirstPoint.z < 5 &&
+           "Intersection should only occur with the rectangle edges");
+    assert(rectangleSecondPoint.z > 0 and rectangleSecondPoint.z < 5 &&
+           "Intersection should only occur with the rectangle edges");
 
-  inline bool goesIn(const std::size_t e1, const std::size_t e2) {
-    if (giveEdgeIdx(e1, e2) < 3) return e1 > e2;
-    return e1 < e2;
-  }
-
-  inline auto clipElementRectangle(Clipper2Lib::PathD& eleRect, Clipper2Lib::PathsD& trimmingCurves) {
-    using namespace Clipper2Lib;
-
-    ClipperD clipper(8);
-    // Counters
-    std::size_t counter     = 0;
-    std::size_t loopCounter = 0;
-    std::vector<size_t> counterBreaks{};
-
-    // Give points in eleRect the z-Val from 0 to 4 counter-clockwise
-    std::ranges::for_each(eleRect, [&](auto& point) { point.z = counter++; });
-    counterBreaks.push_back(counter);
-
-    for (auto& trimmingCurve : trimmingCurves) {
-      std::ranges::for_each(trimmingCurve, [&](auto& point) { point.z = counter++; });
-      counterBreaks.push_back(counter);
-      loopCounter++;
+    const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
+    if (isHost) {
+      result.addOriginalVertex(idx);
+      return;
     }
 
-    ClippingResult result{};
+    const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z - 1, rectangleSecondPoint.z - 1);
 
-    clipper.SetZCallback(
-        [&](const PointD& e1bot, const PointD& e1top, const PointD& e2bot, const PointD& e2top, const PointD& pt) {
-          std::cout << "New Intersection x: " << pt.x << " y: " << pt.y << std::endl;
-          std::cout << e1bot.z << " " << e1top.z << std::endl;
-          std::cout << e2bot.z << " " << e2top.z << std::endl;
+    auto firstTrimmingCurveIndices  = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
+    auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
 
-          // result.addNewVertex(giveEdgeIdx(e1bot.z, e1top.z), goesIn(e1bot.z, e1top.z), e2bot.z, pt);
-        });
+    auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
+    // std::cout << "First Curve: " << firstTrimmingCurvePoint.z << " " << firstTrimmingCurveIndices << std::endl;
+    // std::cout << "Second Curve: " << secondTrimmingCurvePoint.z << " " << secondTrimmingCurveIndices << std::endl;
+    // std::cout << "Intersection: " << intersectionPoint.z << " " << intersectionIndices << std::endl;
 
-    clipper.AddClip(trimmingCurves);
-    clipper.AddSubject({eleRect});
-    //clipper.AddOpenSubject(PathsD{{eleRect[3], eleRect[0]}});
+    assert(firstTrimmingCurveIndices.loop == secondTrimmingCurveIndices.loop &&
+           "The points of the trimming curves should be on the same loop");
 
-    PathsD resultClosedPaths{};
-    PathsD resultOpenPaths{};
+    assert(firstTrimmingCurveIndices.curve == secondTrimmingCurveIndices.curve or
+           secondTrimmingCurveIndices.curve == intersectionIndices.curve or
+           firstTrimmingCurveIndices.curve == intersectionIndices.curve &&
+               "The indices of the trimming curves should be the same or the intersection point should be on one of "
+               "the two second curves");
+    const auto vertexZValue = secondTrimmingCurvePoint.z;
 
-    clipper.Execute(ClipType::Intersection, FillRule::NonZero, trimmingCurves);
-    // result.finish(eleRect);
+    // Now check that we don't have a parallel intersection
+    if (checkParallel(patchTrimData.getCurve(vertexZValue), edgeIdx)) {
+      return;
+    }
 
-    std::cout << "Vertices found\n";
+    result.addNewVertex(edgeIdx, intersectionPoint, vertexZValue);
+  });
 
-    struct Visitor {
-      void operator()(const ClippingResult::HostVertex& v) const {
-        std::cout << v.idx << " Original Idx: " << v.originalIdx << std::endl;
-      }
+  PathsD resultClosedPaths{};
+  PathsD resultOpenPaths{};
 
-      void operator()(const ClippingResult::NewVertex& v) const {
-        std::cout << v.idx << " Edge: " << v.onEdgeIdx << ", goes in " << v.goesIn << std::endl;
-      }
-    };
+  clipper.AddClip(trimmingCurves);
+  clipper.AddSubject({eleRect});
 
-    for (auto& vV : result.vertices)
-      std::visit(Visitor{}, vV);
+  clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
+  assert(resultOpenPaths.empty() && "There should be no open paths in the clipping result");
 
-    return result;
+  auto isFullElement = [&](const auto& clippedEdges) {
+    return clippedEdges.size() == 4 and
+           (clippedEdges[0].z < 5 and clippedEdges[1].z < 5 and clippedEdges[2].z < 5 and clippedEdges[3].z < 5);
+  };
+
+  if (resultClosedPaths.empty())
+    return std::make_tuple(ElementTrimFlag::empty, ClippingResult{eleRect});
+
+  if (resultClosedPaths.size() == 1 and isFullElement(resultClosedPaths.front())) {
+    return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
   }
-}  // namespace Dune::IGANEW::DefaultTrim
+
+  // Add corner vertices that are not yet present in the clip path
+  for (const auto& pt : resultClosedPaths.front()) {
+    if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost)
+      result.addOriginalVertex(idx);
+  }
+
+  // Now we have to check for points inside the elements
+  for (auto i : Dune::range(patchTrimData.loops().size())) {
+    for (const auto& pt : patchTrimData.getPointsInPatch(i)) {
+      if (const PointD cp{pt.pt[0], pt.pt[1]}; PointInPolygon(cp, eleRect) == PointInPolygonResult::IsInside) {
+        result.addInsideVertex(cp, pt.curveIdxI, pt.curveIdxJ, i);
+      }
+    }
+  }
+
+  // Add startpoints of trimming curves to the vertices if they are on one of the element edges
+  for (auto cI = 0; cI < patchTrimData.loops().front().curves().size(); ++cI) {
+    const auto& curve = patchTrimData.loops().front().curves()[cI];
+
+    for (int i = 0; i < 2; ++i) {
+      auto pt = curve.corner(i);
+      PointD ptClipper{pt[0], pt[1]};
+
+      auto [isHost, idx] = isCornerVertex(ptClipper, eleRect);
+      if (isHost) {
+        result.addOriginalVertex(idx);
+        continue;
+      }
+
+      for (auto e = 0; e < edgeLookUp.size(); ++e) {
+        if (const auto& edgeIdx = edgeLookUp[e];
+            GeometryKernel::isPointOnLineSegment(pt, eleGeo.corner(edgeIdx.front()), eleGeo.corner(edgeIdx.back())) &&
+            !checkParallel(curve, e)) {
+          result.addNewVertex(e, ptClipper, patchTrimData.getZValue(0, cI, std::numeric_limits<u_int64_t>::infinity()));
+          break;
+        }
+      }
+    }
+  }
+
+  // Check again if element is full after adding addtional vertices
+  if (result.vertices_.size() == 4 and
+      std::ranges::all_of(result.vertices_, [](const ClippingResult::Vertex& v) { return v.isHost(); })) {
+    return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
+  }
+
+  result.finish(patchTrimData);
+
+  // While developing
+  // result.report();
+
+  return std::make_tuple(ElementTrimFlag::trimmed, result);
+}
+} // namespace Dune::IGANEW::DefaultTrim::Util

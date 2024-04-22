@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 #include <iostream>
 
@@ -11,7 +11,6 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
-
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
@@ -19,7 +18,6 @@
 #include <dune/grid/test/checkiterators.hh>
 #include <dune/grid/test/checkjacobians.hh>
 #include <dune/grid/test/gridcheck.hh>
-
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
@@ -27,14 +25,17 @@
 #include <dune/iga/trimmer/concepts.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
-
 #include <dune/subgrid/test/common.hh>
 
 template <typename>
-struct IsDefaultReferenceElement : std::false_type {};
+struct IsDefaultReferenceElement : std::false_type
+{
+};
 
 template <typename S>
-struct IsDefaultReferenceElement<Dune::Geo::ReferenceElement<S>> : std::true_type {};
+struct IsDefaultReferenceElement<Dune::Geo::ReferenceElement<S>> : std::true_type
+{
+};
 
 template <typename G>
 void checkConcepts() {

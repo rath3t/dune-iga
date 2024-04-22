@@ -1,13 +1,12 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers
-# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 # set HAVE_EIGEN for config.h
 set(HAVE_EIGEN ${Eigen3_FOUND})
 
 # register all eigen related flags
 if(Eigen3_FOUND)
-  dune_register_package_flags(LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS
-                              "ENABLE_EIGEN=1")
+  dune_register_package_flags(LIBRARIES Eigen3::Eigen COMPILE_DEFINITIONS "ENABLE_EIGEN=1")
 endif()
 
 # add function to link against the eigen library
