@@ -36,6 +36,7 @@ constexpr std::array<std::array<int, 2>, 4> edgeLookUp{
     {3, 2},
     {2, 0}
 };
+// @todo use transformations
 constexpr std::array vertexIndexMapping = {0u, 1u, 3u, 2u};
 constexpr std::array edgeIndexMapping   = {2u, 1u, 3u, 0u};
 auto isCornerVertex(const auto& pt, const auto& eleRect) -> std::pair<bool, ptrdiff_t> {
@@ -48,8 +49,7 @@ auto isCornerVertex(const auto& pt, const auto& eleRect) -> std::pair<bool, ptrd
 struct ClippingResult
 {
   explicit ClippingResult(const std::vector<Clipper2Lib::PointD>& oldV)
-      : originalVertices_(oldV) {
-  }
+      : originalVertices_(oldV) {}
 
   struct Vertex
   {

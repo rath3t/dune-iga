@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 #include <dune/common/exceptions.hh>
@@ -30,15 +29,13 @@ struct PatchGridLevelGridView : DefaultLevelGridView<const GridImp>
   using TrimmerType = typename GridImp::Trimmer;
 
   PatchGridLevelGridView(const typename DefaultLevelGridView<const GridImp>::Grid& grid, int level)
-      : DefaultLevelGridView<const GridImp>(grid, level) {
-  }
+      : DefaultLevelGridView<const GridImp>(grid, level) {}
 
   const auto& patchData() const {
     return this->grid().patchGeometries[this->level_].patchData();
   }
 
   const auto& unTrimmedPatch() const {
-    // @todo Trim
     return this->grid().patchGeometries[this->level_];
   }
 
@@ -48,6 +45,10 @@ struct PatchGridLevelGridView : DefaultLevelGridView<const GridImp>
 
   const auto& tensorProductCoordinates() const {
     return this->grid().tensorProductCoordinates(this->level_);
+  }
+
+  int level() const {
+    return this->level_;
   }
 };
 
@@ -63,8 +64,7 @@ struct PatchGridLeafGridView : public DefaultLeafGridView<const GridImp>
   typedef PatchGridLeafGridView ThisType;
 
   PatchGridLeafGridView(const typename DefaultLeafGridView<const GridImp>::Grid& grid)
-      : DefaultLeafGridView<const GridImp>(grid) {
-  }
+      : DefaultLeafGridView<const GridImp>(grid) {}
 
   using TrimmerType = typename GridImp::Trimmer;
   const auto& patchData() const {
@@ -72,15 +72,19 @@ struct PatchGridLeafGridView : public DefaultLeafGridView<const GridImp>
   }
 
   const auto& unTrimmedPatch() const {
-    // @todo Trim
     return this->grid().patchGeometries[this->grid().maxLevel()];
   }
+
   const auto& tensorProductCoordinates() const {
     return this->grid().tensorProductCoordinates(this->grid().maxLevel());
   }
 
   std::array<int, GridImp::dimension> untrimmedElementNumbers() const {
     return this->grid().untrimmedElementNumbers(this->grid().maxLevel());
+  }
+
+  int level() const {
+    return this->grid().maxLevel();
   }
 };
 

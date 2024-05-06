@@ -6,6 +6,8 @@
 #include <set>
 
 #include <dune/common/reservedvector.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
+
 namespace Dune::IGANEW::DefaultTrim {
 template <typename GridImp>
 struct VectorEntityContainer
@@ -64,6 +66,37 @@ struct VectorEntityContainer
     __builtin_unreachable();
   }
 
+  size_t subIds(const IdType& elementId, int codim) const {
+    if (codim == 0)
+      return 0;
+    if (codim == 1)
+      return globalEdgesIdOfElementsMap_.at(elementId).size();
+    if (codim == 2)
+      return globalVerticesIdOfElementsMap.at(elementId).size();
+    assert(codim >= 0 and codim <= 2);
+    __builtin_unreachable();
+  }
+
+  int outsideIntersectionIndex(const IdType& insideElementId, const IdType& outsideElementId, int indexInInside) const {
+    // if (not isElementTrimmed(insideElementId))
+    //   indexInInside = Transformations::mapToTrimmer(1, indexInInside);
+    const IdType& insideSubId = subId(insideElementId, indexInInside, 1);
+
+    for (const auto i : Dune::range(subIds(outsideElementId, 1))) {
+      const IdType& outsideSubId = subId(outsideElementId, i, 1);
+      if (outsideSubId == insideSubId) {
+        // if (isElementTrimmed(outsideElementId))
+        return i;
+        // return Transformations::mapToDune(1, i);
+      }
+    }
+    DUNE_THROW(GridError, "outsideIntersectionIndex not successfull");
+  }
+
+  bool isElementTrimmed(const IdType& elementId) const {
+    return infoFromId<0>(elementId).trimmed;
+  }
+
   template <int codim>
   requires(codim >= 0 and codim <= 2)
   const auto& entity(int lvl, int indexInLvlStorage) const {
@@ -98,9 +131,10 @@ struct VectorEntityContainer
     return entity<codim>(infoFromId<codim>(id, lvl));
   }
 
+  // todo specialize for codim 0 and 2 to not need lvl
   template <int codim>
   requires(codim >= 0 and codim <= 2)
-  const auto& infoFromId(const IdType& id, int lvl) const {
+  const auto& infoFromId(const IdType& id, int lvl = std::numeric_limits<int>::max()) const {
     if constexpr (codim == 0)
       return idToElementInfoMap.at(id);
     else if constexpr (codim == 1)
@@ -142,11 +176,22 @@ struct VectorEntityContainer
   }
 
   GeoTypes types(int codim, int level) const {
-    if (codim == 0)
-      return numberOfTrimmedElements[level] == 0 ? GeoTypes{GeometryTypes::cube(gridDim)}
-                                                 : GeoTypes{GeometryTypes::cube(gridDim), GeometryTypes::none(gridDim)};
-    else
-      return GeoTypes{GeometryTypes::cube(gridDim - codim)};
+    if (codim == 0) {
+      if (numberOfTrimmedElements[level] == 0)
+        return GeoTypes{GeometryTypes::cube(gridDim)};
+
+      if (numberOfUnTrimmedElements[level] == 0)
+        return GeoTypes{GeometryTypes::none(gridDim)};
+
+      return GeoTypes{GeometryTypes::cube(gridDim), GeometryTypes::none(gridDim)};
+    }
+    return GeoTypes{GeometryTypes::cube(gridDim - codim)};
+  }
+
+  template <typename EntityType>
+  bool contains(const EntityType& e, int lvl) const {
+    auto& entities = std::get<EntityType::codimension>(entityImps_[lvl]);
+    return std::ranges::find(entities, e.impl().getLocalEntity()) != entities.end();
   }
 
   std::size_t size(int codim, int lvl) const {
@@ -198,7 +243,7 @@ struct VectorEntityContainer
   template <int codim>
   using EntityInteratorImpl = typename std::tuple_element_t<codim, EntityTuple>::iterator;
 
-  //! The lists of vertices, edges, elements for each level
+  // The lists of vertices, edges, elements for each level
   EntityImps entityImps_;
 
   std::map<IdType, Dune::ReservedVector<IdType, 8>> globalEdgesIdOfElementsMap_;
@@ -213,6 +258,9 @@ struct VectorEntityContainer
   // store information to know what geometry types we have to return.
   std::vector<int> numberOfTrimmedElements{};
   std::vector<int> numberOfUnTrimmedElements{};
+
+  // Inserted by original Element Idx
+  std::vector<std::vector<ElementTrimFlag>> trimFlags_;
 
   // We store trimmed vertexIds for each level
   std::vector<std::map<IdType, FieldVector<double, 2>>> trimmedVertexIds_;

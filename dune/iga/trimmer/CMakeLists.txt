@@ -8,6 +8,7 @@ add_subdirectory(identitytrimmer)
 # install headers
 set(HEADERS
         concepts.hh
+        localgeometryvariant.hh
 )
 
 install(FILES ${HEADERS}

@@ -12,7 +12,9 @@
 
 #include "elementtrimdata.hh"
 #include "entitycontainer.hh"
+#include "entityinfo.hh"
 #include "idset.hh"
+#include "integrationrules/simplexintegrationrulegenerator.hh"
 #include "patchgridentityseed.hh"
 #include "patchgridhierarchiciterator.hh"
 #include "patchgridindexsets.hh"
@@ -32,7 +34,6 @@
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 #include <dune/iga/trimmer/identitytrimmer/patchgridlocalgeometry.hh>
-#include <dune/iga/trimmer/intersectionvariants.hh>
 #include <dune/iga/trimmer/localgeometryvariant.hh>
 #include <dune/subgrid/subgrid.hh>
 
@@ -48,10 +49,11 @@ struct std::hash<Dune::IGANEW::DefaultTrim::IdType<HostIdType>>
 
     // Compute individual hash values for first, second and third and combine them using XOR
     // and bit shifting:
-
-    return (hash<HostIdType>()(k.id) ^
-            hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1) >>
-           1;
+    // todo
+    // return (hash<HostIdType>()(k.id) ^
+    //         hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1) >>
+    //        1;
+    return (hash<HostIdType>()(k.id));
   }
 };
 
@@ -131,95 +133,6 @@ namespace DefaultTrim {
     else
       return true;
   }
-
-  /**
-   *
-   * @tparam Traits The trimmer traits
-   * @tparam codim
-   */
-  template <typename Traits, int codim>
-  struct EntityInfoImpl
-  {
-  };
-
-  template <typename Traits>
-  struct EntityInfoImpl<Traits, 2>
-  {
-    static constexpr int codimension = 2;
-    using HostIdType                 = typename Traits::ParameterSpaceGrid::GlobalIdSet::IdType;
-    using EntitySeedType = typename Traits::ParameterSpaceGrid::template Codim<codimension>::Entity::EntitySeed;
-    // using TrimmedEntityGeometry =
-    //     typename Traits::template Codim<codimension>::TrimmedParameterSpaceGeometry::PatchGeometry;
-
-    using TrimInfo = typename Traits::ElementTrimData::VertexInfo;
-
-    unsigned int indexInLvlStorage{std::numeric_limits<unsigned int>::max()};
-    int lvl{};
-    bool stemFromTrim{false};
-    IdType<HostIdType> id;
-    EntitySeedType hostSeed{};
-
-    std::optional<TrimInfo> trimInfo{};
-
-    auto stemsFromTrim() const {
-      return stemFromTrim;
-    }
-  };
-
-  template <typename Traits>
-  struct EntityInfoImpl<Traits, 1>
-  {
-    static constexpr int codimension = 1;
-    using HostIdType                 = typename Traits::ParameterSpaceGrid::GlobalIdSet::IdType;
-    using EntitySeedType = typename Traits::ParameterSpaceGrid::template Codim<codimension>::Entity::EntitySeed;
-    using TrimmedEntityGeometry =
-        typename Traits::template Codim<codimension>::TrimmedParameterSpaceGeometry::PatchGeometry;
-
-    using TrimInfo = typename Traits::ElementTrimData::EdgeInfo;
-
-    unsigned int indexInLvlStorage{std::numeric_limits<unsigned int>::max()};
-    int lvl{};
-    bool stemFromTrim{false};
-    IdType<HostIdType> id;
-    EntitySeedType hostSeed{};
-
-    struct GeometryMap
-    {
-      unsigned int indexOfInsideElementinLvl;
-      TrimmedEntityGeometry geometry;
-    };
-
-    std::vector<GeometryMap> trimmedEntityGeometries{};
-    std::optional<TrimInfo> trimInfo{};
-
-    auto stemsFromTrim() const {
-      return stemFromTrim;
-    }
-  };
-
-  template <typename Traits>
-  struct EntityInfoImpl<Traits, 0>
-  {
-    static constexpr int codimension = 0;
-    using HostIdType                 = typename Traits::ParameterSpaceGrid::GlobalIdSet::IdType;
-    using EntitySeedType = typename Traits::ParameterSpaceGrid::template Codim<codimension>::Entity::EntitySeed;
-
-    unsigned int indexInLvlStorage{std::numeric_limits<unsigned int>::max()};
-    unsigned int unTrimmedIndexInLvl{std::numeric_limits<unsigned int>::max()};
-    unsigned int trimmedIndexInLvl{std::numeric_limits<unsigned int>::max()};
-    unsigned int hostIndexInLvl{std::numeric_limits<unsigned int>::max()};
-    int lvl{};
-    bool stemFromTrim{false};
-    IdType<HostIdType> id{};
-    EntitySeedType hostSeed{};
-
-    auto stemsFromTrim() const {
-      return stemFromTrim;
-    }
-
-    std::optional<IdType<HostIdType>> fatherId;
-    ReservedVector<IdType<HostIdType>, 4> decendantIds;
-  };
 
   /**
    * @brief Parameter struct representing parameters for the trimming operation.
@@ -311,8 +224,6 @@ namespace DefaultTrim {
         using EntityImp                    = PatchGridEntity<codim, dim, const Grid>;
         using EntitySeedImpl               = PatchGridEntitySeed<codim, const Grid>;
         using HostParameterSpaceGridEntity = typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
-        // using UnTrimmedHostParameterSpaceGridEntity =
-        //     typename ParameterSpaceGrid::Traits::template Codim<codim>::Entity;
       };
 
       using HostLeafIntersection                   = typename ParameterSpaceGrid::Traits::LeafIntersection;
@@ -320,48 +231,21 @@ namespace DefaultTrim {
       using TrimmedParameterSpaceLeafIntersection  = TrimmedLeafIntersection<const Grid>;
       using TrimmedParameterSpaceLevelIntersection = TrimmedLevelIntersection<const Grid>;
 
-      using ParameterSpaceLeafIntersection = TrimmedParameterSpaceLeafIntersection;
-      // using ParameterSpaceLeafIntersection =
-      // Trim::IntersectionVariant<Trimmer,UntrimmedParameterSpaceLeafIntersection,TrimmedParameterSpaceLeafIntersection>;
-      // using ParameterSpaceLevelIntersection =
-      // Trim::IntersectionVariant<Trimmer,UntrimmedParameterSpaceLevelIntersection,TrimmedParameterSpaceLevelIntersection>;
+      using ParameterSpaceLeafIntersection  = TrimmedParameterSpaceLeafIntersection;
       using ParameterSpaceLevelIntersection = TrimmedParameterSpaceLevelIntersection;
     };
 
     using GeometryTypes = ReservedVector<GeometryType, 2>;
-    // clang-format off
-      typedef GridTraits<
-        dim, dimworld, Grid,
-      PatchGridGeometry,
-      PatchGridEntity,
-      PatchGridLevelIterator,
-      PatchGridLeafIntersection,
-      PatchGridLevelIntersection,
-      PatchGridLeafIntersectionIterator,
-      PatchGridLevelIntersectionIterator,
-      PatchGridHierarchicIterator,
-      PatchGridLeafIterator,
-      LevelIndexSet,
-      LeafIndexSet,
-      GlobalIdSet,
-      typename TrimmerTraits::GlobalIdSetId,
-      LocalIdSet,
-      typename TrimmerTraits::GlobalIdSetId,
-      Communication<No_Comm>,
-      PatchGridLevelGridViewTraits,
-      PatchGridLeafGridViewTraits,
-      PatchGridEntitySeed,
-      PatchGridLocalGeometry,
-          typename TrimmerTraits::ParameterSpaceGrid::Traits::LevelIndexSet::IndexType,
-          GeometryTypes,
-          typename TrimmerTraits::ParameterSpaceGrid::Traits::LeafIndexSet::IndexType,
-          GeometryTypes>
-          Traits;
-    // clang-format on
-    // using GlobalIdSetType =  PatchGridGlobalIdSet<const Grid>;
 
-    // template <int codim, PartitionIteratorType pitype>
-    // using LeafIterator = PatchGridLeafIterator<codim,pitype,GridImp>;
+    typedef GridTraits<dim, dimworld, Grid, PatchGridGeometry, PatchGridEntity, PatchGridLevelIterator,
+                       PatchGridLeafIntersection, PatchGridLevelIntersection, PatchGridLeafIntersectionIterator,
+                       PatchGridLevelIntersectionIterator, PatchGridHierarchicIterator, PatchGridLeafIterator,
+                       LevelIndexSet, LeafIndexSet, GlobalIdSet, typename TrimmerTraits::GlobalIdSetId, LocalIdSet,
+                       typename TrimmerTraits::GlobalIdSetId, Communication<No_Comm>, PatchGridLevelGridViewTraits,
+                       PatchGridLeafGridViewTraits, PatchGridEntitySeed, PatchGridLocalGeometry,
+                       typename TrimmerTraits::ParameterSpaceGrid::Traits::LevelIndexSet::IndexType, GeometryTypes,
+                       typename TrimmerTraits::ParameterSpaceGrid::Traits::LeafIndexSet::IndexType, GeometryTypes>
+        Traits;
   };
 
   /**
@@ -409,45 +293,64 @@ namespace DefaultTrim {
     template <int codim>
     static constexpr bool isLocalGeometryLinear =
         true; ///< boolean for the linearity of the local geometry, for the untrimmed case this is always true
-    static constexpr bool isAlwaysTrivial = true; ///< Boolean indicating if the trimming is always trivial, no
+    static constexpr bool isAlwaysTrivial = false; ///< Boolean indicating if the trimming is always trivial, no
     ///< trimming or simple deletion of element.
 
     template <int codim>
     using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
-    //! First level intersection
+
+    template <int codim>
+    using YASPEntity = typename GridFamily::Trimmer::TrimmerTraits::YASPGridType::Traits::template Codim<codim>::Entity;
+
+    // First level intersection
     [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
-      // DUNE_THROW(NotImplemented, "ilevelbegin");
+      using IntersectionIterator = PatchGridLevelIntersectionIterator<const GridImp>;
+      auto& localEntity          = ent.impl().getLocalEntity();
 
-      return PatchGridLevelIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().getHostEntity().getHostEntity()));
+      if (not localEntity.isTrimmed())
+        return IntersectionIterator(
+            grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(localEntity.getHostEntity()));
+      return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::Begin,
+                                  parameterSpaceGrid().levelGridView(ent.level()).ibegin(localEntity.getHostEntity()));
     }
 
-    //! Reference to one past the last neighbor
+    // Reference to one past the last neighbor
     PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {
-      // DUNE_THROW(NotImplemented, "ilevelend");
+      using IntersectionIterator = PatchGridLevelIntersectionIterator<const GridImp>;
+      auto& localEntity          = ent.impl().getLocalEntity();
 
-      return PatchGridLevelIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.impl().getHostEntity().getHostEntity()));
+      if (not localEntity.isTrimmed())
+        return IntersectionIterator(grid_,
+                                    parameterSpaceGrid().levelGridView(ent.level()).iend(localEntity.getHostEntity()));
+      return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::End,
+                                  parameterSpaceGrid().levelGridView(ent.level()).ibegin(localEntity.getHostEntity()));
     }
 
-    //! First leaf intersection
+    // First leaf intersection
     PatchGridLeafIntersectionIterator<const GridImp> ileafbegin(const Entity<0>& ent) const {
-      // DUNE_THROW(NotImplemented, "ileafbeginileafbegin");
+      using IntersectionIterator = PatchGridLeafIntersectionIterator<const GridImp>;
+      auto& localEntity          = ent.impl().getLocalEntity();
 
-      return PatchGridLeafIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().leafGridView().ibegin(ent.impl().getHostEntity().getHostEntity()));
+      if (not localEntity.isTrimmed())
+        return IntersectionIterator(grid_, parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));
+      return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::Begin,
+                                  parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));
     }
 
-    //! Reference to one past the last leaf intersection
+    // Reference to one past the last leaf intersection
     PatchGridLeafIntersectionIterator<const GridImp> ileafend(const Entity<0>& ent) const {
-      // DUNE_THROW(NotImplemented, "ileafendileafend");
+      using IntersectionIterator = PatchGridLeafIntersectionIterator<const GridImp>;
+      auto& localEntity          = ent.impl().getLocalEntity();
 
-      return PatchGridLeafIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().getHostEntity().getHostEntity()));
+      if (not localEntity.isTrimmed())
+        return IntersectionIterator(grid_, parameterSpaceGrid().leafGridView().iend(localEntity.getHostEntity()));
+      return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::End,
+                                  parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));
     }
 
     template <class EntitySeed>
     typename GridFamily::Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
+      assert(seed.isValid());
       using EntityImp               = typename TrimmerTraits::template Codim<EntitySeed::codimension>::EntityImp;
       auto [lvl, indexInLvlStorage] = seed.impl().data();
       return EntityImp{grid_, entityContainer_.template entity<EntitySeed::codimension>(lvl, indexInLvlStorage)};
@@ -589,22 +492,21 @@ namespace DefaultTrim {
       update(grid_);
 
       // @todo Trim move the refine here from the grid
-      ;
     }
     auto& patchTrimData() const {
       return *trimData_;
     }
 
     /**
-     * Creates trimInfos for each element at the requested level (or max level if not specified)
-     * Question: Should this data be saved ?? @todo Add execution policy
+     * \brief Creates trimInfos for each element at the requested level (or max level if not specified)
+     * @todo Add execution policy
      * @param level_
      * @return
      */
     std::vector<ElementTrimData> trimElements(std::optional<int> level_ = std::nullopt) const {
       int level = level_.value_or(maxLevel());
       std::vector<ElementTrimData> elementTrimDatas;
-      auto gv = parameterSpaceGrid_->levelGridView(level);
+      auto gv = untrimmedParameterSpaceGrid_->levelGridView(level);
       for (const auto& ele : elements(gv)) {
         if (trimData_.has_value())
           elementTrimDatas.emplace_back(trimElement(ele, trimData_.value()));
@@ -614,7 +516,7 @@ namespace DefaultTrim {
       return elementTrimDatas;
     }
 
-    //! compute the grid indices and ids
+    // compute the grid indices and ids
     void update(GridImp* grid) {
       grid_ = grid;
       localIdSet_->update();
@@ -639,7 +541,7 @@ namespace DefaultTrim {
     void refineParameterSpaceGrid(int refCount, bool initFlag = false);
 
     // The following are helper methods for `refineParameterSpaceGrid`
-    static ElementTrimData trimElement(const HostEntity<0>& element, const PatchTrimData& patchTrimData);
+    static ElementTrimData trimElement(const YASPEntity<0>& element, const PatchTrimData& patchTrimData);
 
     GlobalIdType makeElementID(const HostEntity<0>& ele);
     void createAndSaveElementInfo(const std::tuple<unsigned int, unsigned int, int>& indices, const HostEntity<0>& ele,
@@ -663,7 +565,7 @@ namespace DefaultTrim {
 
     EntityContainer entityContainer_;
 
-    //! Our set of level indices
+    // Our set of level indices
     std::vector<std::unique_ptr<typename GridFamily::LevelIndexSet>> levelIndexSets_;
 
     std::unique_ptr<LeafIndexSet> leafIndexSet_;

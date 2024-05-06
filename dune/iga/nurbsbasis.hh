@@ -16,18 +16,13 @@
 #include <set>
 #include <vector>
 
-#include <dune/iga/splines/bsplinealgorithms.hh>
-#include <dune/iga/splines/nurbsalgorithms.hh>
-// #include <dune/iga/trim/nurbstrimmer.hh>
-// #include <dune/iga/utils/concepts.hh>
 #include <dune/common/diagonalmatrix.hh>
-#include <dune/common/dynmatrix.hh>
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
-#include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/geometry/type.hh>
-#include <dune/grid/common/rangegenerators.hh>
-// #include <dune/iga/trim/nurbstrimmer.hh>
+#include <dune/iga/splines/bsplinealgorithms.hh>
+#include <dune/iga/splines/nurbsalgorithms.hh>
+#include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/localfunctions/common/localkey.hh>
@@ -61,7 +56,7 @@ class NurbsLocalBasis
   };
 
 public:
-  //! @brief export type traits for function signature
+  // @brief export type traits for function signature
   using Traits = LocalBasisTraits<D, dim, FieldVector<D, dim>, R, 1, FieldVector<R, 1>, FieldMatrix<R, 1, dim>>;
 
   /** @brief Constructor with a given B-spline patch
@@ -70,8 +65,7 @@ public:
    */
   NurbsLocalBasis(const NurbsPreBasis<GV>& preBasis, const NurbsLocalFiniteElement<GV, R>& lFE)
       : preBasis_(preBasis),
-        lFE_(lFE) {
-  }
+        lFE_(lFE) {}
 
   /** @brief Evaluate all shape functions
    * @param in Coordinates where to evaluate the functions, in local coordinates of the current knot span
@@ -97,7 +91,7 @@ public:
         out[i][0][j] *= scaling_[j][j];
   }
 
-  //! @brief Evaluate all shape functions and derivatives of any degree
+  // @brief Evaluate all shape functions and derivatives of any degree
   inline void partial(const typename std::array<unsigned int, dim>& order, const typename Traits::DomainType& in,
                       std::vector<typename Traits::RangeType>& out) const {
     FieldVector<D, dim> globalIn = offset_;
@@ -275,12 +269,12 @@ public:
       li_[i] = LocalKey(subEntity[i], codim[i], index[i]);
   }
 
-  //! number of coefficients
+  // number of coefficients
   [[nodiscard]] std::size_t size() const {
     return std::accumulate(sizes_.begin(), sizes_.end(), 1, std::multiplies<>());
   }
 
-  //! get i'th index
+  // get i'th index
   [[nodiscard]] const LocalKey& localKey(std::size_t i) const {
     return li_[i];
   }
@@ -300,7 +294,7 @@ template <int dim, class LB>
 class NurbsLocalInterpolation
 {
 public:
-  //! @brief Local interpolation of a function
+  // @brief Local interpolation of a function
   template <typename F, typename C>
   void interpolate(const F& f, std::vector<C>& out) const {
     DUNE_THROW(NotImplemented, "NurbsLocalInterpolation::interpolate");
@@ -338,8 +332,7 @@ public:
    */
   explicit NurbsLocalFiniteElement(const NurbsPreBasis<GV, R>& preBasis)
       : preBasis_(preBasis),
-        localBasis_(preBasis, *this) {
-  }
+        localBasis_(preBasis, *this) {}
 
   /** @brief Copy constructor
    */
@@ -506,7 +499,7 @@ public:
 
   using Node = NurbsNode<GV>;
 
-  //! Type of created tree node index set. \deprecated
+  // Type of created tree node index set. \deprecated
   static constexpr size_type maxMultiIndexSize    = 1;
   static constexpr size_type minMultiIndexSize    = 1;
   static constexpr size_type multiIndexBufferSize = 1;
@@ -536,18 +529,18 @@ public:
     std::ranges::transform(uniqueKnotVector_, elements_.begin(), [](auto& v) { return v.size() - 1; });
   }
 
-  //! Initialize the global indices
+  // Initialize the global indices
   void initializeIndices() {
     createUntrimmedNodeIndices();
     createTrimmedNodeIndices();
   }
 
-  //! Obtain the grid view that the basis is defined on
+  // Obtain the grid view that the basis is defined on
   const GridView& gridView() const {
     return gridView_;
   }
 
-  //! Update the stored grid view, to be called if the grid has changed
+  // Update the stored grid view, to be called if the grid has changed
   void update(const GridView& gv) {
     gridView_ = gv;
   }
@@ -559,19 +552,19 @@ public:
     return Node{this};
   }
 
-  //! Return number of possible values for next position in multi index
+  // Return number of possible values for next position in multi index
   template <typename SizePrefix>
   [[nodiscard]] size_type size(const SizePrefix prefix) const {
     assert(prefix.empty() || prefix.size() == 1);
     return (prefix.empty()) ? size() : 0;
   }
 
-  //! Get the total dimension of the space spanned by this basis
+  // Get the total dimension of the space spanned by this basis
   [[nodiscard]] size_type dimension() const {
     return size();
   }
 
-  //! Get the maximal number of DOFs associated to node for any element
+  // Get the maximal number of DOFs associated to node for any element
   [[nodiscard]] size_type maxNodeSize() const {
     size_type result = 1;
     for (int i = 0; i < dim; i++)
@@ -588,9 +581,11 @@ public:
     }
     const auto order = patchData_.degree;
 
-    auto spanSize     = gridView_.impl().untrimmedElementNumbers();
-    auto extractIndex = std::views::transform([&](const auto& ele) { return gridView_.indexSet().index(ele); });
-    for (auto directIndex : elements(gridView_) | extractIndex) {
+    auto spanSize    = gridView_.impl().untrimmedElementNumbers();
+    auto numElements = std::accumulate(spanSize.begin(), spanSize.end(), 1u, std::multiplies());
+
+    // auto extractIndex = std::views::transform([&](const auto& ele) { return getDirectIndex(ele); });
+    for (auto directIndex : Dune::range(numElements)) {
       auto elementIdx = getIJK(directIndex, spanSize);
 
       std::array<int, dim> currentKnotSpan;
@@ -617,32 +612,52 @@ public:
     }
   }
 
+  auto getDirectIndex(const auto& ele) const {
+    if constexpr (TrimmerType::isAlwaysTrivial)
+      return gridView_.indexSet().index(ele);
+    else
+      return ele.impl().getLocalEntity().hostIndexInLvl();
+  }
+
   /// @brief Maps from subtree index set [0..size-1] to a globally unique multi index in global basis
   template <typename It>
   It indices(const Node& node, It it) const {
-    const auto eleIdx = gridView_.indexSet().index(node.element_);
+    const auto eleIdx = getDirectIndex(node.element_);
     for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
-      auto globalIndex = originalIndices_.at(eleIdx)[i]; // @todo this should is the trimmed indices
-      *it              = {{globalIndex}};
+      if constexpr (TrimmerType::isAlwaysTrivial) {
+        auto globalIndex = originalIndices_.at(eleIdx)[i];
+        *it              = {{globalIndex}};
+      } else {
+        auto globalIndex = indexMap_.at(originalIndices_.at(eleIdx)[i]);
+        *it              = {{globalIndex}};
+      }
     }
     return it;
   }
   void createTrimmedNodeIndices() {
     if constexpr (not TrimmerType::isAlwaysTrivial) {
-      // unsigned int n_ind_original = cachedSize_;
-      //
-      // std::set<size_type> indicesInTrim;
-      // for (auto directIndex : std::views::iota(0, gridView_.impl().getPatch().originalSize(0))) {
-      // IGA::ElementTrimFlag trimFlag = gridView_.impl().getPatch().getTrimFlagForDirectIndex(directIndex);
-      // if (trimFlag != IGA::ElementTrimFlag::empty)
-      //   std::ranges::copy(originalIndices_.at(directIndex), std::inserter(indicesInTrim, indicesInTrim.begin()));
-      // }
-      //
-      // unsigned int realIndexCounter = 0;
-      // for (unsigned int i = 0; i < n_ind_original; ++i) {
-      // if (std::ranges::find(indicesInTrim, i) != indicesInTrim.end()) indexMap_.emplace(i, realIndexCounter++);
-      // }
-      // cachedSize_ = realIndexCounter;
+      if (not gridView_.grid().trimmer().trimData_.has_value())
+        return;
+
+      unsigned int n_ind_original = cachedSize_;
+
+      auto spanSize    = gridView_.impl().untrimmedElementNumbers();
+      auto numElements = std::accumulate(spanSize.begin(), spanSize.end(), 1u, std::multiplies());
+
+      std::set<size_type> indicesInTrim;
+      for (auto directIndex : Dune::range(numElements)) {
+        auto trimFlag = gridView_.grid().trimmer().entityContainer_.trimFlags_[gridView_.impl().level()][directIndex];
+
+        if (trimFlag != IGANEW::DefaultTrim::ElementTrimFlag::empty)
+          std::ranges::copy(originalIndices_.at(directIndex), std::inserter(indicesInTrim, indicesInTrim.begin()));
+      }
+
+      unsigned int realIndexCounter = 0;
+      for (unsigned int i = 0; i < n_ind_original; ++i) {
+        if (std::ranges::find(indicesInTrim, i) != indicesInTrim.end())
+          indexMap_.emplace(i, realIndexCounter++);
+      }
+      cachedSize_ = realIndexCounter;
     }
   }
 
@@ -653,13 +668,13 @@ public:
     return result;
   }
 
-  //! @brief Total number of B-spline basis functions
+  // @brief Total number of B-spline basis functions
   [[nodiscard]] unsigned int size() const {
     // assert(!std::isnan(cachedSize_));
-    return computeOriginalSize();
+    return cachedSize_;
   }
 
-  //! @brief Number of shape functions in one direction
+  // @brief Number of shape functions in one direction
   [[nodiscard]] unsigned int sizePerDirection(size_t d) const {
     return patchData_.knotSpans[d].size() - patchData_.degree[d] - 1;
   }
@@ -683,7 +698,7 @@ public:
   void evaluateJacobian(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldMatrix<R, 1, dim>>& out,
                         const std::array<int, dim>& currentKnotSpan) const {
     const auto dN = IGANEW::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
-        in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints), 1, false,
+        in, patchData_.knotSpans, patchData_.degree, IGANEW::Splines::extractWeights(patchData_.controlPoints), 1,
         currentKnotSpan);
     out.resize(dN.get(std::array<int, dim>{}).size());
     for (int j = 0; j < dim; ++j) {
@@ -695,12 +710,12 @@ public:
     }
   }
 
-  //! @brief Evaluate Derivatives of all B-spline basis functions
+  // @brief Evaluate Derivatives of all B-spline basis functions
 
   void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
                std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
     const auto dN = IGANEW::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
-        in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
+        in, patchData_.knotSpans, patchData_.degree, IGANEW::Splines::extractWeights(patchData_.controlPoints),
         std::accumulate(order.begin(), order.end(), 0));
 
     auto& dNpart = dN.get(order).directGetAll();
@@ -731,7 +746,7 @@ public:
   /** @brief Number of grid elements in the different coordinate directions */
   std::array<int, dim> elements_;
 
-  unsigned int cachedSize_ = std::numeric_limits<unsigned int>::signaling_NaN();
+  unsigned int cachedSize_ = std::numeric_limits<unsigned int>::max();
   std::map<DirectIndex, std::vector<size_type>> originalIndices_;
 
   struct DummyEmpty
@@ -756,10 +771,9 @@ public:
 
   explicit NurbsNode(const NurbsPreBasis<GV>* preBasis)
       : preBasis_(preBasis),
-        finiteElement_(*preBasis) {
-  }
+        finiteElement_(*preBasis) {}
 
-  //! Return current element, throw if unbound
+  // Return current element, throw if unbound
   const Element& element() const {
     return element_;
   }
@@ -772,11 +786,11 @@ public:
     return finiteElement_;
   }
 
-  //! Bind to element.
+  // Bind to element.
   void bind(const Element& e) {
-    element_          = e;
-    auto elementIndex = preBasis_->gridView().indexSet().index(e);
-    finiteElement_.bind(preBasis_->getIJK(elementIndex, preBasis_->elements_));
+    element_ = e;
+
+    finiteElement_.bind(preBasis_->getIJK(getDirectIndex(), preBasis_->elements_));
     this->setSize(finiteElement_.size());
   }
 
@@ -785,6 +799,14 @@ protected:
 
   FiniteElement finiteElement_;
   Element element_;
+
+  auto getDirectIndex() const {
+    using TrimmerType = typename std::remove_cvref_t<decltype(preBasis_->gridView())>::Implementation::TrimmerType;
+    if constexpr (TrimmerType::isAlwaysTrivial)
+      return preBasis_->gridView().indexSet().index(element_);
+    else
+      return element_.impl().getLocalEntity().hostIndexInLvl();
+  }
 };
 
 namespace BasisFactory {
@@ -798,8 +820,7 @@ namespace BasisFactory {
       static constexpr std::size_t requiredMultiIndexSize = 1;
       explicit NurbsPreBasisFactoryFromPatchData(
           const std::optional<Dune::IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
-          : patchData_(patchData) {
-      }
+          : patchData_(patchData) {}
 
       template <class GridView>
       auto operator()(const GridView& gridView) const {
@@ -817,8 +838,7 @@ namespace BasisFactory {
       static constexpr std::size_t requiredMultiIndexSize = 1;
 
       explicit NurbsPreBasisFactoryFromDegreeElevation(const std::array<int, dim>& degreeElevate)
-          : degreeElevate_(degreeElevate) {
-      }
+          : degreeElevate_(degreeElevate) {}
 
       template <class GridView>
       auto operator()(const GridView& gridView) const {

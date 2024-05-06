@@ -39,10 +39,10 @@ namespace IGANEW {
     class TrimmedReferenceElement
     {
     public:
-      //! The dimension of the reference element.
+      // The dimension of the reference element.
       static constexpr int mydimension = dim;
       static constexpr int dimension   = mydimension;
-      //! The coordinate field type.
+      // The coordinate field type.
       using Trimmer            = typename GridImp::Trimmer;
       using ctype              = typename Trimmer::ctype;
       using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
@@ -52,16 +52,16 @@ namespace IGANEW {
       template <int codim>
       struct Codim
       {
-        //! type of geometry embedding a subentity into the reference element
+        // type of geometry embedding a subentity into the reference element
 
         using Geometry = TrimmedLocalGeometryImpl<mydimension - codim, mydimension, const GridImp,
                                                   LocalGeometryTag::InReferenceElement>;
       };
 
-      //! The coordinate field type.
+      // The coordinate field type.
       using CoordinateField = ctype;
 
-      //! The coordinate type.
+      // The coordinate type.
       using Coordinate = Dune::FieldVector<ctype, mydimension>;
 
       /** @brief Type used for volume */
@@ -266,17 +266,14 @@ namespace IGANEW {
               c_{c},
               cc_{cc}
 
-        {
-        }
+        {}
 
         SubEntityRangeImpl(const iterator& begin, const iterator& end)
             : Base(begin, end),
-              size_(end - begin) {
-        }
+              size_(end - begin) {}
 
         SubEntityRangeImpl()
-            : size_(0) {
-        }
+            : size_(0) {}
 
         std::size_t size() const {
           return size_;
@@ -447,18 +444,18 @@ namespace IGANEW {
         }
       }
 
-      //! Compares for equality with another reference element.
+      // Compares for equality with another reference element.
       bool operator==(const TrimmedReferenceElement& r) const {
         // @todo, just check if the triangulations cooincide
         return trimData_ == r.trimData_;
       }
 
-      //! Compares for inequality with another reference element.
+      // Compares for inequality with another reference element.
       bool operator!=(const TrimmedReferenceElement& r) const {
         return not(*this == r);
       }
 
-      //! Yields a hash value suitable for storing the reference element a in hash table
+      // Yields a hash value suitable for storing the reference element a in hash table
       friend std::size_t hash_value(const TrimmedReferenceElement& r) {
         // @todo, this is not needed maybe
         return hash_value(ReferenceElements<ctype, mydimension>::cube());

@@ -9,7 +9,7 @@ AllowAllParametersOfDeclarationOnNextLine: false
 AlwaysBreakTemplateDeclarations: Yes
 AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Empty
 ColumnLimit: 120
 QualifierAlignment: Left
 ConstructorInitializerAllOnOneLineOrOnePerLine: true

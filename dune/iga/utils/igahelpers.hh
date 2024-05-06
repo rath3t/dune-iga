@@ -19,8 +19,7 @@ public:
    */
   BoundaryPatchEnclosingVerticesPropertyTrimmed(const GridView& gridView, const Dune::BitSetVector<ncomp>& vertices)
       : indexSet_(gridView.indexSet()),
-        vertices_(vertices) {
-  }
+        vertices_(vertices) {}
 
   /** @brief Check if intersection is enclosed by vertices in the vector
    */

@@ -140,13 +140,11 @@ public:
    */
   MultiDimensionalNet(std::array<int, netdim> dimSize, const container_type& values)
       : values_(values),
-        dimSize_{dimSize} {
-  }
+        dimSize_{dimSize} {}
 
   MultiDimensionalNet(std::array<int, netdim> dimSize, std::ranges::range auto values)
       : values_(values.begin(), values.end()),
-        dimSize_{dimSize} {
-  }
+        dimSize_{dimSize} {}
 
   /** @brief constructor intended for the 2-D if the values are already in a matrix
    *

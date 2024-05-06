@@ -174,8 +174,7 @@ public:
    */
   template <int dimworld>
   explicit Nurbs(const NURBSPatchData<dim, dimworld, ScalarType>& data)
-      : Nurbs(data.knotSpans, data.degree, extractWeights(data.controlPoints)) {
-  }
+      : Nurbs(data.knotSpans, data.degree, extractWeights(data.controlPoints)) {}
 
   /**
    * @brief Constructor for Nurbs class.
@@ -188,8 +187,7 @@ public:
                  const MultiDimensionalNet<dim, ScalarType>& netOfWeight)
       : knots_{knots},
         degree_{degree},
-        weights_{netOfWeight} {
-  }
+        weights_{netOfWeight} {}
 
   /**
    * @brief Get a local view of the Nurbs object.
@@ -208,8 +206,7 @@ public:
     static constexpr int dimension = dim;
     LocalView()                    = default;
     explicit LocalView(const Nurbs& nurbs)
-        : nurbs_{&nurbs} {
-    }
+        : nurbs_{&nurbs} {}
 
     /**
      * @brief Bind the local view to a specific span index.
@@ -258,8 +255,7 @@ public:
         const std::vector<ScalarType>& weights)
       : knots_{knots},
         degree_{degree},
-        weights_{weights} {
-  }
+        weights_{weights} {}
 
   /**
    * @brief Evaluate the values of the NURBS basis.

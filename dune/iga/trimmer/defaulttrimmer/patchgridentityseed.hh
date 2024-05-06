@@ -44,8 +44,9 @@ public:
    * of PatchGridEntitySeed to allow for return value optimization.
    */
   explicit PatchGridEntitySeed(const EntityImp& ent)
-      : lvl_(ent.getHostEntity().entityInfo_.lvl),
-        indexInLvlStorage_{ent.getHostEntity().entityInfo_.indexInLvlStorage} {
+      : lvl_(ent.getLocalEntity().entityInfo_.lvl),
+        indexInLvlStorage_{ent.getLocalEntity().entityInfo_.indexInLvlStorage} {
+    assert(isValid());
   }
 
   /**

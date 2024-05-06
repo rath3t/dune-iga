@@ -38,8 +38,7 @@ struct NURBSPatchData
                  const std::array<int, dim>& degreeInput)
       : knotSpans(knotSpansI),
         controlPoints(controlPointsI),
-        degree(degreeInput) {
-  }
+        degree(degreeInput) {}
 
   std::array<std::vector<double>, dim> knotSpans{}; ///< Knot spans for each dimension
   ControlPointNetType controlPoints{};              ///< Net of control points

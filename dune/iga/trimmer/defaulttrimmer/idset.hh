@@ -9,9 +9,9 @@ namespace Dune::IGANEW::DefaultTrim {
 
 template <class GridImp>
 class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
-                                          typename std::remove_const<GridImp>::type::Traits::GlobalIdSet::IdType>
+                                          typename std::remove_const_t<GridImp>::Traits::GlobalIdSet::IdType>
 {
-  typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
+  typedef typename std::remove_const_t<GridImp>::ParameterSpaceGrid ParameterSpaceGrid;
 
   using Trimmer = typename GridImp::Trimmer;
   // friend class GridImp::TrimmerType;
@@ -20,42 +20,38 @@ class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>
   using UntrimmedParameterSpaceGrid = typename Trimmer::UntrimmedParameterSpaceGrid;
 
 public:
-  //! constructor stores reference to a grid
+  // constructor stores reference to a grid
   PatchGridGlobalIdSet() = default;
-  PatchGridGlobalIdSet(const GridImp& g)
-      : grid_(&g) {
-  }
+  explicit PatchGridGlobalIdSet(const GridImp& g)
+      : grid_(&g) {}
   // PatchGridGlobalIdSet(const GridImp& g, const std::vector<TrimmingCurve>& trimmingCurves) : grid_(&g) {}
 
-  //! define the type used for persistent indices
+  // define the type used for persistent indices
   using IdType              = typename Trimmer::TrimmerTraits::GlobalIdSetId;
   using PersistentIndexType = typename Trimmer::TrimmerTraits::PersistentIndexType;
 
-  //! get id of an entity
+  // get id of an entity
   /*
      We use the remove_const to extract the Type from the mutable class,
      because the const class is not instantiated yet.
    */
   template <int cd>
-  IdType id(const typename std::remove_const<GridImp>::type::Traits::template Codim<cd>::Entity& e) const {
+  IdType id(const typename std::remove_const_t<GridImp>::Traits::template Codim<cd>::Entity& e) const {
     // Return id of the host entity
-    return e.impl().getHostEntity().id();
+    return e.impl().getLocalEntity().id();
   }
 
-  //! get id of subEntity
-  /*
+  // get id of subEntity
 
-   */
   IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
                int codim) const {
     // @todo Trim, the sub indeces are wrong!!!
     //  Return sub id of the host entity
-    return e.impl().getHostEntity().subId(i, codim);
+    return e.impl().getLocalEntity().subId(i, codim);
   }
 
   /** @todo Should be private */
-  void update() {
-  }
+  void update() {}
 
   PersistentIndexType newFreeIndex() {
     lastFreeIndex_ += 1;

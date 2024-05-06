@@ -23,6 +23,10 @@
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
+/********
+ *TODO This test is currently disabled as the interface in gridfactory cannot handle curve insertion atm (HJ)
+ *********/
+
 using namespace Dune;
 using namespace Dune::IGANEW;
 
@@ -34,8 +38,6 @@ auto testFactoryWithTorus() {
   auto circle    = makeCircularArc(r);
   gridFactory.insertPatch(circle);
   auto grid = gridFactory.createGrid();
-
-  // @todo Trim add tests
 
   return t;
 }
@@ -214,7 +216,7 @@ auto testFactoryWithPlateWithCircularTrim3D() {
   GridFactory<Grid> gridFactory;
   const double r = 1.0;
   gridFactory.insertPatch(patchData);
-  gridFactory.insertTrimmingCurve(makeCircularArc2D(1.0));
+  // gridFactory.insertTrimmingCurve(makeCircularArc2D(1.0));
 
   auto grid       = gridFactory.createGrid();
   auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });

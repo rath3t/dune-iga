@@ -80,6 +80,15 @@ public:
   /* @brief Default constructor for NURBSPatch.*/
   NURBSPatch() = default;
 
+  bool operator==(const NURBSPatch& other) const {
+    bool isSame = true;
+    for (auto i : Dune::range(corners())) {
+      if (not FloatCmp::eq(corner(i), other.corner(i), 1e-8))
+        isSame = false;
+    }
+    return isSame;
+  }
+
   /**
    * @brief Get a local view of the NURBS patch.
    * @tparam codim Codimension of the patch.
@@ -98,8 +107,7 @@ public:
   explicit NURBSPatch(const NURBSPatchData<dim_, dimworld_, ScalarType>& patchData)
       : patchData_(patchData),
         uniqueKnotSpans_{Splines::createUniqueKnotSpans(patchData.knotSpans)},
-        nurbs_{patchData_} {
-  }
+        nurbs_{patchData_} {}
 
   /**
    * @brief Explicit constructor for NURBSPatch with unique knot spans.
@@ -110,8 +118,7 @@ public:
                       const std::array<std::vector<ctype>, dim_>& uniqueKnotSpans)
       : patchData_(patchData),
         uniqueKnotSpans_{uniqueKnotSpans},
-        nurbs_{patchData_} {
-  }
+        nurbs_{patchData_} {}
 
   /**
    * @brief Get the center of the element mapped to the geometry.
@@ -209,6 +216,22 @@ public:
   auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
     auto [nurbsLocalView, cpNet, subNetStart] = calculateNurbsAndControlPointNet(u);
     return zeroFirstAndSecondDerivativeOfPositionImpl(u, nurbsLocalView, cpNet);
+  }
+
+  // todo @Alex is this correct? copied from
+  // https://github.com/rath3t/dune-iga/blob/3b7f7f50e71d157864961704af1815d1640d218d/dune/iga/nurbsgeometry.hh#L233
+  auto secondFundamentalForm(const LocalCoordinate& local) const
+  requires(mydimension == 2) && (coorddimension == 3)
+  {
+    auto [nurbsLocalView, cpNet, subNetStart] = calculateNurbsAndControlPointNet(local);
+
+    const auto secDerivatives = GeometryKernel::hessian(local, nurbsLocalView, cpNet);
+    const auto unitnormal     = unitNormal(local);
+    FieldMatrix<ctype, mydimension, mydimension> b;
+    b[0][0] = secDerivatives[0] * unitnormal;
+    b[1][1] = secDerivatives[1] * unitnormal;
+    b[0][1] = b[1][0] = secDerivatives[2] * unitnormal;
+    return b;
   }
 
   /**
@@ -464,6 +487,20 @@ public:
   }
 
 private:
+  [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const
+  requires(mydimension == 2) && (coorddimension == 3)
+  {
+    auto N = normal(local);
+    return N / N.two_norm();
+  }
+
+  [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const
+  requires(mydimension == 2) && (coorddimension == 3)
+  {
+    auto J = jacobianTransposed(local);
+    return cross(J[0], J[1]);
+  }
+
   /* @brief Calculate NURBS and control point net for a given local coordinate. */
   auto calculateNurbsAndControlPointNet(const LocalCoordinate& u) const {
     auto subNetStart     = Splines::findSpan(patchData_.degree, u, patchData_.knotSpans);

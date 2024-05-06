@@ -11,3 +11,15 @@ add_subdirectory(trimmer)
 add_subdirectory(utils)
 
 add_subdirectory(test)
+
+# install headers
+
+set(HEADERS
+        nurbsbasis.hh
+        patchgrid.hh
+)
+
+install(FILES ${HEADERS}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/utils
+)
+

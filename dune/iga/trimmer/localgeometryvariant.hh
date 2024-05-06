@@ -32,8 +32,7 @@ public:
 
   template <class Implementation>
   LocalGeometryVariant(const Implementation& impl)
-      : impl_(impl) {
-  }
+      : impl_(impl) {}
 
   LocalGeometryVariant()                                  = default;
   LocalGeometryVariant(const LocalGeometryVariant& other) = default;
@@ -58,12 +57,12 @@ public:
     return visit([](const auto& impl) { return impl.affine(); });
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return visit([](const auto& impl) { return impl.corners(); });
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   auto corner(int i) const {
     return visit([&](const auto& impl) { return impl.corner(i); });
   }
@@ -90,7 +89,7 @@ public:
     return visit([&](const auto& impl) { return impl.local(global); });
   }
 
-  //! Returns true if the point is in the current element
+  // Returns true if the point is in the current element
   bool checkInside(const auto& local) const {
     return visit([&](const auto& impl) { return impl.checkInside(local); });
   }
@@ -99,7 +98,7 @@ public:
     return visit([&](const auto& impl) { return impl.integrationElement(local); });
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
+  // The Jacobian matrix of the mapping from the reference element to this element
   [[nodiscard]] auto jacobianInverseTransposed(const auto& local) const {
     return visit([&](const auto& impl) { return impl.jacobianInverseTransposed(local); });
   }

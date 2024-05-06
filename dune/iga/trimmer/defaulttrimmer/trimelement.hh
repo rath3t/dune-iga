@@ -13,12 +13,12 @@
 namespace Dune::IGANEW::DefaultTrim {
 
 template <int dim, int dimworld, typename ScalarType>
-auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const HostEntity<0>& element,
+auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity<0>& element,
                                                          const PatchTrimData& patchTrimData) -> ElementTrimData {
   auto geo = element.geometry();
 
   static constexpr int numberOfCorners = 4;
-  std::array<FieldVector<double, 2>, numberOfCorners> corners; // see dune book page 127 Figure 5.12
+  std::array<FieldVector<double, 2>, numberOfCorners> corners;
   for (const auto i : Dune::range(numberOfCorners))
     corners[i] = geo.corner(Util::vertexIndexMapping[i]);
 
@@ -47,7 +47,6 @@ auto TrimmerImpl<dim, dimworld, ScalarType>::trimElement(const HostEntity<0>& el
   using namespace Util;
 
   // Major todo: Create fallback to straight line if algorithm is not able to find correct Trimming CurveIdx
-  // Also todo: Make a second algo that just connects the points as lines (as template?)
 
   // State
   std::vector<FieldVector<ScalarType, dim>> foundVertices;

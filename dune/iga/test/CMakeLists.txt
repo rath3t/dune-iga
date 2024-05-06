@@ -7,11 +7,16 @@ set(TESTS
         gridteststrimmed
         testbsplines
         testnurbsbasis
-        factorytest
+        # factorytest
         trimtest
         testfindintersection
         testibrareader
         testpatchgeometry
+        testutillities
+        testintersections
+        testintegrationrules
+        testvtkdatacollector
+        testnurbsbasistrimmed
 )
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 

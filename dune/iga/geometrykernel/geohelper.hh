@@ -4,6 +4,7 @@
 #pragma once
 #include <ranges>
 
+#include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 
 namespace Dune::IGANEW::Utilities {
@@ -17,12 +18,10 @@ struct Domain : std::array<ScalarType, 2>
 {
   using Base = std::array<ScalarType, 2>;
   Domain(ScalarType l, ScalarType r)
-      : Base({l, r}) {
-  }
+      : Base({l, r}) {}
 
   Domain()
-      : Base({0.0, 1.0}) {
-  }
+      : Base({0.0, 1.0}) {}
 
   /** @brief Returns the left border of the domain by mutable reference */
   ScalarType& left() {
@@ -63,6 +62,11 @@ struct Domain : std::array<ScalarType, 2>
   /** @brief Checks if value in inside*/
   bool checkInside(ScalarType val) const {
     return val > left() and val < right();
+  }
+
+  /** @brief Returns true if domain is (0, 1) */
+  bool isUnitDomain() const {
+    return FloatCmp::eq(left(), 0.0) and FloatCmp::eq(right(), 1.0);
   }
 };
 

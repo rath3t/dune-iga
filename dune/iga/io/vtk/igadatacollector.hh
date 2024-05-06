@@ -20,8 +20,9 @@ requires(GridView::dimension == 2)
 class DiscontinuousIgaDataCollector
     : public UnstructuredDataCollectorInterface<GridView, DiscontinuousIgaDataCollector<GridView>, Partitions::All>
 {
-  using Self  = DiscontinuousIgaDataCollector;
-  using Super = UnstructuredDataCollectorInterface<GridView, Self, Partitions::All>;
+  using Self   = DiscontinuousIgaDataCollector;
+  using Super  = UnstructuredDataCollectorInterface<GridView, Self, Partitions::All>;
+  using IDType = typename GridView::Grid::GlobalIdSet::IdType;
 
 public:
   using Super::dim;
@@ -30,8 +31,8 @@ public:
 public:
   DiscontinuousIgaDataCollector(const GridView& gridView, int subSampleFull, int subSampleTrimmed)
       : Super(gridView),
-        geometries_(gridView, subSampleFull, subSampleTrimmed) {
-  }
+        geometries_(gridView, subSampleFull, subSampleTrimmed),
+        gridView_(gridView) {}
   // Does not subsample
   explicit DiscontinuousIgaDataCollector(const GridView& gridView)
       : DiscontinuousIgaDataCollector(gridView, 0, 0){};
@@ -44,12 +45,13 @@ public:
   void updateImpl() {
     pointSets_.clear();
 
-    const auto& indexSet        = this->gridView().indexSet();
+    const auto& idSet = gridView_.grid().globalIdSet();
+
     std::uint64_t vertexCounter = 0;
     numCells_                   = 0;
     numPoints_                  = 0;
-    for (auto element : elements(this->gridView())) {
-      const size_t elementId = indexSet.index(element);
+    for (auto element : elements(gridView_)) {
+      auto elementId = idSet.id(element);
 
       auto verticesInSubGrid = geometries_.nVertices(elementId);
 
@@ -62,7 +64,7 @@ public:
           pointSet.build(type);
 
       for (std::size_t vIdx = 0; auto& subGridVertex : geometries_.getVertices(elementId))
-        vertexIndex_.emplace(std::array<std::size_t, 2>({elementId, vIdx++}), vertexCounter++);
+        vertexIndex_.emplace(std::make_pair(elementId, vIdx++), vertexCounter++);
 
       numPoints_ += verticesInSubGrid;
     }
@@ -81,10 +83,10 @@ public:
   template <class T>
   [[nodiscard]] std::vector<T> pointsImpl() const {
     std::vector<T> data(this->numPoints() * 3);
-    const auto& indexSet = this->gridView().indexSet();
-    for (auto element : elements(this->gridView(), partition)) {
-      auto geometry          = element.geometry();
-      const size_t elementId = indexSet.index(element);
+    const auto& idSet = gridView_.grid().globalIdSet();
+    for (auto element : elements(gridView_)) {
+      auto geometry  = element.geometry();
+      auto elementId = idSet.id(element);
 
       for (std::uint64_t vIdx = 0; auto& subGridVertex : geometries_.getVertices(elementId)) {
         auto v = geometry.global(subGridVertex);
@@ -106,7 +108,7 @@ public:
     return numCells_;
   }
 
-  /// @brief Return cell types, offsets, and connectivity. \see Cells
+  /// \brief Return cell types, offsets, and connectivity. \see Cells
   /**
    * The cell connectivity is composed of cell vertices
    **/
@@ -116,10 +118,10 @@ public:
     cells.offsets.reserve(this->numCells());
     cells.types.reserve(this->numCells());
 
-    const auto& indexSet = this->gridView().indexSet();
+    const auto& idSet = gridView_.grid().globalIdSet();
 
-    for (std::int64_t old_o = 0; const auto& ele : elements(this->gridView(), partition)) {
-      const std::size_t elementId = indexSet.index(ele);
+    for (std::int64_t old_o = 0; const auto& ele : elements(gridView_)) {
+      auto elementId = idSet.id(ele);
 
       for (std::size_t eIdx = 0; auto& subGridElement : geometries_.getElements(elementId)) {
         Vtk::CellType cellType(subGridElement.type(), Vtk::CellType::LAGRANGE);
@@ -148,12 +150,12 @@ public:
     int nComps = fct.numComponents();
     std::vector<T> data(this->numPoints() * nComps);
 
-    auto localFct        = localFunction(fct);
-    const auto& indexSet = this->gridView().indexSet();
-    for (auto element : elements(this->gridView(), partition)) {
+    auto localFct     = localFunction(fct);
+    const auto& idSet = gridView_.grid().globalIdSet();
+    for (auto element : elements(gridView_)) {
       localFct.bind(element);
-      auto geometry          = element.geometry();
-      const size_t elementId = indexSet.index(element);
+      auto geometry  = element.geometry();
+      auto elementId = idSet.id(element);
 
       for (std::uint64_t vIdx = 0; auto& subGridVertex : geometries_.getVertices(elementId)) {
         std::int64_t idx = nComps * vertexIndex_.at({elementId, vIdx++});
@@ -172,13 +174,13 @@ public:
     std::vector<T> data;
     data.reserve(this->numCells_ * nComps);
 
-    auto localFct        = localFunction(fct);
-    const auto& indexSet = this->gridView().indexSet();
+    auto localFct     = localFunction(fct);
+    const auto& idSet = gridView_.grid().globalIdSet();
 
-    for (auto element : elements(this->gridView(), partition)) {
+    for (auto element : elements(gridView_)) {
       localFct.bind(element);
-      auto geometry          = element.geometry();
-      const size_t elementId = indexSet.index(element);
+      auto geometry  = element.geometry();
+      auto elementId = idSet.id(element);
 
       for (auto& subGridElement : geometries_.getElements(elementId)) {
         auto vecInLocal = subGridElement.center();
@@ -196,6 +198,7 @@ protected:
   const auto& gridView() const {
     return gridView_;
   }
+#endif
 
   std::uint64_t numPoints_ = 0;
   std::uint64_t numCells_  = 0;
@@ -203,8 +206,10 @@ protected:
   using PointSet = LagrangePointSet<typename GridView::ctype, GridView::dimension>;
   std::map<GeometryType, PointSet> pointSets_;
   std::vector<std::int64_t> indexMap_;
-  std::map<std::array<std::size_t, 2>, std::int64_t> vertexIndex_;
+  std::map<std::pair<IDType, std::size_t>, std::int64_t> vertexIndex_;
   IGA::IGARefinedGeometries<GridView> geometries_;
+
+  const GridView& gridView_;
 };
 
 } // namespace Dune::Vtk

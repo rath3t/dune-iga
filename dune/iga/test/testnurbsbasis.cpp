@@ -13,10 +13,12 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
 using namespace Dune;
 
+template <template <int, int, typename> typename GridFamily>
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
   // First test
@@ -52,7 +54,7 @@ auto testNurbsBasis() {
   };
   nurbsPatchData.degree = order;
 
-  IGANEW::PatchGrid grid(nurbsPatchData);
+  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(nurbsPatchData);
   // grid.globalRefine(1);
   grid.globalRefineInDirection({2, 0});
   grid.degreeElevateOnAllLevels({2, 2});
@@ -62,7 +64,7 @@ auto testNurbsBasis() {
 
   Dune::TestSuite test(TestSuite::ThrowPolicy::AlwaysThrow);
 
-  //! Test code for VTKWriter, please uncomment to inspect the remaining errors
+  // Test code for VTKWriter, please uncomment to inspect the remaining errors
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
 
@@ -127,7 +129,18 @@ int main(int argc, char** argv) try {
   MPIHelper::instance(argc, argv);
 
   TestSuite t;
-  t.subTest(testNurbsBasis());
+  std::cout << "==================================" << std::endl;
+  std::cout << "===============TEST IdentityTrim==" << std::endl;
+  std::cout << "==================================" << std::endl;
+
+  t.subTest(testNurbsBasis<IGANEW::IdentityTrim::PatchGridFamily>());
+
+  std::cout << std::endl;
+  std::cout << "==================================" << std::endl;
+  std::cout << "===============TEST DefaultTrim===" << std::endl;
+  std::cout << "==================================" << std::endl;
+
+  t.subTest(testNurbsBasis<IGANEW::DefaultTrim::PatchGridFamily>());
 
   return t.exit();
 } catch (Dune::Exception& e) {

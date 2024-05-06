@@ -2,6 +2,11 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES igadatacollector.hh DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/io)
 
-add_subdirectory(ibra)
+set(HEADERS
+        igadatacollector.hh
+)
+
+install(FILES ${HEADERS}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/io/vtk
+)

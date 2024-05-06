@@ -109,8 +109,7 @@ public:
 
   BsplineBasis(const std::vector<ScalarType>& knots, const int degree)
       : knots_{knots},
-        degree_{degree} {
-  }
+        degree_{degree} {}
 
   auto operator()(ScalarType u) {
     return basisFunctions(u, knots_, degree_);

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 /** \file
  * @brief The PatchGridLocalGeometry class and its specializations
@@ -51,8 +50,7 @@ public:
   // using ParameterSpaceGeometry = typename Trimmer::template LocalGeometry<codim>;
 
   explicit PatchGridLocalGeometry(const LocalGeometry& localGeometry)
-      : localGeometry_(localGeometry) {
-  }
+      : localGeometry_(localGeometry) {}
 
   // PatchGridLocalGeometry(const HostGridGeometry& hostGeometry) : hostGeometry_(hostGeometry) {}
 
@@ -67,12 +65,12 @@ public:
     return localGeometry_.affine();
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return localGeometry_.corners();
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   GlobalCoordinate corner(int i) const {
     return localGeometry_.corner(i);
   }
@@ -95,7 +93,7 @@ public:
     return localGeometry_.local(global);
   }
 
-  //! Returns true if the point is in the current element
+  // Returns true if the point is in the current element
   bool checkInside(const FieldVector<ctype, mydim>& local) const {
     return localGeometry_.checkInside(local);
   }
@@ -104,7 +102,7 @@ public:
     return localGeometry_.integrationElement(local);
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
+  // The Jacobian matrix of the mapping from the reference element to this element
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
     return localGeometry_.jacobianInverseTransposed(local);
   }

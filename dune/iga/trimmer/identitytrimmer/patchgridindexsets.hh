@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 /** \file
@@ -27,28 +26,28 @@ public:
 
   constexpr static int dim = GridImp::dimension;
 
-  //! get index of an entity
+  // get index of an entity
   template <int codim>
   int index(const typename GridImp::Traits::template Codim<codim>::Entity& e) const {
     return grid_->parameterSpaceGrid().levelIndexSet(level_).template index<codim>(
         grid_->template getHostEntity<codim>(e));
   }
 
-  //! get index of subEntity of a codim 0 entity
+  // get index of subEntity of a codim 0 entity
   template <int cc>
   int subIndex(const typename GridImp::Traits::template Codim<cc>::Entity& e, int i, int codim) const {
     // @todo Trim, the subindeces are wrong!
     return grid_->parameterSpaceGrid().levelIndexSet(level_).subIndex(grid_->template getHostEntity<cc>(e), i, codim);
   }
 
-  //! get number of entities of given codim, type and on this level
+  // get number of entities of given codim, type and on this level
   std::size_t size(int codim) const {
     // @todo Trim,coun trimmed elements!
 
     return grid_->parameterSpaceGrid().levelIndexSet(level_).size(codim);
   }
 
-  //! get number of entities of given codim, type and on this level
+  // get number of entities of given codim, type and on this level
   std::size_t size(GeometryType type) const {
     // @todo Trim, count cube and none types i.e. full and trimmed elements
 
@@ -97,12 +96,11 @@ public:
    */
   constexpr static int dim = std::remove_const<GridImp>::type::dimension;
 
-  //! constructor stores reference to a grid and level
+  // constructor stores reference to a grid and level
   explicit PatchGridLeafIndexSet(const GridImp& grid)
-      : grid_(&grid) {
-  }
+      : grid_(&grid) {}
 
-  //! get index of an entity
+  // get index of an entity
   /*
       We use the RemoveConst to extract the Type from the mutable class,
       because the const class is not instantiated yet.
@@ -112,7 +110,7 @@ public:
     return grid_->parameterSpaceGrid().leafIndexSet().template index<codim>(grid_->template getHostEntity<codim>(e));
   }
 
-  //! get index of subEntity of a codim 0 entity
+  // get index of subEntity of a codim 0 entity
   /*
       We use the RemoveConst to extract the Type from the mutable class,
       because the const class is not instantiated yet.
@@ -124,13 +122,13 @@ public:
     return grid_->parameterSpaceGrid().leafIndexSet().subIndex(grid_->template getHostEntity<cc>(e), i, codim);
   }
 
-  //! get number of entities of given type
+  // get number of entities of given type
   std::size_t size(GeometryType type) const {
     // @todo Trim, count cube and none types i.e. full and trimmed elements
     return grid_->parameterSpaceGrid().leafIndexSet().size(type);
   }
 
-  //! get number of entities of given codim
+  // get number of entities of given codim
   std::size_t size(int codim) const {
     return grid_->parameterSpaceGrid().leafIndexSet().size(codim);
   }
@@ -164,15 +162,14 @@ class PatchGridGlobalIdSet
   typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
 public:
-  //! constructor stores reference to a grid
+  // constructor stores reference to a grid
   explicit PatchGridGlobalIdSet(const GridImp& g)
-      : grid_(&g) {
-  }
+      : grid_(&g) {}
 
-  //! define the type used for persistent indices
+  // define the type used for persistent indices
   typedef typename ParameterSpaceGrid::Traits::GlobalIdSet::IdType IdType;
 
-  //! get id of an entity
+  // get id of an entity
   /*
      We use the remove_const to extract the Type from the mutable class,
      because the const class is not instantiated yet.
@@ -183,7 +180,7 @@ public:
     return grid_->parameterSpaceGrid().globalIdSet().id(e.impl().getHostEntity());
   }
 
-  //! get id of subEntity
+  // get id of subEntity
   /*
 
    */
@@ -195,8 +192,7 @@ public:
   }
 
   /** @todo Should be private */
-  void update() {
-  }
+  void update() {}
 
   const GridImp* grid_;
 };
@@ -210,15 +206,14 @@ private:
   typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 
 public:
-  //! define the type used for persistent local ids
+  // define the type used for persistent local ids
   typedef typename ParameterSpaceGrid::Traits::LocalIdSet::IdType IdType;
 
-  //! constructor stores reference to a grid
+  // constructor stores reference to a grid
   PatchGridLocalIdSet(const GridImp& g)
-      : grid_(&g) {
-  }
+      : grid_(&g) {}
 
-  //! get id of an entity
+  // get id of an entity
   /*
       We use the remove_const to extract the Type from the mutable class,
       because the const class is not instantiated yet.
@@ -229,7 +224,7 @@ public:
     return grid_->parameterSpaceGrid().localIdSet().id(e.impl().getHostEntity());
   }
 
-  //! get id of subEntity
+  // get id of subEntity
   /*
    * We use the remove_const to extract the Type from the mutable class,
    * because the const class is not instantiated yet.
@@ -242,8 +237,7 @@ public:
   }
 
   /** @todo Should be private */
-  void update() {
-  }
+  void update() {}
 
   const GridImp* grid_;
 };

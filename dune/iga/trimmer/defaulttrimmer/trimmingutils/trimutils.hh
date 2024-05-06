@@ -49,7 +49,6 @@ auto createHostGeometry(auto& vertex1, auto& vertex2) -> TrimmingCurve {
 
 auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip,
                           const auto& corners) -> std::pair<double, FieldVector<double, 2>> {
-  // @todo gerneralize for more than one loop
   auto pos = corners[edgeIdx];
   auto dir = edgeDirections[edgeIdx];
 

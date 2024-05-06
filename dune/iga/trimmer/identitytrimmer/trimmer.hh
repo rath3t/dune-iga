@@ -198,28 +198,28 @@ namespace IdentityTrim {
 
     template <int codim>
     using Entity = typename GridFamily::Traits::template Codim<codim>::Entity;
-    //! First level intersection
+    // First level intersection
     [[nodiscard]] PatchGridLevelIntersectionIterator<const GridImp> ilevelbegin(const Entity<0>& ent) const {
       return PatchGridLevelIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().getHostEntity()));
+          grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(ent.impl().getLocalEntity()));
     }
 
-    //! Reference to one past the last neighbor
+    // Reference to one past the last neighbor
     PatchGridLevelIntersectionIterator<const GridImp> ilevelend(const Entity<0>& ent) const {
       return PatchGridLevelIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.impl().getHostEntity()));
+          grid_, parameterSpaceGrid().levelGridView(ent.level()).iend(ent.impl().getLocalEntity()));
     }
 
-    //! First leaf intersection
+    // First leaf intersection
     PatchGridLeafIntersectionIterator<const GridImp> ileafbegin(const Entity<0>& ent) const {
       return PatchGridLeafIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().leafGridView().ibegin(ent.impl().getHostEntity()));
+          grid_, parameterSpaceGrid().leafGridView().ibegin(ent.impl().getLocalEntity()));
     }
 
-    //! Reference to one past the last leaf intersection
+    // Reference to one past the last leaf intersection
     PatchGridLeafIntersectionIterator<const GridImp> ileafend(const Entity<0>& ent) const {
       return PatchGridLeafIntersectionIterator<const GridImp>(
-          grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().getHostEntity()));
+          grid_, parameterSpaceGrid().leafGridView().iend(ent.impl().getLocalEntity()));
     }
 
     /**
@@ -306,10 +306,8 @@ namespace IdentityTrim {
      * @brief Pass parameters to the trimmer.
      * @param par The parameters.
      */
-    void setup() {
-    }
-    void setParameters(const ParameterType&) {
-    }
+    void setup() {}
+    void setParameters(const ParameterType&) {}
 
     /**
      * @brief Get a const reference to the parameter space grid.
@@ -355,7 +353,7 @@ namespace IdentityTrim {
 
   protected:
   protected:
-    //! compute the grid indices and ids
+    // compute the grid indices and ids
     void update(GridImp* grid) {
       grid_ = grid;
       localIdSet_->update();
@@ -385,16 +383,16 @@ namespace IdentityTrim {
       return parameterSpaceGrid().maxLevel();
     }
 
-    //! Our set of level indices
+    // Our set of level indices
     std::vector<std::unique_ptr<LevelIndexSet>> levelIndexSets_;
 
-    //! @todo Please doc me !
+    // @todo Please doc me !
     std::unique_ptr<LeafIndexSet> leafIndexSet_;
 
-    //! @todo Please doc me !
+    // @todo Please doc me !
     std::unique_ptr<GlobalIdSet> globalIdSet_;
 
-    //! @todo Please doc me !
+    // @todo Please doc me !
     std::unique_ptr<LocalIdSet> localIdSet_;
 
     std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_; ///< The parameter space grid.

@@ -33,14 +33,11 @@ class TrimmedParameterSpaceGridEntity
       typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::UntrimmedParameterSpaceGeometry;
   using TrimmedParameterSpaceGeometry =
       typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::TrimmedParameterSpaceGeometry;
-  // using LocalParameterSpaceGeometry=typename GridImp::Trimmer::TrimmerTraits::template
-  // Codim<codim_>::LocalParameterSpaceGeometry;
   using LocalParameterSpaceGeometry =
       typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::LocalParameterSpaceGeometry;
   using ParameterSpaceGridEntitySeed =
       typename GridImp::Trimmer::TrimmerTraits::template Codim<codim_>::ParameterSpaceGridEntitySeed;
-  // using LocalParameterSpaceGeometry= typename Trimmer::TrimmerTraits::template
-  // Codim<codim_>::LocalParameterSpaceGeometry;
+
 public:
   TrimmedParameterSpaceGridEntity()                                                            = default;
   TrimmedParameterSpaceGridEntity(const TrimmedParameterSpaceGridEntity& other) noexcept       = default;
@@ -89,22 +86,21 @@ public:
   TrimmedParameterSpaceGridEntity(const GridImp* grid, EntityInfo entInfo)
       : grid_{grid},
         trimData_{entInfo.trimInfo},
-        entityInfo_{entInfo} {
-  }
+        entityInfo_{entInfo} {}
 
   auto& id() const {
     return entityInfo_.id;
   }
 
-  auto stemsFromTrim() const {
-    return entityInfo_.stemsFromTrim();
+  auto isTrimmed() const {
+    return entityInfo_.isTrimmed();
   }
 
   auto index() const {
-    if constexpr (codim_ == 0)
-      return stemsFromTrim() ? entityInfo_.trimmedIndexInLvl : entityInfo_.unTrimmedIndexInLvl;
-    else
-      return entityInfo_.indexInLvlStorage;
+    // if constexpr (codim_ == 0)
+    //   return isTrimmed() ? entityInfo_.trimmedIndexInLvl : entityInfo_.unTrimmedIndexInLvl;
+    // else
+    return entityInfo_.indexInLvlStorage;
   }
 
   auto subIndex(int i, int codim) const {
@@ -121,17 +117,22 @@ public:
   }
 
   HostParameterSpaceGridEntity getHostEntity() const {
-    if (stemsFromTrim() and codim_ != 0)
-      DUNE_THROW(NotImplemented, "getHostEntity");
-    else
+    if (codim_ == 0 or not isTrimmed())
       return hostEntity_;
+    DUNE_THROW(NotImplemented, "getHostEntity");
   }
-  EntityInfo entityInfo_;
+
+  const EntityInfo& entityInfo() const {
+    return entityInfo_;
+  }
+
+  const TrimInfo& trimData() const {
+    assert(trimData_.has_value());
+    return trimData_.value();
+  }
 
 private:
-  struct Empty
-  {
-  };
+  EntityInfo entityInfo_;
   HostParameterSpaceGridEntity hostEntity_;
   std::optional<TrimInfo> trimData_;
 
@@ -143,18 +144,14 @@ public:
       return entityInfo_.id == other.entityInfo_.id;
   }
 
-  //! returns true if father entity exists
+  // returns true if father entity exists
   template <typename T = void>
   requires(codim_ == 0)
   [[nodiscard]] bool hasFather() const {
-    if (not stemsFromTrim())
-      return hostEntity_.hasFather();
-    DUNE_THROW(NotImplemented, " hasFather");
-
-    // return hostEntity_.hasFather();
+    return hostEntity_.hasFather();
   }
 
-  //! Create EntitySeed
+  // Create EntitySeed
   [[nodiscard]] ParameterSpaceGridEntitySeed seed() const {
     DUNE_THROW(NotImplemented, " seed");
     if constexpr (codim_ == 0)
@@ -162,7 +159,7 @@ public:
     return {};
   }
 
-  //! Level of this element
+  // Level of this element
   [[nodiscard]] int level() const {
     return entityInfo_.lvl;
   }
@@ -170,14 +167,13 @@ public:
   /** @brief The partition type for parallel computing */
   [[nodiscard]] PartitionType partitionType() const {
     if constexpr (codim_ == 0)
-      if (not stemsFromTrim())
-        return hostEntity_.partitionType();
+      return hostEntity_.partitionType();
     DUNE_THROW(NotImplemented, "partitionType not implemented for codim!=0 objects");
   }
 
-  //! Geometry of this entity
+  // Geometry of this entity
   [[nodiscard]] LocalParameterSpaceGeometry geometry() const {
-    if (not stemsFromTrim())
+    if (not isTrimmed())
       return hostEntity_.geometry();
     if constexpr (codim_ == 1 or codim_ == 2) /* edge, vertex */ {
       return TrimmedParameterSpaceGeometry(trimData_->geometry.value());
@@ -190,8 +186,10 @@ public:
   /** @brief Return the number of subEntities of codimension codim.
    */
   [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
+    if (codim_ == codim)
+      return Dune::referenceElement<double, mydimension>(Dune::GeometryTypes::cube(mydimension)).size(codim);
     if constexpr (codim_ == 0) {
-      if (not stemsFromTrim())
+      if (not isTrimmed())
         return hostEntity_.subEntities(codim);
 
       return trimData_.value().size(codim);
@@ -217,7 +215,7 @@ public:
     return entity;
   }
 
-  //! First level intersection
+  // First level intersection
   template <typename = void>
   requires(codim_ == 0)
   [[nodiscard]] decltype(auto) ilevelbegin() const {
@@ -226,36 +224,36 @@ public:
     return hostEntity_.ilevelbegin();
   }
 
-  //! Reference to one past the last neighbor
+  // Reference to one past the last neighbor
   template <typename = void>
   requires(codim_ == 0)
   decltype(auto) ilevelend() const {
     return hostEntity_.ilevelend();
   }
 
-  //! First leaf intersection
+  // First leaf intersection
   template <typename = void>
   requires(codim_ == 0)
   decltype(auto) ileafbegin() const {
     return hostEntity_.ileafbegin();
   }
 
-  //! Reference to one past the last leaf intersection
+  // Reference to one past the last leaf intersection
   template <typename = void>
   requires(codim_ == 0)
   decltype(auto) ileafend() const {
     return hostEntity_.ileafend();
   }
 
-  //! returns true if Entity has NO children
+  // returns true if Entity has NO children
   template <typename = void>
   requires(codim_ == 0)
   bool isLeaf() const {
     return hostEntity_.isLeaf();
   }
 
-  //! Inter-level access to father element on coarser grid.
-  //! Assumes that meshes are nested.
+  // Inter-level access to father element on coarser grid.
+  // Assumes that meshes are nested.
   template <typename = void>
   requires(codim_ == 0)
   decltype(auto) father() const {
@@ -287,7 +285,7 @@ public:
   // template <typename = void>
   // requires(codim_ == 0) decltype(auto) hbegin(int maxLevel) const { return hostEntity_.hbegin(maxLevel); }
   //
-  // //! Returns iterator to one past the last son
+  // //  Returns iterator to one past the last son
   // template <typename = void>
   // requires(codim_ == 0) decltype(auto) hend(int maxLevel) const { return hostEntity_.hend(maxLevel); }
 
@@ -296,7 +294,7 @@ public:
   bool wasRefined() const {
     return hostEntity_.wasRefined();
   }
-  
+
   template <typename = void>
   requires(codim_ == 0)
 
@@ -306,6 +304,12 @@ public:
 
   const auto& hostEntity() const {
     return hostEntity_;
+  }
+
+  template <typename = void>
+  requires(codim_ == 0)
+  unsigned int hostIndexInLvl() const {
+    return entityInfo_.hostIndexInLvl;
   }
 
   const GridImp* grid_;

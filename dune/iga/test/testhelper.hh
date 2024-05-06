@@ -3,6 +3,8 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
+#include <iostream>
 #include <ranges>
 
 #include <dune/common/fvector.hh>
@@ -15,3 +17,13 @@ struct Compare
     return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
   };
 };
+
+inline void createOutputFolder(const std::string& folderName) {
+  if (!std::filesystem::exists(folderName)) {
+    try {
+      std::filesystem::create_directory(folderName);
+    } catch (const std::filesystem::filesystem_error& e) {
+      std::cerr << "Error creating folder: " << e.what() << std::endl;
+    }
+  }
+}

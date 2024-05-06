@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 /**
@@ -42,8 +41,7 @@ public:
    * of PatchGridEntitySeed to allow for return value optimization.
    */
   explicit PatchGridEntitySeed(const ParameterSpaceGridEntity& hostEntity)
-      : hostEntitySeed_(hostEntity.seed()) {
-  }
+      : hostEntitySeed_(hostEntity.seed()) {}
 
   /**
    * @brief Get stored ParameterSpaceGridEntitySeed

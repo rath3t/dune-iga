@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
+
 namespace Dune::IGANEW::DefaultTrim {
 
 enum class LocalGeometryTag
@@ -11,13 +13,12 @@ enum class LocalGeometryTag
   InReferenceElement
 };
 
-// @todo DRY
-
 template <int mydim, int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
 class TrimmedLocalGeometryImpl
 {
 };
 
+/* elements */
 template <int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
 class TrimmedLocalGeometryImpl<2, coorddim, GridImp, localGeometryTag>
 {
@@ -44,7 +45,7 @@ public:
   using JacobianInverse           = FieldMatrix<ctype, mydimension, coorddimension>;
   using Volume                    = ctype;
 
-  //! type of the LocalView of the patch geometry
+  // type of the LocalView of the patch geometry
   using GeometryLocalView = typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
                                                                 ctype>::template GeometryLocalView<codim, Trimmer>;
 
@@ -52,7 +53,9 @@ public:
   TrimmedLocalGeometryImpl() = default;
   explicit TrimmedLocalGeometryImpl(const HostGeometry& hostGeometry, const TrimData& trimData)
       : hostGeometry_{hostGeometry},
-        trimData_{trimData} {
+        trimData_{trimData} {}
+  bool operator==(const TrimmedLocalGeometryImpl& b) const {
+    return b.hostGeometry_ == this->hostGeometry_;
   }
 
   /** @brief Return the element type identifier
@@ -66,20 +69,27 @@ public:
     return true;
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return trimData_.size(2);
   }
 
+  // @todo write a test for that
   GlobalCoordinate center() const {
-    return hostGeometry_.center();
+    // average of corners
+    GlobalCoordinate c{0, 0};
+    for (auto i : Dune::range(corners()))
+      c += corner(i);
+
+    return c / corners();
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   GlobalCoordinate corner(int i) const {
     auto vData = trimData_.vertex(i);
     if (vData.isHost)
-      return hostGeometry_.corner(0);
+      return hostGeometry_.corner(Transformations::mapToDune(2, vData.idx));
+
     return vData.geometry.value();
   }
 
@@ -101,21 +111,19 @@ public:
     return hostGeometry_.local(global);
   }
 
-  //! Returns true if the point is in the current element
+  // Returns true if the point is in the current element
   // @todo
   bool checkInside(const LocalCoordinate& local) const {
     return true;
   }
 
+  // @todo
   [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
     return hostGeometry_.volume();
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
-  // @todo not yet implemented
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
-    DUNE_THROW(Dune::NotImplemented, "jacobianInverseTransposed() not yet implemented");
-    return JacobianInverseTransposed{};
+    return hostGeometry_.jacobianInverseTransposed(local);
   }
 
 private:
@@ -145,20 +153,24 @@ public:
   using JacobianInverse               = FieldMatrix<ctype, mydimension, coorddimension>;
   using Volume                        = ctype;
 
-  //! type of the LocalView of the patch geometry
+  // type of the LocalView of the patch geometry
   using GeometryLocalView = typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
                                                                 ctype>::template GeometryLocalView<codim, Trimmer>;
 
   /** constructor from host geometry  */
   TrimmedLocalGeometryImpl() = default;
   explicit TrimmedLocalGeometryImpl(const GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>& patchGeometry)
-      : patchGeometry{patchGeometry} {
-  }
+      : patchGeometry{patchGeometry} {}
+
+  bool operator==(const TrimmedLocalGeometryImpl& b) const {
+    return Dune::FloatCmp::eq(b.patchGeometry.corner(0) == this->patchGeometry.corner(0)) and
+           Dune::FloatCmp::eq(b.patchGeometry.corner(1) == this->patchGeometry.corner(1));
+  };
 
   /** @brief Return the element type identifier
    */
   [[nodiscard]] GeometryType type() const {
-    return GeometryTypes::none(mydimension);
+    return GeometryTypes::cube(mydimension);
   }
 
   // return whether we have an affine mapping (true for straight lines)
@@ -170,7 +182,7 @@ public:
       return patchGeometry.degree()[0] == 1;
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return patchGeometry.corners();
   }
@@ -179,7 +191,7 @@ public:
     return patchGeometry.center();
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   GlobalCoordinate corner(int i) const {
     return patchGeometry.corner(i);
   }
@@ -202,7 +214,7 @@ public:
     return patchGeometry.local(global);
   }
 
-  //! Returns true if the point is in the current element
+  // Returns true if the point is in the current element
   // @todo
   bool checkInside(const LocalCoordinate& local) const {
     return true;
@@ -212,11 +224,10 @@ public:
     return patchGeometry.volume();
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
+  // The Jacobian matrix of the mapping from the reference element to this element
   // @todo not yet implemented
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
-    DUNE_THROW(Dune::NotImplemented, "jacobianInverseTransposed() not yet implemented");
-    return JacobianInverseTransposed{};
+    return patchGeometry.jacobianInverseTransposed(local);
   }
 
 private:
@@ -248,7 +259,9 @@ public:
 
   TrimmedLocalGeometryImpl() = default;
   explicit TrimmedLocalGeometryImpl(const FieldVector<ctype, coorddimension>& pos)
-      : pos_{pos} {
+      : pos_{pos} {}
+  bool operator==(const TrimmedLocalGeometryImpl& b) const {
+    return Dune::FloatCmp::eq(b.pos_, this->pos_);
   }
 
   // @todo it is unclear to me what the correct bahviour for a vertex is for some of these methods
@@ -256,7 +269,7 @@ public:
   /** @brief Return the element type identifier
    */
   [[nodiscard]] GeometryType type() const {
-    return GeometryTypes::none(mydimension);
+    return GeometryTypes::cube(mydimension);
   }
 
   // return whether we have an affine mapping (true for vertices??)
@@ -264,7 +277,7 @@ public:
     return true;
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return 1;
   }
@@ -273,31 +286,26 @@ public:
     return pos_;
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   [[nodiscard]] GlobalCoordinate corner(int i) const {
     return pos_;
   }
 
-  /** @brief Maps a local coordinate within reference element to
-   * global coordinate in element  */
   GlobalCoordinate global(const LocalCoordinate& local) const {
-    DUNE_THROW(Dune::NotImplemented, "not yet implemented");
+    return pos_;
   }
 
   /** @brief Return the transposed of the Jacobian
    */
   JacobianTransposed jacobianTransposed(const LocalCoordinate& local) const {
-    DUNE_THROW(Dune::NotImplemented, "not yet implemented");
+    return JacobianTransposed{};
   }
 
-  /** @brief Maps a global coordinate within the element to a
-   * local coordinate in its reference element */
+  // Yaspgrid returns an empty {} for vertex.local
   LocalCoordinate local(const GlobalCoordinate& global) const {
-    DUNE_THROW(Dune::NotImplemented, "not yet implemented");
+    return LocalCoordinate{};
   }
 
-  //! Returns true if the point is in the current element
-  // @todo
   bool checkInside(const LocalCoordinate& local) const {
     return true;
   }
@@ -306,10 +314,8 @@ public:
     return 1;
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
-  // @todo not yet implemented
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
-    DUNE_THROW(Dune::NotImplemented, "jacobianInverseTransposed() not yet implemented");
+    return JacobianInverseTransposed{};
   }
 
 private:

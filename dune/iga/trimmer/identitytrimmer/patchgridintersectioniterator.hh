@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 #include <dune/grid/common/intersection.hh>
@@ -37,25 +36,23 @@ class PatchGridLeafIntersectionIterator
 public:
   typedef Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp> > Intersection;
 
-  PatchGridLeafIntersectionIterator() {
-  }
+  PatchGridLeafIntersectionIterator() {}
 
   PatchGridLeafIntersectionIterator(const GridImp* parameterSpaceGrid, const HostLeafIntersectionIterator& hostIterator)
       : parameterSpaceGrid_(parameterSpaceGrid),
-        hostIterator_(hostIterator) {
-  }
+        hostIterator_(hostIterator) {}
 
-  //! equality
+  // equality
   bool equals(const PatchGridLeafIntersectionIterator& other) const {
     return hostIterator_ == other.hostIterator_;
   }
 
-  //! prefix increment
+  // prefix increment
   void increment() {
     ++hostIterator_;
   }
 
-  //! @brief dereferencing
+  // @brief dereferencing
   Intersection dereference() const {
     return PatchGridLeafIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
   }
@@ -69,7 +66,7 @@ private:
   HostLeafIntersectionIterator hostIterator_ = {};
 };
 
-//! @todo Please doc me !
+// @todo Please doc me !
 template <class GridImp>
 class PatchGridLevelIntersectionIterator
 {
@@ -85,26 +82,24 @@ class PatchGridLevelIntersectionIterator
 public:
   typedef Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp> > Intersection;
 
-  PatchGridLevelIntersectionIterator() {
-  }
+  PatchGridLevelIntersectionIterator() {}
 
   PatchGridLevelIntersectionIterator(const GridImp* parameterSpaceGrid,
                                      const HostLevelIntersectionIterator& hostIterator)
       : parameterSpaceGrid_(parameterSpaceGrid),
-        hostIterator_(hostIterator) {
-  }
+        hostIterator_(hostIterator) {}
 
-  //! equality
+  // equality
   bool equals(const PatchGridLevelIntersectionIterator<GridImp>& other) const {
     return hostIterator_ == other.hostIterator_;
   }
 
-  //! prefix increment
+  // prefix increment
   void increment() {
     ++hostIterator_;
   }
 
-  //! @brief dereferencing
+  // @brief dereferencing
   Intersection dereference() const {
     return PatchGridLevelIntersection<GridImp>(parameterSpaceGrid_, *hostIterator_);
   }

@@ -14,6 +14,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/common/tuplevector.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
 #include <dune/grid/test/checkintersectionit.hh>
@@ -112,28 +113,60 @@ auto checkUniqueSurfaces(const auto& gridView) {
   }
 }
 
-auto myGridCheck(auto& grid) {
+template <typename G>
+auto myGridCheck(G& grid) {
   TestSuite t;
 
-  auto gv = grid.leafGridView();
-  for (const auto& ele : elements(gv)) {
-    const int numCorners  = ele.subEntities(2);
-    const int numCorners2 = ele.geometry().corners();
+  static_assert(G::dimension == 2);
 
-    t.check(numCorners == numCorners2);
-  }
+  auto testGV = [&]<typename GV>(const GV& gv) {
+    auto& indexSet = gv.indexSet();
+    for (int eleIdx = 0; const auto& ele : elements(gv)) {
+      const int numCorners  = ele.subEntities(2);
+      const int numCorners2 = ele.geometry().corners();
+
+      t.check(numCorners == numCorners2) << "Ele: " << eleIdx
+                                         << " Corners from geometry not the same as subEntities(2)";
+
+      // Check if conrers from corner and center from subentity are the same
+      for (auto c : Dune::range(numCorners)) {
+        auto corner  = ele.geometry().corner(c);
+        auto corner2 = ele.template subEntity<2>(c).geometry().center();
+        t.check(FloatCmp::eq(corner, corner2))
+            << "Ele: " << eleIdx << " Corner(i) from the element is not the same as subentity(i)";
+      }
+
+      // Intersections
+      int intersectionCount{0};
+      for (const auto& intersection : intersections(gv, ele)) {
+        auto geometry = intersection.geometry();
+        ++intersectionCount;
+      }
+      const int numEdges = ele.subEntities(1);
+
+      t.check(intersectionCount == numEdges) << "There should be as many edges as intersections";
+
+      for (const auto i : Dune::range(numEdges)) {
+        auto edge = ele.template subEntity<1>(i);
+      }
+
+      ++eleIdx;
+      std::cout << std::endl;
+    }
+  };
+
+  testGV(grid.levelGridView(grid.maxLevel()));
+  testGV(grid.leafGridView());
 
   return t;
 }
 
 auto thoroughGridCheck(auto& grid) {
-  TestSuite t;
+  TestSuite t("thoroughGridCheck");
   constexpr int gridDimension = std::remove_cvref_t<decltype(grid)>::dimension;
 
-  auto gvTest = [&](auto&& gv) {
+  auto gvTest = [&]<typename GV>(GV&& gv) {
     TestSuite tl;
-
-    using GV = std::remove_cvref_t<decltype(gv)>;
 
     tl.subTest(checkUniqueEdges(gv));
     tl.subTest(checkUniqueSurfaces(gv));
@@ -141,24 +174,23 @@ auto thoroughGridCheck(auto& grid) {
     if constexpr (GV::dimension == 2)
       tl.subTest(checkUniqueVertices(gv));
 
-    //
-    // auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
-    // for (auto&& elegeo : elements(gv) | extractGeo)
-    //   checkJacobians(elegeo);
-    //
-    // for (auto&& vertGeo : vertices(gv) | extractGeo)
-    //   checkJacobians(vertGeo);
-    //
-    // if constexpr (gridDimension > 1)
-    //   for (auto&& edgegeo : edges(gv) | extractGeo)
-    //     checkJacobians(edgegeo);
-    //
-    // if constexpr (gridDimension > 2)
-    //   for (auto&& edgegeo : facets(gv) | extractGeo)
-    //     checkJacobians(edgegeo);
-    //
-    // checkIterators(gv);
-    // checkEntityLifetime(gv);
+    auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
+    for (auto&& elegeo : elements(gv) | extractGeo)
+      checkJacobians(elegeo);
+
+    for (auto&& vertGeo : vertices(gv) | extractGeo)
+      checkJacobians(vertGeo);
+
+    if constexpr (gridDimension > 1)
+      for (auto&& edgegeo : edges(gv) | extractGeo)
+        checkJacobians(edgegeo);
+
+    if constexpr (gridDimension > 2)
+      for (auto&& edgegeo : facets(gv) | extractGeo)
+        checkJacobians(edgegeo);
+
+    checkIterators(gv);
+    checkEntityLifetime(gv);
     return tl;
   };
 
@@ -170,53 +202,71 @@ auto thoroughGridCheck(auto& grid) {
   gridcheck(grid);
   t.subTest(myGridCheck(grid));
 
-  // try {
-  //   checkIntersectionIterator(grid);
-  //   checkLeafIntersections(grid);
-  // } catch (const Dune::NotImplemented& e) {
-  //   std::cout << e.what() << std::endl;
-  // }
+  try {
+    // checkIntersectionIterator(grid);
+    checkLeafIntersections(grid);
+  } catch (const Dune::NotImplemented& e) {
+    std::cout << e.what() << std::endl;
+  }
 
   return t;
 }
 
 template <template <int, int, typename> typename GridFamily>
 requires IGANEW::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
-auto testPlate() {
+auto makeTestCases2d(TestSuite& t) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  TestSuite t;
+  const std::vector testCases{
+      std::tuple<std::string, int, int, unsigned int>{  "auxiliaryfiles/element_trim_xb.ibra", 0, 3, 100},
+      {     "auxiliaryfiles/element_trim.ibra", 0, 3, 100},
+      {      "auxiliaryfiles/trim_2edges.ibra", 0, 3, 100},
+      {       "auxiliaryfiles/trim_multi.ibra", 0, 3, 100},
+      {     "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
+      {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
+      //{"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
+  };
 
   using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
-  gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
-  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {1, 1});
 
-  auto grid = gridFactory.createGrid();
-  t.subTest(thoroughGridCheck(*grid));
+  for (auto& [file_name, min, max, splitter] : testCases) {
+    auto name = file_name.substr(file_name.find_last_of('/') + 1);
 
-  return t;
+    gridFactory.insertJson(file_name, true, {min, min});
+    gridFactory.insertTrimParameters(GridFactory::TrimParameterType{splitter});
+    auto grid = gridFactory.createGrid();
+
+    for (int i = min; i <= max; i++) {
+      std::cout << "Testing now " << name << " (Refinement " << i << ")" << std::endl;
+      if (i > min)
+        grid->globalRefine(1);
+      t.subTest(thoroughGridCheck(*grid));
+    }
+  }
 }
 
 template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
-  TestSuite t("testTrimmedGrids");
+  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
 
-  t.subTest(testPlate<GridFamily>());
+  makeTestCases2d<GridFamily>(t);
 
   return t;
 }
 
 #include <cfenv>
 int main(int argc, char** argv) try {
-  // feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
-  //  Initialize MPI, if necessary
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
+
+  // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
-  Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
+  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
+
+  makeTestCases2d<DefaultTrim::PatchGridFamily>(t);
 
   t.report();
 

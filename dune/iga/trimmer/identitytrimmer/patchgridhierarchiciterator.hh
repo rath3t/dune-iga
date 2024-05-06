@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 /** \file
@@ -31,32 +30,30 @@ public:
 
   typedef typename GridImp::template Codim<0>::Entity Entity;
 
-  //! the default Constructor
+  // the default Constructor
   explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel)
       : parameterSpaceGrid_(parameterSpaceGrid),
-        hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel)) {
-  }
+        hostHierarchicIterator_(startEntity.impl().getHostEntity().hbegin(maxLevel)) {}
 
-  //! @todo Please doc me !
+  // @todo Please doc me !
   explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                        [[maybe_unused]] bool endDummy)
       : parameterSpaceGrid_(parameterSpaceGrid),
-        hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)) {
-  }
+        hostHierarchicIterator_(startEntity.impl().getHostEntity().hend(maxLevel)) {}
 
-  //! @todo Please doc me !
+  // @todo Please doc me !
   void increment() {
     ++hostHierarchicIterator_;
   }
 
-  //! dereferencing
+  // dereferencing
   Entity dereference() const {
     return Entity{
         {parameterSpaceGrid_, *hostHierarchicIterator_}
     };
   }
 
-  //! equality
+  // equality
   bool equals(const PatchGridHierarchicIterator& i) const {
     return hostHierarchicIterator_ == i.hostHierarchicIterator_;
   }

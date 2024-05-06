@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 /** \file
@@ -88,7 +87,7 @@ class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType, Gr
   friend GridFamily_<dim, dimworld, ScalarType>::GlobalIdSet;
   friend GridFamily_<dim, dimworld, ScalarType>::LocalIdSet;
 
-  //! type of the used GridFamily for this grid
+  // type of the used GridFamily for this grid
 public:
   using GridFamily = GridFamily_<dim, dimworld, ScalarType>;
 
@@ -117,7 +116,7 @@ private:
 
 public:
   using Trimmer = typename GridFamily::Trimmer;
-  //! The type used to store coordinates, inherited from the Trimmer
+  // The type used to store coordinates, inherited from the Trimmer
   using ctype = typename Trimmer::ctype;
 
   friend Trimmer;
@@ -144,7 +143,7 @@ public:
   // The Interface Methods
   //**********************************************************
 
-  //! the Traits
+  // the Traits
   using Traits = typename GridFamily::Traits;
 
   using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;
@@ -179,49 +178,49 @@ public:
     return trimmer_->maxLevel();
   }
 
-  //! Iterator to first entity of given codim on level
+  // Iterator to first entity of given codim on level
   template <int codim>
   typename Traits::template Codim<codim>::LevelIterator lbegin(int level) const {
     return LevelIteratorImpl<codim, All_Partition>(this, level);
   }
 
-  //! one past the end on this level
+  // one past the end on this level
   template <int codim>
   typename Traits::template Codim<codim>::LevelIterator lend(int level) const {
     return LevelIteratorImpl<codim, All_Partition>(this, level, true);
   }
 
-  //! Iterator to first entity of given codim on level
+  // Iterator to first entity of given codim on level
   template <int codim, PartitionIteratorType PiType>
   typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lbegin(int level) const {
     return LevelIteratorImpl<codim, PiType>(this, level);
   }
 
-  //! one past the end on this level
+  // one past the end on this level
   template <int codim, PartitionIteratorType PiType>
   typename Traits::template Codim<codim>::template Partition<PiType>::LevelIterator lend(int level) const {
     return LevelIteratorImpl<codim, PiType>(this, level, true);
   }
 
-  //! Iterator to first leaf entity of given codim
+  // Iterator to first leaf entity of given codim
   template <int codim>
   typename Traits::template Codim<codim>::LeafIterator leafbegin() const {
     return LeafIteratorImpl<codim, All_Partition>(this);
   }
 
-  //! one past the end of the sequence of leaf entities
+  // one past the end of the sequence of leaf entities
   template <int codim>
   typename Traits::template Codim<codim>::LeafIterator leafend() const {
     return LeafIteratorImpl<codim, All_Partition>(this, true);
   }
 
-  //! Iterator to first leaf entity of given codim
+  // Iterator to first leaf entity of given codim
   template <int codim, PartitionIteratorType PiType>
   typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafbegin() const {
     return LeafIteratorImpl<codim, PiType>(this);
   }
 
-  //! one past the end of the sequence of leaf entities
+  // one past the end of the sequence of leaf entities
   template <int codim, PartitionIteratorType PiType>
   typename Traits::template Codim<codim>::template Partition<PiType>::LeafIterator leafend() const {
     return LeafIteratorImpl<codim, PiType>(this, true);
@@ -240,17 +239,17 @@ public:
     return trimmer_->parameterSpaceGrid().numBoundarySegments();
   }
 
-  //! number of leaf entities per codim in this process
+  // number of leaf entities per codim in this process
   [[nodiscard]] int size(int codim) const {
     return leafIndexSet().size(codim);
   }
 
-  //! number of entities per level, codim and geometry type in this process
+  // number of entities per level, codim and geometry type in this process
   int size(int level, GeometryType type) const {
     return levelIndexSet(level).size(type);
   }
 
-  //! number of leaf entities per codim and geometry type in this process
+  // number of leaf entities per codim and geometry type in this process
   int size(GeometryType type) const {
     return leafIndexSet().size(type);
   }
@@ -402,7 +401,7 @@ public:
     return trimmer_->paramterSpaceGrid().preAdapt();
   }
 
-  //! Triggers the grid refinement process
+  // Triggers the grid refinement process
   bool adapt() {
     return trimmer_->paramterSpaceGrid().adapt();
   }
@@ -466,7 +465,7 @@ public:
   // End of Interface Methods
   // **********************************************************
 
-  //! Returns the hostgrid this PatchGrid lives in
+  // Returns the hostgrid this PatchGrid lives in
   const ParameterSpaceGrid& parameterSpaceGrid() const {
     return trimmer_->parameterSpaceGrid();
   }
@@ -474,12 +473,12 @@ public:
     return trimmer_->parameterSpaceGrid();
   }
 
-  //! Returns the hostgrid entity encapsulated in given PatchGrid entity
+  // Returns the hostgrid entity encapsulated in given PatchGrid entity
   template <int codim>
   requires(GridFamily::template hasHostEntity<codim>)
   const typename GridFamily::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
       const typename Traits::template Codim<codim>::Entity& e) const {
-    return e.impl().getHostEntity();
+    return e.impl().getLocalEntity();
   }
 
   auto untrimmedElementNumbers(int lvl) const {
@@ -492,6 +491,9 @@ public:
   const auto& patchGeometry(int i) const {
     return patchGeometries_.at(i);
   }
+  const auto& patchGeometryAtBack() const {
+    return patchGeometries_.back();
+  }
 
 private:
   PatchGrid() = default;
@@ -501,7 +503,7 @@ private:
   std::unique_ptr<Trimmer> trimmer_;
 
 private:
-  //! @todo Please doc me !
+  // @todo Please doc me !
   Communication<No_Comm> ccobj;
 
 }; // end Class PatchGrid

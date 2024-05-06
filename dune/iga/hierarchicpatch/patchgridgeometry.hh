@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
 // SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
-// -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-// vi: set et ts=4 sw=2 sts=2:
+
 #pragma once
 
 /** \file
@@ -42,7 +41,7 @@ public:
   using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
 
   // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
-  //! type of the LocalView of the patch geometry
+  //  type of the LocalView of the patch geometry
   using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
                                                                 ctype>::template GeometryLocalView<codim, Trimmer>;
 
@@ -64,12 +63,12 @@ public:
     return geometryLocalView_.affine();
   }
 
-  //! return the number of corners of this element. Corners are numbered 0...n-1
+  // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
     return geometryLocalView_.corners();
   }
 
-  //! access to coordinates of corners. Index is the number of the corner
+  // access to coordinates of corners. Index is the number of the corner
   [[nodiscard]] GlobalCoordinate corner(int i) const {
     return geometryLocalView_.corner(i);
   }
@@ -97,7 +96,7 @@ public:
     return geometryLocalView_.local(global);
   }
 
-  //! Returns true if the point is in the current element
+  // Returns true if the point is in the current element
   [[nodiscard]] bool checkInside(const FieldVector<ctype, mydim>& local) const {
     return geometryLocalView_.checkInside(local);
   }
@@ -106,10 +105,18 @@ public:
     return geometryLocalView_.integrationElement(local);
   }
 
-  //! The Jacobian matrix of the mapping from the reference element to this element
+  // The Jacobian matrix of the mapping from the reference element to this element
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
     // std::cout<<"jacobianInverseTransposed(local)\n"<<geometryLocalView_.jacobianInverseTransposed(local)<<std::endl;
     return geometryLocalView_.jacobianInverseTransposed(local);
+  }
+
+  auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& u) const {
+    return geometryLocalView_.zeroFirstAndSecondDerivativeOfPosition(u);
+  }
+
+  auto secondFundamentalForm(const LocalCoordinate& local) const {
+    return geometryLocalView_.secondFundamentalForm(local);
   }
 
 private:

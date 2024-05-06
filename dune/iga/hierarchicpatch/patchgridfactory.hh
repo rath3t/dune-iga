@@ -34,23 +34,14 @@ public:
     patchTrimData_ = patchTrimData;
   }
 
-  /** @brief Insert a trimming curve into the grid
-  @param patchData The patch data
-  @param patchTrimData Trimming data for this patch
-*/
-  // @todo this does not really add the trimming curve to anything
   void insertTrimmingCurve(const IGANEW::NURBSPatchData<dim - 1, dim, ctype>& curve) {
-    trimCurves.push_back(curve);
+    DUNE_THROW(NotImplemented, "insertTrimmingCurve not yet implemented, stay tuned ");
   }
 
   void insertTrimParameters(const TrimParameterType& par) {
     parameters_ = par;
   }
 
-  /** @brief Insert a patch into the grid
-  @param patchData The patch data
-  @param patchTrimData Trimming data for this patch
-*/
   void insertJson(const std::string& filename, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0}) {
     json_                      = filename;
     auto [patchData, trimData] = IGANEW::IbraReader<dim, dimworld, PatchGrid>::read(filename, trim, preKnotRefine);
@@ -62,16 +53,16 @@ public:
      The receiver takes responsibility of the memory allocated for the grid
    */
   std::unique_ptr<PatchGrid> createGrid() const {
-    if (patchTrimData_) {
+    if (patchTrimData_.has_value()) {
       auto grid = std::make_unique<PatchGrid>(patchData_, patchTrimData_, parameters_);
       return grid;
     }
-    return std::make_unique<PatchGrid>(patchData_);
+    auto grid = std::make_unique<PatchGrid>(patchData_);
+    return grid;
   }
 
   IGANEW::NURBSPatchData<dim, dimworld, ctype> patchData_;
   std::optional<PatchTrimData> patchTrimData_;
-  std::vector<IGANEW::NURBSPatchData<dim - 1, dim, ctype>> trimCurves;
   std::string json_;
   TrimParameterType parameters_{};
 };
