@@ -40,8 +40,8 @@ auto testNurbsBasis() {
   const double rad = 5;
   // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
-  Dune::IGANEW::NURBSPatchData<dim, dimworld> nurbsPatchData;
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
   nurbsPatchData.knotSpans = {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
   };
@@ -54,7 +54,7 @@ auto testNurbsBasis() {
   };
   nurbsPatchData.degree = order;
 
-  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(nurbsPatchData);
+  IGA::PatchGrid<dim, dimworld, GridFamily> grid(nurbsPatchData);
   // grid.globalRefine(1);
   grid.globalRefineInDirection({2, 0});
   grid.degreeElevateOnAllLevels({2, 2});
@@ -133,14 +133,14 @@ int main(int argc, char** argv) try {
   std::cout << "===============TEST IdentityTrim==" << std::endl;
   std::cout << "==================================" << std::endl;
 
-  t.subTest(testNurbsBasis<IGANEW::IdentityTrim::PatchGridFamily>());
+  t.subTest(testNurbsBasis<IGA::IdentityTrim::PatchGridFamily>());
 
   std::cout << std::endl;
   std::cout << "==================================" << std::endl;
   std::cout << "===============TEST DefaultTrim===" << std::endl;
   std::cout << "==================================" << std::endl;
 
-  t.subTest(testNurbsBasis<IGANEW::DefaultTrim::PatchGridFamily>());
+  t.subTest(testNurbsBasis<IGA::DefaultTrim::PatchGridFamily>());
 
   return t.exit();
 } catch (Dune::Exception& e) {

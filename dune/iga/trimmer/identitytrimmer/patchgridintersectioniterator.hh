@@ -11,7 +11,7 @@
  * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGANEW::IdentityTrim {
+namespace Dune::IGA::IdentityTrim {
 
 /** @brief Iterator over all element neighbors
  * @ingroup PatchGrid
@@ -109,4 +109,4 @@ private:
   HostLevelIntersectionIterator hostIterator_ = {};
 };
 
-} // namespace Dune::IGANEW::IdentityTrim
+} // namespace Dune::IGA::IdentityTrim

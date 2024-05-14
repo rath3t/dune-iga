@@ -9,7 +9,7 @@
 #include <dune/common/reservedvector.hh>
 
 namespace Dune {
-namespace IGANEW {
+namespace IGA {
   namespace DefaultTrim {
     // template <int mydim_, typename ScalarType>
     // struct ElementTrimData;
@@ -393,9 +393,9 @@ namespace IGANEW {
         // @todo trim returns the reference element in geometry space
         //  return _impl->template geometry<codim>(i);
         //  if constexpr (codim==0)
-        //    return IGANEW::TrimmedPatchGridLocalGeometry();
+        //    return IGA::TrimmedPatchGridLocalGeometry();
         //  else
-        //    return IGANEW::PatchGridLocalGeometry
+        //    return IGA::PatchGridLocalGeometry
         return typename Codim<codim>::Geometry(trimData_);
       }
 
@@ -478,5 +478,5 @@ namespace IGANEW {
       // entity
     };
   } // namespace DefaultTrim
-} // namespace IGANEW
+} // namespace IGA
 } // namespace Dune

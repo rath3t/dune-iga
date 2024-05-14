@@ -19,6 +19,8 @@ from dune.common import FieldVector
 import os
 
 os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
+os.environ['DUNE_LOG_LEVEL'] = 'debug'
+os.environ['DUNE_SAVE_BUILD'] = 'console'
 
 # f(x) = 1
 f = lambda x: 1

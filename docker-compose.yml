@@ -1,0 +1,13 @@
+#SPDX-FileCopyrightText: SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+#SPDX-License-Identifier: LGPL-3.0-or-later
+
+version: "3.3"
+services:
+  OpenIkarusContainer-clang:
+    image: henrij22/ikarus-gcc:latest
+    entrypoint: /bin/bash
+    tty: true
+    user: root
+    volumes: 
+      - .:/workspaces/dune-iga
+    working_dir: /workspaces/dune-iga

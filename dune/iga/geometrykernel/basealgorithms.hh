@@ -3,7 +3,7 @@
 #pragma once
 #include "dune/iga/hierarchicpatch/concepts.hh"
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 /**
  * @brief Projects a point onto a line defined by a basepoint and direction.
  *
@@ -88,4 +88,4 @@ VectorType intersect3DLines(const VectorType basepoint1, const VectorType direct
   return c1;
 }
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

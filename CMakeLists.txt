@@ -48,12 +48,12 @@ dune_add_library(duneiga INTERFACE
 if(ADD_SANDBOX_TARGET)
   add_subdirectory(sandbox)
 endif()
-
+add_subdirectory(dune)
+add_subdirectory(cmake)
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
 endif()
-add_subdirectory(dune)
-add_subdirectory(cmake)
+
 
 if(BUILD_DOC)
   add_subdirectory(doc)

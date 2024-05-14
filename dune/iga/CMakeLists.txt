@@ -20,6 +20,6 @@ set(HEADERS
 )
 
 install(FILES ${HEADERS}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/utils
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/
 )
 

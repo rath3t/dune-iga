@@ -1,7 +1,7 @@
 
 #pragma once
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 template <class GridImp>
 class PatchGridHierarchicIterator;
@@ -52,8 +52,8 @@ public:
   TrimmedParameterSpaceGridEntity(const GridImp* grid, const HostParameterSpaceGridEntity& untrimmedElement,
                                   const EntityInfo& entInfo, const TrimInfo& trimData)
       : grid_{grid},
-        hostEntity_{untrimmedElement},
         entityInfo_{entInfo},
+        hostEntity_{untrimmedElement},
         trimData_{trimData} {
     assert(entityInfo_.lvl == untrimmedElement.level());
   }
@@ -64,8 +64,8 @@ public:
   TrimmedParameterSpaceGridEntity(const GridImp* grid, const HostParameterSpaceGridEntity& untrimmedElement,
                                   const EntityInfo& entInfo)
       : grid_{grid},
-        hostEntity_{untrimmedElement},
         entityInfo_{entInfo},
+        hostEntity_{untrimmedElement},
         trimData_{} {
     assert(entityInfo_.lvl == untrimmedElement.level());
   }
@@ -75,8 +75,8 @@ public:
   TrimmedParameterSpaceGridEntity(const GridImp* grid, const HostParameterSpaceGridEntity& untrimmedElement,
                                   const EntityInfo& entInfo)
       : grid_{grid},
-        hostEntity_{untrimmedElement},
         entityInfo_{entInfo},
+        hostEntity_{untrimmedElement},
         trimData_{entInfo.trimInfo} {
     assert(entityInfo_.lvl == untrimmedElement.level());
   }
@@ -85,8 +85,8 @@ public:
   requires(codim_ != 0)
   TrimmedParameterSpaceGridEntity(const GridImp* grid, EntityInfo entInfo)
       : grid_{grid},
-        trimData_{entInfo.trimInfo},
-        entityInfo_{entInfo} {}
+        entityInfo_{entInfo},
+        trimData_{entInfo.trimInfo} {}
 
   auto& id() const {
     return entityInfo_.id;
@@ -130,11 +130,6 @@ public:
     assert(trimData_.has_value());
     return trimData_.value();
   }
-
-private:
-  EntityInfo entityInfo_;
-  HostParameterSpaceGridEntity hostEntity_;
-  std::optional<TrimInfo> trimData_;
 
 public:
   [[nodiscard]] bool operator==(const TrimmedParameterSpaceGridEntity& other) const {
@@ -197,7 +192,8 @@ public:
     if constexpr (codim_ == 1) {
       return 2;
     }
-    DUNE_THROW(NotImplemented, "Dafuq");
+    assert(codim < 3);
+    DUNE_THROW(NotImplemented, "subEntities(): Codim has to be 2 or less");
   }
 
   /** @brief Provide access to sub entity i of given codimension. Entities
@@ -206,9 +202,6 @@ public:
   template <int cc>
   requires(codim_ == 0)
   [[nodiscard]] TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp> subEntity(int i) const {
-    // if(trimData_)
-    //   return trimData_.template subEntity<codim_,cc>(i,localId_);
-    // auto id = grid_->entityContainer().subId(id_,i,cc);
     if constexpr (cc == 0)
       return *this;
     auto entity = grid_->trimmer().entityContainer_.template entity<cc>(subId(i, cc), this->level());
@@ -313,6 +306,11 @@ public:
   }
 
   const GridImp* grid_;
+
+private:
+  EntityInfo entityInfo_;
+  HostParameterSpaceGridEntity hostEntity_;
+  std::optional<TrimInfo> trimData_{};
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

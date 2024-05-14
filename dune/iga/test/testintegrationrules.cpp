@@ -15,9 +15,10 @@
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 
 using namespace Dune;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
-template <bool useEle>
+template <bool useEle, bool useBoundaryDivisions = false>
+requires(!(!useEle and useBoundaryDivisions))
 auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int refLevel, double referenceArea) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
@@ -34,10 +35,16 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
   const auto grid = gridFactory.createGrid();
   auto gv         = grid->leafGridView();
 
-  if constexpr (useEle)
+  if constexpr (useEle and not useBoundaryDivisions) {
     Preferences::getInstance().boundaryDivisions(20);
-  auto parameters = IntegrationRuleGenerator::Parameters{.maxBoundaryDivisions = 20};
+    Preferences::getInstance().targetAccuracy(1);
+  }
+  if constexpr (useEle and useBoundaryDivisions) {
+    Preferences::getInstance().boundaryDivisions(5);
+    Preferences::getInstance().targetAccuracy(1e-4);
+  }
 
+  auto parameters = IntegrationRuleGenerator::Parameters{.boundaryDivisions = 20};
 
   double area{0};
   for (const auto& ele : elements(gv)) {
@@ -70,6 +77,9 @@ int main(int argc, char** argv) try {
   testAreaIntegration<true>(t, "auxiliaryfiles/element_trim.ibra", 2, 0.73688393);
   testAreaIntegration<true>(t, "auxiliaryfiles/element_trim.ibra", 3, 0.73688393);
 
+  testAreaIntegration<true, true>(t, "auxiliaryfiles/element_trim.ibra", 2, 0.73688393);
+  testAreaIntegration<true, true>(t, "auxiliaryfiles/element_trim.ibra", 3, 0.73688393);
+
   testAreaIntegration<false>(t, "auxiliaryfiles/element_trim.ibra", 2, 0.73688393);
   testAreaIntegration<false>(t, "auxiliaryfiles/element_trim.ibra", 3, 0.73688393);
 
@@ -77,6 +87,9 @@ int main(int argc, char** argv) try {
   testAreaIntegration<true>(t, "auxiliaryfiles/element_trim_xb.ibra", 1, 0.464634714);
   testAreaIntegration<true>(t, "auxiliaryfiles/element_trim_xb.ibra", 2, 0.464634714);
   testAreaIntegration<true>(t, "auxiliaryfiles/element_trim_xb.ibra", 3, 0.464634714);
+
+  testAreaIntegration<true, true>(t, "auxiliaryfiles/element_trim_xb.ibra", 2, 0.464634714);
+  testAreaIntegration<true, true>(t, "auxiliaryfiles/element_trim_xb.ibra", 3, 0.464634714);
 
   testAreaIntegration<false>(t, "auxiliaryfiles/element_trim_xb.ibra", 2, 0.464634714);
   testAreaIntegration<false>(t, "auxiliaryfiles/element_trim_xb.ibra", 3, 0.464634714);

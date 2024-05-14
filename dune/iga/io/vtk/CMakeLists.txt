@@ -5,6 +5,7 @@
 
 set(HEADERS
         igadatacollector.hh
+        vtkrefinedgeometries.hh
 )
 
 install(FILES ${HEADERS}

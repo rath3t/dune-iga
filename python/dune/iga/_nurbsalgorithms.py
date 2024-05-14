@@ -8,7 +8,7 @@ from dune.generator.importclass import load
 from dune.iga import NurbsPatchDataDefault
 
 runCircularArc = """
-#include <dune/iga/nurbsalgorithms.hh>
+#include <dune/iga/geometrykernel/makecirculararc.hh>
 auto run( double radius = 1.0,  double startAngle = 0.0, double endAngle = 360.0,
                        const Dune::FieldVector<double, 3>& origin = {0, 0, 0},
                        const Dune::FieldVector<double, 3>& X      = {1, 0, 0},
@@ -44,7 +44,7 @@ def makeCircularArc(
 
 
 runSurfaceOfRevolution = """
-#include <dune/iga/nurbsalgorithms.hh>
+#include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 auto run(const Dune::IGA::NURBSPatchData<1, 3, double>& generatrix,
                                const Dune::FieldVector<double, 3>& point,
                                const Dune::FieldVector<double, 3>& revolutionaxisI,

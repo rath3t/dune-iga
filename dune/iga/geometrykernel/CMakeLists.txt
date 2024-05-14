@@ -9,6 +9,7 @@ set(HEADERS
         controlpoint.hh
         findintersection.hh
         geohelper.hh
+        makecirculararc.hh
         makesurfaceofrevolution.hh
         nurbspatchgeometry.hh
         nurbspatchgeometrylocalview.hh
@@ -16,6 +17,6 @@ set(HEADERS
         slicecurve.hh
 )
 
-install(FILES 
+install(FILES ${HEADERS}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/geometrykernel
 )

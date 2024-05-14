@@ -8,7 +8,7 @@
 #include <dune/common/fmatrix.hh>
 #include <dune/common/fvector.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 enum class IntersectionCurveAndLine
 {
@@ -110,6 +110,6 @@ auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<Sc
   return std::make_tuple(sucess ? IntersectionCurveAndLine::intersect : IntersectionCurveAndLine::disjoint, tParameter,
                          curvePoint);
 }
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA
 
 #undef DUNE_FMatrix_WITH_CHECKING

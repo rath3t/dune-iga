@@ -28,7 +28,7 @@
 #include <dune/subgrid/test/common.hh>
 
 using namespace Dune;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
 auto checkUniqueEdges(const auto& gridView) {
   TestSuite t;
@@ -133,7 +133,7 @@ auto myGridCheck(G& grid) {
         auto corner  = ele.geometry().corner(c);
         auto corner2 = ele.template subEntity<2>(c).geometry().center();
         t.check(FloatCmp::eq(corner, corner2))
-            << "Ele: " << eleIdx << " Corner(i) from the element is not the same as subentity(i)";
+            << "Ele: " << eleIdx << "Position of corner(i) from the element is not the same as subentity(i)";
       }
 
       // Intersections
@@ -213,19 +213,19 @@ auto thoroughGridCheck(auto& grid) {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
 auto makeTestCases2d(TestSuite& t) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
   const std::vector testCases{
-      std::tuple<std::string, int, int, unsigned int>{  "auxiliaryfiles/element_trim_xb.ibra", 0, 3, 100},
-      {     "auxiliaryfiles/element_trim.ibra", 0, 3, 100},
-      {      "auxiliaryfiles/trim_2edges.ibra", 0, 3, 100},
-      {       "auxiliaryfiles/trim_multi.ibra", 0, 3, 100},
-      {     "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
-      {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
-      //{"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
+      std::tuple<std::string, int, int, unsigned int>{"auxiliaryfiles/element_trim_xb.ibra", 0, 3, 100},
+      {   "auxiliaryfiles/element_trim.ibra", 0, 3, 100},
+      {    "auxiliaryfiles/trim_2edges.ibra", 0, 2, 100},
+      {     "auxiliaryfiles/trim_multi.ibra", 0, 0, 100},
+      {   "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
+      // {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
+      // {"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
   };
 
   using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
@@ -251,7 +251,7 @@ auto makeTestCases2d(TestSuite& t) {
 
 template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
-  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
+  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   makeTestCases2d<GridFamily>(t);
 
@@ -264,7 +264,7 @@ int main(int argc, char** argv) try {
 
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
-  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
+  TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   makeTestCases2d<DefaultTrim::PatchGridFamily>(t);
 

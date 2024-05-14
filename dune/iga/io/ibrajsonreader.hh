@@ -8,7 +8,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 template <int dimworld, typename InputStringType>
 requires(not std::convertible_to<std::string, InputStringType> and
@@ -69,4 +69,4 @@ auto readJson(const std::string& fileName) {
   return readJson<dimworld>(ibraInputFile);
 }
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

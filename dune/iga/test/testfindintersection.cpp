@@ -16,18 +16,18 @@
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 #include <dune/iga/geometrykernel/slicecurve.hh>
 
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
 auto diagonalCurve() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 0, 1, 1, 1}}};
 
-  using ControlPoint                                 = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  using ControlPoint                                 = Dune::IGA::NURBSPatchData<1, 2>::ControlPointType;
   const std::vector<ControlPoint> controlPointsCurve = {
       {{.p = {0, 0}, .w = 1}, {.p = {0.6, 0.4}, .w = 1}, {.p = {1.2, -7}, .w = 1}}
   };
   const std::array orderCurve = {2};
-  auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
-  Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
+  auto controlNetCurve        = Dune::IGA::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
+  Dune::IGA::NURBSPatchData<1, 2> patchDataCurve;
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
   patchDataCurve.controlPoints = controlNetCurve;
@@ -37,14 +37,14 @@ auto diagonalCurve() {
 auto diagonalLine() {
   const std::array<std::vector<double>, 1> knotSpansCurve = {{{0, 0, 1, 1}}};
 
-  using ControlPoint                                 = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  using ControlPoint                                 = Dune::IGA::NURBSPatchData<1, 2>::ControlPointType;
   const std::vector<ControlPoint> controlPointsCurve = {
       {{.p = {0, 0}, .w = 1}, {.p = {1.2, -7}, .w = 1}}
   };
   const std::array orderCurve = {1};
 
-  auto controlNetCurve = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
-  Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
+  auto controlNetCurve = Dune::IGA::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
+  Dune::IGA::NURBSPatchData<1, 2> patchDataCurve;
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
   patchDataCurve.controlPoints = controlNetCurve;
@@ -55,7 +55,7 @@ auto test1() {
   Dune::TestSuite t;
   auto curve1 = diagonalCurve();
   std::cout << std::setprecision(16) << std::endl;
-  auto [success, tParameter, curvePoint] = Dune::IGANEW::findIntersectionCurveAndLine(
+  auto [success, tParameter, curvePoint] = Dune::IGA::findIntersectionCurveAndLine(
       curve1, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
@@ -72,7 +72,7 @@ auto test2() {
   auto curve2 = diagonalLine();
 
   std::cout << std::setprecision(16) << std::endl;
-  auto [success, tParameter, curvePoint] = Dune::IGANEW::findIntersectionCurveAndLine(
+  auto [success, tParameter, curvePoint] = Dune::IGA::findIntersectionCurveAndLine(
       curve2, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
@@ -84,7 +84,7 @@ auto test2() {
 
   // Parallel line
   std::tie(success, tParameter, curvePoint) =
-      Dune::IGANEW::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
+      Dune::IGA::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({1, 1}), {1.2, -7}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::parallel);
 
   return t;

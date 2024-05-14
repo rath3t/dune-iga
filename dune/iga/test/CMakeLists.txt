@@ -17,6 +17,7 @@ set(TESTS
         testintegrationrules
         testvtkdatacollector
         testnurbsbasistrimmed
+        testboundarysegmentidx
 )
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 

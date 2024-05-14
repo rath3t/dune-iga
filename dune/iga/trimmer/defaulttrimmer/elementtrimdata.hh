@@ -12,7 +12,7 @@
 #include <dune/iga/geometrykernel/geohelper.hh>
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 enum class ElementTrimFlag
 {
@@ -57,9 +57,14 @@ struct ElementTrimDataImpl
     bool isHost{};
     bool isTrimmed{};
     int idx{};
+    size_t boundarySegmentIdx{std::numeric_limits<size_t>::max()};
 
     std::optional<EdgePatchGeometry> geometry{};
     TrimmedHostEdgeDirection direction{};
+
+    bool hasBoundarySegmentIdx() const {
+      return boundarySegmentIdx != std::numeric_limits<size_t>::max();
+    }
   };
 
   explicit ElementTrimDataImpl(auto flag, const HostEntity& hostEntity)
@@ -88,7 +93,11 @@ struct ElementTrimDataImpl
   }
 
   void addEdgeNewNew(EdgePatchGeometry& geometry, Vertex& v2) {
-    edges_.emplace_back(false, true, newEdgeCounter_++, transform(geometry));
+    edges_.emplace_back(EdgeInfo{.isHost    = false,
+                                 .isTrimmed = true,
+                                 .idx       = newEdgeCounter_++,
+                                 .geometry  = transform(geometry),
+                                 .direction = TrimmedHostEdgeDirection::NewNew});
     vertices_.emplace_back(false, newVertexCounter_++, v2);
   }
 
@@ -109,6 +118,10 @@ struct ElementTrimDataImpl
     vertices_.emplace_back(false, newVertexCounter_++, v2);
   }
 
+  void addBoundarySegmentIdxToLastEdge(size_t boundarySegmentIdx) {
+    edges_.back().boundarySegmentIdx = boundarySegmentIdx;
+  }
+
   /* this is for testing purposes only */
   void drawResult(const std::string& filename, bool inParameterSpace, bool newFig = true) {
     if (flag_ == ElementTrimFlag::empty)
@@ -118,6 +131,8 @@ struct ElementTrimDataImpl
     auto upperRightCorner = eleGeometry.corner(3);
     Dune::DiagonalMatrix<double, 2> scaling({inParameterSpace ? 1.0 / (upperRightCorner[0] - lowerLeftCorner[0]) : 1,
                                              inParameterSpace ? 1.0 / (upperRightCorner[1] - lowerLeftCorner[1]) : 1});
+
+    assert(vertices_.size() == edges_.size());
 
     if (newFig)
       auto figure = matplot::figure(true);
@@ -291,4 +306,4 @@ private:
   int newEdgeCounter_   = 4;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

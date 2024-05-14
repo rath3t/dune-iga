@@ -12,7 +12,7 @@
 #include <dune/iga/splines/nurbspatchdata.hh>
 #include <dune/iga/utils/mdnet.hh>
 #include <dune/iga/utils/typetraits.hh>
-namespace Dune::IGANEW::Splines {
+namespace Dune::IGA::Splines {
 
 namespace Impl {
   template <std::integral auto dim>
@@ -716,4 +716,4 @@ auto knotRefinement(const NURBSPatchData<dim, dimworld, ScalarType>& oldData, co
   return NURBSPatchData<dim, dimworld, ScalarType>(newKnotsArray, newCPv, oldData.degree);
 }
 
-} // namespace Dune::IGANEW::Splines
+} // namespace Dune::IGA::Splines

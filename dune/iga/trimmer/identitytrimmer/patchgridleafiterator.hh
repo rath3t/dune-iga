@@ -9,7 +9,7 @@
  * @brief The PatchGridLeafIterator class
  */
 
-namespace Dune::IGANEW::IdentityTrim {
+namespace Dune::IGA::IdentityTrim {
 
 /** @brief Iterator over all entities of a given codimension and level of a grid.
  *  @ingroup PatchGrid
@@ -62,4 +62,4 @@ private:
   IteratorImpl hostLeafIterator_;
 };
 
-} // namespace Dune::IGANEW::IdentityTrim
+} // namespace Dune::IGA::IdentityTrim

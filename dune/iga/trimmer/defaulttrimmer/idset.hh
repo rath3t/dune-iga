@@ -5,7 +5,7 @@
 
 #include <variant>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 template <class GridImp>
 class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
@@ -61,4 +61,4 @@ public:
 
   const GridImp* grid_;
 };
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

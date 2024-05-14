@@ -22,7 +22,7 @@ auto testTransformations() {
   constexpr std::array vertexIndexMapping = {0u, 1u, 3u, 2u};
   constexpr std::array edgeIndexMapping   = {2u, 1u, 3u, 0u};
 
-  using Transformations = Dune::IGANEW::DefaultTrim::Transformations;
+  using Transformations = Dune::IGA::DefaultTrim::Transformations;
 
   for (const auto i : Dune::range(4u)) {
     t.check(Transformations::mapToDune(2, i) == vertexIndexMapping[i])
@@ -54,7 +54,7 @@ auto testTransformations() {
 auto testTransformToSpan() {
   TestSuite t("Test TransformToSpan");
 
-  using PatchGrid   = IGANEW::PatchGrid<2, 2, IGANEW::DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto igaGridFactory = GridFactory();

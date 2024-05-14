@@ -4,6 +4,8 @@
 .devcontainer/
 docker-compose.yml
 
+.cache/
+
 build-cmake
 build/
 

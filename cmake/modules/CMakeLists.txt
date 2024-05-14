@@ -8,7 +8,6 @@ set(modules
     AddClipperLibFlags.cmake
     AddEarCutFlags.cmake
     AddEigenFlags.cmake
-    AddMatplotppFlags.cmake
     AddnLohmannJsonFlags.cmake
 )
 

@@ -28,11 +28,11 @@
  *********/
 
 using namespace Dune;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
 auto testFactoryWithTorus() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  using Grid = Dune::IGANEW::PatchGrid<1, 3, IdentityTrim::PatchGridFamily>;
+  using Grid = Dune::IGA::PatchGrid<1, 3, IdentityTrim::PatchGridFamily>;
   Dune::GridFactory<Grid> gridFactory;
   const double r = 1.0;
   auto circle    = makeCircularArc(r);
@@ -48,14 +48,14 @@ auto diagonalTrimmingCurve() {
        {0, 0, 1, 1},
        }
   };
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<1, 2>::ControlPointType;
 
   const std::vector<ControlPoint> controlPointsCurve = {
       {{.p = {0, 0}, .w = 1}, {.p = {1, 1}, .w = 1}}
   };
   const std::array orderCurve = {1};
-  auto controlNetCurve        = Dune::IGANEW::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
-  Dune::IGANEW::NURBSPatchData<1, 2> patchDataCurve;
+  auto controlNetCurve        = Dune::IGA::NURBSPatchData<1, 2>::ControlPointNetType(controlPointsCurve);
+  Dune::IGA::NURBSPatchData<1, 2> patchDataCurve;
   patchDataCurve.knotSpans     = knotSpansCurve;
   patchDataCurve.degree        = orderCurve;
   patchDataCurve.controlPoints = controlNetCurve;
@@ -67,14 +67,14 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 2;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const double Lx                                            = 2;
   const double Ly                                            = 3;
@@ -86,9 +86,9 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -126,14 +126,14 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const double Lx                                            = 2;
   const double Ly                                            = 3;
@@ -145,9 +145,9 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -187,14 +187,14 @@ auto testFactoryWithPlateWithCircularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGANEW::PatchGrid<gridDim, dimworld, IdentityTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, IdentityTrim::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const double Lx                                            = 2;
   const double Ly                                            = 3;
@@ -206,9 +206,9 @@ auto testFactoryWithPlateWithCircularTrim3D() {
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;

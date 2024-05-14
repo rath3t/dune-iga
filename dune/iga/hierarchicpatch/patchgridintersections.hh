@@ -9,7 +9,7 @@
  * @brief The PatchGridLeafIntersection and PatchGridLevelIntersection classes
  */
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 // External forward declarations
 template <class Grid>
@@ -165,6 +165,12 @@ namespace Impl {
       return res;
     }
 
+    bool isTrimmed() const {
+      if constexpr (requires { parameterSpaceIntersection_.isTrimmed(); })
+        return parameterSpaceIntersection_.isTrimmed();
+      return false;
+    }
+
   private:
     auto& patchGridGeometry() const {
       if constexpr (type_ == IntersectionType::Leaf)
@@ -286,6 +292,10 @@ public:
     return impl_.unitOuterNormal(local);
   }
 
+  bool isTrimmed() const {
+    return impl_.isTrimmed();
+  }
+
 private:
   Implementation impl_;
 };
@@ -390,8 +400,12 @@ public:
     return impl_.unitOuterNormal(local);
   }
 
+  bool isTrimmed() const {
+    return impl_.isTrimmed();
+  }
+
 private:
   Implementation impl_;
 };
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

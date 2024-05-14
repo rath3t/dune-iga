@@ -37,27 +37,27 @@
 #include <dune/iga/trimmer/localgeometryvariant.hh>
 #include <dune/subgrid/subgrid.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 template <typename HostIdType>
 struct IdType;
 }
 template <typename HostIdType>
-struct std::hash<Dune::IGANEW::DefaultTrim::IdType<HostIdType>>
+struct std::hash<Dune::IGA::DefaultTrim::IdType<HostIdType>>
 {
-  std::size_t operator()(const Dune::IGANEW::DefaultTrim::IdType<HostIdType>& k) const {
+  std::size_t operator()(const Dune::IGA::DefaultTrim::IdType<HostIdType>& k) const {
     using std::hash;
 
     // Compute individual hash values for first, second and third and combine them using XOR
     // and bit shifting:
     // todo
     // return (hash<HostIdType>()(k.id) ^
-    //         hash<typename Dune::IGANEW::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1) >>
+    //         hash<typename Dune::IGA::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1) >>
     //        1;
     return (hash<HostIdType>()(k.id));
   }
 };
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 namespace GeometryKernel {
   template <int dim_, int dimworld_, typename ScalarType>
   class NURBSPatch;
@@ -503,13 +503,17 @@ namespace DefaultTrim {
      * @param level_
      * @return
      */
-    std::vector<ElementTrimData> trimElements(std::optional<int> level_ = std::nullopt) const {
-      int level = level_.value_or(maxLevel());
+    std::vector<ElementTrimData> trimElements(std::optional<int> level_ = std::nullopt) {
+      int level     = level_.value_or(maxLevel());
+      bool initFlag = level == 0;
+      if (initFlag)
+        numBoundarySegments_ = untrimmedParameterSpaceGrid_->numBoundarySegments();
+
       std::vector<ElementTrimData> elementTrimDatas;
       auto gv = untrimmedParameterSpaceGrid_->levelGridView(level);
       for (const auto& ele : elements(gv)) {
         if (trimData_.has_value())
-          elementTrimDatas.emplace_back(trimElement(ele, trimData_.value()));
+          elementTrimDatas.emplace_back(trimElement(ele, gv, trimData_.value(), initFlag));
         else
           elementTrimDatas.emplace_back(ElementTrimFlag::full, ele);
       }
@@ -541,7 +545,8 @@ namespace DefaultTrim {
     void refineParameterSpaceGrid(int refCount, bool initFlag = false);
 
     // The following are helper methods for `refineParameterSpaceGrid`
-    static ElementTrimData trimElement(const YASPEntity<0>& element, const PatchTrimData& patchTrimData);
+    ElementTrimData trimElement(const YASPEntity<0>& element, const auto& gv, const PatchTrimData& patchTrimData,
+                                bool initFlag);
 
     GlobalIdType makeElementID(const HostEntity<0>& ele);
     void createAndSaveElementInfo(const std::tuple<unsigned int, unsigned int, int>& indices, const HostEntity<0>& ele,
@@ -563,6 +568,11 @@ namespace DefaultTrim {
       return parameterSpaceGrid().maxLevel();
     }
 
+    size_t numBoundarySegments() const {
+      assert(numBoundarySegments_ != std::numeric_limits<size_t>::max());
+      return numBoundarySegments_;
+    }
+
     EntityContainer entityContainer_;
 
     // Our set of level indices
@@ -581,10 +591,15 @@ namespace DefaultTrim {
     std::optional<PatchTrimData> trimData_;
 
     ParameterType parameters_;
+
+    size_t numBoundarySegments_{std::numeric_limits<size_t>::max()};
+    std::map<typename TrimmerTraits::YASPGridType::GlobalIdSetType::IdType,
+             std::vector<std::tuple<Impl::CurveLoopIndexEncoder::IndexResult, double, double, size_t>>>
+        boundarySegmentsArchive_;
   };
 
 } // namespace DefaultTrim
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA
 
 #include "createentities.hh"
 #include "createlevel.hh"

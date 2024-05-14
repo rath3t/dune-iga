@@ -1,17 +1,15 @@
 # SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import sys
-import setpath
 import math
 
-setpath.set_path()
 
-import os
+import os, logging
 
 # enable DUNE_SAVE_BUILD to test various output options
-os.environ["DUNE_LOG_LEVEL"] = "debug"
+os.environ["DUNE_LOG_LEVEL"] = "warning"
 os.environ["DUNE_SAVE_BUILD"] = "console"
-os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
+
 
 from dune.iga import (
     IGAGrid,
@@ -32,7 +30,7 @@ if __name__ == "__main__":
     # one dimensional test
     cp = ControlPoint((0, 0, 0), 1)
     cp2 = ControlPoint((0, 0, 3), 1)
-    netC = (((cp, cp2)))
+    netC = (cp, cp2)
     net = ControlPointNet(netC)
     nurbsPatchData = NurbsPatchData(((0, 0, 1, 1)), net, (1))
     gridView = IGAGrid(nurbsPatchData)
@@ -47,6 +45,7 @@ if __name__ == "__main__":
     globalBasis = defaultGlobalBasis(gridView, Power(Nurbs(), 2))
 
     vtkWriter = gridView.trimmedVtkWriter()
+    print(type(vtkWriter))
 
     gf1 = gridView.function(
         lambda e, x: math.sin(
@@ -114,53 +113,60 @@ if __name__ == "__main__":
     except ValueError:
         pass
 
-    if True:
-        reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element.ibra")
-        gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
+    reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element.ibra")
+    gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 
-        assert gridView.size(0) == 1
-        assert gridView.size(1) == 4
-        assert gridView.size(2) == 4
-        gridView.hierarchicalGrid.globalRefine(1)
-        gridView = gridView.hierarchicalGrid.leafView
-        assert gridView.size(0) == 4
-        assert gridView.size(2) == 9
-        gridView.hierarchicalGrid.globalRefine(1)
-        gridView = gridView.hierarchicalGrid.leafView
-        assert gridView.size(0) == 16
-        assert gridView.size(2) == 25
+    assert gridView.size(0) == 1
+    assert gridView.size(1) == 4
+    assert gridView.size(2) == 4
+    gridView.hierarchicalGrid.globalRefine(1)
+    gridView = gridView.hierarchicalGrid.leafView
+    assert gridView.size(0) == 4
+    assert gridView.size(2) == 9
+    gridView.hierarchicalGrid.globalRefine(1)
+    gridView = gridView.hierarchicalGrid.leafView
+    assert gridView.size(0) == 16
+    assert gridView.size(2) == 25
 
-        assert gridView.dimGrid == 2
-        assert gridView.dimWorld == 2
+    assert gridView.dimGrid == 2
+    assert gridView.dimWorld == 2
 
-        # read and refine
-        inputParameter = dict(
-            file_path="../../iga/test/auxiliaryfiles/element.ibra",
-            reader=readeriga.json,
-            elevate_degree=(1, 1),
-        )
-        gridView2 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
-        # degree elevation shouldn't change anything
-        assert gridView2.size(0) == 1
-        assert gridView2.size(1) == 4
-        assert gridView2.size(2) == 4
+    patchD = gridView.hierarchicalGrid.patchData()
+    assert patchD.degree[0] == 1
+    assert patchD.degree[1] == 1
 
-        inputParameter = dict(
-            file_path="../../iga/test/auxiliaryfiles/element.ibra",
-            reader=readeriga.json,
-            pre_knot_refine=(1, 1),
-        )
-        gridView3 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
-        # degree elevation shouldn't change anything
-        assert gridView3.size(0) == 4
-        assert gridView3.size(2) == 9
+    # read and refine
+    inputParameter = dict(
+        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        reader=readeriga.json,
+        degree_elevate=(1, 1),
+    )
+    gridView2 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
+    # degree elevation shouldn't change anything
+    assert gridView2.size(0) == 1
+    assert gridView2.size(1) == 4
+    assert gridView2.size(2) == 4
 
-        inputParameter = dict(
-            file_path="../../iga/test/auxiliaryfiles/element.ibra",
-            reader=readeriga.json,
-            post_knot_refine=(1, 1),
-        )
-        gridView4 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
-        # degree elevation shouldn't change anything
-        assert gridView4.size(0) == 4
-        assert gridView4.size(2) == 9
+    patchD = gridView2.hierarchicalGrid.patchData()
+
+    assert patchD.degree[0] == 2
+    assert patchD.degree[1] == 2
+
+    inputParameter = dict(
+        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        reader=readeriga.json,
+        pre_knot_refine=(1, 1),
+    )
+    gridView3 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
+    # degree elevation shouldn't change anything
+    assert gridView3.size(0) == 4
+    assert gridView3.size(2) == 9
+
+    inputParameter = dict(
+        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        reader=readeriga.json,
+    )
+    gridView4 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
+    gridView4.hierarchicalGrid.globalRefine(1)
+    assert gridView4.size(0) == 4
+    assert gridView4.size(2) == 9

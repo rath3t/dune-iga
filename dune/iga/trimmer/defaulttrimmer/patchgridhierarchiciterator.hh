@@ -7,7 +7,7 @@
  * @brief The PatchGridHierarchicIterator class
  */
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 //**********************************************************************
 //
@@ -102,4 +102,4 @@ private:
   int maxLevel_;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

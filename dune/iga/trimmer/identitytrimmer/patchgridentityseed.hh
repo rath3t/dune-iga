@@ -8,7 +8,7 @@
  * @brief The PatchGridEntitySeed class
  */
 
-namespace Dune::IGANEW::IdentityTrim {
+namespace Dune::IGA::IdentityTrim {
 
 /**
  * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
@@ -61,6 +61,6 @@ private:
   ParameterSpaceGridEntitySeed hostEntitySeed_;
 };
 
-} // namespace Dune::IGANEW::IdentityTrim
+} // namespace Dune::IGA::IdentityTrim
 
 // #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH

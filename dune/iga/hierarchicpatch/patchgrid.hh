@@ -7,13 +7,9 @@
  * @brief The PatchGrid class
  */
 
-#include "concepts.hh"
-#include "enums.hh"
-#include "gridcapabilities.hh"
+
 #include "patchgridentity.hh"
 #include "patchgridfactory.hh"
-#include "patchgridfwd.hh"
-#include "patchgridgeometry.hh"
 #include "patchgridview.hh"
 #include "traits.hh"
 
@@ -27,7 +23,7 @@ namespace Dune::Functions {
 template <typename GV, typename ScalarType>
 class NurbsPreBasis;
 }
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 namespace IdentityTrim {
   template <int dim, int dimworld, typename ScalarType = double>
@@ -51,7 +47,7 @@ struct HostGridAccess;
  * @tparam ScalarType The type for the coordinates
  * Example Create surface in 3D space:
  * @code
- * using namespace Dune::IGANEW;
+ * using namespace Dune::IGA;
  *
  * // Define a NURBS patch data
  * const int dim = 2;
@@ -235,8 +231,7 @@ public:
   /** @brief returns the number of boundary segments within the macro grid
    */
   [[nodiscard]] size_t numBoundarySegments() const {
-    // @todo Trim this is wrong another trimmer functionality should care about this
-    return trimmer_->parameterSpaceGrid().numBoundarySegments();
+    return trimmer_->numBoundarySegments();
   }
 
   // number of leaf entities per codim in this process
@@ -398,17 +393,17 @@ public:
 
   /** @brief returns true, if at least one entity is marked for adaption */
   bool preAdapt() {
-    return trimmer_->paramterSpaceGrid().preAdapt();
+    return trimmer_->parameterSpaceGrid().preAdapt();
   }
 
   // Triggers the grid refinement process
   bool adapt() {
-    return trimmer_->paramterSpaceGrid().adapt();
+    return trimmer_->parameterSpaceGrid().adapt();
   }
 
   /** @brief Clean up refinement markers */
   void postAdapt() {
-    return trimmer_->paramterSpaceGrid().postAdapt();
+    return trimmer_->parameterSpaceGrid().postAdapt();
   }
 
   /*@}*/
@@ -452,13 +447,13 @@ public:
   /** @brief Communicate data of level gridView */
   template <class DataHandle>
   void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
-    trimmer_->parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
+    //trimmer_->parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
   }
 
   /** @brief Communicate data of leaf gridView */
   template <class DataHandle>
   void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
-    trimmer_->parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
+    //trimmer_->parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
   }
 
   // **********************************************************
@@ -508,4 +503,4 @@ private:
 
 }; // end Class PatchGrid
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

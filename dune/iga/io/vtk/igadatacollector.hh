@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "igarefinedgeometries.hh"
+#include "vtkrefinedgeometries.hh"
 
 #include <dune/geometry/referenceelements.hh>
 #include <dune/grid/common/partitionset.hh>
@@ -31,8 +31,7 @@ public:
 public:
   DiscontinuousIgaDataCollector(const GridView& gridView, int subSampleFull, int subSampleTrimmed)
       : Super(gridView),
-        geometries_(gridView, subSampleFull, subSampleTrimmed),
-        gridView_(gridView) {}
+        geometries_(gridView, subSampleFull, subSampleTrimmed) {}
   // Does not subsample
   explicit DiscontinuousIgaDataCollector(const GridView& gridView)
       : DiscontinuousIgaDataCollector(gridView, 0, 0){};
@@ -45,12 +44,12 @@ public:
   void updateImpl() {
     pointSets_.clear();
 
-    const auto& idSet = gridView_.grid().globalIdSet();
+    const auto& idSet = this->gridView().grid().globalIdSet();
 
     std::uint64_t vertexCounter = 0;
     numCells_                   = 0;
     numPoints_                  = 0;
-    for (auto element : elements(gridView_)) {
+    for (auto element : elements(this->gridView())) {
       auto elementId = idSet.id(element);
 
       auto verticesInSubGrid = geometries_.nVertices(elementId);
@@ -83,8 +82,8 @@ public:
   template <class T>
   [[nodiscard]] std::vector<T> pointsImpl() const {
     std::vector<T> data(this->numPoints() * 3);
-    const auto& idSet = gridView_.grid().globalIdSet();
-    for (auto element : elements(gridView_)) {
+    const auto& idSet = this->gridView().grid().globalIdSet();
+    for (auto element : elements(this->gridView())) {
       auto geometry  = element.geometry();
       auto elementId = idSet.id(element);
 
@@ -118,9 +117,9 @@ public:
     cells.offsets.reserve(this->numCells());
     cells.types.reserve(this->numCells());
 
-    const auto& idSet = gridView_.grid().globalIdSet();
+    const auto& idSet = this->gridView().grid().globalIdSet();
 
-    for (std::int64_t old_o = 0; const auto& ele : elements(gridView_)) {
+    for (std::int64_t old_o = 0; const auto& ele : elements(this->gridView())) {
       auto elementId = idSet.id(ele);
 
       for (std::size_t eIdx = 0; auto& subGridElement : geometries_.getElements(elementId)) {
@@ -151,8 +150,8 @@ public:
     std::vector<T> data(this->numPoints() * nComps);
 
     auto localFct     = localFunction(fct);
-    const auto& idSet = gridView_.grid().globalIdSet();
-    for (auto element : elements(gridView_)) {
+    const auto& idSet = this->gridView().grid().globalIdSet();
+    for (auto element : elements(this->gridView())) {
       localFct.bind(element);
       auto geometry  = element.geometry();
       auto elementId = idSet.id(element);
@@ -175,9 +174,9 @@ public:
     data.reserve(this->numCells_ * nComps);
 
     auto localFct     = localFunction(fct);
-    const auto& idSet = gridView_.grid().globalIdSet();
+    const auto& idSet = this->gridView().grid().globalIdSet();
 
-    for (auto element : elements(gridView_)) {
+    for (auto element : elements(this->gridView())) {
       localFct.bind(element);
       auto geometry  = element.geometry();
       auto elementId = idSet.id(element);
@@ -194,9 +193,9 @@ public:
 
 protected:
 #if DUNE_VERSION_LT(DUNE_VTK, 2, 10)
-  using Super::gridView_;
-  const auto& gridView() const {
-    return gridView_;
+  using Super::this->gridView();
+  const auto& this->gridView() const {
+    return this->gridView();
   }
 #endif
 
@@ -204,12 +203,10 @@ protected:
   std::uint64_t numCells_  = 0;
 
   using PointSet = LagrangePointSet<typename GridView::ctype, GridView::dimension>;
-  std::map<GeometryType, PointSet> pointSets_;
-  std::vector<std::int64_t> indexMap_;
-  std::map<std::pair<IDType, std::size_t>, std::int64_t> vertexIndex_;
-  IGA::IGARefinedGeometries<GridView> geometries_;
-
-  const GridView& gridView_;
+  std::map<GeometryType, PointSet> pointSets_{};
+  std::vector<std::int64_t> indexMap_{};
+  std::map<std::pair<IDType, std::size_t>, std::int64_t> vertexIndex_{};
+  IGA::IGARefinedGeometries<GridView> geometries_{};
 };
 
 } // namespace Dune::Vtk

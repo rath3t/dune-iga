@@ -9,7 +9,7 @@
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmerpreferences.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 template <typename GridImp>
 struct SimplexIntegrationRuleGenerator
@@ -23,8 +23,12 @@ struct SimplexIntegrationRuleGenerator
   using Index   = std::uint64_t;
   struct Parameters
   {
-    int maxBoundaryDivisions{5};
-    double targetTolerance{1e-10}; // not used atm
+    int boundaryDivisions{5};
+    double targetAccuracy{std::numeric_limits<double>::max()};
+
+    bool useAdaptiveDivisions() const {
+      return targetAccuracy < 1;
+    }
   };
 
   static auto createIntegrationRule(const PatchElement& element, int quadratureOrder,
@@ -90,16 +94,35 @@ private:
       return points;
     }
 
-    points.reserve(parameters.maxBoundaryDivisions);
+    if (not parameters.useAdaptiveDivisions()) {
+      points.reserve(parameters.boundaryDivisions);
+      for (auto local : Utilities::linspace(0.0, 1.0, parameters.boundaryDivisions))
+        points.push_back(localGeometry.global({local}));
+    } else {
+      // Guess initial amount of segments (a quadratic segment of lenght 1 should be devided by 5 divions)
+      double curveLength   = localGeometry.curveLength();
+      auto initialSegments = static_cast<unsigned int>(std::ceil(5 * curveLength * localGeometry.degree()[0]));
 
-    // todo at the moment only boundaryDivisions
-    for (auto local : Utilities::linspace(0.0, 1.0, parameters.maxBoundaryDivisions))
-      points.push_back(localGeometry.global({local}));
+      std::vector<Point> initialPoints;
+      for (const auto i : Dune::range(initialSegments)) {
+        double t = static_cast<double>(i) / initialSegments;
+        initialPoints.push_back(localGeometry.global({t}));
+      }
+
+      points.push_back(initialPoints.front());
+
+      for (size_t i_ = 0; i_ < initialPoints.size() - 1; ++i_) {
+        const auto i = static_cast<double>(i_);
+        refineSegments(points, localGeometry, i * (1.0 / initialSegments), (i + 1) * (1.0 / initialSegments),
+                       parameters.targetAccuracy);
+      }
+    }
 
     // Remove last element to avoid duplication
     points.pop_back();
     return points;
   }
+
   static auto triangulate(const std::vector<Point>& points) -> std::vector<Index> {
     std::vector<std::vector<Point>> polygonInput;
     polygonInput.push_back(points);
@@ -121,9 +144,37 @@ private:
     }
     return vector;
   }
+
+  // Function to calculate the distance between two points
+  static double distance(const Point& p1, const Point& p2) {
+    return std::sqrt(Dune::power(p2[0] - p1[0], 2) + Dune::power(p2[1] - p1[1], 2));
+  }
+  
+  static void refineSegments(std::vector<Point>& points, const auto& localGeometry, double t_start, double t_end,
+                             double tolerance) {
+    Point p1 = localGeometry.global({t_start});
+    Point p2 = localGeometry.global({t_end});
+
+    // Calculate the midpoint of the parameter
+    double t_mid = (t_start + t_end) / 2;
+    Point p_mid  = localGeometry.global({t_mid});
+
+    // Calculate the perpendicular distance from the midpoint to the line segment
+    double numerator       = std::abs((p2[1] - p1[1]) * p_mid[0] - (p2[0] - p1[0]) * p_mid[1] + p2[0] * p1[1] - p2[1] * p1[0]);
+    double denominator     = distance(p1, p2);
+    double dist_to_segment = numerator / denominator;
+
+    if (dist_to_segment > tolerance) {
+      // If the distance is greater than the tolerance, subdivide recursively
+      refineSegments(points, localGeometry, t_start, t_mid, tolerance);
+      refineSegments(points, localGeometry, t_mid, t_end, tolerance);
+    } else {
+      points.push_back(p2); // Include the endpoint of the segment
+    }
+  }
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {

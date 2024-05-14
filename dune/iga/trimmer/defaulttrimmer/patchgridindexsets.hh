@@ -9,7 +9,7 @@
 
 #include <dune/grid/common/indexidset.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 namespace Impl {
   enum class IndexSetType
@@ -272,4 +272,4 @@ private:
   const GridImp* grid_;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

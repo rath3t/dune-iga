@@ -5,7 +5,7 @@
 
 #include <dune/common/reservedvector.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 template <typename HostIdType>
 struct IdType;
@@ -124,4 +124,4 @@ struct EntityInfoImpl<Traits, 0>
   ReservedVector<IdType<HostIdType>, 4> decendantIds;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

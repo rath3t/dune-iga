@@ -7,7 +7,7 @@
 
 #include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 namespace Util {
   auto sameCorner(const auto& corner1, const auto& corner2, double precision = 1e-10) -> bool {
@@ -371,4 +371,4 @@ void TrimmerImpl<dim, dimworld, ScalarType>::createSubEntities(int level) {
     }
   }
 }
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

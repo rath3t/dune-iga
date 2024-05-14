@@ -4,7 +4,7 @@
 #include <dune/iga/geometrykernel/basealgorithms.hh>
 #include <dune/iga/splines/nurbspatchdata.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 namespace Impl {
   /** @brief Free cross product function it calls the member function cross of VectorType if it exists and falls back
@@ -113,4 +113,4 @@ auto makeSurfaceOfRevolution(const NURBSPatchData<1, 3, ScalarType>& generatrix,
   }
   return NURBSPatchData<2UL, 3UL, ScalarType>(newKnotsArray, surfaceCP, {2, generatrix.degree[0]});
 }
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

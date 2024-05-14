@@ -2,6 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 /*!
   @defgroup Trimmer Trimmer
- @details The group of available trimmers, see the Dune::IGANEW::IdentityTrim::Trimmer for the interface definiton
+ @details The group of available trimmers, see the Dune::IGA::IdentityTrim::Trimmer for the interface definiton
 */
 

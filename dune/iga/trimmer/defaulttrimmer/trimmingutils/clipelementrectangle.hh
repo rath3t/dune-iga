@@ -12,7 +12,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/geometrykernel/findintersection.hh>
 
-namespace Dune::IGANEW::DefaultTrim::Util {
+namespace Dune::IGA::DefaultTrim::Util {
 
 auto clipElementRectangle(const auto& element,
                           const auto& patchTrimData) -> std::tuple<ElementTrimFlag, ClippingResult> {
@@ -155,4 +155,4 @@ auto clipElementRectangle(const auto& element,
 
   return std::make_tuple(ElementTrimFlag::trimmed, result);
 }
-} // namespace Dune::IGANEW::DefaultTrim::Util
+} // namespace Dune::IGA::DefaultTrim::Util

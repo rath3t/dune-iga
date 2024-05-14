@@ -356,7 +356,7 @@ public:
   void bind(const std::array<int, dim>& elementIdx) {
     const auto& patchData = preBasis_.patchData_;
     for (size_t i = 0; i < elementIdx.size(); i++) {
-      currentKnotSpan_[i] = Dune::IGANEW::Splines::findSpan(patchData.degree[i],
+      currentKnotSpan_[i] = Dune::IGA::Splines::findSpan(patchData.degree[i],
                                                             *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
                                                             patchData.knotSpans[i], elementIdx[i]);
 
@@ -509,11 +509,11 @@ public:
   using R = ScalarType;
 
   explicit NurbsPreBasis(const GridView& gridView,
-                         const std::optional<IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
+                         const std::optional<IGA::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
       : gridView_{gridView} {
     if (patchData) {
       patchData_        = patchData.value();
-      uniqueKnotVector_ = IGANEW::Splines::createUniqueKnotSpans(patchData_.knotSpans);
+      uniqueKnotVector_ = IGA::Splines::createUniqueKnotSpans(patchData_.knotSpans);
       for (int d = 0; d < GridView::dimension; ++d)
         if (not std::ranges::equal(uniqueKnotVector_[d], gridView_.impl().tensorProductCoordinates()[d],
                                    [](auto& l, auto& r) { return FloatCmp::eq(l, r); }))
@@ -591,7 +591,7 @@ public:
       std::array<int, dim> currentKnotSpan;
       for (size_t i = 0; i < elementIdx.size(); i++)
         currentKnotSpan[i] =
-            IGANEW::Splines::findSpan(patchData_.degree[i], *(uniqueKnotVector_[i].begin() + elementIdx[i]),
+            IGA::Splines::findSpan(patchData_.degree[i], *(uniqueKnotVector_[i].begin() + elementIdx[i]),
                                       patchData_.knotSpans[i], elementIdx[i]);
 
       // Here magic is happening
@@ -634,10 +634,11 @@ public:
     }
     return it;
   }
+
   void createTrimmedNodeIndices() {
     if constexpr (not TrimmerType::isAlwaysTrivial) {
-      if (not gridView_.grid().trimmer().trimData_.has_value())
-        return;
+      // if (not gridView_.grid().trimmer().trimData_.has_value())
+      //   return;
 
       unsigned int n_ind_original = cachedSize_;
 
@@ -648,7 +649,7 @@ public:
       for (auto directIndex : Dune::range(numElements)) {
         auto trimFlag = gridView_.grid().trimmer().entityContainer_.trimFlags_[gridView_.impl().level()][directIndex];
 
-        if (trimFlag != IGANEW::DefaultTrim::ElementTrimFlag::empty)
+        if (trimFlag != IGA::DefaultTrim::ElementTrimFlag::empty)
           std::ranges::copy(originalIndices_.at(directIndex), std::inserter(indicesInTrim, indicesInTrim.begin()));
       }
 
@@ -683,8 +684,8 @@ public:
    */
   void evaluateFunction(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldVector<R, 1>>& out,
                         const std::array<int, dim>& currentKnotSpan) const {
-    const auto N = IGANEW::Splines::Nurbs<dim, ScalarType>::basisFunctions(
-        in, patchData_.knotSpans, patchData_.degree, IGANEW::Splines::extractWeights(patchData_.controlPoints),
+    const auto N = IGA::Splines::Nurbs<dim, ScalarType>::basisFunctions(
+        in, patchData_.knotSpans, patchData_.degree, IGA::Splines::extractWeights(patchData_.controlPoints),
         currentKnotSpan);
     out.resize(N.size());
     std::ranges::copy(N.directGetAll(), out.begin());
@@ -697,8 +698,8 @@ public:
    */
   void evaluateJacobian(const FieldVector<typename GV::ctype, dim>& in, std::vector<FieldMatrix<R, 1, dim>>& out,
                         const std::array<int, dim>& currentKnotSpan) const {
-    const auto dN = IGANEW::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
-        in, patchData_.knotSpans, patchData_.degree, IGANEW::Splines::extractWeights(patchData_.controlPoints), 1,
+    const auto dN = IGA::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
+        in, patchData_.knotSpans, patchData_.degree, IGA::Splines::extractWeights(patchData_.controlPoints), 1,
         currentKnotSpan);
     out.resize(dN.get(std::array<int, dim>{}).size());
     for (int j = 0; j < dim; ++j) {
@@ -714,8 +715,8 @@ public:
 
   void partial(const std::array<unsigned int, dim>& order, const FieldVector<typename GV::ctype, dim>& in,
                std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
-    const auto dN = IGANEW::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
-        in, patchData_.knotSpans, patchData_.degree, IGANEW::Splines::extractWeights(patchData_.controlPoints),
+    const auto dN = IGA::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
+        in, patchData_.knotSpans, patchData_.degree, IGA::Splines::extractWeights(patchData_.controlPoints),
         std::accumulate(order.begin(), order.end(), 0));
 
     auto& dNpart = dN.get(order).directGetAll();
@@ -741,7 +742,7 @@ public:
   GridView gridView_;
   std::array<std::vector<double>, dim> uniqueKnotVector_;
 
-  Dune::IGANEW::NURBSPatchData<dim, dimworld> patchData_;
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData_;
 
   /** @brief Number of grid elements in the different coordinate directions */
   std::array<int, dim> elements_;
@@ -819,7 +820,7 @@ namespace BasisFactory {
     public:
       static constexpr std::size_t requiredMultiIndexSize = 1;
       explicit NurbsPreBasisFactoryFromPatchData(
-          const std::optional<Dune::IGANEW::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
+          const std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>>& patchData = std::nullopt)
           : patchData_(patchData) {}
 
       template <class GridView>
@@ -828,7 +829,7 @@ namespace BasisFactory {
       }
 
     private:
-      std::optional<Dune::IGANEW::NURBSPatchData<dim, dimworld>> patchData_;
+      std::optional<Dune::IGA::NURBSPatchData<dim, dimworld>> patchData_;
     };
 
     template <int dim>
@@ -850,7 +851,7 @@ namespace BasisFactory {
             ++dir;
             continue;
           }
-          patchData = IGANEW::Splines::degreeElevate(patchData, dir, elevatesInDirection);
+          patchData = IGA::Splines::degreeElevate(patchData, dir, elevatesInDirection);
           ++dir;
         }
         return NurbsPreBasis<GridView>(gridView, patchData);
@@ -869,7 +870,7 @@ namespace BasisFactory {
    *
    */
   template <std::integral auto dim, std::integral auto dimworld>
-  auto nurbs(const Dune::IGANEW::NURBSPatchData<dim, dimworld>& data) {
+  auto nurbs(const Dune::IGA::NURBSPatchData<dim, dimworld>& data) {
     return Impl::NurbsPreBasisFactoryFromPatchData<dim, dimworld>(data);
   }
 

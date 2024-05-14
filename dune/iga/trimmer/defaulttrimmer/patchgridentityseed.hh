@@ -8,7 +8,7 @@
  * @brief The PatchGridEntitySeed class
  */
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 /**
  * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
@@ -70,6 +70,6 @@ private:
   unsigned int indexInLvlStorage_{std::numeric_limits<unsigned int>::max()};
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim
 
 // #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH

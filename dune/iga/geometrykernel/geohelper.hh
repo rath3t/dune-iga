@@ -7,7 +7,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 
-namespace Dune::IGANEW::Utilities {
+namespace Dune::IGA::Utilities {
 
 /**
  * @brief Small wrapper class that represents a one-dimensional closed domain
@@ -269,4 +269,4 @@ std::array<Domain<T>, 2> splitDomainInHalf(const Domain<T>& domain) {
   };
 }
 
-} // namespace Dune::IGANEW::Utilities
+} // namespace Dune::IGA::Utilities

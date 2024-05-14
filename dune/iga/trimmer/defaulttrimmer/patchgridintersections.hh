@@ -11,7 +11,7 @@
  * @brief The TrimmedPatchGridLeafIntersection and TrimmedLevelIntersection classes
  */
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 // External forward declarations
 template <class Grid>
@@ -94,7 +94,7 @@ namespace Impl {
     }
 
     size_t boundarySegmentIndex() const {
-      return 0;
+      return edgeInfo_.trimInfo.value().boundarySegmentIdx;
     }
 
     // A boundary has to be conforming
@@ -147,6 +147,10 @@ namespace Impl {
 
     bool equals(const TrimmedIntersectionImpl& other) const {
       return geo_ == other.geo_ and indexInInside_ == other.indexInInside_;
+    }
+
+    bool isTrimmed() const {
+      return true;
     }
 
   private:
@@ -213,7 +217,10 @@ namespace Impl {
     }
 
     size_t boundarySegmentIndex() const {
-      return 0;
+      if (not boundary())
+        DUNE_THROW(Dune::GridError, "BoundarySegmentIndex failed: Not a boundary");
+
+      return edgeInfo_.trimInfo.value().boundarySegmentIdx;
     }
 
     bool conforming() const {
@@ -272,6 +279,10 @@ namespace Impl {
 
     bool equals(const TrimmedHostIntersectionImpl& other) const {
       return hostIntersection_ == other.hostIntersection_ and indexInInside_ == other.indexInInside_;
+    }
+
+    bool isTrimmed() const {
+      return true;
     }
 
   private:
@@ -340,8 +351,16 @@ namespace Impl {
 
     // return the boundary segment index
     size_t boundarySegmentIndex() const {
-      return 0;
-      // This is not implmented in SubGrid
+      if (not boundary())
+        DUNE_THROW(Dune::GridError, "BoundarySegmentIndex failed: Not a boundary");
+
+      auto yaspEle  = patchGrid_->trimmer().parameterSpaceGrid().template getHostEntity<0>(inside().hostEntity());
+      auto gridView = patchGrid_->trimmer().untrimmedParameterSpaceGrid_->levelGridView(yaspEle.level());
+
+      auto yaspIntersection = *std::ranges::find_if(
+          gridView.ibegin(yaspEle), gridView.iend(yaspEle),
+          [index = hostIntersection_.indexInInside()](const auto& i_) { return i_.indexInInside() == index; });
+      return yaspIntersection.boundarySegmentIndex();
     }
 
     // Return true if this is a conforming intersection
@@ -396,6 +415,10 @@ namespace Impl {
       return hostIntersection_ == other.hostIntersection_;
     }
 
+    bool isTrimmed() const {
+      return false;
+    }
+
   private:
     int level() const {
       if constexpr (type_ == IntersectionType::Leaf)
@@ -430,6 +453,10 @@ namespace Impl {
 
     auto visit(auto&& lambda) const {
       return std::visit(lambda, impl_);
+    }
+
+    bool isTrimmed() const {
+      return visit([](const auto& impl) { return impl.isTrimmed(); });
     }
 
     auto inside() const {
@@ -573,6 +600,10 @@ public:
 
   bool operator==(const TrimmedLeafIntersection& other) const {
     return underlying_.equals(other.underlying_);
+  }
+
+  bool isTrimmed() const {
+    return underlying_.isTrimmed();
   }
 
   /**
@@ -757,6 +788,10 @@ public:
     return underlying_.equals(other.underlying_);
   }
 
+  bool isTrimmed() const {
+    return underlying_.isTrimmed();
+  }
+
   // returns the inside entity
   ParameterSpaceGridEntity inside() const {
     return underlying_.inside();
@@ -843,4 +878,4 @@ private:
   IntersectionImpl underlying_{};
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

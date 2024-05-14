@@ -6,7 +6,7 @@
 #include <dune/grid/concepts/geometry.hh>
 // #include <dune/iga/geometrykernel/geohelper.hh>
 
-namespace Dune::IGANEW::Concept {
+namespace Dune::IGA::Concept {
 
 template <typename VectorType>
 concept Vector = requires(VectorType v, double a, int index) {
@@ -46,4 +46,4 @@ concept DivideAssignAble = requires(L x, R y) { x /= y; };
 template <typename L, typename R>
 concept DivideAble = requires(L x, R y) { x / y; };
 
-} // namespace Dune::IGANEW::Concept
+} // namespace Dune::IGA::Concept

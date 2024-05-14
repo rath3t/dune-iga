@@ -6,7 +6,7 @@
 #include <dune/iga/splines/bsplinealgorithms.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 // Inspired by https://github.com/pradeep-pyro/tinynurbs/blob/master/include/tinynurbs/core/modify.h
 template <typename GeoCurve, typename ScalarType = typename GeoCurve::ctype>
@@ -84,4 +84,4 @@ auto sliceCurve(const GeoCurve& geoCurve, std::array<ScalarType, 2> t) -> GeoCur
   return std::get<0>(splitCurve(tmpCurve, t[1]));
 }
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

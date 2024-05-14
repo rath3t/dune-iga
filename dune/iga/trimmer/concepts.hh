@@ -4,7 +4,7 @@
 
 #include <dune/grid/concepts.hh>
 
-namespace Dune::IGANEW::Concept {
+namespace Dune::IGA::Concept {
 
 template <typename T>
 concept TrimDataContainer = requires(const T& t, size_t i) { t[i]; };
@@ -55,4 +55,4 @@ concept Trimmer =
     } and
     Dune::Concept::Grid<typename T::ParameterSpaceGrid>;
 
-} // namespace Dune::IGANEW::Concept
+} // namespace Dune::IGA::Concept

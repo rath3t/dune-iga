@@ -9,7 +9,7 @@
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/float_cmp.hh>
 
-namespace Dune::IGANEW::Splines {
+namespace Dune::IGA::Splines {
 
 /** @brief Finds the spanIndex in range [u_0,...,u_0,...,u_a      ,u,...,u_n,...,u_n] which is first index lower than
  * u
@@ -270,4 +270,4 @@ auto createUniqueKnotSpans(const std::array<std::vector<ScalarType>, dim>& knotS
 
   return uniqueKnotVector;
 }
-} // namespace Dune::IGANEW::Splines
+} // namespace Dune::IGA::Splines

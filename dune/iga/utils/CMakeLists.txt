@@ -6,6 +6,7 @@
 set(HEADERS
         mdnet.hh
         typetraits.hh
+        igahelpers.hh
 )
 
 install(FILES ${HEADERS}

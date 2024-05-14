@@ -5,7 +5,9 @@
 
 set(HEADERS
         clipelementrectangle.hh
+        cliputils.hh
         indextransformations.hh
+        trimutils.hh
 )
 
 install(FILES ${HEADERS}

@@ -22,4 +22,5 @@ duneVersion = "2.10.0"
 metadata = metaData(duneVersion)[1]
 metadata["version"] = duneigaVersion
 
+metadata["name"] = "dune-iga-experimental"
 setup(**metadata)

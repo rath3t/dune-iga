@@ -17,7 +17,7 @@
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 using namespace Dune;
 
 std::vector<GeometryType> geometryTypes(bool trimmed, int refLevel) {

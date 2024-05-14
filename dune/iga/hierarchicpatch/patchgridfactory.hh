@@ -9,12 +9,12 @@
 namespace Dune {
 
 template <int dim_, int dimworld_, template <int, int, typename> typename TrimmerType_, typename ScalarType>
-class GridFactory<IGANEW::PatchGrid<dim_, dimworld_, TrimmerType_, ScalarType>>
+class GridFactory<IGA::PatchGrid<dim_, dimworld_, TrimmerType_, ScalarType>>
 {
   /** @brief The grid world dimension */
   constexpr static int dimworld = dimworld_;
   constexpr static int dim      = dim_;
-  using PatchGrid               = IGANEW::PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
+  using PatchGrid               = IGA::PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
   using TrimmerType             = typename PatchGrid::Trimmer;
   using PatchTrimData           = typename TrimmerType::PatchTrimData;
 
@@ -28,13 +28,13 @@ public:
       @param patchData The patch data
       @param patchTrimData Trimming data for this patch
    */
-  void insertPatch(const IGANEW::NURBSPatchData<dim, dimworld, ctype>& patchData,
+  void insertPatch(const IGA::NURBSPatchData<dim, dimworld, ctype>& patchData,
                    const std::optional<PatchTrimData>& patchTrimData = std::nullopt) {
     patchData_     = patchData;
     patchTrimData_ = patchTrimData;
   }
 
-  void insertTrimmingCurve(const IGANEW::NURBSPatchData<dim - 1, dim, ctype>& curve) {
+  void insertTrimmingCurve(const IGA::NURBSPatchData<dim - 1, dim, ctype>& curve) {
     DUNE_THROW(NotImplemented, "insertTrimmingCurve not yet implemented, stay tuned ");
   }
 
@@ -42,9 +42,10 @@ public:
     parameters_ = par;
   }
 
-  void insertJson(const std::string& filename, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0}) {
+  void insertJson(const std::string& filename, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0},
+                  std::array<int, 2> degreeElevate = {0, 0}) {
     json_                      = filename;
-    auto [patchData, trimData] = IGANEW::IbraReader<dim, dimworld, PatchGrid>::read(filename, trim, preKnotRefine);
+    auto [patchData, trimData] = IGA::IbraReader<dim, dimworld, PatchGrid>::read(filename, trim, preKnotRefine, degreeElevate);
     insertPatch(patchData, trimData);
   }
 
@@ -61,7 +62,7 @@ public:
     return grid;
   }
 
-  IGANEW::NURBSPatchData<dim, dimworld, ctype> patchData_;
+  IGA::NURBSPatchData<dim, dimworld, ctype> patchData_;
   std::optional<PatchTrimData> patchTrimData_;
   std::string json_;
   TrimParameterType parameters_{};

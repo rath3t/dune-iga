@@ -5,7 +5,7 @@
 #include <dune/iga/geometrykernel/basealgorithms.hh>
 #include <dune/iga/splines/nurbspatchdata.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 // @todo Alex quote algo from NURBS book
 /**
  * @brief Create a circular arc as a NURBS patch with customizable options.
@@ -119,7 +119,7 @@ NURBSPatchData<1, 2, ScalarType> makeCircularArc2D(const ScalarType radius = 1.0
   auto arc3D  = makeCircularArc(radius, startAngle, endAngle, origin3D);
 
   typename NURBSPatchData<1, 2, ScalarType>::ControlPointNetType arc2DCPs(arc3D.controlPoints.size());
-  using ControlPoint = typename Dune::IGANEW::NURBSPatchData<1, 2, ScalarType>::ControlPointType;
+  using ControlPoint = typename Dune::IGA::NURBSPatchData<1, 2, ScalarType>::ControlPointType;
 
   std::ranges::transform(arc3D.controlPoints.directGetAll(), std::begin(arc2DCPs.directGetAll()), [](auto& cp3d) {
     return ControlPoint({
@@ -130,4 +130,4 @@ NURBSPatchData<1, 2, ScalarType> makeCircularArc2D(const ScalarType radius = 1.0
 
   return NURBSPatchData<1, 2, ScalarType>(arc3D.knotSpans, arc2DCPs, {2});
 }
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

@@ -2,7 +2,7 @@
 #pragma once
 #include <clipper2/clipper.core.h>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 namespace Impl {
   template <typename TrimmingCurve>
@@ -209,4 +209,4 @@ private:
   CurveManager manager_;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

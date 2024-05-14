@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 /**
  * \brief Transformations for vertex and edge indices between Trimmer Notation and Dune Notation
@@ -94,4 +94,4 @@ private:
     }
   }
 };
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

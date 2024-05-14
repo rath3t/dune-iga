@@ -10,7 +10,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/common/exceptions.hh>
 
-namespace Dune::IGANEW::DefaultTrim::Util {
+namespace Dune::IGA::DefaultTrim::Util {
 
 inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {
   if ((e1 == 0 and e2 == 1) or (e1 == 1 and e2 == 0))
@@ -262,4 +262,4 @@ private:
   }
 };
 
-} // namespace Dune::IGANEW::DefaultTrim::Util
+} // namespace Dune::IGA::DefaultTrim::Util

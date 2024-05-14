@@ -12,13 +12,9 @@
 
 #include <dune/geometry/quadraturerules.hh>
 #include <dune/iga/geometrykernel/algorithms.hh>
-#include <dune/iga/hierarchicpatch/enums.hh>
-// #include <dune/iga/hierarchicpatch/hierachicpatchgridlocalgeometry.hh>
-// #include <dune/iga/hierarchicpatch/patchgridentity.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
-// #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 namespace GeometryKernel {
   namespace Impl {
     struct IndexPair
@@ -450,4 +446,4 @@ namespace GeometryKernel {
     std::shared_ptr<ParameterSpaceGeometry> parameterSpaceGeometry;
   };
 } // namespace GeometryKernel
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

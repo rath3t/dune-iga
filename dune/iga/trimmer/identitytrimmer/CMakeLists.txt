@@ -4,6 +4,14 @@
 # install headers
 
 set(HEADERS
+        idSet.hh
+        patchgridentityseed.hh
+        patchgridhierarchiciterator.hh
+        patchgridindexsets.hh
+        patchgridintersectioniterator.hh
+        patchgridleafiterator.hh
+        patchgridleveliterator.hh
+        patchgridlocalgeometry.hh
         trimmer.hh
 )
 

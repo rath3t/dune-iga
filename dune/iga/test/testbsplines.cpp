@@ -13,25 +13,25 @@ auto testBsplineBasisFunctions() {
   int degree                = 2;
   Dune::TestSuite test;
 
-  auto N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(0.3, knots, degree);
+  auto N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(0.3, knots, degree);
   using Dune::FloatCmp::eq;
   test.check(eq(N[0], 0.16), "P=2,N0,u=0.3");
   test.check(eq(N[1], 0.48), "P=2,N1,u=0.3");
   test.check(eq(N[2], 0.36), "P=2,N2,u=0.3");
 
-  N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(0.5, knots, degree); // try knot span boundary
+  N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(0.5, knots, degree); // try knot span boundary
 
   test.check(eq(N[0], 1.0), "P=2,N0,u=0.5");
   test.check(eq(N[1], 0.0), "P=2,N1,u=0.5");
   test.check(eq(N[2], 0.0), "P=2,N2,u=0.5");
 
-  N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(0.0, knots, degree); // try left end
+  N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(0.0, knots, degree); // try left end
 
   test.check(eq(N[0], 1.0), "P=2,N0,u=0.0");
   test.check(eq(N[1], 0.0), "P=2,N1,u=0.0");
   test.check(eq(N[2], 0.0), "P=2,N2,u=0.0");
 
-  N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(3.0, knots, degree); // try right end
+  N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(3.0, knots, degree); // try right end
 
   test.check(eq(N[0], 0.0), "P=2,N0,u=3");
   test.check(eq(N[1], 0.0), "P=2,N1,u=3");
@@ -40,12 +40,12 @@ auto testBsplineBasisFunctions() {
   knots  = {0, 0, 0, 0.5, 1, 1, 1};
   degree = 2;
 
-  N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(0.1, knots, degree);
+  N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(0.1, knots, degree);
   test.check(eq(N[0], 0.64), "P=2,N0,u=0.1");
   test.check(eq(N[1], 0.34), "P=2,N1,u=0.1");
   test.check(eq(N[2], 0.02), "P=2,N2,u=0.1");
 
-  N = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(0.01, knots, degree);
+  N = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(0.01, knots, degree);
   test.check(eq(N[0], 0.9604), "P=2,N0,u=0.01");
   test.check(eq(N[1], 0.0394), "P=2,N1,u=0.01");
   test.check(eq(N[2], 0.0002), "P=2,N2,u=0.01");
@@ -53,13 +53,13 @@ auto testBsplineBasisFunctions() {
   knots  = {0, 0, 0, 0, 0.5, 1, 1, 2, 2, 2, 2};
   degree = 3;
 
-  auto N2 = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctions(1.45, knots, degree);
+  auto N2 = Dune::IGA::Splines::BsplineBasis<double>::basisFunctions(1.45, knots, degree);
   test.check(eq(N2[0], 0.1109166666666667), "P=3,N0,u=1.45");
   test.check(eq(N2[1], 0.4638333333333333), "P=3,N1,u=1.45");
   test.check(eq(N2[2], 0.334125), "P=3,N2,u=1.45");
   test.check(eq(N2[3], 0.091125), "P=3,N3,u=1.45");
 
-  auto dN = Dune::IGANEW::Splines::BsplineBasis<double>::basisFunctionDerivatives(1.45, knots, degree, 3);
+  auto dN = Dune::IGA::Splines::BsplineBasis<double>::basisFunctionDerivatives(1.45, knots, degree, 3);
   // check values
   test.check(eq(dN[0][0], 0.1109166666666667), "P=3,dN00,u=1.45");
   test.check(eq(dN[0][1], 0.4638333333333333), "P=3,dN01,u=1.45");
@@ -84,7 +84,7 @@ auto testBsplineBasisFunctions() {
   test.check(eq(dN[3][2], -18.0), "P=3,dN32,u=1.45");
   test.check(eq(dN[3][3], 6.0), "P=3,dN33,u=1.45");
   // https://godbolt.org/z/Ta3fzW553
-  auto Nf                           = Dune::IGANEW::Splines::BsplineBasis<double>(knots, degree);
+  auto Nf                           = Dune::IGA::Splines::BsplineBasis<double>(knots, degree);
   std::vector<double> NAtEvalPoints = {1,
                                        0.1714677640603567,
                                        0.001371742112482855,
@@ -108,9 +108,9 @@ auto testBsplineBasisFunctions() {
       {{1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13, 14}, {15, 16, 17, 18, 19, 20, 21}}
   };
   std::array<int, 2> dimsize = {static_cast<int>(weights2.size()), static_cast<int>(weights2[0].size())};
-  Dune::IGANEW::MultiDimensionalNet<2UL, double> weightNet(dimsize, weights2);
+  Dune::IGA::MultiDimensionalNet<2UL, double> weightNet(dimsize, weights2);
 
-  auto Nurbs   = Dune::IGANEW::Splines::Nurbs(knots2, degree2, weightNet);
+  auto Nurbs   = Dune::IGA::Splines::Nurbs(knots2, degree2, weightNet);
   auto N_Nurbs = Nurbs.basisFunctions(xieta).directGetAll();
   test.check(N_Nurbs.size() == (degree2[0] + 1) * (degree2[1] + 1));
 
@@ -126,7 +126,7 @@ auto testBsplineBasisFunctions() {
   test.check(eq(std::accumulate(N_Nurbs.begin(), N_Nurbs.end(), 0.0), 1.0), "partition of unity in domain");
 
   xieta   = {0, 0.1};
-  N_Nurbs = Dune::IGANEW::Splines::Nurbs<2>::basisFunctions(xieta, knots2, degree2, weightNet).directGetAll();
+  N_Nurbs = Dune::IGA::Splines::Nurbs<2>::basisFunctions(xieta, knots2, degree2, weightNet).directGetAll();
   test.check(eq(N_Nurbs[0], 0.8204545454545455), "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(N_Nurbs[1], 0.0), "Nurbs P=2,N1");
   test.check(eq(N_Nurbs[2], 0.0), "Nurbs P=2,N2");
@@ -139,7 +139,7 @@ auto testBsplineBasisFunctions() {
 
   test.check(eq(std::accumulate(N_Nurbs.begin(), N_Nurbs.end(), 0.0), 1.0), "partition of unity on boundary");
   xieta         = {0, 0.1};
-  auto dN_Nurbs = Dune::IGANEW::Splines::Nurbs<2>::basisFunctionDerivatives(xieta, knots2, degree2, weightNet, 5);
+  auto dN_Nurbs = Dune::IGA::Splines::Nurbs<2>::basisFunctionDerivatives(xieta, knots2, degree2, weightNet, 5);
 
   test.check(eq(dN_Nurbs.get({0, 0}).get({0, 0}), 0.8204545454545455),
              "Nurbs P=2,N0"); // check ansatzfunctions on boundaries

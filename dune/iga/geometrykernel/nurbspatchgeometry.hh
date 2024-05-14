@@ -27,7 +27,7 @@ template <class ct, int dim>
 class TensorProductCoordinates;
 } // namespace Dune
 
-namespace Dune::IGANEW::GeometryKernel {
+namespace Dune::IGA::GeometryKernel {
 
 /**
  * @brief NURBSPatch class representing a Non-Uniform Rational B-Spline patch.
@@ -524,4 +524,4 @@ private:
   Nurbs nurbs_;
 };
 
-} // namespace Dune::IGANEW::GeometryKernel
+} // namespace Dune::IGA::GeometryKernel

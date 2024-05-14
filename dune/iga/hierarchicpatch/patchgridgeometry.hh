@@ -7,12 +7,11 @@
  * @brief The PatchGridGeometry class and its specializations
  */
 
-#include "enums.hh"
 
 #include <dune/common/fmatrix.hh>
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 template <int mydim, int coorddim, class GridImp>
 class PatchGridGeometry : public GeometryDefaultImplementation<mydim, coorddim, GridImp, PatchGridGeometry>
@@ -107,7 +106,6 @@ public:
 
   // The Jacobian matrix of the mapping from the reference element to this element
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const FieldVector<ctype, mydim>& local) const {
-    // std::cout<<"jacobianInverseTransposed(local)\n"<<geometryLocalView_.jacobianInverseTransposed(local)<<std::endl;
     return geometryLocalView_.jacobianInverseTransposed(local);
   }
 
@@ -124,4 +122,4 @@ private:
   GeometryLocalView geometryLocalView_{};
 };
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

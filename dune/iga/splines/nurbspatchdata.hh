@@ -6,7 +6,7 @@
 #include <dune/iga/geometrykernel/controlpoint.hh>
 #include <dune/iga/utils/mdnet.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 /**
  * @brief Struct that holds all data regarding the NURBS geometric structure
@@ -53,4 +53,4 @@ NURBSPatchData(const std::array<std::vector<double>, dim>& knotSpansI,
                const MultiDimensionalNet<dim, ControlPoint<FieldVector<ScalarType, dimworld_>>>& controlPointsI,
                const std::array<int, dim>& degreeInput) -> NURBSPatchData<dim, dimworld_, ScalarType>;
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

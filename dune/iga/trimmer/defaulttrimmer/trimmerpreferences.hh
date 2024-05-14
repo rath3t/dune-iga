@@ -28,11 +28,22 @@ public:
     this->boundaryDivisions_ = _boundaryDivisions;
   }
 
+  double targetAccuracy() {
+    std::lock_guard lock(mtx);
+    return targetAccuracy_;
+  }
+  void targetAccuracy(double _targetAccuracy) {
+    std::lock_guard lock(mtx);
+    this->targetAccuracy_ = _targetAccuracy;
+  }
+
 private:
   // Private constructor for Singleton pattern
   Preferences()
-      : boundaryDivisions_(7) {}
+      : boundaryDivisions_(5),
+        targetAccuracy_{1} {}
 
   std::mutex mtx; // Mutex for thread safety
   int boundaryDivisions_;
+  double targetAccuracy_;
 };

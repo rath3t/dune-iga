@@ -5,7 +5,7 @@
 #include <dune/iga/geometrykernel/closestpointprojection.hh>
 #include <dune/iga/geometrykernel/geohelper.hh>
 
-namespace Dune::IGANEW::GeometryKernel {
+namespace Dune::IGA::GeometryKernel {
 
 /**
  * @brief Computes the parameter space coordinate corresponding to a given global coordinate on a geometry.
@@ -61,7 +61,7 @@ typename Geometry::LocalCoordinate findClosestParameterSpaceCoordinate(
       x -= dx;
       // if local is outside of maximum knot vector span bound, we clamp it to it and return
       // clamped result
-      if (Dune::IGANEW::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
+      if (Dune::IGA::Utilities::clampToBoundaryAndCheckIfIsAtAllBoundaries(x, geo.domain())) {
         break;
       }
 
@@ -214,4 +214,4 @@ auto isPointOnLineSegment(const Coordinate& p, const Coordinate& linePoint0, con
   return false;
 }
 
-} // namespace Dune::IGANEW::GeometryKernel
+} // namespace Dune::IGA::GeometryKernel

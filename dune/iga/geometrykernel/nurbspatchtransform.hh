@@ -4,7 +4,7 @@
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 
 // todo is this tested?
-namespace Dune::IGANEW::GeometryKernel {
+namespace Dune::IGA::GeometryKernel {
 template <int dim_, int dimworld_, typename ScalarType = double>
 auto transform(
     const NURBSPatch<dim_, dimworld_, ScalarType>& patch,
@@ -47,4 +47,4 @@ auto transformToSpan(const NURBSPatch<dim, dimworld, ScalarType>& patch, const P
   return NURBSPatch<dim, dimworld, ScalarType>(patchData);
 }
 
-} // namespace Dune::IGANEW::GeometryKernel
+} // namespace Dune::IGA::GeometryKernel

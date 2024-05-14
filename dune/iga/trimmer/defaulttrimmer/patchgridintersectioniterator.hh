@@ -12,7 +12,7 @@
  * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 namespace Impl {
 
@@ -301,4 +301,4 @@ private:
   IteratorImpl underlying_{};
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

@@ -17,6 +17,7 @@
 #include "patchgridleafiterator.hh"
 #include "patchgridleveliterator.hh"
 #include "patchgridlocalgeometry.hh"
+#include "idSet.hh"
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/geometry/referenceelements.hh>
@@ -25,7 +26,7 @@
 #include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
 #include <dune/iga/hierarchicpatch/patchgridview.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 namespace GeometryKernel {
   template <int dim_, int dimworld_, typename ScalarType>
@@ -336,7 +337,7 @@ namespace IdentityTrim {
     typename GridFamily::Traits::template Codim<Entity::codimension>::EntitySeed seed(const Entity& ent) const {
       using EntitySeedImp = typename TrimmerTraits::template Codim<Entity::codimension>::EntitySeedImp;
 
-      return EntitySeedImp(ent.getHostEntity());
+      return EntitySeedImp(ent.getLocalEntity());
     }
 
     /**
@@ -346,9 +347,6 @@ namespace IdentityTrim {
     auto globalRefine(int refCount) {
       parameterSpaceGrid().globalRefine(refCount);
       update(grid_);
-
-      // @todo Trim move the refine here from the grid
-      ;
     }
 
   protected:
@@ -383,6 +381,10 @@ namespace IdentityTrim {
       return parameterSpaceGrid().maxLevel();
     }
 
+    size_t numBoundarySegments() const {
+      return parameterSpaceGrid_->numBoundarySegments();
+    }
+
     // Our set of level indices
     std::vector<std::unique_ptr<LevelIndexSet>> levelIndexSets_;
 
@@ -399,4 +401,4 @@ namespace IdentityTrim {
   };
 
 } // namespace IdentityTrim
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

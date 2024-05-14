@@ -11,7 +11,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/geometrykernel/geohelper.hh>
 
-namespace Dune::IGANEW::DefaultTrim::Util {
+namespace Dune::IGA::DefaultTrim::Util {
 template <typename ScalarType, int dim>
 auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2,
                      const double prec) -> bool {
@@ -22,7 +22,8 @@ auto distance(const Clipper2Lib::PointD& p1, const auto& p2) -> double {
   return std::hypot(p1.x - p2[0], p1.y - p2[1]);
 }
 
-auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt, int N = 200) -> double {
+auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt) -> double {
+  int N = std::max(curve.numberOfControlPoints().front() * 15, 200);
   auto linSpace  = Utilities::linspace(curve.domain().front(), N);
   auto distances = std::ranges::transform_view(linSpace, [&](const auto u) { return distance(pt, curve.global(u)); });
   auto min_idx   = std::ranges::distance(distances.begin(), std::ranges::min_element(distances));
@@ -53,6 +54,7 @@ auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip
   auto dir = edgeDirections[edgeIdx];
 
   double lineGuess = (edgeIdx == 0 or edgeIdx == 2) ? (ip.x - pos[0]) / dir[0] : (ip.y - pos[1]) / dir[1];
+  // Todo use z-Value to get a good starting point, not brute-force
   auto guessTParam = FieldVector<double, 2>{findGoodStartingPoint(curvePatchGeo, ip), lineGuess};
 
   auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
@@ -71,4 +73,15 @@ auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip
   DUNE_THROW(Dune::GridError, "Couldn't find intersection Point");
 };
 
-} // namespace Dune::IGANEW::DefaultTrim::Util
+template <typename Entity>
+Entity coarsestFather(const Entity& ele) {
+  assert(ele.hasFather());
+  Entity father = ele.father();
+  while (father.hasFather()) {
+    father = father.father();
+  }
+  assert(father.level() == 0);
+  return father;
+}
+
+} // namespace Dune::IGA::DefaultTrim::Util

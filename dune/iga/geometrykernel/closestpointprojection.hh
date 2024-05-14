@@ -8,7 +8,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/transpose.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 /**
  * @brief Finds the closest point projection on a NURBS curve or surface by trust region method.
  *
@@ -142,4 +142,4 @@ requires(Geo::mydimension == 1 or Geo::mydimension == 2)
 
   return std::make_tuple(u, Rnorm, energyVal, (geo.global(u) - point).two_norm());
 }
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

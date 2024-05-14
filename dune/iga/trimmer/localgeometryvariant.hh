@@ -2,7 +2,7 @@
 #pragma once
 #include <variant>
 
-namespace Dune::IGANEW::Trim {
+namespace Dune::IGA::Trim {
 
 template <typename TrimmerType_, class... Implementations>
 class LocalGeometryVariant
@@ -106,4 +106,4 @@ public:
 private:
   Variant impl_;
 };
-} // namespace Dune::IGANEW::Trim
+} // namespace Dune::IGA::Trim

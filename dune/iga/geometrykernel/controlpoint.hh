@@ -4,7 +4,7 @@
 #pragma once
 #include <dune/iga/hierarchicpatch/concepts.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 /**
  * @brief Represents a NURBS control point.
@@ -120,4 +120,4 @@ ControlPoint<VectorType> operator-(const ControlPoint<VectorType>& cpL, const Co
   return {.p = cpL.p - cpR.p, .w = cpL.w - cpR.w};
 }
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

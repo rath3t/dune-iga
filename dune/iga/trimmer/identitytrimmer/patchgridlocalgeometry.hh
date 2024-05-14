@@ -11,7 +11,7 @@
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 /**
  * \brief This class describes entities in the 0..1 space if untrimmed this is in the cube,
@@ -111,4 +111,4 @@ private:
   LocalGeometry localGeometry_;
 };
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

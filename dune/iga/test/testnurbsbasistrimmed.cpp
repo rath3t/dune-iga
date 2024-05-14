@@ -77,7 +77,7 @@ auto testNurbsBasis(auto& grid) {
 
 auto runIntersectionTests(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel) {
   // Create test case
-  using PatchGrid   = IGANEW::PatchGrid<2, 2, IGANEW::DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto igaGridFactory = GridFactory();

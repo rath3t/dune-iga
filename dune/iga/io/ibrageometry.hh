@@ -11,7 +11,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>
 
-namespace Dune::IGANEW::Ibra {
+namespace Dune::IGA::Ibra {
 
 enum class Type
 {
@@ -333,6 +333,6 @@ void from_json(const json& j, BrepTrimRepresentation& trim) {
   trim.domain.right() = dom.back();
 };
 
-} // namespace Dune::IGANEW::Ibra
+} // namespace Dune::IGA::Ibra
 
 // DUNE_IGA_IBRAGEOMETRY_HH

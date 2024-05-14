@@ -1,12 +1,18 @@
 # SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+from .generator import MySimpleGenerator
+
+from enum import Enum
+
+IGAGridType = Enum('IGAGridType', ['Identity', 'Default'])
+
 """@package dune-iga
 Documentation for this module.
 
 More details.
 """
-def IGAGrid(constructor, dimgrid=None, dimworld=None):
+def IGAGrid(constructor, dimgrid=None, dimworld=None, gridType=IGAGridType.Identity):
     """
     Create an IGAGrid instance.
 
@@ -35,16 +41,17 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None):
             "If you don't pass the patch data you have to pass dimgrid and dimworld"
         )
 
+    trimmerType = "Dune::IGA::IdentityTrim::PatchGridFamily" if gridType == IGAGridType.Identity else "Dune::IGA::DefaultTrim::PatchGridFamily"
+
     typeName = (
-        "Dune::IGA::NURBSGrid< " + str(dimgrid) + ", " + str(dimworld) + ",double>"
+        "Dune::IGA::PatchGrid< " + str(dimgrid) + ", " + str(dimworld) + ", " + trimmerType + ", double>"
     )
 
     includes = ["dune/python/iga/grid.hh"]
-    from dune.generator.generator import SimpleGenerator
     from dune.common.hashit import hashIt
 
-    generator = SimpleGenerator("HierarchicalGrid", "Dune::Python::IGA")
-    moduleName = "NURBSGrid_" + hashIt(typeName)
+    generator = MySimpleGenerator("HierarchicalGrid", "Dune::Python::IGA")
+    moduleName = "PatchGrid_" + hashIt(typeName)
     kwargs = dict()
     kwargs["dynamicAttr"] = True
     kwargs["holder"] = "std::shared_ptr"

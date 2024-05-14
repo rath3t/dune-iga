@@ -15,12 +15,12 @@
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
 auto testIO() {
   TestSuite t;
 
-  using PatchGrid   = IGANEW::PatchGrid<2, 2, IGANEW::DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto igaGridFactory = GridFactory();

@@ -29,10 +29,11 @@
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 #include <dune/subgrid/test/common.hh>
+#include <dune/grid/common/mcmgmapper.hh>
 
 using namespace Dune;
-using namespace Dune::IGANEW;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
+using namespace Dune::IGA;
 
 auto checkUniqueEdges(const auto& gridView) {
   Dune::TestSuite t;
@@ -168,7 +169,7 @@ auto thoroughGridCheck(auto& grid) {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   // First test
@@ -197,7 +198,7 @@ auto testNurbsGridCylinder() {
   const std::vector<std::vector<ControlPoint>> controlPoints = {
       {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
       {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+ // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
       {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
   };
 
@@ -208,7 +209,7 @@ auto testNurbsGridCylinder() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<2, 3, GridFamily> grid(patchData);
+  IGA::PatchGrid<2, 3, GridFamily> grid(patchData);
 
   grid.globalRefine(2);
   auto gridView        = grid.leafGridView();
@@ -236,9 +237,10 @@ auto testNurbsGridCylinder() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testHierarchicPatch() {
-  TestSuite t;
+  TestSuite t("testHierarchicPatch", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
+
   const double R       = 2.0;
   const double r       = 1.0;
   auto circle          = makeCircularArc(r);
@@ -251,7 +253,7 @@ auto testHierarchicPatch() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  Dune::IGANEW::PatchGrid<2, 3, GridFamily> patch(nurbsPatchData);
+  Dune::IGA::PatchGrid<2, 3, GridFamily> patch(nurbsPatchData);
 
   auto glueIndicator = [](int i) {
     switch (i) {
@@ -286,7 +288,7 @@ auto testHierarchicPatch() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testTorusGeometry() {
   const double R       = 2.0;
   const double r       = 1.0;
@@ -300,7 +302,7 @@ auto testTorusGeometry() {
   for (int refDirection = 0; refDirection < 2; ++refDirection)
     nurbsPatchData = Splines::degreeElevate(nurbsPatchData, refDirection, 1);
 
-  IGANEW::PatchGrid<2, 3, GridFamily> grid(nurbsPatchData);
+  IGA::PatchGrid<2, 3, GridFamily> grid(nurbsPatchData);
   grid.globalRefine(1);
   // grid.globalRefineInDirection(1, 1);
   // grid.globalRefineInDirection(0, 2);
@@ -362,7 +364,7 @@ auto testTorusGeometry() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<1, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<1, 3, double>::Trimmer>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   // Second test
@@ -402,11 +404,11 @@ auto testNURBSGridCurve() {
   auto additionalKnots    = std::vector<double>(2);
   additionalKnots[0]      = 0.5;
   additionalKnots[1]      = 3.5;
-  patchData               = Dune::IGANEW::Splines::knotRefinement<dim>(patchData, additionalKnots, 0);
-  patchData               = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 1);
+  patchData               = Dune::IGA::Splines::knotRefinement<dim>(patchData, additionalKnots, 0);
+  patchData               = Dune::IGA::Splines::degreeElevate(patchData, 0, 1);
 
   TestSuite t;
-  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
+  IGA::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
 
   auto patchGeo = grid.patchGeometry(0);
 
@@ -442,7 +444,7 @@ auto testNURBSGridCurve() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
 auto testNURBSGridSurface() {
   TestSuite t;
   int subSampling = 10;
@@ -476,7 +478,7 @@ auto testNURBSGridSurface() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGANEW::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
+  IGA::PatchGrid<dim, dimworld, GridFamily> grid(patchData);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -496,7 +498,7 @@ auto testNURBSGridSurface() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<3, 3, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<3, 3, double>::Trimmer>
 auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
@@ -540,7 +542,7 @@ auto test3DGrid() {
   // nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
   // nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
   // nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
-  IGANEW::PatchGrid<3, 3, GridFamily> grid(nurbsPatchData);
+  IGA::PatchGrid<3, 3, GridFamily> grid(nurbsPatchData);
   // grid.globalRefine(1);
   // gridcheck(grid);
   // grid.globalRefineInDirection(0,1);
@@ -628,7 +630,7 @@ auto testCurveHigherOrderDerivatives() {
   }
 
   for (int i = 1; i < 5; ++i) {
-    auto patchDataN = Dune::IGANEW::Splines::degreeElevate(patchData, 0, i);
+    auto patchDataN = Dune::IGA::Splines::degreeElevate(patchData, 0, i);
     GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
     for (int j = 0; j < samples + 1; ++j) {
       const Dune::FieldVector<double, 1> u = {j / static_cast<double>(samples)};
@@ -642,7 +644,7 @@ auto testCurveHigherOrderDerivatives() {
     }
   }
 
-  patchData = Dune::IGANEW::Splines::degreeElevate(patchData, 0, 2);
+  patchData = Dune::IGA::Splines::degreeElevate(patchData, 0, 2);
   t.check(expectedControlPoints.size() == patchData.controlPoints.directGetAll().size())
       << "Size mismatch " << expectedControlPoints.size() << "is " << patchData.controlPoints.directGetAll().size();
   t.check(expectedWeights.size() == patchData.controlPoints.directGetAll().size())
@@ -671,7 +673,7 @@ auto testSurfaceHigherOrderDerivatives() {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   // const std::vector<std::vector<ControlPoint>> controlPoints
   //     = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
@@ -692,13 +694,13 @@ auto testSurfaceHigherOrderDerivatives() {
 
   auto controlNet = NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   auto additionalKnots    = std::vector<double>(1);
   additionalKnots[0]      = 0.5;
-  patchData               = Dune::IGANEW::Splines::knotRefinement<2>(patchData, additionalKnots, 1);
+  patchData               = Dune::IGA::Splines::knotRefinement<2>(patchData, additionalKnots, 1);
   // const double R       = 2.0;
   // const double r       = 1.0;
   // auto circle          = makeCircularArc(r);
@@ -728,7 +730,7 @@ auto testSurfaceHigherOrderDerivatives() {
   }
 
   for (int i = 1; i < 2; ++i) {
-    auto patchDataN = Dune::IGANEW::Splines::degreeElevate(patchData, 1, i);
+    auto patchDataN = Dune::IGA::Splines::degreeElevate(patchData, 1, i);
     GeometryKernel::NURBSPatch<gridDim, dimworld> geo2(patchDataN);
     // t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
     for (int j = 0, index = 0; j < samples + 1; ++j) {
@@ -775,7 +777,7 @@ auto testNURBSCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  using ControlPoint                            = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint                            = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
   const std::vector<ControlPoint> controlPoints = {
       {.p = {1, 3, 4}, .w = 2},
       {.p = {2, 2, 2}, .w = 2},
@@ -802,6 +804,41 @@ auto testNURBSCurve() {
       << "Number of net size should be " << 1 << " but is " << patch.numberOfSpans().size();
   testSuite.check(patch.numberOfSpans()[0] == 5)
       << "Number of elements in dir " << 0 << " should be " << 5 << " but is " << patch.numberOfSpans()[0];
+
+  // Make grid
+  Dune::IGA::NURBSPatchData<dim, dimworld> patchData;
+  patchData.knotSpans     = knotSpans;
+  patchData.degree        = order;
+  patchData.controlPoints = controlNet;
+  IGA::PatchGrid<dim, dimworld, IdentityTrim::PatchGridFamily> grid(patchData);
+
+  auto leafGridView  = grid.leafGridView();
+  auto& leafIndexSet = leafGridView.indexSet();
+
+  for (const auto& ele : elements(leafGridView))
+    testSuite.checkNoThrow([&]() { auto index = leafIndexSet.index(ele); });
+
+  auto levelGridView = grid.levelGridView(grid.maxLevel());
+  auto& levelIndexSet = levelGridView.indexSet();
+
+  for (const auto& ele : elements(levelGridView))
+    testSuite.checkNoThrow([&]() { auto index = levelIndexSet.index(ele); });
+
+  // Test MCMGM
+  MultipleCodimMultipleGeomTypeMapper mapper(leafGridView, mcmgElementLayout());
+
+  testSuite.check(mapper.size() == leafGridView.size(0));
+  for (const auto& ele : elements(leafGridView)) {
+    decltype(mapper)::Index idx;
+    testSuite.check(mapper.contains(ele, idx));
+  }
+
+  // Test IDSets
+  auto& idSet = grid.globalIdSet();
+  for (const auto& ele : elements(leafGridView)) {
+    testSuite.checkNoThrow([&]() { auto id = idSet.id(ele); });
+  }
+
   return testSuite;
 }
 
@@ -820,7 +857,7 @@ auto testNURBSSurface() {
   const std::array<std::vector<double>, dim> knotSpans = {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints = {
       {{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
@@ -832,9 +869,9 @@ auto testNURBSSurface() {
   //
 
   // auto weightNet  = MultiDimensionalNet<dim, double>(dimsize, weight);
-  auto controlNet = Dune::IGANEW::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
-  IGANEW::GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
+  IGA::GeometryKernel::NURBSPatch<dim, dimworld> patch({knotSpans, controlNet, order});
 
   TestSuite testSuite;
   testSuite.check(patch.numberOfControlPoints().size() == 2)
@@ -854,7 +891,7 @@ auto testNURBSSurface() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGANEW::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
+requires IGA::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -865,7 +902,7 @@ auto testPlate() {
       {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
   };
 
-  using ControlPoint = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointType;
+  using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
   const std::vector<std::vector<ControlPoint>> controlPoints = {
       {  {.p = {0, 0}, .w = 1},   {.p = {0.5, 0}, .w = 1},   {.p = {1, 0}, .w = 1}},
@@ -875,10 +912,10 @@ auto testPlate() {
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
-  auto controlNet = Dune::IGANEW::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
-  using Grid      = Dune::IGANEW::PatchGrid<gridDim, dimworld, GridFamily>;
+  auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
+  using Grid      = Dune::IGA::PatchGrid<gridDim, dimworld, GridFamily>;
 
-  Dune::IGANEW::NURBSPatchData<gridDim, dimworld> patchData;
+  Dune::IGA::NURBSPatchData<gridDim, dimworld> patchData;
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
@@ -898,47 +935,29 @@ template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
   TestSuite t("testGrids");
 
-  // if constexpr (requires { testHierarchicPatch<GridFamily>(); }) {
   std::cout << "testHierarchicPatch" << std::endl;
   t.subTest(testHierarchicPatch<GridFamily>());
-  // } else
-  //   std::cout << "testHierarchicPatch Test disabled" << std::endl;
 
-  // if constexpr (requires { test3DGrid<GridFamily>(); }) {
-  //   std::cout << "Test3D" << std::endl;
-  //   t.subTest(test3DGrid<GridFamily>());
-  // } else
-  //   std::cout << "Test3D Test disabled" << std::endl;
-
-  // if constexpr (requires { testNURBSGridCurve<GridFamily>(); }) {
-  //   std::cout << "Test1Din3D" << std::endl;
-  //   t.subTest(testNURBSGridCurve<GridFamily>());
-  // } else
-  //   std::cout << "Test1Din3D Test disabled" << std::endl;
-
-  // if constexpr (requires { testNurbsGridCylinder<GridFamily>(); }) {
   std::cout << "testNurbsGridCylinder" << std::endl;
   t.subTest(testNurbsGridCylinder<GridFamily>());
-  // } else
-  // std::cout << "testNurbsGridCylinder Test disabled" << std::endl;
-  // if constexpr (requires { testNURBSGridSurface<GridFamily>(); }) {
-  std::cout << "testNURBSGridSurface" << std::endl;
-  t.subTest(testNURBSGridSurface<GridFamily>());
-  // } else
-  // std::cout << "testNURBSGridSurface Test disabled" << std::endl;
-  // if constexpr (requires { testPlate<GridFamily>(); }) {
 
-  std::cout << "testPlate==============================================" << std::endl;
+  std::cout << "testPlate" << std::endl;
   t.subTest(testPlate<GridFamily>());
-  std::cout << "testPlateEND==============================================" << std::endl;
-  // } else
-  // std::cout << "testPlate Test disabled" << std::endl;
-  // testNurbsGridCylinder();
-  // if constexpr (requires { testTorusGeometry<GridFamily>(); }) {
-  // std::cout << "testTorusGeometry" << std::endl;
-  // t.subTest(testTorusGeometry<GridFamily>());
-  // } else
-  // std::cout << "testTorusGeometry Test disabled" << std::endl;
+
+  std::cout << "testTorusGeometry" << std::endl;
+  t.subTest(testTorusGeometry<GridFamily>());
+
+  if constexpr (GridFamily<2, 2, double>::Trimmer::isAlwaysTrivial)
+    t.subTest(test3DGrid<GridFamily>());
+
+  // Not sure, this fails
+  // t.subTest(testNURBSGridCurve<GridFamily>());
+
+  std::cout << "testPlate" << std::endl;
+  t.subTest(testPlate<GridFamily>());
+
+  std::cout << "testTorusGeometry" << std::endl;
+  t.subTest(testTorusGeometry<GridFamily>());
 
   return t;
 }
@@ -949,27 +968,25 @@ int main(int argc, char** argv) try {
   // Initialize MPI, if necessary
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t;
-  // t.subTest(testGrids<DefaultTrim::Trimmer>());
+
   std::cout << "==================================" << std::endl;
   std::cout << "===============TEST DefaultTrim===" << std::endl;
   std::cout << "==================================" << std::endl;
   t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
+
   std::cout << "==================================" << std::endl;
   std::cout << "===============TEST IdentityTrim===" << std::endl;
   std::cout << "==================================" << std::endl;
-  // t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
-  /*
-    std::cout << "testNURBSCurve" << std::endl;
-    t.subTest(testNURBSCurve());
-    std::cout << "testNURBSSurface" << std::endl;
-    t.subTest(testNURBSSurface());
-    t.subTest(testCurveHigherOrderDerivatives());
-    t.subTest(testSurfaceHigherOrderDerivatives());
-    */
-  //
-  // gridCheck();
-  // t.subTest(testBsplineBasisFunctions());
-  //
+  t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
+
+  std::cout << "testNURBSCurve" << std::endl;
+  t.subTest(testNURBSCurve());
+  std::cout << "testNURBSSurface" << std::endl;
+  t.subTest(testNURBSSurface());
+
+  t.subTest(testCurveHigherOrderDerivatives());
+  t.subTest(testSurfaceHigherOrderDerivatives());
+
   t.report();
 
   return t.exit();

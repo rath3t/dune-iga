@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+name: Publish Python  distributions to PyPI
+on:
+  push:
+    branches:
+      - feature/workOnCreateLvl
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/ghpages.yml'
+      - '.github/workflows/createDockerContainer.yml'
+      - '**.md'
+
+jobs:
+  build-n-publish:
+    runs-on: ubuntu-latest
+    container:
+      image: henrij22/ikarus-gcc:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install twine and scikit-build
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
+          git config --global --add safe.directory /__w/dune-iga/dune-iga
+      - name: Bump dev version
+        if: ${{ github.event_name == 'push' }}
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
+
+      - name: Create tarball
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
+
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TESTPYPI_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+

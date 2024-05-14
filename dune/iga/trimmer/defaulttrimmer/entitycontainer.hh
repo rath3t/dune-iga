@@ -8,7 +8,7 @@
 #include <dune/common/reservedvector.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 template <typename GridImp>
 struct VectorEntityContainer
 {
@@ -78,16 +78,12 @@ struct VectorEntityContainer
   }
 
   int outsideIntersectionIndex(const IdType& insideElementId, const IdType& outsideElementId, int indexInInside) const {
-    // if (not isElementTrimmed(insideElementId))
-    //   indexInInside = Transformations::mapToTrimmer(1, indexInInside);
     const IdType& insideSubId = subId(insideElementId, indexInInside, 1);
 
     for (const auto i : Dune::range(subIds(outsideElementId, 1))) {
       const IdType& outsideSubId = subId(outsideElementId, i, 1);
       if (outsideSubId == insideSubId) {
-        // if (isElementTrimmed(outsideElementId))
         return i;
-        // return Transformations::mapToDune(1, i);
       }
     }
     DUNE_THROW(GridError, "outsideIntersectionIndex not successfull");
@@ -268,4 +264,4 @@ struct VectorEntityContainer
   std::vector<unsigned int> edgeCount;
   std::vector<unsigned int> vertexCount;
 };
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

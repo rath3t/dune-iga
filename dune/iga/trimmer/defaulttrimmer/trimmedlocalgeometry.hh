@@ -5,7 +5,7 @@
 
 #include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 enum class LocalGeometryTag
 {
@@ -322,4 +322,4 @@ private:
   FieldVector<ctype, coorddimension> pos_{};
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

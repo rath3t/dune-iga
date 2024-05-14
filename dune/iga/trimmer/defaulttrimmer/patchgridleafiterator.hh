@@ -9,7 +9,7 @@
  * @brief The PatchGridLeafIterator class
  */
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 /** @brief Iterator over all entities of a given codimension and level of a grid.
  *  @ingroup PatchGrid
@@ -70,4 +70,4 @@ private:
   IteratorImpl parameterSpaceLeafIterator;
 };
 
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

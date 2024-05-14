@@ -17,7 +17,7 @@
 #include <dune/iga/patchgrid.hh>
 
 using namespace Dune;
-using namespace Dune::IGANEW;
+using namespace Dune::IGA;
 
 auto testPatchGeometryCurve() {
   TestSuite t;

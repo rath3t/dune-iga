@@ -5,7 +5,7 @@
 
 #include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
 
-namespace Dune::IGANEW::DefaultTrim {
+namespace Dune::IGA::DefaultTrim {
 
 template <int dim, int dimworld, typename ScalarType>
 void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCount, bool initFlag) {
@@ -87,4 +87,4 @@ void TrimmerImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCou
     createSubEntities(newLevel);
   }
 }
-} // namespace Dune::IGANEW::DefaultTrim
+} // namespace Dune::IGA::DefaultTrim

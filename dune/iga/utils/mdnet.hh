@@ -12,7 +12,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/iga/hierarchicpatch/concepts.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 namespace Impl {
   template <std::integral auto netdim, typename ValueType, bool isConst = false>
@@ -675,4 +675,4 @@ private:
   int size_;
 };
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA

@@ -8,7 +8,7 @@
 #include <dune/grid/common/capabilities.hh>
 #include <dune/grid/common/defaultgridview.hh>
 
-namespace Dune::IGANEW {
+namespace Dune::IGA {
 
 template <class GridImp>
 struct PatchGridLevelGridView;
@@ -88,4 +88,4 @@ struct PatchGridLeafGridView : public DefaultLeafGridView<const GridImp>
   }
 };
 
-} // namespace Dune::IGANEW
+} // namespace Dune::IGA
