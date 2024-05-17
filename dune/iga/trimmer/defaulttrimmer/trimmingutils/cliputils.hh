@@ -24,6 +24,15 @@ inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {
   DUNE_THROW(Dune::GridError, "No corresponding edge Index for Input");
 }
 
+inline bool isConsecutive(const std::size_t e1, const std::size_t e2) {
+  assert(e2 < 4);
+  if (e1 == 3)
+    return e2 == 0;
+  if (e1 > e2)
+    return false;
+  return e2 == e1 + 1;
+}
+
 constexpr std::array edgeDirections{
     FieldVector<double, 2>{1.0, 0.0},
      FieldVector<double, 2>{  0,   1},
@@ -56,6 +65,7 @@ struct ClippingResult
     struct HostVertexImpl
     {
       size_t hostIdx{};
+      std::optional<size_t> additionalZVal{};
     };
     struct NewVertexImpl
     {
@@ -99,6 +109,10 @@ struct ClippingResult
       assert(isNew());
       return std::get<NewVertexImpl>(vertexData).trimmingCurveZ;
     }
+    auto additionalZValue() const {
+      assert(isHost());
+      return std::get<HostVertexImpl>(vertexData).additionalZVal;
+    }
     auto hostId() const {
       assert(isHost());
       return std::get<HostVertexImpl>(vertexData).hostIdx;
@@ -109,6 +123,9 @@ struct ClippingResult
     }
     static Vertex HostVertex(const Clipper2Lib::PointD& pt, size_t hostIdx) {
       return Vertex{.pt = pt, .vertexData = HostVertexImpl(hostIdx)};
+    }
+    static Vertex HostVertex(const Clipper2Lib::PointD& pt, size_t hostIdx, std::optional<size_t> additionalZ) {
+      return Vertex{.pt = pt, .vertexData = HostVertexImpl(hostIdx, additionalZ)};
     }
     static Vertex NewVertex(int onEdgeIdx, const Clipper2Lib::PointD& pt, u_int64_t trimmingCurveZ) {
       return Vertex{.pt = pt, .vertexData = NewVertexImpl(onEdgeIdx, trimmingCurveZ)};
@@ -137,9 +154,9 @@ struct ClippingResult
         not isAlreadyThere(pt.z))
       vertices_.emplace_back(Vertex::HostVertex(originalVertices_[pt.z], pt.z));
   }
-  void addOriginalVertex(const size_t hostIdx) {
+  void addOriginalVertex(const size_t hostIdx, std::optional<size_t> additionalZVal = std::nullopt) {
     if (not isAlreadyThere(hostIdx))
-      vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx], hostIdx));
+      vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx], hostIdx, additionalZVal));
   }
 
   void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {

@@ -18,6 +18,7 @@ set(TESTS
         testvtkdatacollector
         testnurbsbasistrimmed
         testboundarysegmentidx
+        testunstructuredgridcreation
 )
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 

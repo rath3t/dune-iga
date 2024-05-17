@@ -23,7 +23,7 @@ auto distance(const Clipper2Lib::PointD& p1, const auto& p2) -> double {
 }
 
 auto findGoodStartingPoint(const auto& curve, const Clipper2Lib::PointD& pt) -> double {
-  int N = std::max(curve.numberOfControlPoints().front() * 15, 200);
+  int N          = std::max(curve.numberOfControlPoints().front() * 15, 200);
   auto linSpace  = Utilities::linspace(curve.domain().front(), N);
   auto distances = std::ranges::transform_view(linSpace, [&](const auto u) { return distance(pt, curve.global(u)); });
   auto min_idx   = std::ranges::distance(distances.begin(), std::ranges::min_element(distances));

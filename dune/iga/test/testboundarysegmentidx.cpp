@@ -60,7 +60,7 @@ auto runTestHierachic(Dune::TestSuite& t, const std::string& fileName, int initi
           const auto boundarySegmentIdx = intersection.boundarySegmentIndex();
           allBoundarySegmentIndices.insert(boundarySegmentIdx);
 
-          const auto center             = intersection.geometry().center();
+          const auto center = intersection.geometry().center();
           if (FloatCmp::lt(center[0], 1e-8))
             t.check(checkBoundarySegmentIndex(initialRefLevel, 0, boundarySegmentIdx));
           else if (FloatCmp::gt(center[0], 1 - 1e-8))

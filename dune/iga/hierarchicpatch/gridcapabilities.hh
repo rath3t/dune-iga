@@ -48,8 +48,7 @@ namespace Capabilities {
   template <int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamilyTraits,
             int codim>
   struct hasEntityIterator<
-      Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>,
-      codim>
+      Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>, codim>
   {
     using GridFamilyTraitsT = GridFamilyTraits<dim, dimworld, ScalarType>;
     static const bool v     = GridFamilyTraitsT::template hasEntityIterator<codim>;
@@ -64,20 +63,18 @@ namespace Capabilities {
   {
     using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
 
-    //static const bool v = canCommunicate<ParameterSpaceGrid, codim>::v;
+    // static const bool v = canCommunicate<ParameterSpaceGrid, codim>::v;
     static const bool v = false;
   };
 
   template <int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamilyTraits,
             int codim>
   struct canCommunicate<
-      Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>,
-      codim>
+      Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>, codim>
   {
     using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
     // static const bool v      = canCommunicate<ParameterSpaceGrid, codim>::v;
     static const bool v = false;
-
   };
 
   /** @brief has conforming level grids when host grid has

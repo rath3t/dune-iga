@@ -4,9 +4,8 @@
 #pragma once
 namespace Dune::IGA::IdentityTrim {
 template <class GridImp>
-class PatchGridGlobalIdSet
-    : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
-                   typename std::remove_const_t<GridImp>::Traits::GlobalIdSet::IdType>
+class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
+                                          typename std::remove_const_t<GridImp>::Traits::GlobalIdSet::IdType>
 {
   typedef typename std::remove_const<GridImp>::type::ParameterSpaceGrid ParameterSpaceGrid;
 

@@ -14,6 +14,7 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/grid/common/mcmgmapper.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
 #include <dune/grid/test/checkgeometry.hh>
@@ -29,7 +30,6 @@
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
 #include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
 #include <dune/subgrid/test/common.hh>
-#include <dune/grid/common/mcmgmapper.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -198,7 +198,7 @@ auto testNurbsGridCylinder() {
   const std::vector<std::vector<ControlPoint>> controlPoints = {
       {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
       {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
- // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
       {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
   };
 
@@ -818,7 +818,7 @@ auto testNURBSCurve() {
   for (const auto& ele : elements(leafGridView))
     testSuite.checkNoThrow([&]() { auto index = leafIndexSet.index(ele); });
 
-  auto levelGridView = grid.levelGridView(grid.maxLevel());
+  auto levelGridView  = grid.levelGridView(grid.maxLevel());
   auto& levelIndexSet = levelGridView.indexSet();
 
   for (const auto& ele : elements(levelGridView))

@@ -356,9 +356,9 @@ public:
   void bind(const std::array<int, dim>& elementIdx) {
     const auto& patchData = preBasis_.patchData_;
     for (size_t i = 0; i < elementIdx.size(); i++) {
-      currentKnotSpan_[i] = Dune::IGA::Splines::findSpan(patchData.degree[i],
-                                                            *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
-                                                            patchData.knotSpans[i], elementIdx[i]);
+      currentKnotSpan_[i] =
+          Dune::IGA::Splines::findSpan(patchData.degree[i], *(preBasis_.uniqueKnotVector_[i].begin() + elementIdx[i]),
+                                       patchData.knotSpans[i], elementIdx[i]);
 
       // Compute the geometric transformation from knotspan-local to global coordinates
       localBasis_.offset_[i]     = preBasis_.patchData_.knotSpans[i][currentKnotSpan_[i]];
@@ -592,7 +592,7 @@ public:
       for (size_t i = 0; i < elementIdx.size(); i++)
         currentKnotSpan[i] =
             IGA::Splines::findSpan(patchData_.degree[i], *(uniqueKnotVector_[i].begin() + elementIdx[i]),
-                                      patchData_.knotSpans[i], elementIdx[i]);
+                                   patchData_.knotSpans[i], elementIdx[i]);
 
       // Here magic is happening
       for (size_type i = 0; i < sizeOfShapeFunctions; ++i) {
@@ -753,7 +753,7 @@ public:
   struct DummyEmpty
   {
   };
-  [[no_unique_address]] std::conditional_t<TrimmerType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>>
+  std::conditional_t<TrimmerType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>>
       indexMap_;
 };
 

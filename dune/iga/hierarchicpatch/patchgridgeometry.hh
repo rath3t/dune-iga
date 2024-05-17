@@ -7,7 +7,6 @@
  * @brief The PatchGridGeometry class and its specializations
  */
 
-
 #include <dune/common/fmatrix.hh>
 #include <dune/grid/common/geometry.hh>
 #include <dune/iga/geometrykernel/nurbspatchgeometry.hh>

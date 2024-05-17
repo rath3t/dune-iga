@@ -224,6 +224,7 @@ auto makeTestCases2d(TestSuite& t) {
       {    "auxiliaryfiles/trim_2edges.ibra", 0, 2, 100},
       {     "auxiliaryfiles/trim_multi.ibra", 0, 0, 100},
       {   "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
+      {   "auxiliaryfiles/quarter_plate.ibra", 1, 4, 100},
       // {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
       // {"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
   };

@@ -47,18 +47,19 @@ auto clipElementRectangle(const auto& element,
     assert(rectangleSecondPoint.z > 0 and rectangleSecondPoint.z < 5 &&
            "Intersection should only occur with the rectangle edges");
 
-    const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
-    if (isHost) {
-      result.addOriginalVertex(idx);
-      return;
-    }
-
     const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z - 1, rectangleSecondPoint.z - 1);
 
     auto firstTrimmingCurveIndices  = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
     auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
 
+    const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
+    if (isHost) {
+      result.addOriginalVertex(idx, secondTrimmingCurvePoint.z);
+      return;
+    }
+
     auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
+
     // std::cout << "First Curve: " << firstTrimmingCurvePoint.z << " " << firstTrimmingCurveIndices << std::endl;
     // std::cout << "Second Curve: " << secondTrimmingCurvePoint.z << " " << secondTrimmingCurveIndices << std::endl;
     // std::cout << "Intersection: " << intersectionPoint.z << " " << intersectionIndices << std::endl;

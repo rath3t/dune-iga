@@ -237,7 +237,7 @@ auto testInsideOutside(auto& grid) {
   return t;
 }
 
-auto runIntersectionTests(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel) {
+auto runBasisTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
@@ -266,9 +266,9 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
 
-  runIntersectionTests(t, "auxiliaryfiles/element_trim.ibra", true, 0);
-  runIntersectionTests(t, "auxiliaryfiles/element_trim.ibra", true, 1);
-  runIntersectionTests(t, "auxiliaryfiles/element_trim.ibra", true, 2);
+  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 0);
+  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 1);
+  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 2);
 
   t.report();
 

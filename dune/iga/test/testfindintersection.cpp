@@ -55,8 +55,8 @@ auto test1() {
   Dune::TestSuite t;
   auto curve1 = diagonalCurve();
   std::cout << std::setprecision(16) << std::endl;
-  auto [success, tParameter, curvePoint] = Dune::IGA::findIntersectionCurveAndLine(
-      curve1, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
+  auto [success, tParameter, curvePoint] =
+      Dune::IGA::findIntersectionCurveAndLine(curve1, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
   t.check(Dune::FloatCmp::eq(tParameter[1], -0.3041666666666666))
@@ -72,8 +72,8 @@ auto test2() {
   auto curve2 = diagonalLine();
 
   std::cout << std::setprecision(16) << std::endl;
-  auto [success, tParameter, curvePoint] = Dune::IGA::findIntersectionCurveAndLine(
-      curve2, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
+  auto [success, tParameter, curvePoint] =
+      Dune::IGA::findIntersectionCurveAndLine(curve2, Dune::FieldVector<double, 2>({0.5, 0.5}), {0.0, 5.0}, {0.5, 0.5});
   t.check(success == IntersectionCurveAndLine::intersect) << "No intersection found";
 
   t.check(Dune::FloatCmp::eq(tParameter[0], 0.4166666666666667))

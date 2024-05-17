@@ -13,7 +13,6 @@
 
 namespace Dune::IGA::IdentityTrim {
 
-
 template <class GridImp>
 class PatchGridLevelIndexSet
     : public IndexSet<GridImp, PatchGridLevelIndexSet<GridImp>,
@@ -145,6 +144,5 @@ public:
 
   const GridImp* grid_;
 };
-
 
 } // namespace Dune::IGA::IdentityTrim

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "idSet.hh"
 #include "patchgridentityseed.hh"
 #include "patchgridhierarchiciterator.hh"
 #include "patchgridindexsets.hh"
@@ -17,7 +18,6 @@
 #include "patchgridleafiterator.hh"
 #include "patchgridleveliterator.hh"
 #include "patchgridlocalgeometry.hh"
-#include "idSet.hh"
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
 #include <dune/geometry/referenceelements.hh>

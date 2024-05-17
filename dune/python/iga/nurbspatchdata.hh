@@ -5,14 +5,13 @@
 
 #include "dune/iga/nurbsbasis.hh"
 #include "dune/iga/splines/nurbsalgorithms.hh"
+#include <dune/iga/geometrykernel/controlpoint.hh>
+#include <dune/iga/utils/mdnet.hh>
 #include <dune/python/functions/globalbasis.hh>
 #include <dune/python/pybind11/eigen.h>
 #include <dune/python/pybind11/functional.h>
 #include <dune/python/pybind11/pybind11.h>
 #include <dune/python/pybind11/stl.h>
-#include <dune/iga/utils/mdnet.hh>
-#include <dune/iga/geometrykernel/controlpoint.hh>
-
 
 namespace Dune::Python {
 

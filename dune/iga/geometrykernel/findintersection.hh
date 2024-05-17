@@ -68,6 +68,13 @@ auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<Sc
 
   auto line = Line({pos, dir});
 
+  // Get some trivial cases
+  if (FloatCmp::eq(geoCurve.global({tParameter[0]}), geoCurve.corner(1), tol)) {
+    return std::make_tuple(IntersectionCurveAndLine::intersect, tParameter, geoCurve.corner(1));
+  }
+
+  tParameter[0] = std::clamp(tParameter[0], geoCurve.domain()[0].front(), geoCurve.domain()[0].back());
+
   bool sucess             = false;
   const int maxIterations = 1000;
   FieldVector<ScalarType, 2> curvePoint;

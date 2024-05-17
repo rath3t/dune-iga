@@ -444,7 +444,7 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
       std::atomic<double> trimmedEdgeLengthsAccumulated{0};
       std::for_each(policy, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
         ElementTrimData elementTrimData =
-            DefaultTrim::TrimmerImpl<2, 2, double>{}.trimElement(ele, gridView, patchTrimData, false);
+            DefaultTrim::TrimmerImpl<2, 2, double>{}.trimElement(ele, gridView, patchTrimData, true);
         auto [subTestEle, trimmedEdgeLength] =
             elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
         trimmedEdgeLengthsAccumulated.fetch_add(trimmedEdgeLength, std::memory_order_relaxed);
