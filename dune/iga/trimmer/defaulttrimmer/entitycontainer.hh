@@ -173,6 +173,9 @@ struct VectorEntityContainer
 
   GeoTypes types(int codim, int level) const {
     if (codim == 0) {
+      if (not Preferences::getInstance().reconstructTrimmedLocalGeometry())
+        return GeoTypes{GeometryTypes::cube(gridDim)};
+
       if (numberOfTrimmedElements[level] == 0)
         return GeoTypes{GeometryTypes::cube(gridDim)};
 
@@ -202,8 +205,11 @@ struct VectorEntityContainer
   }
 
   std::size_t size(GeometryType type, int lvl) const {
-    if (type == GeometryTypes::quadrilateral)
+    if (type == GeometryTypes::quadrilateral) {
+      if (not Preferences::getInstance().reportTrimmedElementGeometryTypeAsNone())
+        return numberOfTrimmedElements[lvl] + numberOfUnTrimmedElements[lvl];
       return numberOfUnTrimmedElements[lvl];
+    }
     if (type == GeometryTypes::none(gridDim))
       return numberOfTrimmedElements[lvl];
     if (type == GeometryTypes::line)

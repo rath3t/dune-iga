@@ -52,8 +52,8 @@ auto readJson(InputStringType& ibraInputFile) {
       }
     }
   } catch (json::parse_error& ex) {
-    DUNE_THROW(Dune::IOError,
-               "Error in reading input stream: " << ", parse error at byte " << ex.byte << " What: " << ex.what());
+    DUNE_THROW(Dune::IOError, "Error in reading input stream: "
+                                  << ", parse error at byte " << ex.byte << " What: " << ex.what());
   }
 
   // Make Connections

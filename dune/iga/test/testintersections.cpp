@@ -237,7 +237,41 @@ auto testInsideOutside(auto& grid) {
   return t;
 }
 
-auto runBasisTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel) {
+auto testReportFullIntersections() {
+  TestSuite t;
+
+  Preferences::getInstance().reconstructTrimmedLocalGeometry(false);
+
+  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using GridFactory = Dune::GridFactory<PatchGrid>;
+
+  auto gridFactory = GridFactory();
+  gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {2, 2});
+
+  const auto grid = gridFactory.createGrid();
+
+  auto count = [](const auto& ele, const auto& gridView) {
+    size_t i = 0;
+    for (const auto& intersection : intersections(gridView, ele))
+      ++i;
+    return i;
+  };
+
+  auto leafGridView = grid->leafGridView();
+  for (const auto& ele : elements(leafGridView))
+    t.check(count(ele, leafGridView) == 4);
+
+  auto levelGridView = grid->levelGridView(grid->maxLevel());
+  for (const auto& ele : elements(leafGridView))
+    t.check(count(ele, levelGridView) == 4);
+
+  Preferences::getInstance().reconstructTrimmedLocalGeometry(true);
+
+  return t;
+}
+
+auto runIntersectionTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
@@ -266,9 +300,11 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
 
-  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 0);
-  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 1);
-  runBasisTest(t, "auxiliaryfiles/element_trim.ibra", true, 2);
+  runIntersectionTest(t, "auxiliaryfiles/element_trim.ibra", true, 0);
+  runIntersectionTest(t, "auxiliaryfiles/element_trim.ibra", true, 1);
+  runIntersectionTest(t, "auxiliaryfiles/element_trim.ibra", true, 2);
+
+  t.subTest(testReportFullIntersections());
 
   t.report();
 

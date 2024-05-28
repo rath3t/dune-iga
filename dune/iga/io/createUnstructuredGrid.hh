@@ -43,14 +43,13 @@ std::unique_ptr<UnstructuredGrid> createUnstructuredGridImpl(PatchGrid* patchGri
     gridFactory.insertVertex(v);
   }
 
-
   // Reconstruct grid
   for (const auto& element : elements(gridView)) {
     auto geometry = element.geometry();
     auto id       = idSet.id(element);
 
-    auto gt                = geometries.geometryType(id);
-    unsigned int nSubI     = gt == GeometryTypes::simplex(2) ? 3 : 4;
+    auto gt            = geometries.geometryType(id);
+    unsigned int nSubI = gt == GeometryTypes::simplex(2) ? 3 : 4;
 
     auto& eleVertices = geometries.getVertices(id);
 
@@ -58,7 +57,7 @@ std::unique_ptr<UnstructuredGrid> createUnstructuredGridImpl(PatchGrid* patchGri
       std::vector<unsigned int> elementVertices;
 
       for (auto subEntityIndex : std::views::iota(0u, nSubI)) {
-        auto localVertexIdx                       = geometries.vertexSubIndex(id, subEleIdx, subEntityIndex);
+        auto localVertexIdx                 = geometries.vertexSubIndex(id, subEleIdx, subEntityIndex);
         Dune::FieldVector<double, 2> vertex = geometry.global(eleVertices[localVertexIdx]);
 
         // Find Idx
@@ -72,7 +71,5 @@ std::unique_ptr<UnstructuredGrid> createUnstructuredGridImpl(PatchGrid* patchGri
   }
 
   return gridFactory.createGrid();
-
-
 }
 } // namespace Dune::IGA

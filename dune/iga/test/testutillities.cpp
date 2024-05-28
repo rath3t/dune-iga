@@ -98,7 +98,7 @@ auto testForEachUntrimmedBoundary(int degreeElevate) {
   igaGridFactory.insertJson("auxiliaryfiles/quarter_plate.ibra", true, {0, 0}, {degreeElevate, degreeElevate}, {4, 4});
   auto igaGrid = igaGridFactory.createGrid();
 
-  using namespace  Functions::BasisFactory;
+  using namespace Functions::BasisFactory;
 
   auto gridView = igaGrid->leafGridView();
   Functions::NurbsBasis<GridView> basis2(gridView, nurbs());

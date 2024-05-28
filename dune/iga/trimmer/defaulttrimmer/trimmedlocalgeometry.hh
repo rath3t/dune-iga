@@ -61,7 +61,9 @@ public:
   /** @brief Return the element type identifier
    */
   [[nodiscard]] GeometryType type() const {
-    return GeometryTypes::none(mydimension);
+    if (Preferences::getInstance().reportTrimmedElementGeometryTypeAsNone())
+      return GeometryTypes::none(mydimension);
+    return GeometryTypes::cube(mydimension);
   }
 
   // return whether we have an affine mapping (true for straight lines)

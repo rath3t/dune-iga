@@ -48,8 +48,8 @@ class IbraReader<dim, dimworld, PatchGrid, true>
 
 public:
   static auto read(const std::string& fileName, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0},
-                   std::array<int, 2> degreeElevate = {0, 0}, std::array<int, 2> postKnotRefine = {0, 0})
-      -> std::tuple<PatchData, std::optional<PatchTrimData>> {
+                   std::array<int, 2> degreeElevate  = {0, 0},
+                   std::array<int, 2> postKnotRefine = {0, 0}) -> std::tuple<PatchData, std::optional<PatchTrimData>> {
     Ibra::Brep brep = readJson<dimworld>(fileName);
     // Each surface in a brep is one Patch, as for now only one brep is supported in NURBSGrid
     assert(brep.surfaces.size() == 1);
@@ -85,7 +85,7 @@ public:
     // Optional postKnot refinement
     for (const auto i : Dune::range(dim)) {
       if (postKnotRefine[i] > 0) {
-        auto newKnots = Splines::generateRefinedKnots(knotSpans, i, postKnotRefine[i]);
+        auto newKnots = Splines::generateRefinedKnots(_patchData.knotSpans, i, postKnotRefine[i]);
         _patchData    = Splines::knotRefinement(_patchData, newKnots, i);
       }
     }
@@ -123,7 +123,8 @@ class IbraReader<dim, dimworld, PatchGrid, false>
 
 public:
   static auto read(const std::string& fileName, const bool trim = true, std::array<int, 2> preKnotRefine = {0, 0},
-                   std::array<int, 2> degreeElevate = {0, 0}, std::array<int, 2> postKnotRefine = {0, 0}) -> std::tuple<PatchData, std::optional<PatchTrimData>> {
+                   std::array<int, 2> degreeElevate  = {0, 0},
+                   std::array<int, 2> postKnotRefine = {0, 0}) -> std::tuple<PatchData, std::optional<PatchTrimData>> {
     Ibra::Brep brep = readJson<dimworld>(fileName);
     // Each surface in a brep is one Patch, as for now only one brep is supported in NURBSGrid
     assert(brep.surfaces.size() == 1);
@@ -159,7 +160,7 @@ public:
     // Optional postKnot refinement
     for (const auto i : Dune::range(dim)) {
       if (postKnotRefine[i] > 0) {
-        auto newKnots = Splines::generateRefinedKnots(knotSpans, i, postKnotRefine[i]);
+        auto newKnots = Splines::generateRefinedKnots(_patchData.knotSpans, i, postKnotRefine[i]);
         _patchData    = Splines::knotRefinement(_patchData, newKnots, i);
       }
     }

@@ -50,9 +50,9 @@ auto testNurbsBasis(auto& grid) {
 
   {
     // Check power Basis
-    auto powerB = Dune::Functions::BasisFactory::makeBasis(gridView, Functions::BasisFactory::power(Functions::BasisFactory::nurbs(), 2));
+    auto powerB = Dune::Functions::BasisFactory::makeBasis(
+        gridView, Functions::BasisFactory::power(Functions::BasisFactory::nurbs(), 2));
     t.subTest(checkBasis(powerB, EnableContinuityCheck()));
-
   }
   {
     // Check whether a B-Spline basis can be combined with other bases.
@@ -81,13 +81,15 @@ auto testNurbsBasis(auto& grid) {
   return t;
 }
 
-auto runBasisTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel, int degreeElevate = 0, int postKnot = 0) {
+auto runBasisTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel, int degreeElevate = 0,
+                  int postKnot = 0) {
   // Create test case
   using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto igaGridFactory = GridFactory();
-  igaGridFactory.insertJson(fileName, trimmed, {refLevel, refLevel}, {degreeElevate, degreeElevate}, {postKnot, postKnot});
+  igaGridFactory.insertJson(fileName, trimmed, {refLevel, refLevel}, {degreeElevate, degreeElevate},
+                            {postKnot, postKnot});
   igaGridFactory.insertTrimParameters(GridFactory::TrimParameterType{120});
 
   auto grid = igaGridFactory.createGrid();

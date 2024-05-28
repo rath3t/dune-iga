@@ -52,7 +52,7 @@ struct SimplexIntegrationRuleGenerator
 
     for (const auto& edgeInfo : trimData.edges()) {
       if (edgeInfo.isTrimmed) {
-        auto localGeometry         = GeometryKernel::transformToSpan(edgeInfo.geometry.value(), hostEntity.geometry());
+        auto localGeometry = GeometryKernel::transformToSpan(edgeInfo.geometry.value(), hostEntity.geometry());
         splitBoundary(localGeometry, parameters, vertices);
       } else {
         auto refElement = referenceElement(hostEntity);
@@ -86,7 +86,6 @@ struct SimplexIntegrationRuleGenerator
 
 private:
   static void splitBoundary(const auto& localGeometry, const Parameters& parameters, std::vector<Point>& points) {
-
     if (localGeometry.affine()) {
       points.push_back(localGeometry.global({0.0}));
       return;
@@ -97,25 +96,21 @@ private:
       for (auto local : Utilities::linspace(0.0, 1.0, parameters.boundaryDivisions))
         points.push_back(localGeometry.global({local}));
     } else {
-      // Guess initial amount of segments (a quadratic segment of lenght 1 should be devided by 5 divions)
-      double curveLength   = localGeometry.curveLength();
-      auto initialSegments = static_cast<unsigned int>(std::ceil(5 * curveLength * localGeometry.degree()[0]));
+      // Guess initial amount of segments (a linear segment of lenght 1 should be devided by 1 divions)
+      double curveLength = computeCurveLength(localGeometry);
+      auto segments      = static_cast<unsigned int>(std::ceil(1 * curveLength * localGeometry.degree()[0]));
 
-      std::vector<Point> initialPoints;
-      for (const auto i : Dune::range(initialSegments)) {
-        double t = static_cast<double>(i) / initialSegments;
-        initialPoints.push_back(localGeometry.global({t}));
-      }
-
-      points.push_back(initialPoints.front());
-
-      for (size_t i_ = 0; i_ < initialPoints.size() - 1; ++i_) {
-        const auto i = static_cast<double>(i_);
-        refineSegments(points, localGeometry, i * (1.0 / initialSegments), (i + 1) * (1.0 / initialSegments),
-                       parameters.targetAccuracy);
+      bool converged = false;
+      std::vector<Point> newPoints;
+      while (not converged) {
+        std::tie(converged, newPoints) =
+            checkForConvergence(localGeometry, segments, curveLength, parameters.targetAccuracy);
+        ++segments;
+        if (converged)
+          points.insert(points.end(), newPoints.begin(), newPoints.end());
       }
     }
-    points.push_back(localGeometry.global({1.0}));
+    // points.push_back(localGeometry.global({1.0}));
 
     // Remove last element to avoid duplication
     points.pop_back();
@@ -144,32 +139,34 @@ private:
   }
 
   // Function to calculate the distance between two points
-  static double distance(const Point& p1, const Point& p2) {
-    return std::sqrt(Dune::power(p2[0] - p1[0], 2) + Dune::power(p2[1] - p1[1], 2));
+
+  static auto checkForConvergence(const auto& localGeometry, unsigned int numSegments, double curveLength,
+                                  double targetAccuracy) -> std::pair<bool, std::vector<Point>> {
+    auto [totalDistance, points] = getPointsAndDistance(localGeometry, numSegments);
+    auto converged               = std::abs((totalDistance - curveLength) / curveLength) < targetAccuracy;
+    return std::make_pair(converged, points);
+  }
+  static auto computeCurveLength(const auto& localGeometry) -> double {
+    unsigned int numSegments = localGeometry.degree()[0] * 25;
+
+    return std::get<0>(getPointsAndDistance(localGeometry, numSegments));
   }
 
-  static void refineSegments(std::vector<Point>& points, const auto& localGeometry, double t_start, double t_end,
-                             double tolerance) {
-    Point p1 = localGeometry.global({t_start});
-    Point p2 = localGeometry.global({t_end});
+  static auto getPointsAndDistance(const auto& localGeometry, unsigned int numSegments)
+      -> std::pair<double, std::vector<Point>> {
+    auto distance = [](const Point& p1, const Point& p2) {
+      return std::sqrt(Dune::power(p2[0] - p1[0], 2) + Dune::power(p2[1] - p1[1], 2));
+    };
 
-    // Calculate the midpoint of the parameter
-    double t_mid = (t_start + t_end) / 2;
-    Point p_mid  = localGeometry.global({t_mid});
+    std::vector<Point> points;
+    for (auto local : Utilities::linspace(0.0, 1.0, numSegments + 1))
+      points.push_back(localGeometry.global({local}));
 
-    // Calculate the perpendicular distance from the midpoint to the line segment
-    double numerator =
-        std::abs((p2[1] - p1[1]) * p_mid[0] - (p2[0] - p1[0]) * p_mid[1] + p2[0] * p1[1] - p2[1] * p1[0]);
-    double denominator     = distance(p1, p2);
-    double dist_to_segment = numerator / denominator;
+    double totalDistance = 0.0;
+    for (auto i : Dune::range(1ul, points.size()))
+      totalDistance += distance(points[i - 1], points[i]);
 
-    if (dist_to_segment > tolerance) {
-      // If the distance is greater than the tolerance, subdivide recursively
-      refineSegments(points, localGeometry, t_start, t_mid, tolerance);
-      refineSegments(points, localGeometry, t_mid, t_end, tolerance);
-    } else {
-      points.push_back(p2); // Include the endpoint of the segment
-    }
+    return std::make_pair(totalDistance, points);
   }
 };
 

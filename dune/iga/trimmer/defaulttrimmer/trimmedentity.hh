@@ -117,7 +117,7 @@ public:
   }
 
   HostParameterSpaceGridEntity getHostEntity() const {
-    if (codim_ == 0 or not isTrimmed())
+    if (codim_ == 0 or not isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
       return hostEntity_;
     DUNE_THROW(NotImplemented, "getHostEntity");
   }
@@ -168,7 +168,7 @@ public:
 
   // Geometry of this entity
   [[nodiscard]] LocalParameterSpaceGeometry geometry() const {
-    if (not isTrimmed())
+    if (not isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
       return hostEntity_.geometry();
     if constexpr (codim_ == 1 or codim_ == 2) /* edge, vertex */ {
       return TrimmedParameterSpaceGeometry(trimData_->geometry.value());
@@ -184,7 +184,7 @@ public:
     if (codim_ == codim)
       return Dune::referenceElement<double, mydimension>(Dune::GeometryTypes::cube(mydimension)).size(codim);
     if constexpr (codim_ == 0) {
-      if (not isTrimmed())
+      if (not isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
         return hostEntity_.subEntities(codim);
 
       return trimData_.value().size(codim);

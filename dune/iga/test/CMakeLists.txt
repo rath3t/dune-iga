@@ -19,6 +19,7 @@ set(TESTS
         testnurbsbasistrimmed
         testboundarysegmentidx
         testunstructuredgridcreation
+        testnotreconstructedgrid
 )
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 

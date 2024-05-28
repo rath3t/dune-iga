@@ -307,7 +307,7 @@ namespace DefaultTrim {
       using IntersectionIterator = PatchGridLevelIntersectionIterator<const GridImp>;
       auto& localEntity          = ent.impl().getLocalEntity();
 
-      if (not localEntity.isTrimmed())
+      if (not localEntity.isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
         return IntersectionIterator(
             grid_, parameterSpaceGrid().levelGridView(ent.level()).ibegin(localEntity.getHostEntity()));
       return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::Begin,
@@ -319,7 +319,7 @@ namespace DefaultTrim {
       using IntersectionIterator = PatchGridLevelIntersectionIterator<const GridImp>;
       auto& localEntity          = ent.impl().getLocalEntity();
 
-      if (not localEntity.isTrimmed())
+      if (not localEntity.isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
         return IntersectionIterator(grid_,
                                     parameterSpaceGrid().levelGridView(ent.level()).iend(localEntity.getHostEntity()));
       return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::End,
@@ -331,7 +331,7 @@ namespace DefaultTrim {
       using IntersectionIterator = PatchGridLeafIntersectionIterator<const GridImp>;
       auto& localEntity          = ent.impl().getLocalEntity();
 
-      if (not localEntity.isTrimmed())
+      if (not localEntity.isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
         return IntersectionIterator(grid_, parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));
       return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::Begin,
                                   parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));
@@ -342,7 +342,7 @@ namespace DefaultTrim {
       using IntersectionIterator = PatchGridLeafIntersectionIterator<const GridImp>;
       auto& localEntity          = ent.impl().getLocalEntity();
 
-      if (not localEntity.isTrimmed())
+      if (not localEntity.isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
         return IntersectionIterator(grid_, parameterSpaceGrid().leafGridView().iend(localEntity.getHostEntity()));
       return IntersectionIterator(grid_, localEntity, IntersectionIterator::PositionToken::End,
                                   parameterSpaceGrid().leafGridView().ibegin(localEntity.getHostEntity()));

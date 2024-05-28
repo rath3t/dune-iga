@@ -307,9 +307,10 @@ public:
 
       patchGeometries_.emplace_back(newfinestPatchData, newUniqueKnotVecs);
       patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
+
+      trimmer_->globalRefine(1);
     }
-    // Here it is exploited that the knot refinem above is in sync with the globaRefine of the trimmer
-    trimmer_->globalRefine(refCount);
+
   }
 
   /**
@@ -328,19 +329,20 @@ public:
    * refined in the given directions. This splits the element in half, quarters ,... in the given direction
    */
   void globalRefineInDirection(const std::array<int, dim>& refines) {
-    const auto& finestPatchData = patchGeometries_.back().patchData();
-    auto newfinestPatchData     = finestPatchData;
-    for (int dir = 0; auto refinesInDirection : refines) {
-      if (refinesInDirection == 0) {
-        ++dir;
-        continue;
-      }
-      auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, dir, refinesInDirection);
-      newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, dir);
-      ++dir;
-    }
-    auto newGrid = PatchGrid(newfinestPatchData);
-    *this        = std::move(newGrid);
+    DUNE_THROW(NotImplemented, "This is outdated");
+    // const auto& finestPatchData = patchGeometries_.back().patchData();
+    // auto newfinestPatchData     = finestPatchData;
+    // for (int dir = 0; auto refinesInDirection : refines) {
+    //   if (refinesInDirection == 0) {
+    //     ++dir;
+    //     continue;
+    //   }
+    //   auto additionalKnots = Splines::generateRefinedKnots(finestPatchData.knotSpans, dir, refinesInDirection);
+    //   newfinestPatchData   = Splines::knotRefinement<dim>(newfinestPatchData, additionalKnots, dir);
+    //   ++dir;
+    // }
+    // auto newGrid = PatchGrid(newfinestPatchData);
+    // *this        = std::move(newGrid);
   }
 
   /**

@@ -232,7 +232,7 @@ void TrimmerImpl<dim, dimworld, ScalarType>::collectElementEdges(int level, cons
     }
   };
 
-  if (eleTrimData.flag() == ElementTrimFlag::full) {
+  if (eleTrimData.flag() == ElementTrimFlag::full or not Preferences::getInstance().reconstructTrimmedLocalGeometry()) {
     for (auto localEdgeIndex : Dune::range(ele.subEntities(1))) {
       addHostEdge(localEdgeIndex);
     }
@@ -295,7 +295,7 @@ void TrimmerImpl<dim, dimworld, ScalarType>::collectElementVertices(int level, c
     entityContainer_.idToVertexInfoMap.back().insert({vertexId, vertexInfo});
   };
 
-  if (eleTrimData.flag() == ElementTrimFlag::full) {
+  if (eleTrimData.flag() == ElementTrimFlag::full or not Preferences::getInstance().reconstructTrimmedLocalGeometry()) {
     // Save eleVertices in local order
     for (auto localVertexIndex : Dune::range(ele.subEntities(2))) {
       addHostVertex(localVertexIndex);
@@ -352,7 +352,7 @@ void TrimmerImpl<dim, dimworld, ScalarType>::createSubEntities(int level) {
 
   vertexContainer.resize(entityContainer_.vertexCount.back());
   for (auto& [vertexId, vertexInfo] : vertexMap) {
-    if (not vertexInfo.trimmed) {
+    if (not vertexInfo.trimmed or not Preferences::getInstance().reconstructTrimmedLocalGeometry()) {
       auto vertex                                   = parameterSpaceGrid_->entity(vertexInfo.hostSeed);
       vertexContainer[vertexInfo.indexInLvlStorage] = VertexEntity{grid_, vertex, vertexInfo};
     } else {
@@ -363,7 +363,7 @@ void TrimmerImpl<dim, dimworld, ScalarType>::createSubEntities(int level) {
   edgeContainer.resize(entityContainer_.edgeCount.back());
   for (auto& [edgeId, edgeInfo] :
        edgeMap | std::ranges::views::filter([level](const auto& pair) { return pair.second.lvl == level; })) {
-    if (not edgeInfo.trimmed) {
+    if (not edgeInfo.trimmed or not Preferences::getInstance().reconstructTrimmedLocalGeometry()) {
       auto edge                                 = parameterSpaceGrid_->entity(edgeInfo.hostSeed);
       edgeContainer[edgeInfo.indexInLvlStorage] = EdgeEntity{grid_, edge, edgeInfo};
     } else {

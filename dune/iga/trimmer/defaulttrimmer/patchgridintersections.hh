@@ -360,6 +360,10 @@ namespace Impl {
       auto yaspIntersection = *std::ranges::find_if(
           gridView.ibegin(yaspEle), gridView.iend(yaspEle),
           [index = hostIntersection_.indexInInside()](const auto& i_) { return i_.indexInInside() == index; });
+
+      if (not Preferences::getInstance().reconstructTrimmedLocalGeometry() and not yaspIntersection.boundary())
+        return 0;
+
       return yaspIntersection.boundarySegmentIndex();
     }
 

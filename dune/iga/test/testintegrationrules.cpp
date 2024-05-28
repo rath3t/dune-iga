@@ -6,13 +6,19 @@
   #include "config.h"
 #endif
 
+#include "testhelper.hh"
+
+#include <cfenv>
+
 #include <dune/common/exceptions.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/rangeutilities.hh>
 #include <dune/common/test/testsuite.hh>
+#include <dune/iga/io/vtk/igadatacollector.hh>
 #include <dune/iga/patchgrid.hh>
 #include <dune/iga/trimmer/defaulttrimmer/integrationrules/simplexintegrationrulegenerator.hh>
 #include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
 using namespace Dune::IGA;
@@ -41,7 +47,7 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
   }
   if constexpr (useEle and useBoundaryDivisions) {
     Preferences::getInstance().boundaryDivisions(5);
-    Preferences::getInstance().targetAccuracy(1e-4);
+    Preferences::getInstance().targetAccuracy(1e-6);
   }
 
   auto parameters = IntegrationRuleGenerator::Parameters{.boundaryDivisions = 20};
@@ -62,6 +68,82 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
   }
   t.check(FloatCmp::eq(area, referenceArea, power(10.0, -(refLevel + refLevel < 3 ? 1 : 0))))
       << "Area is " << area << ", but should be " << referenceArea << " (" << file_name << ", " << refLevel << ")";
+}
+
+auto testBoundaryDivisionsPreference() {
+  TestSuite t;
+
+  Preferences::getInstance().targetAccuracy(2);
+
+  constexpr int gridDim  = 2;
+  constexpr int dimworld = 2;
+
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using GridFactory = Dune::GridFactory<PatchGrid>;
+
+  using IntegrationRuleGenerator = DefaultTrim::SimplexIntegrationRuleGenerator<const PatchGrid>;
+
+  auto gridFactory = GridFactory();
+  gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {2, 2});
+
+  const auto grid = gridFactory.createGrid();
+  auto gridView   = grid->leafGridView();
+
+  auto getNQP = [&]() {
+    return std::accumulate(gridView.begin<0>(), gridView.end<0>(), 0ul,
+                           [](size_t lhs, const auto& ele) { return lhs += ele.impl().getQuadratureRule().size(); });
+  };
+
+  auto lastnQP = 0ul;
+  for (const auto i : Dune::range(5)) {
+    Preferences::getInstance().boundaryDivisions(i);
+    const auto newQP = getNQP();
+    t.check(newQP > lastnQP)
+        << "There have to be more Quadrature Points for a higher number of prescribed boundary divisions";
+    lastnQP = newQP;
+  }
+
+  return t;
+}
+
+auto testTargetAccuracyPreference() {
+  TestSuite t;
+
+  constexpr int gridDim  = 2;
+  constexpr int dimworld = 2;
+
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using GridFactory = Dune::GridFactory<PatchGrid>;
+
+  using IntegrationRuleGenerator = DefaultTrim::SimplexIntegrationRuleGenerator<const PatchGrid>;
+
+  auto gridFactory = GridFactory();
+  gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
+  gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {2, 2});
+
+  const auto grid = gridFactory.createGrid();
+  auto gridView   = grid->leafGridView();
+
+  auto getNQP = [&]() {
+    return std::accumulate(gridView.begin<0>(), gridView.end<0>(), 0ul,
+                           [](size_t lhs, const auto& ele) { return lhs += ele.impl().getQuadratureRule().size(); });
+  };
+
+  std::array testAccuracies{1e-4, 1e-5, 1e-6, 1e-7, 1e-8};
+
+  auto lastnQP = 0ul;
+  for (const auto acc : testAccuracies) {
+    Preferences::getInstance().targetAccuracy(acc);
+    const auto newQP = getNQP();
+    t.check(newQP >= lastnQP)
+        << "There have to be more Quadrature Points for a higher or same number of prescribed target accuracy.";
+    if (lastnQP == newQP)
+      std::cout << "Same amount of QP for " << acc << " as for the accuracy before that.\n";
+    lastnQP = newQP;
+  }
+
+  return t;
 }
 
 #include <cfenv>
@@ -102,6 +184,11 @@ int main(int argc, char** argv) try {
   testAreaIntegration<true>(t, "auxiliaryfiles/surface-hole-skew.ibra", 1, 49.069565);
   testAreaIntegration<true>(t, "auxiliaryfiles/surface-hole-skew.ibra", 2, 49.069565);
   testAreaIntegration<true>(t, "auxiliaryfiles/surface-hole-skew.ibra", 3, 49.069565);
+
+  createOutputFolder("out");
+
+  t.subTest(testBoundaryDivisionsPreference());
+  t.subTest(testTargetAccuracyPreference());
 
   t.report();
 

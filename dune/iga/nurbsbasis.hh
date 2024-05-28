@@ -753,8 +753,7 @@ public:
   struct DummyEmpty
   {
   };
-  std::conditional_t<TrimmerType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>>
-      indexMap_;
+  std::conditional_t<TrimmerType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>> indexMap_;
 };
 
 template <typename GV>
@@ -861,6 +860,7 @@ namespace BasisFactory {
       std::array<int, dim> degreeElevate_{};
     };
 
+
   } // namespace Impl
 
   /**
@@ -879,10 +879,14 @@ namespace BasisFactory {
     return {std::forward<Types>(t)...};
   }
 
+
+
   template <size_t dim>
   auto nurbs(const std::array<int, dim>& degreeElevate) {
     return Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>(degreeElevate);
   }
+
+
 
   inline auto nurbs() {
     return [](const auto& gridView) { return NurbsPreBasis<std::remove_cvref_t<decltype(gridView)>>(gridView); };
