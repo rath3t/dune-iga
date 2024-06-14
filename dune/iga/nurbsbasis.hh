@@ -12,8 +12,7 @@
 #include <limits>
 #include <map>
 #include <numeric>
-#include <ranges>
-#include <set>
+#include <unordered_set>
 #include <vector>
 
 #include <dune/common/diagonalmatrix.hh>
@@ -22,7 +21,7 @@
 #include <dune/geometry/type.hh>
 #include <dune/iga/splines/bsplinealgorithms.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
-#include <dune/iga/trimmer/defaulttrimmer/elementtrimdata.hh>
+#include <dune/iga/parameterspace/default/elementtrimdata.hh>
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/localfunctions/common/localkey.hh>
@@ -503,7 +502,7 @@ public:
   static constexpr size_type maxMultiIndexSize    = 1;
   static constexpr size_type minMultiIndexSize    = 1;
   static constexpr size_type multiIndexBufferSize = 1;
-  using TrimmerType                               = typename GridView::Implementation::TrimmerType;
+  using ParameterSpaceType                               = typename GridView::Implementation::ParameterSpaceType;
 
   // Type used for function values
   using R = ScalarType;
@@ -613,7 +612,7 @@ public:
   }
 
   auto getDirectIndex(const auto& ele) const {
-    if constexpr (TrimmerType::isAlwaysTrivial)
+    if constexpr (ParameterSpaceType::isAlwaysTrivial)
       return gridView_.indexSet().index(ele);
     else
       return ele.impl().getLocalEntity().hostIndexInLvl();
@@ -624,7 +623,7 @@ public:
   It indices(const Node& node, It it) const {
     const auto eleIdx = getDirectIndex(node.element_);
     for (size_type i = 0, end = node.size(); i < end; ++i, ++it) {
-      if constexpr (TrimmerType::isAlwaysTrivial) {
+      if constexpr (ParameterSpaceType::isAlwaysTrivial) {
         auto globalIndex = originalIndices_.at(eleIdx)[i];
         *it              = {{globalIndex}};
       } else {
@@ -636,31 +635,34 @@ public:
   }
 
   void createTrimmedNodeIndices() {
-    if constexpr (not TrimmerType::isAlwaysTrivial) {
-      // if (not gridView_.grid().trimmer().trimData_.has_value())
-      //   return;
-
+    if constexpr (not ParameterSpaceType::isAlwaysTrivial) {
       unsigned int n_ind_original = cachedSize_;
 
       auto spanSize    = gridView_.impl().untrimmedElementNumbers();
       auto numElements = std::accumulate(spanSize.begin(), spanSize.end(), 1u, std::multiplies());
 
-      std::set<size_type> indicesInTrim;
+      std::unordered_set<size_type> indicesInTrim;
+      indicesInTrim.reserve(n_ind_original); // Reserve space to avoid multiple allocations
+
       for (auto directIndex : Dune::range(numElements)) {
         auto trimFlag = gridView_.grid().trimmer().entityContainer_.trimFlags_[gridView_.impl().level()][directIndex];
 
         if (trimFlag != IGA::DefaultTrim::ElementTrimFlag::empty)
-          std::ranges::copy(originalIndices_.at(directIndex), std::inserter(indicesInTrim, indicesInTrim.begin()));
+          indicesInTrim.insert(originalIndices_.at(directIndex).begin(), originalIndices_.at(directIndex).end());
+
       }
 
       unsigned int realIndexCounter = 0;
-      for (unsigned int i = 0; i < n_ind_original; ++i) {
-        if (std::ranges::find(indicesInTrim, i) != indicesInTrim.end())
+      indexMap_.clear();
+
+      for (unsigned int i = 0; i < n_ind_original; ++i)
+        if (indicesInTrim.contains(i))
           indexMap_.emplace(i, realIndexCounter++);
-      }
+
       cachedSize_ = realIndexCounter;
     }
   }
+
 
   [[nodiscard]] unsigned int computeOriginalSize() const {
     unsigned int result = 1;
@@ -753,7 +755,7 @@ public:
   struct DummyEmpty
   {
   };
-  std::conditional_t<TrimmerType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>> indexMap_;
+  std::conditional_t<ParameterSpaceType::isAlwaysTrivial, DummyEmpty, std::map<DirectIndex, RealIndex>> indexMap_;
 };
 
 template <typename GV>
@@ -801,8 +803,8 @@ protected:
   Element element_;
 
   auto getDirectIndex() const {
-    using TrimmerType = typename std::remove_cvref_t<decltype(preBasis_->gridView())>::Implementation::TrimmerType;
-    if constexpr (TrimmerType::isAlwaysTrivial)
+    using ParameterSpaceType = typename std::remove_cvref_t<decltype(preBasis_->gridView())>::Implementation::ParameterSpaceType;
+    if constexpr (ParameterSpaceType::isAlwaysTrivial)
       return preBasis_->gridView().indexSet().index(element_);
     else
       return element_.impl().getLocalEntity().hostIndexInLvl();

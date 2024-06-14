@@ -31,7 +31,7 @@ namespace Impl {
 } // namespace Impl
 
 template <int dim, int dimworld, typename PatchGrid,
-          bool HasCurve = Impl::HasTrimmingCurve<typename PatchGrid::GridFamily::TrimmerTraits>>
+          bool HasCurve = Impl::HasTrimmingCurve<typename PatchGrid::GridFamily::ParameterSpaceTraits>>
 class IbraReader;
 
 template <int dim, int dimworld, typename PatchGrid>
@@ -40,8 +40,8 @@ class IbraReader<dim, dimworld, PatchGrid, true>
 {
   using GridFamily    = typename PatchGrid::GridFamily;
   using PatchData     = NURBSPatchData<dim, dimworld, typename GridFamily::ctype>;
-  using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
-  using TrimmingCurve = typename GridFamily::TrimmerTraits::TrimmingCurve;
+  using PatchTrimData = typename GridFamily::ParameterSpaceTraits::PatchTrimData;
+  using TrimmingCurve = typename GridFamily::ParameterSpaceTraits::TrimmingCurve;
 
   using ControlPointType    = typename PatchData::ControlPointType;
   using ControlPointNetType = typename PatchData::ControlPointNetType;
@@ -116,7 +116,7 @@ class IbraReader<dim, dimworld, PatchGrid, false>
 {
   using GridFamily    = typename PatchGrid::GridFamily;
   using PatchData     = NURBSPatchData<dim, dimworld, typename GridFamily::ctype>;
-  using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
+  using PatchTrimData = typename GridFamily::ParameterSpaceTraits::PatchTrimData;
 
   using ControlPointType    = typename PatchData::ControlPointType;
   using ControlPointNetType = typename PatchData::ControlPointNetType;
@@ -129,7 +129,7 @@ public:
     // Each surface in a brep is one Patch, as for now only one brep is supported in NURBSGrid
     assert(brep.surfaces.size() == 1);
 
-    std::cout << "IbraReader successfully read in 1 patch with" << std::endl;
+    std::cout << "IbraReader successfully read in 1 patch" << std::endl;
 
     // Reader has done its job, now NURBSGrid can be constructed
 

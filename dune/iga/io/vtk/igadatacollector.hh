@@ -29,14 +29,14 @@ public:
   using Super::partition;
 
 public:
-  DiscontinuousIgaDataCollector(const GridView& gridView, int subSampleFull, int subSampleTrimmed)
+  DiscontinuousIgaDataCollector(const GridView& gridView, unsigned int subSampleFull, unsigned int subSampleTrimmed)
       : Super(gridView),
         geometries_(gridView, subSampleFull, subSampleTrimmed) {}
-  // Does not subsample
+
+
   explicit DiscontinuousIgaDataCollector(const GridView& gridView)
       : DiscontinuousIgaDataCollector(gridView, 0, 0) {};
 
-  // Sub-samples trimmed elements by creating a new grid
   DiscontinuousIgaDataCollector(const GridView& gridView, int subsample)
       : DiscontinuousIgaDataCollector(gridView, subsample, subsample) {};
 

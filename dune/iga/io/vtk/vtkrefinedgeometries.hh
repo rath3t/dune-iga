@@ -5,8 +5,9 @@
 
 #include <dune/geometry/multilineargeometry.hh>
 #include <dune/geometry/virtualrefinement.hh>
-#include <dune/iga/trimmer/defaulttrimmer/integrationrules/simplexintegrationrulegenerator.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/integrationrules/simplexgenerator.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/default/trimmerpreferences.hh>
 
 namespace Dune::IGA {
 
@@ -33,26 +34,26 @@ private:
   ElementData cubeData{};
 
 public:
-  IGARefinedGeometries(const GridView& gridView, const int subSampleFull, const int subSampleTrimmed) {
-    assert(subSampleFull >= 0 and subSampleTrimmed >= 0 && "subSamples have to be zero or positive");
+  IGARefinedGeometries(const GridView& gridView, unsigned int subSampleFull, unsigned int subSampleTrimmed) {
 
-    using Trimmer = typename GridView::GridViewImp::TrimmerType;
+    using ParameterSpace = typename GridView::GridViewImp::ParameterSpaceType;
 
     createCubeRefinement(subSampleFull);
 
-    if constexpr (std::is_same_v<Trimmer, IGA::DefaultTrim::TrimmerImpl<Trimmer::mydimension, Trimmer::dimensionworld,
-                                                                        typename Trimmer::ctype>>) {
+    if constexpr (std::is_same_v<ParameterSpace, DefaultTrim::ParameterSpaceImpl<ParameterSpace::mydimension,
+                                                                                 ParameterSpace::dimensionworld,
+                                                                                 typename ParameterSpace::ctype>>) {
       const auto& idSet = gridView.grid().globalIdSet();
 
-      using IntegrationRuleGenerator = IGA::DefaultTrim::SimplexIntegrationRuleGenerator<typename GridView::Grid>;
+      using SimplexGeneratorImpl = SimplexGenerator<typename GridView::Grid>;
 
-      const auto parameters = typename IntegrationRuleGenerator::Parameters{
-          .boundaryDivisions = Preferences::getInstance().boundaryDivisions(),
-          .targetAccuracy    = Preferences::getInstance().targetAccuracy()};
+      const auto parameters = typename SimplexGeneratorImpl::Parameters{
+          .boundaryDivisions = DefaultTrim::Preferences::getInstance().boundaryDivisions(),
+          .targetAccuracy    = DefaultTrim::Preferences::getInstance().targetAccuracy()};
 
       for (const auto& element : elements(gridView)) {
         if (element.impl().isTrimmed()) {
-          auto [ele, vert, ind] = IntegrationRuleGenerator::createSimplicies(element, parameters);
+          auto [ele, vert, ind] = SimplexGeneratorImpl::createSimplicies(element.impl().getLocalEntity(), parameters);
           trimmedElementData_.emplace(idSet.id(element), ElementData{ele, vert, ind});
         }
       }

@@ -21,7 +21,7 @@ jobs:
   Clang-Debug-CodeCov:
     runs-on: ubuntu-latest
     container:
-      image: henrij22/ikarus-dev-gcc:latest
+      image: henrij22/dunebase-gcc:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
 
     steps:

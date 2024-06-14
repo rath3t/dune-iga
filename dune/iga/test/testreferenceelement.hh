@@ -9,7 +9,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/geometry/referenceelements.hh>
-// #include <dune/iga/trimmer/defaulttrimmer/referenceelement.hh>
+// #include <dune/iga/parameterspace/default/referenceelement.hh>
 
 template <class RE>
 auto checkSubEntities(const RE& re) {

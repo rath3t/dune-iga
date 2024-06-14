@@ -22,7 +22,7 @@ if __name__ == "__main__":
         inputParameter, dimgrid=2, dimworld=2, gridType=IGAGridType.Default
     )
 
-    dune.iga.registerTrimmerPreferences(targetAccuracy=0.001)
+    dune.iga.registerParameterSpacePreferences(targetAccuracy=0.001)
 
     ## test grids
 

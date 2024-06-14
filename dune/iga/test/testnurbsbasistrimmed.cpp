@@ -13,8 +13,8 @@
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 
 using namespace Dune;
 

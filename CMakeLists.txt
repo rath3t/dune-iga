@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 option(DUNE_ENABLE_PYTHONBINDINGS "Enable Python bindings" ON)
 option(ADD_SANDBOX_TARGET "Add sandbox target" ON)
+option(ADD_EXAMPLES_TARGET "Add examples target" ON)
 option(BUILD_DOC "Build documentation" ON)
 option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON)
 add_definitions(-DBUILD_SHARED_LIBS=1)
@@ -48,6 +49,11 @@ dune_add_library(duneiga INTERFACE
 if(ADD_SANDBOX_TARGET)
   add_subdirectory(sandbox)
 endif()
+
+if(ADD_EXAMPLES_TARGET)
+    add_subdirectory(examples)
+endif()
+
 add_subdirectory(dune)
 add_subdirectory(cmake)
 if(DUNE_ENABLE_PYTHONBINDINGS)

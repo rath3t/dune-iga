@@ -67,10 +67,10 @@ public:
                           typename NURBSPatchData<mydimension, worlddimension, ScalarType>::GlobalCoordinateType>;
   using Nurbs          = Splines::Nurbs<mydimension, ScalarType>;
   using NurbsLocalView = typename Nurbs::LocalView;
-  template <int codim, typename TrimmerType_, typename ParameterSpaceGeometry = void>
-  using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, TrimmerType_, ParameterSpaceGeometry>;
+  template <int codim, typename ParameterSpaceType_, typename ParameterSpaceGeometry = void>
+  using GeometryLocalView = PatchGeometryLocalView<codim, NURBSPatch, ParameterSpaceType_, ParameterSpaceGeometry>;
 
-  template <int codim, typename NURBSPatch, typename TrimmerType_, typename ParameterSpaceGeo>
+  template <int codim, typename NURBSPatch, typename ParameterSpaceType_, typename ParameterSpaceGeo>
   friend struct PatchGeometryLocalView;
 
   /* @brief Helper class to compute a matrix pseudo-inverse. */
@@ -92,12 +92,12 @@ public:
   /**
    * @brief Get a local view of the NURBS patch.
    * @tparam codim Codimension of the patch.
-   * @tparam TrimmerType Type of the trimmer.
+   * @tparam ParameterSpaceType Type of the parameterspace.
    * @return Local view of the patch.
    */
-  template <int codim, typename TrimmerType, typename ParameterSpaceGeometry = void>
+  template <int codim, typename ParameterSpaceType, typename ParameterSpaceGeometry = void>
   auto localView() const {
-    return GeometryLocalView<codim, TrimmerType, ParameterSpaceGeometry>(*this);
+    return GeometryLocalView<codim, ParameterSpaceType, ParameterSpaceGeometry>(*this);
   }
 
   /**

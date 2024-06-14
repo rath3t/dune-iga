@@ -3,16 +3,16 @@
 
 #pragma once
 
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
 
 namespace Dune::IGA {
 
 template <typename PatchGrid>
 void drawGrid(PatchGrid* grid, std::string&& file_name) {
-  const typename PatchGrid::Trimmer& trimmer = grid->trimmer();
-  auto& nonConstTrimmer                      = const_cast<typename PatchGrid::Trimmer&>(trimmer);
+  const typename PatchGrid::ParameterSpace& trimmer = grid->trimmer();
+  auto& nonConstParameterSpace                      = const_cast<typename PatchGrid::ParameterSpace&>(trimmer);
 
-  auto eleTrimDatas = nonConstTrimmer.trimElements();
+  auto eleTrimDatas = nonConstParameterSpace.trimElements();
 
   auto figure = matplot::figure(true);
   figure->size(1000, 1000);

@@ -6,6 +6,6 @@ Module: dune-iga
 Version: 0.1.7
 Maintainer: mueller@ibb.uni-stuttgart.de
 
-Depends: dune-grid dune-functions dune-alugrid
+Depends: dune-grid dune-functions
 Suggests: dune-vtk dune-fufem
-Python-Requires: geomdl numpy scipy mpi4py
+Python-Requires: numpy scipy mpi4py

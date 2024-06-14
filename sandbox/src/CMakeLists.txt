@@ -4,7 +4,7 @@ add_definitions(-DDUNE_LOCALFEFUNCTIONS_USE_EIGEN=1)
 set(CMAKE_CXX_STANDARD 20)
 
 file(GLOB programSourceFiles CONFIGURE_DEPENDS *.cc)
-add_custom_target(AllExamples) # Create target that includes all examples
+add_custom_target(Sandbox) # Create target that includes all examples
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})
@@ -20,7 +20,7 @@ foreach(programSourceFile ${programSourceFiles})
     ${programName} PUBLIC Eigen3::Eigen Clipper2Z nlohmann_json::nlohmann_json
                           earcut_hpp::earcut_hpp
   )
-  add_dependencies(AllExamples ${programName})
+  add_dependencies(Sandbox ${programName})
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${programName} PUBLIC ${PYTHON_LIBRARIES})

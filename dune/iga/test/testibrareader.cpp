@@ -18,8 +18,8 @@
 #include <dune/iga/io/griddrawer.hh>
 #include <dune/iga/io/vtk/igadatacollector.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune::IGA;
@@ -122,7 +122,7 @@ int main(int argc, char** argv) try {
 
   createOutputFolder("out");
   createOutputFolder("out_u");
-  Preferences::getInstance().targetAccuracy(1e-3);
+  DefaultTrim::Preferences::getInstance().targetAccuracy(1e-3);
 
   t.subTest(testIbraReader<true>());
   t.subTest(testIbraReader3d<true>());

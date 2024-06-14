@@ -19,8 +19,8 @@
 #include <dune/iga/io/griddrawer.hh>
 #include <dune/iga/io/vtk/igadatacollector.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune::IGA;

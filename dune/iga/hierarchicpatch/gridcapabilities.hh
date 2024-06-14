@@ -40,7 +40,7 @@ namespace Capabilities {
             int codim>
   struct hasEntityIterator<IGA::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>, codim>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     using GridFamilyTraitsT  = GridFamilyTraits<dim, dimworld, ScalarType>;
     static const bool v      = GridFamilyTraitsT::template hasEntityIterator<codim>;
   };
@@ -61,7 +61,7 @@ namespace Capabilities {
             int codim>
   struct canCommunicate<IGA::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>, codim>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
 
     // static const bool v = canCommunicate<ParameterSpaceGrid, codim>::v;
     static const bool v = false;
@@ -72,7 +72,7 @@ namespace Capabilities {
   struct canCommunicate<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>, codim>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     // static const bool v      = canCommunicate<ParameterSpaceGrid, codim>::v;
     static const bool v = false;
   };
@@ -83,7 +83,7 @@ namespace Capabilities {
   template <int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamilyTraits>
   struct isLevelwiseConforming<IGA::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
 
     static const bool v = isLevelwiseConforming<ParameterSpaceGrid>::v;
   };
@@ -92,7 +92,7 @@ namespace Capabilities {
   struct isLevelwiseConforming<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = isLevelwiseConforming<ParameterSpaceGrid>::v;
   };
 
@@ -102,7 +102,7 @@ namespace Capabilities {
   template <int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamilyTraits>
   struct isLeafwiseConforming<IGA::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
 
     static const bool v = isLeafwiseConforming<ParameterSpaceGrid>::v;
   };
@@ -111,14 +111,14 @@ namespace Capabilities {
   struct isLeafwiseConforming<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = isLeafwiseConforming<ParameterSpaceGrid>::v;
   };
 
   template <int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamilyTraits>
   struct hasBackupRestoreFacilities<IGA::PatchGrid<dim, dimworld, GridFamilyTraits, ScalarType>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
 
     static const bool v = false;
   };
@@ -127,7 +127,7 @@ namespace Capabilities {
   struct hasBackupRestoreFacilities<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = false;
   };
 
@@ -141,7 +141,7 @@ namespace Capabilities {
   struct threadSafe<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = false;
   };
 
@@ -155,7 +155,7 @@ namespace Capabilities {
   struct viewThreadSafe<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = false;
   };
 
@@ -169,7 +169,7 @@ namespace Capabilities {
   struct isCartesian<
       Dune::Grid<dim, dimworld, ScalarType, IGA::PatchGridFamily<dim, dimworld, GridFamilyTraits, ScalarType>>>
   {
-    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::TrimmerTraits::ParameterSpaceGrid;
+    using ParameterSpaceGrid = typename GridFamilyTraits<dim, dimworld, ScalarType>::ParameterSpaceTraits::ParameterSpaceGrid;
     static const bool v      = false;
   };
 

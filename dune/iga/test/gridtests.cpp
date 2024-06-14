@@ -26,9 +26,9 @@
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/concepts.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/concepts.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 #include <dune/subgrid/test/common.hh>
 
 using namespace Dune;
@@ -169,7 +169,7 @@ auto thoroughGridCheck(auto& grid) {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<2, 3, double>::ParameterSpace>
 auto testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
   // First test
@@ -237,7 +237,7 @@ auto testNurbsGridCylinder() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<2, 3, double>::ParameterSpace>
 auto testHierarchicPatch() {
   TestSuite t("testHierarchicPatch", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
 
@@ -288,7 +288,7 @@ auto testHierarchicPatch() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<2, 3, double>::ParameterSpace>
 auto testTorusGeometry() {
   const double R       = 2.0;
   const double r       = 1.0;
@@ -364,7 +364,7 @@ auto testTorusGeometry() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<1, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<1, 3, double>::ParameterSpace>
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
   // Second test
@@ -444,7 +444,7 @@ auto testNURBSGridCurve() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<2, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<2, 3, double>::ParameterSpace>
 auto testNURBSGridSurface() {
   TestSuite t;
   int subSampling = 10;
@@ -498,7 +498,7 @@ auto testNURBSGridSurface() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<3, 3, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<3, 3, double>::ParameterSpace>
 auto test3DGrid() {
   constexpr std::size_t dim        = 3;
   constexpr std::size_t dimworld   = 3;
@@ -891,7 +891,7 @@ auto testNURBSSurface() {
 }
 
 template <template <int, int, typename> typename GridFamily>
-requires IGA::Concept::Trimmer<typename GridFamily<2, 2, double>::Trimmer>
+requires IGA::Concept::ParameterSpace<typename GridFamily<2, 2, double>::ParameterSpace>
 auto testPlate() {
   constexpr int gridDim                = 2;
   constexpr auto dimworld              = 2;
@@ -947,7 +947,7 @@ auto testGrids() {
   std::cout << "testTorusGeometry" << std::endl;
   t.subTest(testTorusGeometry<GridFamily>());
 
-  if constexpr (GridFamily<2, 2, double>::Trimmer::isAlwaysTrivial)
+  if constexpr (GridFamily<2, 2, double>::ParameterSpace::isAlwaysTrivial)
     t.subTest(test3DGrid<GridFamily>());
 
   // Not sure, this fails

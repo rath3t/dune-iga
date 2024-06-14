@@ -20,7 +20,7 @@
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/patchgrid.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
 
 using namespace Dune::IGA;
 
@@ -78,7 +78,7 @@ double cross(const VectorType& a, const VectorType& b) {
 
 struct GeomWrapper
 {
-  using CurveLocalViewType = Grid::Trimmer::TrimmingCurve;
+  using CurveLocalViewType = Grid::ParameterSpace::TrimmingCurve;
   GeomWrapper(const CurveLocalViewType& curve)
       : variant(curve) {}
   GeomWrapper(const Dune::MultiLinearGeometry<double, 1, 2>& curve)
@@ -179,7 +179,7 @@ auto toDuneEdgeId(int idx) {
 }
 
 template <typename Edge, typename HostGrid>
-auto edgeGeometry(const Edge& edge, const HostGrid& grid, const typename Grid::Trimmer::ElementTrimData& eleTrimData) {
+auto edgeGeometry(const Edge& edge, const HostGrid& grid, const typename Grid::ParameterSpace::ElementTrimData& eleTrimData) {
   if (edge.isTrimmed)
     return GeomWrapper(transform(edge.geometry.value()));
 
@@ -201,7 +201,7 @@ auto edgeGeometry(const Edge& edge, const HostGrid& grid, const typename Grid::T
 }
 
 template <typename GridElement, typename GridView>
-auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::ElementTrimData& eleTrimData,
+auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::ParameterSpace::ElementTrimData& eleTrimData,
                                    const GridView& gridView, const PatchTrimDataResults& resTrimPatch) {
   int eleIndex = gridView.indexSet().index(ele);
   Dune::TestSuite t("elementTrimDataObstacleCourse for element " + std::to_string(eleIndex) + std::string(" Flag: ") +
@@ -211,7 +211,7 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Trimmer::
                     Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
   if (eleTrimData.flag() != DefaultTrim::ElementTrimFlag::empty) {
-    auto referenceElement = Grid::Trimmer::TrimmerTraits::ReferenceElementType(eleTrimData);
+    auto referenceElement = Grid::ParameterSpace::ParameterSpaceTraits::ReferenceElementType(eleTrimData);
     t.subTest(checkReferenceElement(referenceElement, eleTrimData));
   }
   if (eleTrimData.flag() == DefaultTrim::ElementTrimFlag::empty) {
@@ -359,8 +359,8 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
 
   using GridFactory = Dune::GridFactory<Grid>;
 
-  using Trimmer         = Grid::Trimmer;
-  using ElementTrimData = Trimmer::ElementTrimData;
+  using ParameterSpace         = Grid::ParameterSpace;
+  using ElementTrimData = ParameterSpace::ElementTrimData;
 
   auto range = Dune::range(4);
   for (auto refx : range) {
@@ -444,14 +444,14 @@ auto checkTrim(std::string filename, const ExpectedValues& expectedValues, Execu
       std::atomic<double> trimmedEdgeLengthsAccumulated{0};
       std::for_each(policy, gridView.template begin<0>(), gridView.template end<0>(), [&](const auto& ele) {
         ElementTrimData elementTrimData =
-            DefaultTrim::TrimmerImpl<2, 2, double>{}.trimElement(ele, gridView, patchTrimData, true);
+            DefaultTrim::ParameterSpaceImpl<2, 2, double>{}.trimElement(ele, gridView, patchTrimData, true);
         auto [subTestEle, trimmedEdgeLength] =
             elementTrimDataObstacleCourse(ele, elementTrimData, gridView, resTrimPatch);
         trimmedEdgeLengthsAccumulated.fetch_add(trimmedEdgeLength, std::memory_order_relaxed);
         t.load(std::memory_order_relaxed)->subTest(subTestEle);
       });
       // for (const auto& ele : elements(gridView)) {
-      //   ElementTrimData elementTrimData      = DefaultTrim::TrimmerImpl<2, 2, double>::trimElement(ele,
+      //   ElementTrimData elementTrimData      = DefaultTrim::ParameterSpaceImpl<2, 2, double>::trimElement(ele,
       //   patchTrimData); auto [subTestEle, trimmedEdgeLength] = elementTrimDataObstacleCourse(ele, elementTrimData,
       //   gridView, resTrimPatch); trimmedEdgeLengthsAccumulated += trimmedEdgeLength; t.subTest(subTestEle);
       // }

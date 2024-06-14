@@ -10,7 +10,7 @@
 #include "patchgridgeometry.hh"
 
 #include "dune/iga/hierarchicpatch/patchgridfwd.hh"
-#include <dune/iga/trimmer/defaulttrimmer/integrationrules/simplexintegrationrulegenerator.hh>
+#include <dune/iga/integrationrules/simplexintegrationrulegenerator.hh>
 #include <dune/iga/utils/igahelpers.hh>
 
 namespace Dune::IGA {
@@ -19,12 +19,6 @@ namespace Dune::IGA {
 
 template <int codim, int dim, class GridImp>
 class PatchGridEntity;
-
-// template <int codim, PartitionIteratorType pitype, class GridImp>
-// class PatchGridLevelIterator;
-
-// template <class GridImp>
-// class PatchGridLevelIntersectionIterator;
 
 template <class GridImp>
 class PatchGridLeafIntersectionIterator;
@@ -55,15 +49,10 @@ class PatchGridEntity : public EntityDefaultImplementation<codim, dim, GridImp, 
   template <class GridImp_>
   friend class PatchGridGlobalIdSet;
 
-  friend struct HostGridAccess<typename std::remove_const<GridImp>::type>;
+  friend struct HostGridAccess<typename std::remove_const_t<GridImp>>;
 
-private:
-  // The codimension of this entity wrt the host grid
-  // constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - GridImp::dimension + codim;
-
-  // equivalent entity in the host grid
-  using Trimmer                  = typename GridImp::Trimmer;
-  using ParameterSpaceGridEntity = typename Trimmer::template Codim<codim>::ParameterSpaceGridEntity;
+  using ParameterSpace                  = typename GridImp::ParameterSpace;
+  using ParameterSpaceGridEntity = typename ParameterSpace::template Codim<codim>::ParameterSpaceGridEntity;
 
 public:
   typedef typename GridImp::ctype ctype;
@@ -117,12 +106,12 @@ public:
     return localEntity_.hasFather();
   }
 
-  // Create EntitySeed
+  /** @brief returns  EntitySeed */
   EntitySeed seed() const {
     return patchGrid_->trimmer_->seed(*this);
   }
 
-  // level of this element
+  /** @brief  level of this element */
   int level() const {
     return localEntity_.level();
   }
@@ -142,7 +131,7 @@ public:
   // geometry of this entity
   Geometry geometry() const {
     auto geo = typename Geometry::Implementation(
-        localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, Trimmer>());
+        localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, ParameterSpace>());
     return Geometry(geo);
   }
 
@@ -178,14 +167,14 @@ class PatchGridEntity<0, dim, GridImp> : public EntityDefaultImplementation<0, d
 
 public:
   typedef typename GridImp::ctype ctype;
-  using Trimmer = typename GridImp::Trimmer;
+  using ParameterSpace = typename GridImp::ParameterSpace;
   // The codimension of this entitypointer wrt the host grid
   constexpr static int dimension       = GridImp::dimension;
   constexpr static int CodimInHostGrid = GridImp::ParameterSpaceGrid::dimension - dimension;
   constexpr static int dimworld        = GridImp::dimensionworld;
 
   // equivalent entity in the host grid
-  using ParameterSpaceGridEntity = typename Trimmer::template Codim<0>::ParameterSpaceGridEntity;
+  using ParameterSpaceGridEntity = typename ParameterSpace::template Codim<0>::ParameterSpaceGridEntity;
 
   typedef typename GridImp::template Codim<0>::Geometry Geometry;
 
@@ -202,9 +191,8 @@ public:
 
   // The type of the EntitySeed interface class
   typedef typename GridImp::template Codim<0>::EntitySeed EntitySeed;
-  typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::ParameterSpaceGridEntitySeed
+  typedef typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<0>::ParameterSpaceGridEntitySeed
       ParameterSpaceGridEntitySeed;
-  // typedef typename GridImp::Trimmer::TrimmerTraits::template Codim<0>::EntitySeedImpl EntitySeedImpl;
 
   PatchGridEntity()
       : patchGrid_(nullptr) {}
@@ -245,17 +233,17 @@ public:
     return localEntity_ == other.localEntity_;
   }
 
-  // returns true if father entity exists
+  /** @brief  returns true if father entity exists */
   [[nodiscard]] bool hasFather() const {
     return localEntity_.hasFather();
   }
 
-  // Create EntitySeed
+  /** @brief Return EntitySeed */
   [[nodiscard]] EntitySeed seed() const {
     return patchGrid_->trimmer_->seed(*this);
   }
 
-  // Level of this element
+  /** @brief  Level of this element */
   [[nodiscard]] int level() const {
     return getLocalEntity().level();
   }
@@ -265,18 +253,17 @@ public:
     return getLocalEntity().partitionType();
   }
 
-  // Geometry of this entity
+  /** @brief  Geometry of this entity */
   [[nodiscard]] Geometry geometry() const {
     static_assert(std::is_same_v<
-                  decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>()),
-                  typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, Trimmer>>);
+                  decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, ParameterSpace>()),
+                  typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, ParameterSpace>>);
     auto geo = typename Geometry::Implementation(
-        localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, Trimmer>());
+        localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, ParameterSpace>());
     return Geometry(geo);
   }
 
-  /** @brief Return the number of subEntities of codimension codim.
-   */
+  /** @brief Return the number of subEntities of codimension codim. */
   [[nodiscard]] unsigned int subEntities(unsigned int codim) const {
     return localEntity_.subEntities(codim);
   }
@@ -346,7 +333,6 @@ public:
     return HierarchicIterator(patchGrid_, *this, maxLevel, true);
   }
 
-  // @todo Please doc me !
   bool wasRefined() const {
     if (patchGrid_->adaptationStep != GridImp::adaptDone)
       return false;
@@ -356,13 +342,15 @@ public:
     return patchGrid_->refinementMark_[level][index];
   }
 
-  // @todo Please doc me !
   bool mightBeCoarsened() const {
     return true;
   }
 
   bool isTrimmed() const {
-    return localEntity_.isTrimmed();
+    if constexpr (requires { localEntity_.isTrimmed(); })
+      return localEntity_.isTrimmed();
+    else
+      return false;
   }
 
   auto trimData() const {
@@ -373,34 +361,27 @@ public:
     return localEntity_;
   }
 
-  template <typename IntegrationRuleGenerator = DefaultTrim::SimplexIntegrationRuleGenerator<const GridImp>>
-  Dune::QuadratureRule<double, dim> getQuadratureRule(
-      const std::optional<int>& p_order = std::nullopt,
-      const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const
-  requires(not Trimmer::isAlwaysTrivial and dimension == 2)
+  QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
+                                                const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const
+  requires(not ParameterSpace::isAlwaysTrivial and dimension == 2)
   {
     auto degree = patchGrid_->patchGeometry(this->level()).degree();
     int order   = p_order.value_or(dimension * *std::ranges::max_element(degree));
     if (not isTrimmed())
-      return Dune::QuadratureRules<double, dimension>::rule(this->type(), order, qt);
+      return QuadratureRules<double, dimension>::rule(this->type(), order, qt);
 
-    const auto parameters = typename IntegrationRuleGenerator::Parameters{
-        .boundaryDivisions = Preferences::getInstance().boundaryDivisions(),
-        .targetAccuracy    = Preferences::getInstance().targetAccuracy()};
-
-    return IntegrationRuleGenerator::createIntegrationRule(*this, order, parameters);
+    return patchGrid_->integrationRule()(localEntity_, order, qt);
   }
 
 private:
   ParameterSpaceGridEntity localEntity_;
   const GridImp* patchGrid_;
-
-}; // end of PatchGridEntity codim = 0
+};
 
 template <int cd, int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamily,
           template <int, int, class> class PatchGridEntity>
 auto referenceElement(const PatchGridEntity<cd, dim, const PatchGrid<dim, dimworld, GridFamily, ScalarType>>& entity) {
-  return GridFamily<dim, dimworld, ScalarType>::Trimmer::referenceElement(entity);
+  return GridFamily<dim, dimworld, ScalarType>::ParameterSpace::referenceElement(entity);
 }
 
 template <int cd, int dim, int dimworld, typename ScalarType, template <int, int, typename> typename GridFamily,

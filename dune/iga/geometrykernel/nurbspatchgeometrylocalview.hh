@@ -49,9 +49,9 @@ namespace GeometryKernel {
    *
    * @tparam codim Codimension of the patch geometry.
    * @tparam PatchGeometry Type of the patch geometry.
-   * @tparam TrimmerType_ Type of the trimmer.
+   * @tparam ParameterSpaceType_ Type of the parameterspace.
    */
-  template <int codim, typename PatchGeometry, typename TrimmerType_, typename LocalParameterSpaceGeometry = void>
+  template <int codim, typename PatchGeometry, typename ParameterSpaceType_, typename LocalParameterSpaceGeometry = void>
   struct PatchGeometryLocalView
   {
     using ctype                        = typename PatchGeometry::ctype; ///< Scalar type for coordinates.
@@ -61,8 +61,8 @@ namespace GeometryKernel {
         mydimension * (mydimension + 1) / 2; ///< Number of second derivatives of the local view.
     static constexpr int patchNumberOfSecondDerivatives =
         gridDimension * (gridDimension + 1) / 2;                     ///< Number of second derivatives for the patch.
-    using Trimmer            = TrimmerType_;                         ///< Type of the associated trimmer.
-    using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid; ///< Type of the parameter space grid.
+    using ParameterSpace            = ParameterSpaceType_;                         ///< Type of the associated parameterspace.
+    using ParameterSpaceGrid = typename ParameterSpace::ParameterSpaceGrid; ///< Type of the parameter space grid.
 
     static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension; ///< Dimension of the world.
     static constexpr std::integral auto coorddimension = worlddimension;                ///< Dimension of the world.
@@ -81,7 +81,7 @@ namespace GeometryKernel {
   public:
     using ParameterSpaceGeometry =
         std::conditional_t<isParameterSpaceGeometryProvided, LocalParameterSpaceGeometry,
-                           typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry>;
+                           typename ParameterSpace::template Codim<codim>::LocalParameterSpaceGeometry>;
 
     // if we have codim==0, then the Jacobian in the parameter space of the grid entity itself is a DiagonalMatrix,
     // and
@@ -139,7 +139,11 @@ namespace GeometryKernel {
      * @return Global coordinates of the center.
      */
     [[nodiscard]] GlobalCoordinate center() const {
-      return global(LocalCoordinate(0.5));
+      // TODO Test this? Also not really good like that
+      if constexpr (mydimension == gridDimension and not ParameterSpace::isAlwaysTrivial)
+        return global(parameterSpaceGeometry->local(parameterSpaceGeometry->center()));
+      else
+        return global(LocalCoordinate(0.5));
     }
 
     /**
@@ -147,7 +151,6 @@ namespace GeometryKernel {
      * @param lGeo Parameter space geometry.
      */
     void bind(const ParameterSpaceGeometry& lGeo) {
-      // static_assert(std::is_same_v<GlobalInParameterSpace,FieldVector<ctype,gridDimension>>);
       parameterSpaceGeometry = std::make_shared<ParameterSpaceGeometry>(lGeo);
       std::tie(nurbsLocalView_, localControlPointNet, spanIndices_) =
           patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
@@ -178,20 +181,13 @@ namespace GeometryKernel {
       return dgdt * dfdg;
     }
 
-    // todo check
     auto secondFundamentalForm(const LocalCoordinate& local) const {
       return patchGeometry_->secondFundamentalForm(local);
     }
 
-    // // todo check
-    // auto zeroFirstAndSecondDerivativeOfPosition(const LocalCoordinate& local) const {
-    //   return patchGeometry_->zeroFirstAndSecondDerivativeOfPosition(local);
-    // }
-
     /**
      * @brief Get the Jacobian matrix at a local coordinate.
      * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
-     * dimension
      * @return Jacobian matrix.
      */
     [[nodiscard]] Jacobian jacobian(const LocalCoordinate& local) const {
@@ -201,8 +197,6 @@ namespace GeometryKernel {
     /**
      * @brief Compute the integration element at a local coordinate.
      * @param local Local coordinate, i.e. a tuple where each coordinate is in [0,1] domain for each local view
-     * dimension
-     * dimension
      * @return Integration element.
      */
     [[nodiscard]] ctype integrationElement(const LocalCoordinate& local) const {
@@ -214,18 +208,22 @@ namespace GeometryKernel {
      * @brief Compute the volume of the patch.
      * @return Volume of the patch.
      */
-    [[nodiscard]] double volume() const {
-      if constexpr (not Trimmer::isAlwaysTrivial) {
-        // @todo: Implement integration of trimmed quantities and new edge geometries.
-      } else {
-        const auto& rule = QuadratureRules<ctype, mydimension>::rule(
-            GeometryTypes::cube(mydimension), (*std::ranges::max_element(patchGeometry_->patchData_.degree)));
-        Volume vol = 0.0;
-        for (auto& gp : rule)
-          vol += integrationElement(globalInParameterSpace(gp.position())) * gp.weight() *
-                 parameterSpaceGeometry->volume();
-        return vol;
-      }
+    [[nodiscard]] double volume() const { // TODO: Test this
+      int order = mydimension * *std::ranges::max_element(patchGeometry_->patchData_.degree);
+
+      auto rule = [&]() {
+        if constexpr (ParameterSpace::isAlwaysTrivial or mydimension != 2)
+          return QuadratureRules<ctype, mydimension>::rule(GeometryTypes::cube(mydimension), order);
+        else {
+         return parameterSpaceGeometry->getQuadratureRule(order);
+        }
+      }();
+
+      Volume vol = 0.0;
+      for (auto& gp : rule)
+        vol +=
+            integrationElement(globalInParameterSpace(gp.position())) * gp.weight() * parameterSpaceGeometry->volume();
+      return vol;
     }
 
     /** @brief Type of the type of the parameter space element */
@@ -380,10 +378,10 @@ namespace GeometryKernel {
 
       /* if trimming is enabled the parameter space geometry is potentially non-linear,
        * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
-      if constexpr (not Trimmer::template isLocalGeometryLinear<codim>) {
+      if constexpr (not ParameterSpace::template isLocalGeometryLinear<codim>) {
         // const auto dgdtdt = parameterSpaceGeometry->hessian(ouInPatch);
         //
-        // assert(TrimmerType::template isLocalGeometryLinear<
+        // assert(ParameterSpaceType::template isLocalGeometryLinear<
         //            codim> && "This can not be checked yet. Check if this works with trimming and then remove
         //            assert");
         // h += transpose(transposedView(dfdg) * dgdtdt);

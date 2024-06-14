@@ -5,8 +5,8 @@
 #include "dune/python/iga/gridenums.hh"
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/io/ibrareader.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/identitytrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 #include <dune/python/common/typeregistry.hh>
 #include <dune/python/grid/capabilities.hh>
 #include <dune/python/grid/enums.hh>

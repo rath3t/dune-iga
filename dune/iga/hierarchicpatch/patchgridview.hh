@@ -26,7 +26,7 @@ template <class GridImp>
 struct PatchGridLevelGridView : DefaultLevelGridView<const GridImp>
 {
   typedef PatchGridLevelGridView ThisType;
-  using TrimmerType = typename GridImp::Trimmer;
+  using ParameterSpaceType = typename GridImp::ParameterSpace;
 
   PatchGridLevelGridView(const typename DefaultLevelGridView<const GridImp>::Grid& grid, int level)
       : DefaultLevelGridView<const GridImp>(grid, level) {}
@@ -66,7 +66,7 @@ struct PatchGridLeafGridView : public DefaultLeafGridView<const GridImp>
   PatchGridLeafGridView(const typename DefaultLeafGridView<const GridImp>::Grid& grid)
       : DefaultLeafGridView<const GridImp>(grid) {}
 
-  using TrimmerType = typename GridImp::Trimmer;
+  using ParameterSpaceType = typename GridImp::ParameterSpace;
   const auto& patchData() const {
     return this->grid().patchGeometries_[this->grid().maxLevel()].patchData();
   }

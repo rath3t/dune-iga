@@ -21,6 +21,8 @@
 #include <map>
 #include <string>
 
+#include <dune/iga/integrationrules/integrationruleholder.hh>
+
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/grid.hh>
 
@@ -48,7 +50,7 @@ struct HostGridAccess;
  * @ingroup PatchGrid
  * @tparam dim The dimension of the grid
  * @tparam dimworld The dimension of the embedding space
- * @tparam TrimmerType_ The trimmer of the trimmer
+ * @tparam ParameterSpaceType_ The parameterspace of the parameterspace
  * @tparam ScalarType The type for the coordinates
  * Example Create surface in 3D space:
  * @code
@@ -116,11 +118,11 @@ private:
   friend class GridFactory<PatchGrid>;
 
 public:
-  using Trimmer = typename GridFamily::Trimmer;
-  // The type used to store coordinates, inherited from the Trimmer
-  using ctype = typename Trimmer::ctype;
+  using ParameterSpace = typename GridFamily::ParameterSpace;
+  // The type used to store coordinates, inherited from the ParameterSpace
+  using ctype = typename ParameterSpace::ctype;
 
-  friend Trimmer;
+  friend ParameterSpace;
 
 private:
   friend class Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>;
@@ -147,9 +149,9 @@ public:
   // the Traits
   using Traits = typename GridFamily::Traits;
 
-  using ParameterSpaceGrid = typename Trimmer::ParameterSpaceGrid;
+  using ParameterSpaceGrid = typename ParameterSpace::ParameterSpaceGrid;
 
-  using PatchTrimData = typename GridFamily::TrimmerTraits::PatchTrimData;
+  using PatchTrimData = typename GridFamily::ParameterSpaceTraits::PatchTrimData;
 
   /** @brief Constructor
    *
@@ -157,9 +159,9 @@ public:
    */
   explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
                      const std::optional<PatchTrimData>& patchTrimData            = std::nullopt,
-                     const typename GridFamily::TrimmerTraits::ParameterType& par = {})
+                     const typename GridFamily::ParameterSpaceTraits::ParameterType& par = {})
       : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-        trimmer_(std::make_unique<Trimmer>(*this, patchTrimData, par)) {
+        trimmer_(std::make_unique<ParameterSpace>(*this, patchTrimData, par)) {
     patchGeometriesUnElevated = patchGeometries_;
   }
 
@@ -310,7 +312,6 @@ public:
 
       trimmer_->globalRefine(1);
     }
-
   }
 
   /**
@@ -478,7 +479,7 @@ public:
   // Returns the hostgrid entity encapsulated in given PatchGrid entity
   template <int codim>
   requires(GridFamily::template hasHostEntity<codim>)
-  const typename GridFamily::TrimmerTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
+  const typename GridFamily::ParameterSpaceTraits::template Codim<codim>::ParameterSpaceGridEntity& getHostEntity(
       const typename Traits::template Codim<codim>::Entity& e) const {
     return e.impl().getLocalEntity();
   }
@@ -497,12 +498,25 @@ public:
     return patchGeometries_.back();
   }
 
+  auto integrationRule() const
+  requires(not ParameterSpace::isAlwaysTrivial and dim == 2)
+  {
+    return integrationRuleHolder_.integrationRule();
+  }
+  void integrationRule(typename IntegrationRuleHolder<PatchGrid>::FunctionType integrationRule)
+  requires(not ParameterSpace::isAlwaysTrivial and dim == 2)
+  {
+    integrationRuleHolder_.integrationRule(integrationRule);
+  }
+
 private:
   PatchGrid() = default;
   std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
   std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-  std::unique_ptr<Trimmer> trimmer_;
+  std::unique_ptr<ParameterSpace> trimmer_;
+
+  IntegrationRuleHolder<PatchGrid> integrationRuleHolder_{};
 
 private:
   // @todo Please doc me !

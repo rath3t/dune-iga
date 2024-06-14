@@ -11,7 +11,7 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/io/vtk/igadatacollector.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;

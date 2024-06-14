@@ -18,7 +18,7 @@ class PatchGridGeometry : public GeometryDefaultImplementation<mydim, coorddim, 
 public:
   static constexpr int mydimension = mydim;
   // static constexpr Trimming trim   = GridImp::trim;
-  using Trimmer = typename GridImp::Trimmer;
+  using ParameterSpace = typename GridImp::ParameterSpace;
 
   static constexpr std::integral auto worlddimension = coorddim;
   static constexpr std::integral auto griddim        = GridImp::dimension;
@@ -36,12 +36,12 @@ public:
   using Volume                    = ctype;
 
   // The geometry in the parameterspace, i.e. in the knotspan domain
-  using ParameterSpaceGeometry = typename Trimmer::template Codim<codim>::LocalParameterSpaceGeometry;
+  using ParameterSpaceGeometry = typename ParameterSpace::template Codim<codim>::LocalParameterSpaceGeometry;
 
   // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
   //  type of the LocalView of the patch geometry
   using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
-                                                                ctype>::template GeometryLocalView<codim, Trimmer>;
+                                                                ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
   /** constructor from host geometry */
   PatchGridGeometry(const ParameterSpaceGeometry& localGeometry, GeometryLocalView&& geometryLocalView)
@@ -71,6 +71,10 @@ public:
     return geometryLocalView_.corner(i);
   }
 
+  [[nodiscard]] GlobalCoordinate center() const  {
+    return geometryLocalView_.center();
+  }
+
   /** @brief Maps a local coordinate within reference element to
    * global coordinate in element  */
   [[nodiscard]] GlobalCoordinate global(const LocalCoordinate& local) const {
@@ -95,7 +99,7 @@ public:
   }
 
   // Returns true if the point is in the current element
-  [[nodiscard]] bool checkInside(const FieldVector<ctype, mydim>& local) const {
+  [[nodiscard]] bool checkInside(const LocalCoordinate& local) const {
     return geometryLocalView_.checkInside(local);
   }
 

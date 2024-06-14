@@ -14,7 +14,7 @@
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/subgrid/test/common.hh>
 
 using namespace Dune::IGA;

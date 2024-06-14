@@ -6,21 +6,23 @@
 
 #include <dune/grid/common/gridfactory.hh>
 #include <dune/iga/io/createUnstructuredGrid.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/identity/parameterspace.hh>
 
 namespace Dune {
 
-template <int dim_, int dimworld_, template <int, int, typename> typename TrimmerType_, typename ScalarType>
-class GridFactory<IGA::PatchGrid<dim_, dimworld_, TrimmerType_, ScalarType>>
+template <int dim_, int dimworld_, template <int, int, typename> typename ParameterSpaceType_, typename ScalarType>
+class GridFactory<IGA::PatchGrid<dim_, dimworld_, ParameterSpaceType_, ScalarType>>
 {
   /** @brief The grid world dimension */
   constexpr static int dimworld = dimworld_;
   constexpr static int dim      = dim_;
-  using PatchGrid               = IGA::PatchGrid<dim, dimworld, TrimmerType_, ScalarType>;
-  using TrimmerType             = typename PatchGrid::Trimmer;
-  using PatchTrimData           = typename TrimmerType::PatchTrimData;
+  using PatchGrid               = IGA::PatchGrid<dim, dimworld, ParameterSpaceType_, ScalarType>;
+  using ParameterSpaceType      = typename PatchGrid::ParameterSpace;
+  using PatchTrimData           = typename ParameterSpaceType::PatchTrimData;
 
 public:
-  using TrimParameterType = typename TrimmerType::ParameterType;
+  using TrimParameterType = typename ParameterSpaceType::ParameterType;
 
   /** @brief Type used by the grid for coordinates */
   typedef typename PatchGrid::ctype ctype;
@@ -79,5 +81,29 @@ public:
   std::string json_;
   TrimParameterType parameters_{};
 };
+
+// FactoryFactory Function
+
+template <int dim, int dimworld, typename ScalarType = double>
+auto makePatchGridFactory() {
+  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::IdentityTrim::PatchGridFamily, ScalarType>;
+  return GridFactory<PatchGrid>{};
+}
+
+namespace Impl {
+  struct UseTrimmingCapabilities
+  {
+  };
+} // namespace Impl
+
+constexpr auto withTrimmingCapabilities() {
+  return Impl::UseTrimmingCapabilities{};
+}
+
+template <int dim, int dimworld, typename ScalarType = double>
+auto makePatchGridFactory(Impl::UseTrimmingCapabilities) {
+  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::DefaultTrim::PatchGridFamily, ScalarType>;
+  return GridFactory<PatchGrid>{};
+}
 
 } // namespace Dune

@@ -14,9 +14,9 @@
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 #include <dune/iga/hierarchicpatch/patchgrid.hh>
 #include <dune/iga/nurbsbasis.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmer.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmingutils/cliputils.hh>
-#include <dune/iga/trimmer/defaulttrimmer/trimmingutils/indextransformations.hh>
+#include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/parameterspace/default/trimmingutils/cliputils.hh>
+#include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 #include <dune/iga/utils/igahelpers.hh>
 
 using namespace Dune;
@@ -42,12 +42,12 @@ auto testTransformations() {
   constexpr std::array edgeIndexBackMapping   = {3u, 1u, 0u, 2u};
 
   for (const auto i : Dune::range(4u)) {
-    t.check(Transformations::mapToTrimmer(2, i) == vertexIndexBackMapping[i])
-        << "Map to Trimmer for Vertex not correct, mapping says its " << Transformations::mapToTrimmer(2, i)
-        << " but should be " << vertexIndexBackMapping[i];
+    t.check(Transformations::mapToParameterSpace(2, i) == vertexIndexBackMapping[i])
+        << "Map to ParameterSpace for Vertex not correct, mapping says its "
+        << Transformations::mapToParameterSpace(2, i) << " but should be " << vertexIndexBackMapping[i];
     ;
-    t.check(Transformations::mapToTrimmer(1, i) == edgeIndexBackMapping[i])
-        << "Map to Trimmer for Edge not correct, mapping says its " << Transformations::mapToTrimmer(1, i)
+    t.check(Transformations::mapToParameterSpace(1, i) == edgeIndexBackMapping[i])
+        << "Map to ParameterSpace for Edge not correct, mapping says its " << Transformations::mapToParameterSpace(1, i)
         << " but should be " << edgeIndexBackMapping[i];
     ;
   }
@@ -139,6 +139,19 @@ auto testClipUtils() {
   return t;
 }
 
+auto testFactoryFactories() {
+  TestSuite t;
+
+  constexpr int dim      = 2;
+  constexpr int worlddim = 2;
+
+  auto identityFactory = makePatchGridFactory<dim, worlddim>();
+
+  auto defaultFactory = makePatchGridFactory<dim, worlddim>(withTrimmingCapabilities());
+
+  return t;
+}
+
 #include <cfenv>
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -147,13 +160,15 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  // t.subTest(testTransformations());
-  // t.subTest(testTransformToSpan());
-  // t.subTest(testClipUtils());
+  t.subTest(testTransformations());
+  t.subTest(testTransformToSpan());
+  t.subTest(testClipUtils());
 
   t.subTest(testForEachUntrimmedBoundary(0));
   t.subTest(testForEachUntrimmedBoundary(1));
   t.subTest(testForEachUntrimmedBoundary(2));
+
+  t.subTest(testFactoryFactories());
 
   t.report();
 

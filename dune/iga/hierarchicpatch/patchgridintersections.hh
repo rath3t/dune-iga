@@ -40,8 +40,8 @@ namespace Impl {
 
     using ParameterSpaceIntersection =
         std::conditional_t<type_ == IntersectionType::Leaf,
-                           typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLeafIntersection,
-                           typename GridImp::Trimmer::TrimmerTraits::ParameterSpaceLevelIntersection>;
+                           typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLeafIntersection,
+                           typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLevelIntersection>;
 
     PatchGridIntersectionImpl() = default;
 
@@ -125,7 +125,7 @@ namespace Impl {
       // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
       auto geo =
           typename Geometry::Implementation(parameterSpaceIntersection_.geometry(),
-                                            patchGridGeometry().template localView<1, typename GridImp::Trimmer>());
+                                            patchGridGeometry().template localView<1, typename GridImp::ParameterSpace>());
       return Geometry(geo);
     }
 
