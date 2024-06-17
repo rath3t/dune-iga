@@ -38,6 +38,11 @@ include(DuneMacros)
 # start a dune project with information from dune.module
 dune_project()
 
+dune_add_library(duneiga INTERFACE
+  EXPORT_NAME Iga
+  LINK_LIBRARIES ${DUNE_LIBS})
+
+
 if(ADD_SANDBOX_TARGET)
   add_subdirectory(sandbox)
 endif()
