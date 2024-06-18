@@ -87,7 +87,7 @@ namespace Dune::Functions {
 
       for (size_t i = 0; i < out.size(); i++)
         for (int j = 0; j < dim; j++)
-          out[i][0][j] *= scaling_[j][j];
+          out[i][0][j] *= scaling_diagonal(j);
     }
 
     //! \brief Evaluate all shape functions and derivatives of any degree
@@ -97,10 +97,10 @@ namespace Dune::Functions {
       scaling_.umv(in, globalIn);
       preBasis_.partial(order, globalIn, out, lFE_.currentKnotSpan_);
 
-      for (size_t d = 0; d < dim; ++d)
-        for (size_t i = 0; i < out.size(); i++)
-          for (std::size_t fac = 0; fac < order[d]; ++fac)
-            out[i][0] *= scaling_[d][d];
+      
+      for (size_t i = 0; i < out.size(); i++) 
+          for (std::size_t d = 0; unsigned int orderPerDir : order)
+            out[i][0] *= Dune::power(scaling_.diagonal(d),orderPerDir);
     }
 
     /** \brief Polynomial degree of the shape functions
