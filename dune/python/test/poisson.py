@@ -104,7 +104,7 @@ def globalAssembler(basis):
         localView.bind(element)
 
         # set of all shape functions with support in this element
-        localBasis = localView.tree().finiteElement.localBasis
+        localBasis = localView.tree().finiteElement().localBasis
 
         localN = len(localBasis)
 

@@ -3,6 +3,9 @@
 
 #pragma once
 namespace Dune::Python::IGA {
-  enum class Reader { json };
+enum class Reader
+{
+  json
+};
 
-}  // namespace Dune::Python::IGA
+} // namespace Dune::Python::IGA
