@@ -35,13 +35,13 @@ public:
       : parameterSpaceGrid_(parameterSpaceGrid),
         hostHierarchicIterator_(startEntity.impl().getLocalEntity().hbegin(maxLevel)) {}
 
-  // @todo Please doc me !
+  // TODO Please doc me !
   explicit PatchGridHierarchicIterator(const GridImp* parameterSpaceGrid, const Entity& startEntity, int maxLevel,
                                        [[maybe_unused]] bool endDummy)
       : parameterSpaceGrid_(parameterSpaceGrid),
         hostHierarchicIterator_(startEntity.impl().getLocalEntity().hend(maxLevel)) {}
 
-  // @todo Please doc me !
+  // TODO Please doc me !
   void increment() {
     ++hostHierarchicIterator_;
   }

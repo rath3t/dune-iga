@@ -313,7 +313,7 @@ public:
       bSplines[i] = BsplineBasis<ScalarType>::basisFunctions(u[i], knots[i], degree[i], spIndex[i]);
 
     auto Nnet = MultiDimensionalNet<dim, ScalarType>(bSplines);
-    // @todo Alex this should also be cached when called with a localView
+    // TODO Alex this should also be cached when called with a localView
     const auto subNetWeights = netOfSpan(spIndex, degree, weights);
 
     const ScalarType invSumWeight = dot(Nnet, subNetWeights);
@@ -425,7 +425,7 @@ Nurbs(const std::array<std::vector<ScalarType_>, dim>& knots, const std::array<i
       const MultiDimensionalNet<dim2, ScalarType_>& netOfWeight) -> Nurbs<dim, ScalarType_>;
 #endif
 
-// @todo Add Algo ref from NURBS book
+// TODO Add Algo ref from NURBS book
 /**
  * @brief Perform degree elevation on a NURBS patch.
  *

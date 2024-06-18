@@ -82,7 +82,7 @@ public:
     return trimData_.size(2);
   }
 
-  // @todo write a test for that
+  // TODO write a test for that
   GlobalCoordinate center() const {
     // average of corners
     GlobalCoordinate c{0, 0};
@@ -120,12 +120,12 @@ public:
   }
 
   // Returns true if the point is in the current element
-  // @todo
+  // TODO
   bool checkInside(const LocalCoordinate& local) const {
     return true;
   }
 
-  // @todo // Use integration rule and area integration
+  // TODO // Use integration rule and area integration
   [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
     return hostGeometry_.volume();
   }
@@ -234,7 +234,7 @@ public:
   }
 
   // Returns true if the point is in the current element
-  // @todo
+  // TODO
   bool checkInside(const LocalCoordinate& local) const {
     return true;
   }
@@ -244,7 +244,7 @@ public:
   }
 
   // The Jacobian matrix of the mapping from the reference element to this element
-  // @todo not yet implemented
+  // TODO not yet implemented
   [[nodiscard]] JacobianInverseTransposed jacobianInverseTransposed(const LocalCoordinate& local) const {
     return patchGeometry.jacobianInverseTransposed(local);
   }
@@ -283,7 +283,7 @@ public:
     return Dune::FloatCmp::eq(b.pos_, this->pos_);
   }
 
-  // @todo it is unclear to me what the correct bahviour for a vertex is for some of these methods
+  // TODO it is unclear to me what the correct bahviour for a vertex is for some of these methods
 
   /** @brief Return the element type identifier
    */

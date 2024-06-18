@@ -239,7 +239,7 @@ public:
         for (int i = 0; i < size[0]; ++i)
           subValues.push_back(get({start[0] + i, start[1] + j}));
     else if constexpr (netdim == 3)
-      for (int k = 0; k < size[2]; ++k) // @todo generalize
+      for (int k = 0; k < size[2]; ++k) // TODO generalize
         for (int j = 0; j < size[1]; ++j)
           for (int i = 0; i < size[0]; ++i)
             subValues.push_back(get({start[0] + i, start[1] + j, start[2] + k}));

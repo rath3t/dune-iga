@@ -66,7 +66,7 @@ private:
   HostLeafIntersectionIterator hostIterator_ = {};
 };
 
-// @todo Please doc me !
+// TODO Please doc me !
 template <class GridImp>
 class PatchGridLevelIntersectionIterator
 {

@@ -405,7 +405,7 @@ namespace GeometryKernel {
     }
 
     [[nodiscard]] bool affine() const {
-      // @todo check when this is true
+      // TODO check when this is true
       return false;
     }
 

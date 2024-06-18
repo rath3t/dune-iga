@@ -76,12 +76,12 @@ public:
    */
   IdType subId(const typename std::remove_const<GridImp>::type::template Codim<0>::Entity& e, int i, int codim) const {
     // Return sub id of the host entity
-    /* @todo Trim, the sub indices are wrong!!! */
+    /* TODO Trim, the sub indices are wrong!!! */
 
     return grid_->parameterSpaceGrid().localIdSet().subId(e.impl().getLocalEntity(), i, codim);
   }
 
-  /** @todo Should be private */
+  /** TODO Should be private */
   void update() {}
 
   const GridImp* grid_;

@@ -48,7 +48,7 @@ public:
     return e.impl().getLocalEntity().subId(i, codim);
   }
 
-  /** @todo Should be private */
+  /** TODO Should be private */
   void update() {}
 
   PersistentIndexType newFreeIndex() {

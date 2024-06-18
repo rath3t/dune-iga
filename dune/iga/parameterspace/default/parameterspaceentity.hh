@@ -50,7 +50,7 @@ public:
   TrimmedParameterSpaceGridEntity& operator=(const TrimmedParameterSpaceGridEntity& other)     = default;
   TrimmedParameterSpaceGridEntity& operator=(TrimmedParameterSpaceGridEntity&& other) noexcept = default;
 
-  // @todo tidy up these constructors
+  // TODO tidy up these constructors
   // Entity with codim 0 but trimmed thus needs trimdata
   template <typename = void>
   requires(codim_ == 0)

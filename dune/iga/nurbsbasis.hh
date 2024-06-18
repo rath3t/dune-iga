@@ -87,20 +87,19 @@ public:
 
     for (size_t i = 0; i < out.size(); i++)
       for (int j = 0; j < dim; j++)
-        out[i][0][j] *= scaling_[j][j];
+        out[i][0][j] *= scaling_.diagonal(j);
   }
 
   // @brief Evaluate all shape functions and derivatives of any degree
-  inline void partial(const typename std::array<unsigned int, dim>& order, const typename Traits::DomainType& in,
+  inline void partial(const typename std::array<unsigned int, dim>& directions, const typename Traits::DomainType& in,
                       std::vector<typename Traits::RangeType>& out) const {
     FieldVector<D, dim> globalIn = offset_;
     scaling_.umv(in, globalIn);
-    preBasis_.partial(order, globalIn, out, lFE_.currentKnotSpan_);
+    preBasis_.partial(directions, globalIn, out, lFE_.currentKnotSpan_);
 
-    for (size_t d = 0; d < dim; ++d)
-      for (size_t i = 0; i < out.size(); i++)
-        for (std::size_t fac = 0; fac < order[d]; ++fac)
-          out[i][0] *= scaling_[d][d];
+    for (size_t i = 0; i < out.size(); i++)
+      for (std::size_t d = 0; unsigned int dir : directions)
+        out[i][0] *= Dune::power(scaling_.diagonal(d++), dir);
   }
 
   /** @brief Polynomial degree of the shape functions
@@ -351,7 +350,7 @@ public:
    * @param elementIdx Integer coordinates in the tensor product patch
    */
 
-  // @todo save correct element info
+  // TODO save correct element info
   void bind(const std::array<int, dim>& elementIdx) {
     const auto& patchData = preBasis_.patchData_;
     for (size_t i = 0; i < elementIdx.size(); i++) {
@@ -718,7 +717,7 @@ public:
                std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
     const auto dN = IGA::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
         in, patchData_.knotSpans, patchData_.degree, IGA::Splines::extractWeights(patchData_.controlPoints),
-        std::accumulate(order.begin(), order.end(), 0));
+        std::accumulate(order.begin(), order.end(), 0), false, currentKnotSpan);
 
     auto& dNpart = dN.get(order).directGetAll();
     out.reserve(dNpart.size());
@@ -730,7 +729,7 @@ public:
    * \warning This method makes strong assumptions about the grid, namely that it is
    *   structured, and that indices are given in a x-fastest fashion.
    */
-  // @todo Alex Trim this function should be unnecessary
+  // TODO Alex Trim this function should be unnecessary
   static std::array<int, dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<int, dim> elements) {
     std::array<int, dim> result;
     for (int i = 0; i < dim; i++) {

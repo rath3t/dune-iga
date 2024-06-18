@@ -26,7 +26,7 @@ namespace Dune::IGA {
  * @throws Dune::MathError if the trust region method fails to find an energy-decreasing direction.
  *
  */
-template <typename Geo> // @todo add concept, HJ: maybe add custom return type instead of tuple
+template <typename Geo> // TODO add concept, HJ: maybe add custom return type instead of tuple
 auto closestPointProjectionByTrustRegion(const Geo& geo, auto& point,
                                          const std::optional<typename Geo::LocalCoordinate>& start = std::nullopt)
     -> std::tuple<typename Geo::LocalCoordinate, typename Geo::ctype, typename Geo::ctype, typename Geo::ctype>

@@ -44,14 +44,14 @@ public:
 
   // get number of entities of given codim, type and on this level
   std::size_t size(GeometryType type) const {
-    // @todo Trim, count cube and none types i.e. full and trimmed elements
+    // TODO Trim, count cube and none types i.e. full and trimmed elements
 
     return grid_->parameterSpaceGrid().levelIndexSet(level_).size(type);
   }
 
   /** @brief Deliver all geometry types used in this grid */
   Types types(int codim) const {
-    // @todo Trim, this should return none and cube for trimmed geometries
+    // TODO Trim, this should return none and cube for trimmed geometries
 
     return grid_->parameterSpaceGrid().levelIndexSet(level_).types(codim);
   }

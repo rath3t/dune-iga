@@ -387,7 +387,7 @@ public:
    * </ul>
    */
   bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
-    // @todo trim this does not do the right thing! the knotspans should also be aware of this change
+    // TODO trim this does not do the right thing! the knotspans should also be aware of this change
     return false; // parameterSpace->parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
   }
 
@@ -521,7 +521,7 @@ private:
   IntegrationRuleHolder<PatchGrid> integrationRuleHolder_{};
 
 private:
-  // @todo Please doc me !
+  // TODO Please doc me !
   Communication<No_Comm> ccobj;
 
 }; // end Class PatchGrid

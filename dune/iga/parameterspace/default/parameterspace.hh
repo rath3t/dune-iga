@@ -492,7 +492,7 @@ namespace DefaultParameterSpace {
       refineParameterSpaceGrid(refCount);
       update(grid_);
 
-      // @todo Trim move the refine here from the grid
+      // TODO Trim move the refine here from the grid
     }
     auto& patchTrimData() const {
       return *trimData_;
@@ -500,7 +500,7 @@ namespace DefaultParameterSpace {
 
     /**
      * \brief Creates trimInfos for each element at the requested level (or max level if not specified)
-     * @todo Add execution policy
+     * TODO Add execution policy
      * @param level_
      * @return
      */

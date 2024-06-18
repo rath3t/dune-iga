@@ -326,7 +326,7 @@ auto elementTrimDataObstacleCourse(const GridElement& ele, const Grid::Parameter
     size_t nonHostEdges    = totalEdges - hostEdgesCounter;
     size_t nonHostVertices = totalVertices - hostVertexCounter;
 
-    // @todo This test is not true, i think, check trim_multi 1, 1 ele 3 (top right) // HJ
+    // TODO This test is not true, i think, check trim_multi 1, 1 ele 3 (top right) // HJ
     // if (totalEdges > 2)
     //   t.check(nonHostEdges + 1 == nonHostVertices)
     //       << "Each non-host edge produces two non-host vertices."

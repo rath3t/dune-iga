@@ -1,5 +1,6 @@
-# SPDX-FileCopyrightText: 2021-2024 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga Developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
+
 BasedOnStyle: Google
 PointerAlignment: Left
 DerivePointerAlignment: false
@@ -64,36 +65,33 @@ IncludeCategories:
   - Regex: '^(<|")Eigen/'
     Priority: 5
     SortPriority: 5
-  - Regex: '^(<|")ikarus/assembler/'
+  - Regex: '^(<|")dune/iga/geometrykernel/'
     Priority: 10
     SortPriority: 10
-  - Regex: '^(<|")ikarus/controlroutines/'
+  - Regex: '^(<|")dune/iga/hierarchicpatch/'
     Priority: 10
     SortPriority: 11
-  - Regex: '^(<|")ikarus/finiteelements/'
+  - Regex: '^(<|")dune/iga/integrationrules/'
     Priority: 10
     SortPriority: 12
-  - Regex: '^(<|")ikarus/io/'
+  - Regex: '^(<|")dune/iga/io/'
     Priority: 10
     SortPriority: 13
-  - Regex: '^(<|")ikarus/linearalgebra/'
+  - Regex: '^(<|")dune/iga/parameterspace/'
     Priority: 10
     SortPriority: 14
-  - Regex: '^(<|")ikarus/python/'
+  - Regex: '^(<|")dune/iga/splines/'
     Priority: 10
     SortPriority: 15
-  - Regex: '^(<|")ikarus/solver/'
+  - Regex: '^(<|")dune/iga/utils/'
     Priority: 10
     SortPriority: 16
-  - Regex: '^(<|")ikarus/utils/'
+  - Regex: '^(<|")dune/iga/python/'
     Priority: 10
     SortPriority: 17
-  - Regex: '^(<|")ikarus/'
+  - Regex: '^(<|")dune/iga/'
     Priority: 10
     SortPriority: 20
-  - Regex: '^(<|")autodiff/'
-    Priority: 6
-    SortPriority: 6
   - Regex:           '<([A-Za-z0-9.\/-_])+>'
     Priority:        2
     SortPriority: 2

@@ -122,7 +122,7 @@ namespace Impl {
     // intersection of codimension 1 of this neighbor with element where iteration started.
     // Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry() const {
-      // @todo trim this will be wrong as soon as the intersection geometry has a special geometry
+      // TODO trim this will be wrong as soon as the intersection geometry has a special geometry
       auto geo = typename Geometry::Implementation(
           parameterSpaceIntersection_.geometry(),
           patchGridGeometry().template localView<1, typename GridImp::ParameterSpace>());

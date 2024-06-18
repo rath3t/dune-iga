@@ -7,7 +7,7 @@
 #include <dune/iga/splines/nurbspatchdata.hh>
 
 namespace Dune::IGA {
-// @todo Alex quote algo from NURBS book
+// TODO Alex quote algo from NURBS book
 /**
  * @brief Create a circular arc as a NURBS patch with customizable options.
  *

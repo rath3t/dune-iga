@@ -315,7 +315,7 @@ namespace IGA {
        *  @param[in]  c      codimension of subentity E
        */
       GeometryType type(int i, int c) const {
-        // @todo This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
+        // TODO This method makes only sense for the 2D trimming case, since for 3D the facets subentities could also
         // be none
         if (c == 0 and not trimData_.flag() != ElementTrimFlag::full)
           return GeometryTypes::none(mydimension);
@@ -329,7 +329,7 @@ namespace IGA {
       Since it is a trimmed element we basically only return none here as the most general case
        */
       GeometryType type() const {
-        // @todo for some cases we could also return triangle or something else, but im not sure if
+        // TODO for some cases we could also return triangle or something else, but im not sure if
         //  this is too complicated and also unnecessary
         if (trimData_.flag() == ElementTrimFlag::full)
           return GeometryTypes::cube(mydimension);
@@ -348,7 +348,7 @@ namespace IGA {
        *  @param[in]  c   codimension of subentity E
        */
       Coordinate position(int i, int c) const {
-        // @todo this functions could be a bit complicated
+        // TODO this functions could be a bit complicated
         //  we have to implement https://en.wikipedia.org/wiki/Center_of_mass#A_continuous_volume
         //  M as the volume and rho(R)=1
         if (not trimData_.flag() == ElementTrimFlag::full)
@@ -364,7 +364,7 @@ namespace IGA {
        *
        *  @param[in]  local  coordinates of the point
 
-        // @todo this functions could be a bit complicated basically we have to make sure the point lies inside the
+        // TODO this functions could be a bit complicated basically we have to make sure the point lies inside the
         // outer boundary loop, but outside the inner loops thus we have to implement something as
         //
        https://en.wikipedia.org/wiki/Point_in_polygon#:~:text=One%20simple%20way%20of%20finding,an%20even%20number%20of%20times.
@@ -391,7 +391,7 @@ namespace IGA {
        */
       template <int codim>
       typename Codim<codim>::Geometry geometry(int i) const {
-        // @todo trim returns the reference element in geometry space
+        // TODO trim returns the reference element in geometry space
         //  return _impl->template geometry<codim>(i);
         //  if constexpr (codim==0)
         //    return IGA::TrimmedPatchGridLocalGeometry();
@@ -402,7 +402,7 @@ namespace IGA {
 
       /** @brief obtain the volume of the reference element */
       CoordinateField volume() const {
-        // @todo trim, integrate on the trimmed patch
+        // TODO trim, integrate on the trimmed patch
         if (trimData_.flag() == ElementTrimFlag::full)
           return cubeGeometry.volume();
         return trimData_.volume();
@@ -416,7 +416,7 @@ namespace IGA {
        *  @param[in]  face  index of the face, whose normal is desired
        */
       Coordinate integrationOuterNormal(int face) const {
-        // @todo compute tangent of the curve and compute by cross-product the outword normal, only 2D
+        // TODO compute tangent of the curve and compute by cross-product the outword normal, only 2D
         return cubeGeometry.integrationOuterNormal(face);
       }
 
@@ -447,7 +447,7 @@ namespace IGA {
 
       // Compares for equality with another reference element.
       bool operator==(const TrimmedReferenceElement& r) const {
-        // @todo, just check if the triangulations cooincide
+        // TODO, just check if the triangulations cooincide
         return trimData_ == r.trimData_;
       }
 
@@ -458,7 +458,7 @@ namespace IGA {
 
       // Yields a hash value suitable for storing the reference element a in hash table
       friend std::size_t hash_value(const TrimmedReferenceElement& r) {
-        // @todo, this is not needed maybe
+        // TODO, this is not needed maybe
         return hash_value(ReferenceElements<ctype, mydimension>::cube());
         return {};
       }
@@ -474,7 +474,7 @@ namespace IGA {
       ElementTrimDataImpl<GridImp> trimData_;
       const typename ReferenceElements<ctype, mydimension>::ReferenceElement& cubeGeometry{
           ReferenceElements<ctype, mydimension>::cube()};
-      // @todo mayby store here all the trimming information anyway?
+      // TODO mayby store here all the trimming information anyway?
       // But this should have value semantics and therefore it should be cheap to copy, thus maybe store it at the
       // entity
     };
