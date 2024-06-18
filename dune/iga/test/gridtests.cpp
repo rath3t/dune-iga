@@ -493,16 +493,16 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
   std::vector<Dune::FieldMatrix<double, 1, gridDim>> referenceGradients;
   localBasis.evaluateJacobian(pos, referenceGradients);
 
-  std::array<std::vector<Dune::FieldVector<double, 1>>,gridDim> dNdxi;
-  std::vector<Dune::FieldVector<double, 1>> dNdeta;
+
   std::array<unsigned int,gridDim> dir{};
   constexpr double tol = 1e-14;
   for(int d=0; d<gridDim; ++d)
     {
+      std::vector<Dune::FieldVector<double, 1>> dNdxi;
       dir[d]=1;
-      localBasis.partial(dir, pos, dNdxi[d]);
+      localBasis.partial(dir, pos, dNdxi);
       for(int j=0; j<referenceGradients.size(); ++j)
-        t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[d][j][0], tol))<< "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[d][j][0];
+        t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[j][0], tol))<< "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[j][0];
       dir[d]=0;
     }
 
@@ -542,7 +542,7 @@ auto checkJacobianAndPartialConsistency(const Basis& basis)
     {
       localView.bind(e);
       for (int i = 0; i < numTestPos; ++i) 
-      t.subTest(checkJacobianAndPartial(localView,gpPos[i]));
+        t.subTest(checkJacobianAndPartial(localView,gpPos[i]));
     }
 
   return t;
