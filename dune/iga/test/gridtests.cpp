@@ -494,7 +494,7 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
 
   std::array<std::vector<Dune::FieldVector<double, 1>>,gridDim> dNdxi;
   std::vector<Dune::FieldVector<double, 1>> dNdeta;
-  std::array<int,gridDim> dir{};
+  std::array<unsigned int,gridDim> dir{};
   constexpr double tol = 1e-14;
   for(int d=0; d<gridDim; ++d)
     {
