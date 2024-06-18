@@ -503,7 +503,7 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
       localBasis.partial(dir, pos, dNdxi);
       for(int j=0; j<referenceGradients.size(); ++j)
         t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[j][0], tol))<< 
-          "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[j][0]<<"\n The pos is<<pos;
+          "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[j][0]<<"\n The pos is "<<pos;
       dir[d]=0;
     }
 
