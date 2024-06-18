@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 
 #ifdef HAVE_CONFIG_H
@@ -30,11 +31,12 @@
 using namespace Dune;
 using namespace Dune::IGA;
 
-auto checkUniqueEdges(const auto& gridView) {
+template <typename GridView>
+auto checkUniqueEdges(const GridView& gridView) {
   TestSuite t;
 
-  constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
-  constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
+  constexpr int gridDimensionworld = GridView::dimensionworld;
+  constexpr int gridDimension      = GridView::dimension;
   if constexpr (gridDimension < 2)
     return t;
   else {
@@ -84,12 +86,12 @@ auto checkUniqueVertices(const GridView& gridView) {
   }
   return t;
 }
-
-auto checkUniqueSurfaces(const auto& gridView) {
+template <typename GridView>
+auto checkUniqueSurfaces(const GridView& gridView) {
   TestSuite t;
 
-  constexpr int gridDimensionworld = std::remove_cvref_t<decltype(gridView)>::dimensionworld;
-  constexpr int gridDimension      = std::remove_cvref_t<decltype(gridView)>::dimension;
+  constexpr int gridDimensionworld = GridView::dimensionworld;
+  constexpr int gridDimension      = GridView::dimension;
   if constexpr (gridDimension < 3)
     return t;
   else {
@@ -151,7 +153,6 @@ auto myGridCheck(G& grid) {
       }
 
       ++eleIdx;
-      std::cout << std::endl;
     }
   };
 
@@ -170,7 +171,7 @@ auto thoroughGridCheck(auto& grid) {
 
     tl.subTest(checkUniqueEdges(gv));
     tl.subTest(checkUniqueSurfaces(gv));
-    //
+
     if constexpr (GV::dimension == 2)
       tl.subTest(checkUniqueVertices(gv));
 
@@ -218,7 +219,7 @@ auto runGridTests(TestSuite& t, const auto& testCases) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -230,12 +231,14 @@ auto runGridTests(TestSuite& t, const auto& testCases) {
     gridFactory.insertTrimParameters(GridFactory::TrimParameterType{splitter});
     auto grid = gridFactory.createGrid();
 
-    for (int i = min; i <= max; i++) {
+    for (int i = min; i <= max; ++i) {
       std::cout << "Testing now " << name << " (Refinement " << i << ")" << std::endl;
       if (i > min)
         grid->globalRefine(1);
       if constexpr (thorough)
         t.subTest(thoroughGridCheck(*grid));
+      else
+        myGridCheck(*grid);
     }
   }
 }
@@ -244,31 +247,25 @@ template <template <int, int, typename> typename GridFamily>
 auto testGrids() {
   TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  const std::vector testCasesThorough{
-      std::tuple<std::string, int, int, unsigned int>{"auxiliaryfiles/element_trim_xb.ibra", 0, 3, 100},
+  const std::vector<std::tuple<std::string, int, int, unsigned int>> testCasesThorough{
+      {"auxiliaryfiles/element_trim_xb.ibra", 0, 3, 100},
       {   "auxiliaryfiles/element_trim.ibra", 0, 3, 100},
       {    "auxiliaryfiles/trim_2edges.ibra", 0, 2, 100},
       {     "auxiliaryfiles/trim_multi.ibra", 0, 0, 100},
       {   "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
-      {  "auxiliaryfiles/quarter_plate.ibra", 1, 4, 100},
- // {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
-  // {"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
+      {  "auxiliaryfiles/quarter_plate.ibra", 1, 4, 100}
   };
 
   runGridTests<GridFamily, true>(t, testCasesThorough);
 
-  const std::vector testCasesAll{
-      std::tuple<std::string, int, int, unsigned int>{ "auxiliaryfiles/element_trim.ibra", 3, 8, 100},
-      {"auxiliaryfiles/quarter_plate.ibra", 3, 8, 100},
- // {    "auxiliaryfiles/trim_2edges.ibra", 3, 8, 100},
-  // {     "auxiliaryfiles/trim_multi.ibra", 0, 0, 100},
-  // {   "auxiliaryfiles/surface-hole.ibra", 1, 3, 150},
-  // {  "auxiliaryfiles/quarter_plate.ibra", 1, 4, 100},
-  // {"auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
-  // {"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
+  const std::vector<std::tuple<std::string, int, int, unsigned int>> testCases{
+      {       "auxiliaryfiles/element_trim.ibra", 3, 6, 100},
+      {      "auxiliaryfiles/quarter_plate.ibra", 3, 6, 100},
+      {  "auxiliaryfiles/surface-hole-skew.ibra", 1, 3, 100},
+      {"auxiliaryfiles/surface-hole-square.ibra", 1, 3, 100}
   };
 
-  runGridTests<GridFamily, false>(t, testCasesAll);
+  runGridTests<GridFamily, false>(t, testCases);
 
   return t;
 }
@@ -281,7 +278,7 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   TestSuite t("testTrimmedGrids", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
+  t.subTest(testGrids<DefaultParameterSpace::PatchGridFamily>());
 
   t.report();
 

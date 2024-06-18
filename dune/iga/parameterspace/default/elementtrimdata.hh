@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -12,7 +12,7 @@
 #include <dune/iga/geometrykernel/geohelper.hh>
 #include <dune/iga/geometrykernel/nurbspatchtransform.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 enum class ElementTrimFlag
 {
@@ -29,7 +29,8 @@ struct ElementTrimDataImpl
   static constexpr int dimworld = GridFamily::ParameterSpace::dimensionworld;
   using ctype                   = typename GridFamily::ParameterSpace::ctype;
 
-  using HostEntity = typename GridFamily::ParameterSpace::ParameterSpaceTraits::YASPGridType::Traits::template Codim<0>::Entity;
+  using HostEntity =
+      typename GridFamily::ParameterSpace::ParameterSpaceTraits::YASPGridType::Traits::template Codim<0>::Entity;
 
   using EdgeTrimmedParameterSpaceGeometry =
       typename GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
@@ -71,7 +72,7 @@ struct ElementTrimDataImpl
       : flag_(flag),
         hostEntity_(hostEntity) {}
 
-  // Delete default constructor, I think its implicitly delted anyway or not viable at least
+  // Delete default constructor, I think its implicitly deleted anyway or not viable at least
   ElementTrimDataImpl() = delete;
 
   bool operator==(const ElementTrimDataImpl& other) const {
@@ -306,4 +307,4 @@ private:
   int newEdgeCounter_   = 4;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

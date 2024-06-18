@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -51,7 +51,7 @@ class PatchGridEntity : public EntityDefaultImplementation<codim, dim, GridImp, 
 
   friend struct HostGridAccess<typename std::remove_const_t<GridImp>>;
 
-  using ParameterSpace                  = typename GridImp::ParameterSpace;
+  using ParameterSpace           = typename GridImp::ParameterSpace;
   using ParameterSpaceGridEntity = typename ParameterSpace::template Codim<codim>::ParameterSpaceGridEntity;
 
 public:
@@ -108,7 +108,7 @@ public:
 
   /** @brief returns  EntitySeed */
   EntitySeed seed() const {
-    return patchGrid_->trimmer_->seed(*this);
+    return patchGrid_->parameterSpace().seed(*this);
   }
 
   /** @brief  level of this element */
@@ -131,7 +131,8 @@ public:
   // geometry of this entity
   Geometry geometry() const {
     auto geo = typename Geometry::Implementation(
-        localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<codim, ParameterSpace>());
+        localEntity_.geometry(),
+        patchGrid_->patchGeometries_[this->level()].template localView<codim, ParameterSpace>());
     return Geometry(geo);
   }
 
@@ -240,7 +241,7 @@ public:
 
   /** @brief Return EntitySeed */
   [[nodiscard]] EntitySeed seed() const {
-    return patchGrid_->trimmer_->seed(*this);
+    return patchGrid_->parameterSpace().seed(*this);
   }
 
   /** @brief  Level of this element */
@@ -255,9 +256,10 @@ public:
 
   /** @brief  Geometry of this entity */
   [[nodiscard]] Geometry geometry() const {
-    static_assert(std::is_same_v<
-                  decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, ParameterSpace>()),
-                  typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, ParameterSpace>>);
+    static_assert(
+        std::is_same_v<
+            decltype(patchGrid_->patchGeometries_[this->level()].template localView<0, ParameterSpace>()),
+            typename GeometryKernel::NURBSPatch<dim, dimworld, ctype>::template GeometryLocalView<0, ParameterSpace>>);
     auto geo = typename Geometry::Implementation(
         localEntity_.geometry(), patchGrid_->patchGeometries_[this->level()].template localView<0, ParameterSpace>());
     return Geometry(geo);
@@ -278,22 +280,22 @@ public:
 
   // First level intersection
   [[nodiscard]] LevelIntersectionIterator ilevelbegin() const {
-    return patchGrid_->trimmer_->ilevelbegin(*this);
+    return patchGrid_->parameterSpace().ilevelbegin(*this);
   }
 
   // Reference to one past the last neighbor
   LevelIntersectionIterator ilevelend() const {
-    return patchGrid_->trimmer_->ilevelend(*this);
+    return patchGrid_->parameterSpace().ilevelend(*this);
   }
 
   // First leaf intersection
   LeafIntersectionIterator ileafbegin() const {
-    return patchGrid_->trimmer_->ileafbegin(*this);
+    return patchGrid_->parameterSpace().ileafbegin(*this);
   }
 
   // Reference to one past the last leaf intersection
   LeafIntersectionIterator ileafend() const {
-    return patchGrid_->trimmer_->ileafend(*this);
+    return patchGrid_->parameterSpace().ileafend(*this);
   }
 
   // returns true if Entity has NO children

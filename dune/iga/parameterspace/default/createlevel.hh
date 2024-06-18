@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
 #include <dune/iga/parameterspace/default/elementtrimdata.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 template <int dim, int dimworld, typename ScalarType>
 void ParameterSpaceImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int refCount, bool initFlag) {
@@ -73,7 +73,7 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int
         ++trimmedElementIndex;
       }
 
-      // ******************* Now sub entitities, collect all ids of subentities  ************************
+      // ******************* Now sub entities, collect all ids of subentities  ************************
 
       collectElementEdges(newLevel, ele, eleTrimData);
       collectElementVertices(newLevel, ele, eleTrimData);
@@ -87,4 +87,4 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::refineParameterSpaceGrid(int
     createSubEntities(newLevel);
   }
 }
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

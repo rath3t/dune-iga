@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include <map>
 
 #include <dune/common/reservedvector.hh>
-#include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 #include <dune/iga/parameterspace/default/trimmerpreferences.hh>
+#include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 template <typename GridImp>
 struct VectorEntityContainer
 {
@@ -86,7 +86,7 @@ struct VectorEntityContainer
         return i;
       }
     }
-    DUNE_THROW(GridError, "outsideIntersectionIndex not successfull");
+    DUNE_THROW(GridError, "outsideIntersectionIndex not successful");
   }
 
   bool isElementTrimmed(const IdType& elementId) const {
@@ -266,8 +266,8 @@ struct VectorEntityContainer
 
   // We store trimmed vertexIds for each level
   std::vector<std::map<IdType, FieldVector<double, 2>>> trimmedVertexIds_;
-  // Store current amound of vertices and edges (untrimmed configuration + n) per lvl
+  // Store current amount of vertices and edges (untrimmed configuration + n) per lvl
   std::vector<unsigned int> edgeCount;
   std::vector<unsigned int> vertexCount;
 };
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

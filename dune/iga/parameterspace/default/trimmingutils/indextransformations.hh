@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 /**
  * \brief Transformations for vertex and edge indices between ParameterSpace Notation and Dune Notation
@@ -94,4 +95,4 @@ private:
     }
   }
 };
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

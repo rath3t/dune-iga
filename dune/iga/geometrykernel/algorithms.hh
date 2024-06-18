@@ -1,7 +1,9 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
+#include <dune/common/rangeutilities.hh>
 #include <dune/iga/geometrykernel/closestpointprojection.hh>
 #include <dune/iga/geometrykernel/geohelper.hh>
 
@@ -212,6 +214,50 @@ auto isPointOnLineSegment(const Coordinate& p, const Coordinate& linePoint0, con
       return true;
   }
   return false;
+}
+
+template <typename T>
+concept GeometryConcept = requires(T t, int i) {
+  T::coorddimension;
+  typename T::ctype;
+  { t.corner(i) } -> std::same_as<FieldVector<typename T::ctype, T::coorddimension>>;
+  { t.corners() } -> std::convertible_to<int>;
+};
+
+/**
+ *  @brief This returns the center of mass for a polygon
+ *
+ *  @details See https://en.wikipedia.org/wiki/Centroid#Of_a_polygon for details
+ *   TODO This actually only works if the corners are ordered consecutively along the polygons perimeter
+ */
+template <GeometryConcept Geometry>
+auto centerOfMass(const Geometry& geometry) -> FieldVector<typename Geometry::ctype, Geometry::coorddimension> {
+  int n = geometry.corners();
+
+  using Point = FieldVector<typename Geometry::ctype, Geometry::coorddimension>;
+  std::vector<Point> corners;
+  corners.reserve(n);
+
+  for (const auto i : Dune::range(n))
+    corners.push_back(geometry.corner(i));
+
+  double a  = 0.0;
+  double cx = 0.0;
+  double cy = 0.0;
+  for (const auto i : Dune::range(n - 1)) {
+    cx += (corners[i][0] + corners[i + 1][0]) * (corners[i][0] * corners[i + 1][1] - corners[i + 1][0] * corners[i][1]);
+    cy += (corners[i][1] + corners[i + 1][1]) * (corners[i][0] * corners[i + 1][1] - corners[i + 1][0] * corners[i][1]);
+    a += corners[i][0] * corners[i + 1][1] - corners[i + 1][0] * corners[i][1];
+  }
+  // Last index
+  cx += (corners[n - 1][0] + corners[0][0]) * (corners[n - 1][0] * corners[0][1] - corners[0][0] * corners[n - 1][1]);
+  cy += (corners[n - 1][1] + corners[0][1]) * (corners[n - 1][0] * corners[0][1] - corners[0][0] * corners[n - 1][1]);
+  a += corners[n - 1][0] * corners[0][1] - corners[0][0] * corners[n - 1][1];
+
+  a *= 0.5;
+  cx *= 1 / (6 * a);
+  cy *= 1 / (6 * a);
+  return {cx, cy};
 }
 
 } // namespace Dune::IGA::GeometryKernel

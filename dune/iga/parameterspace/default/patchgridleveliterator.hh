@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -9,7 +9,7 @@
  * @brief The PatchGridLevelIterator class
  */
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 /** @brief Iterator over all entities of a given codimension and level of a grid.
  * @ingroup PatchGrid
@@ -33,7 +33,7 @@ public:
 
   explicit PatchGridLevelIterator(const GridImp* patchGrid, int level)
       : patchGrid_(patchGrid),
-        parameterSpaceLevelIterator(patchGrid_->trimmer().entityContainer_.template begin<codim>(level)) {}
+        parameterSpaceLevelIterator(patchGrid_->parameterSpace().entityContainer_.template begin<codim>(level)) {}
 
   /** @brief Constructor which create the end iterator
       @param endDummy      Here only to distinguish it from the other constructor
@@ -49,7 +49,7 @@ public:
   // template<typename =void> requires (codim==0)
   explicit PatchGridLevelIterator(const GridImp* patchGrid, int level, [[maybe_unused]] bool endDummy)
       : patchGrid_(patchGrid),
-        parameterSpaceLevelIterator(patchGrid_->trimmer().entityContainer_.template end<codim>(level)) {}
+        parameterSpaceLevelIterator(patchGrid_->parameterSpace().entityContainer_.template end<codim>(level)) {}
 
   // prefix increment
   void increment() {
@@ -76,4 +76,4 @@ private:
   IteratorImpl parameterSpaceLevelIterator;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

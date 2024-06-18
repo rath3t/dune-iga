@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -21,10 +21,9 @@
 #include <map>
 #include <string>
 
-#include <dune/iga/integrationrules/integrationruleholder.hh>
-
 #include <dune/common/parallel/communication.hh>
 #include <dune/grid/common/grid.hh>
+#include <dune/iga/integrationrules/integrationruleholder.hh>
 
 namespace Dune::Functions {
 template <typename GV, typename ScalarType>
@@ -32,7 +31,7 @@ class NurbsPreBasis;
 }
 namespace Dune::IGA {
 
-namespace IdentityTrim {
+namespace IdentityParameterSpace {
   template <int dim, int dimworld, typename ScalarType = double>
   struct PatchGridFamily;
 }
@@ -79,8 +78,9 @@ struct HostGridAccess;
  *
  * @endcode
  */
-template <int dim, int dimworld, template <int, int, typename> typename GridFamily_ = IdentityTrim::PatchGridFamily,
-          typename ScalarType = double>
+template <int dim, int dimworld,
+          template <int, int, typename> typename GridFamily_ = IdentityParameterSpace::PatchGridFamily,
+          typename ScalarType                                = double>
 class PatchGrid : public GridDefaultImplementation<dim, dimworld, ScalarType, GridFamily_<dim, dimworld, ScalarType>>
 {
   friend class PatchGridLeafGridView<const PatchGrid>;
@@ -158,18 +158,18 @@ public:
    * @param hostgrid The host grid wrapped by the PatchGrid
    */
   explicit PatchGrid(const NURBSPatchData<dim, dimworld, ctype>& patchData,
-                     const std::optional<PatchTrimData>& patchTrimData            = std::nullopt,
+                     const std::optional<PatchTrimData>& patchTrimData                   = std::nullopt,
                      const typename GridFamily::ParameterSpaceTraits::ParameterType& par = {})
       : patchGeometries_(1, GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData)),
-        trimmer_(std::make_unique<ParameterSpace>(*this, patchTrimData, par)) {
+        parameterSpace_(std::make_unique<ParameterSpace>(*this, patchTrimData, par)) {
     patchGeometriesUnElevated = patchGeometries_;
   }
 
   PatchGrid& operator=(PatchGrid&& other) noexcept {
     patchGeometries_          = std::move(other.patchGeometries_);
     patchGeometriesUnElevated = std::move(other.patchGeometriesUnElevated);
-    trimmer_                  = std::move(other.trimmer_);
-    trimmer_->update(this);
+    parameterSpace_           = std::move(other.parameterSpace);
+    parameterSpace_->update(this);
     return *this;
   }
 
@@ -178,7 +178,7 @@ public:
    * Levels are numbered 0 ... maxlevel with 0 the coarsest level.
    */
   [[nodiscard]] int maxLevel() const {
-    return trimmer_->maxLevel();
+    return parameterSpace_->maxLevel();
   }
 
   // Iterator to first entity of given codim on level
@@ -238,7 +238,7 @@ public:
   /** @brief returns the number of boundary segments within the macro grid
    */
   [[nodiscard]] size_t numBoundarySegments() const {
-    return trimmer_->numBoundarySegments();
+    return parameterSpace_->numBoundarySegments();
   }
 
   // number of leaf entities per codim in this process
@@ -258,12 +258,12 @@ public:
 
   /** @brief Access to the GlobalIdSet */
   const typename Traits::GlobalIdSet& globalIdSet() const {
-    return *trimmer_->globalIdSet_;
+    return *parameterSpace_->globalIdSet_;
   }
 
   /** @brief Access to the LocalIdSet */
   const typename Traits::LocalIdSet& localIdSet() const {
-    return *trimmer_->localIdSet_;
+    return *parameterSpace_->localIdSet_;
   }
 
   /** @brief Access to the LevelIndexSets */
@@ -271,18 +271,18 @@ public:
     if (level < 0 || level > maxLevel()) {
       DUNE_THROW(GridError, "levelIndexSet of nonexisting level " << level << " requested!");
     }
-    return *trimmer_->levelIndexSets_[level];
+    return *parameterSpace_->levelIndexSets_[level];
   }
 
   /** @brief Access to the LeafIndexSet */
   const typename Traits::LeafIndexSet& leafIndexSet() const {
-    return *trimmer_->leafIndexSet_;
+    return *parameterSpace_->leafIndexSet_;
   }
 
   /** @brief Create Entity from EntitySeed */
   template <class EntitySeed>
   typename Traits::template Codim<EntitySeed::codimension>::Entity entity(const EntitySeed& seed) const {
-    return trimmer_->entity(seed);
+    return parameterSpace_->entity(seed);
   }
 
   /** @name Grid Refinement Methods */
@@ -310,7 +310,7 @@ public:
       patchGeometries_.emplace_back(newfinestPatchData, newUniqueKnotVecs);
       patchGeometriesUnElevated.emplace_back(patchGeometries_.back());
 
-      trimmer_->globalRefine(1);
+      parameterSpace_->globalRefine(1);
     }
   }
 
@@ -388,7 +388,7 @@ public:
    */
   bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
     // @todo trim this does not do the right thing! the knotspans should also be aware of this change
-    return false; // trimmer_->parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
+    return false; // parameterSpace->parameterSpaceGrid().mark(refCount, getHostEntity<0>(e));
   }
 
   /** @brief Return refinement mark for entity
@@ -396,44 +396,44 @@ public:
    * \return refinement mark (1,0,-1)
    */
   int getMark(const typename Traits::template Codim<0>::Entity& e) const {
-    return 0; // trimmer_->parameterSpaceGrid().getMark(getHostEntity<0>(e));
+    return 0; // parameterSpace->parameterSpaceGrid().getMark(getHostEntity<0>(e));
   }
 
   /** @brief returns true, if at least one entity is marked for adaption */
   bool preAdapt() {
-    return trimmer_->parameterSpaceGrid().preAdapt();
+    return parameterSpace_->parameterSpaceGrid().preAdapt();
   }
 
   // Triggers the grid refinement process
   bool adapt() {
-    return trimmer_->parameterSpaceGrid().adapt();
+    return parameterSpace_->parameterSpaceGrid().adapt();
   }
 
   /** @brief Clean up refinement markers */
   void postAdapt() {
-    return trimmer_->parameterSpaceGrid().postAdapt();
+    return parameterSpace_->parameterSpaceGrid().postAdapt();
   }
 
   /*@}*/
 
   /** @brief Size of the overlap on the leaf level */
   unsigned int overlapSize(int codim) const {
-    return trimmer_->parameterSpaceGrid().leafGridView().overlapSize(codim);
+    return parameterSpace_->parameterSpaceGrid().leafGridView().overlapSize(codim);
   }
 
   /** @brief Size of the ghost cell layer on the leaf level */
   unsigned int ghostSize(int codim) const {
-    return trimmer_->parameterSpaceGrid().leafGridView().ghostSize(codim);
+    return parameterSpace_->parameterSpaceGrid().leafGridView().ghostSize(codim);
   }
 
   /** @brief Size of the overlap on a given level */
   unsigned int overlapSize(int level, int codim) const {
-    return trimmer_->parameterSpaceGrid().levelGridView(level).overlapSize(codim);
+    return parameterSpace_->parameterSpaceGrid().levelGridView(level).overlapSize(codim);
   }
 
   /** @brief Size of the ghost cell layer on a given level */
   unsigned int ghostSize(int level, int codim) const {
-    return trimmer_->parameterSpaceGrid().levelGridView(level).ghostSize(codim);
+    return parameterSpace_->parameterSpaceGrid().levelGridView(level).ghostSize(codim);
   }
 
 #if 0
@@ -455,13 +455,13 @@ public:
   /** @brief Communicate data of level gridView */
   template <class DataHandle>
   void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir, int level) const {
-    // trimmer_->parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
+    // parameterSpace->parameterSpaceGrid().levelGridView(level).communicate(handle, iftype, dir);
   }
 
   /** @brief Communicate data of leaf gridView */
   template <class DataHandle>
   void communicate(DataHandle& handle, InterfaceType iftype, CommunicationDirection dir) const {
-    // trimmer_->parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
+    // parameterSpace->parameterSpaceGrid().leafGridView().communicate(handle, iftype, dir);
   }
 
   // **********************************************************
@@ -470,10 +470,10 @@ public:
 
   // Returns the hostgrid this PatchGrid lives in
   const ParameterSpaceGrid& parameterSpaceGrid() const {
-    return trimmer_->parameterSpaceGrid();
+    return parameterSpace_->parameterSpaceGrid();
   }
   ParameterSpaceGrid& parameterSpaceGrid() {
-    return trimmer_->parameterSpaceGrid();
+    return parameterSpace_->parameterSpaceGrid();
   }
 
   // Returns the hostgrid entity encapsulated in given PatchGrid entity
@@ -488,8 +488,8 @@ public:
     return patchGeometries_[lvl].numberOfSpans();
   }
 
-  const auto& trimmer() const {
-    return *trimmer_;
+  const auto& parameterSpace() const {
+    return *parameterSpace_;
   }
   const auto& patchGeometry(int i) const {
     return patchGeometries_.at(i);
@@ -498,11 +498,13 @@ public:
     return patchGeometries_.back();
   }
 
+  /** Obtain Integration Rule Generator (as a std::function) */
   auto integrationRule() const
   requires(not ParameterSpace::isAlwaysTrivial and dim == 2)
   {
     return integrationRuleHolder_.integrationRule();
   }
+  /** Dynamically set integration Rule (as a std::function, see IntegrationRuleHolder for more details) */
   void integrationRule(typename IntegrationRuleHolder<PatchGrid>::FunctionType integrationRule)
   requires(not ParameterSpace::isAlwaysTrivial and dim == 2)
   {
@@ -514,7 +516,7 @@ private:
   std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometries_;
   std::vector<GeometryKernel::NURBSPatch<dim, dimworld, ctype>> patchGeometriesUnElevated;
 
-  std::unique_ptr<ParameterSpace> trimmer_;
+  std::unique_ptr<ParameterSpace> parameterSpace_;
 
   IntegrationRuleHolder<PatchGrid> integrationRuleHolder_{};
 

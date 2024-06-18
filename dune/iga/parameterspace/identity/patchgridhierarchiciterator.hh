@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -7,7 +7,7 @@
  * @brief The PatchGridHierarchicIterator class
  */
 
-namespace Dune::IGA::IdentityTrim {
+namespace Dune::IGA::IdentityParameterSpace {
 
 //**********************************************************************
 //
@@ -64,4 +64,4 @@ private:
   HostGridHierarchicIterator hostHierarchicIterator_;
 };
 
-} // namespace Dune::IGA::IdentityTrim
+} // namespace Dune::IGA::IdentityParameterSpace

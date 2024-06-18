@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include "../io/ibrareader.hh"
@@ -5,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <dune/grid/common/gridfactory.hh>
-#include <dune/iga/io/createUnstructuredGrid.hh>
+#include <dune/iga/io/createunstructuredgrid.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/identity/parameterspace.hh>
 
@@ -86,7 +88,7 @@ public:
 
 template <int dim, int dimworld, typename ScalarType = double>
 auto makePatchGridFactory() {
-  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::IdentityTrim::PatchGridFamily, ScalarType>;
+  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::IdentityParameterSpace::PatchGridFamily, ScalarType>;
   return GridFactory<PatchGrid>{};
 }
 
@@ -102,7 +104,7 @@ constexpr auto withTrimmingCapabilities() {
 
 template <int dim, int dimworld, typename ScalarType = double>
 auto makePatchGridFactory(Impl::UseTrimmingCapabilities) {
-  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::DefaultTrim::PatchGridFamily, ScalarType>;
+  using PatchGrid = IGA::PatchGrid<dim, dimworld, IGA::DefaultParameterSpace::PatchGridFamily, ScalarType>;
   return GridFactory<PatchGrid>{};
 }
 

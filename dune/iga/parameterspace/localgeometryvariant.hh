@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+
 #include <variant>
 
 namespace Dune::IGA::Trim {
@@ -13,7 +16,7 @@ public:
   using FirstElement                  = std::tuple_element_t<0, std::tuple<Implementations...>>;
   static constexpr int mydimension    = FirstElement::mydimension;
   static constexpr int coorddimension = FirstElement::coorddimension;
-  using ParameterSpaceType                   = ParameterSpaceType_;
+  using ParameterSpaceType            = ParameterSpaceType_;
   // using TrimDataType               = DefaultElementTrimData<mydimension, ctype>;
 
   using LocalCoordinate  = std::common_type_t<typename Implementations::LocalCoordinate...>;
@@ -79,7 +82,7 @@ public:
 
   /** @brief Return the transposed of the Jacobian
    */
-  JacobianTransposed jacobianTransposed(const auto& local) const { // @todo Trim remove JacobianTransposed
+  JacobianTransposed jacobianTransposed(const auto& local) const {
     return visit([&](const auto& impl) -> JacobianTransposed { return impl.jacobianTransposed(local); });
   }
 
@@ -105,11 +108,20 @@ public:
 
   auto getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
                          const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const {
+    // The parameterSpace has linear geometry, so if no order is specified, we assume it to be myDimension
     return visit([&](const auto& impl) {
       if constexpr (requires { impl.getQuadratureRule(p_order, qt); })
         return impl.getQuadratureRule(p_order, qt);
       else
-        return QuadratureRule<double, mydimension>(type(), p_order, qt);
+        return QuadratureRules<double, mydimension>::rule(type(), p_order.value_or(mydimension), qt);
+    });
+  }
+
+  bool isTrimmed() const {
+    return visit([&](const auto& impl) {
+      if constexpr (requires { impl.isTrimmed(); })
+        return impl.isTrimmed();
+      return false;
     });
   }
 

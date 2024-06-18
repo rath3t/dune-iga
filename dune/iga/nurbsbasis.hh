@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -19,9 +19,9 @@
 #include <dune/functions/functionspacebases/defaultglobalbasis.hh>
 #include <dune/functions/functionspacebases/nodes.hh>
 #include <dune/geometry/type.hh>
+#include <dune/iga/parameterspace/default/elementtrimdata.hh>
 #include <dune/iga/splines/bsplinealgorithms.hh>
 #include <dune/iga/splines/nurbsalgorithms.hh>
-#include <dune/iga/parameterspace/default/elementtrimdata.hh>
 #include <dune/localfunctions/common/localbasis.hh>
 #include <dune/localfunctions/common/localfiniteelementtraits.hh>
 #include <dune/localfunctions/common/localkey.hh>
@@ -502,7 +502,7 @@ public:
   static constexpr size_type maxMultiIndexSize    = 1;
   static constexpr size_type minMultiIndexSize    = 1;
   static constexpr size_type multiIndexBufferSize = 1;
-  using ParameterSpaceType                               = typename GridView::Implementation::ParameterSpaceType;
+  using ParameterSpaceType                        = typename GridView::Implementation::ParameterSpaceType;
 
   // Type used for function values
   using R = ScalarType;
@@ -645,11 +645,11 @@ public:
       indicesInTrim.reserve(n_ind_original); // Reserve space to avoid multiple allocations
 
       for (auto directIndex : Dune::range(numElements)) {
-        auto trimFlag = gridView_.grid().trimmer().entityContainer_.trimFlags_[gridView_.impl().level()][directIndex];
+        auto trimFlag =
+            gridView_.grid().parameterSpace().entityContainer_.trimFlags_[gridView_.impl().level()][directIndex];
 
-        if (trimFlag != IGA::DefaultTrim::ElementTrimFlag::empty)
+        if (trimFlag != IGA::DefaultParameterSpace::ElementTrimFlag::empty)
           indicesInTrim.insert(originalIndices_.at(directIndex).begin(), originalIndices_.at(directIndex).end());
-
       }
 
       unsigned int realIndexCounter = 0;
@@ -662,7 +662,6 @@ public:
       cachedSize_ = realIndexCounter;
     }
   }
-
 
   [[nodiscard]] unsigned int computeOriginalSize() const {
     unsigned int result = 1;
@@ -731,7 +730,7 @@ public:
    * \warning This method makes strong assumptions about the grid, namely that it is
    *   structured, and that indices are given in a x-fastest fashion.
    */
-  // @todo Alex Trim this function should be unneccesary
+  // @todo Alex Trim this function should be unnecessary
   static std::array<int, dim> getIJK(typename GridView::IndexSet::IndexType idx, std::array<int, dim> elements) {
     std::array<int, dim> result;
     for (int i = 0; i < dim; i++) {
@@ -803,7 +802,8 @@ protected:
   Element element_;
 
   auto getDirectIndex() const {
-    using ParameterSpaceType = typename std::remove_cvref_t<decltype(preBasis_->gridView())>::Implementation::ParameterSpaceType;
+    using ParameterSpaceType =
+        typename std::remove_cvref_t<decltype(preBasis_->gridView())>::Implementation::ParameterSpaceType;
     if constexpr (ParameterSpaceType::isAlwaysTrivial)
       return preBasis_->gridView().indexSet().index(element_);
     else
@@ -862,7 +862,6 @@ namespace BasisFactory {
       std::array<int, dim> degreeElevate_{};
     };
 
-
   } // namespace Impl
 
   /**
@@ -881,14 +880,10 @@ namespace BasisFactory {
     return {std::forward<Types>(t)...};
   }
 
-
-
   template <size_t dim>
   auto nurbs(const std::array<int, dim>& degreeElevate) {
     return Impl::NurbsPreBasisFactoryFromDegreeElevation<dim>(degreeElevate);
   }
-
-
 
   inline auto nurbs() {
     return [](const auto& gridView) { return NurbsPreBasis<std::remove_cvref_t<decltype(gridView)>>(gridView); };

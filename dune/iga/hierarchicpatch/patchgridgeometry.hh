@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -40,8 +40,9 @@ public:
 
   // using LocalGeometryInParameterSpace = typename ReferenceElementType::template Codim<CodimInHostGrid>::Geometry;
   //  type of the LocalView of the patch geometry
-  using GeometryLocalView = typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
-                                                                ctype>::template GeometryLocalView<codim, ParameterSpace>;
+  using GeometryLocalView =
+      typename GeometryKernel::NURBSPatch<GridImp::dimension, worlddimension,
+                                          ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
   /** constructor from host geometry */
   PatchGridGeometry(const ParameterSpaceGeometry& localGeometry, GeometryLocalView&& geometryLocalView)
@@ -71,8 +72,12 @@ public:
     return geometryLocalView_.corner(i);
   }
 
-  [[nodiscard]] GlobalCoordinate center() const  {
+  [[nodiscard]] GlobalCoordinate center() const {
     return geometryLocalView_.center();
+  }
+
+  [[nodiscard]] Volume volume() const {
+    return geometryLocalView_.volume();
   }
 
   /** @brief Maps a local coordinate within reference element to

@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
@@ -84,7 +85,7 @@ auto testNurbsBasis(auto& grid) {
 auto runBasisTest(Dune::TestSuite& t, const std::string& fileName, bool trimmed, int refLevel, int degreeElevate = 0,
                   int postKnot = 0) {
   // Create test case
-  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto igaGridFactory = GridFactory();

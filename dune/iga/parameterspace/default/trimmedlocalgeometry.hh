@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
 #include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 enum class LocalGeometryTag
 {
@@ -26,15 +26,16 @@ public:
   using ctype = typename GridImp::ctype;
 
   static constexpr int mydimension = 2;
-  using ParameterSpace                    = typename GridImp::ParameterSpace;
+  using ParameterSpace             = typename GridImp::ParameterSpace;
 
   static constexpr int coorddimension = coorddim;
   static constexpr int codim          = coorddimension - mydimension;
   using PatchGeometry                 = GeometryKernel::NURBSPatch<mydimension, coorddimension, ctype>;
   using LocalCoordinateInPatch        = typename PatchGeometry::LocalCoordinate;
 
-  using HostGeometry = typename ParameterSpace::ParameterSpaceTraits::template Codim<0>::HostParameterSpaceGridEntity::Geometry;
-  using TrimData     = typename ParameterSpace::ElementTrimData;
+  using HostGeometry =
+      typename ParameterSpace::ParameterSpaceTraits::template Codim<0>::HostParameterSpaceGridEntity::Geometry;
+  using TrimData = typename ParameterSpace::ElementTrimData;
 
   using ParameterSpaceElement = typename GridImp::ParameterSpace::template Codim<0>::ParameterSpaceGridEntity;
 
@@ -48,8 +49,9 @@ public:
   using Volume                    = ctype;
 
   // type of the LocalView of the patch geometry
-  using GeometryLocalView = typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
-                                                                ctype>::template GeometryLocalView<codim, ParameterSpace>;
+  using GeometryLocalView =
+      typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
+                                          ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
   /** constructor from host geometry  */
   TrimmedLocalGeometryImpl() = default;
@@ -74,9 +76,6 @@ public:
   [[nodiscard]] bool affine() const {
     return true;
   }
-
-  // TODO Write something to get the integration Rule for this element (maybe give a pointer to parameterspace element
-  // instead of trimData)
 
   // return the number of corners of this element. Corners are numbered 0...n-1
   [[nodiscard]] int corners() const {
@@ -136,8 +135,12 @@ public:
   }
 
   auto getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
-                       const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const {
+                         const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const {
     return element_->getQuadratureRule(p_order, qt);
+  }
+
+  bool isTrimmed() const {
+    return true;
   }
 
 private:
@@ -153,7 +156,7 @@ public:
   using ctype = typename GridImp::ctype;
 
   static constexpr int mydimension = 1;
-  using ParameterSpace                    = typename GridImp::ParameterSpace;
+  using ParameterSpace             = typename GridImp::ParameterSpace;
 
   static constexpr int coorddimension = coorddim;
   static constexpr int codim          = coorddimension - mydimension;
@@ -169,8 +172,9 @@ public:
   using Volume                        = ctype;
 
   // type of the LocalView of the patch geometry
-  using GeometryLocalView = typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
-                                                                ctype>::template GeometryLocalView<codim, ParameterSpace>;
+  using GeometryLocalView =
+      typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
+                                          ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
   /** constructor from host geometry  */
   TrimmedLocalGeometryImpl() = default;
@@ -257,7 +261,7 @@ public:
   using ctype = typename GridImp::ctype;
 
   static constexpr int mydimension = 0;
-  using ParameterSpace                    = typename GridImp::ParameterSpace;
+  using ParameterSpace             = typename GridImp::ParameterSpace;
 
   static constexpr int coorddimension = coorddim;
   static constexpr int codim          = coorddimension - mydimension;
@@ -337,4 +341,4 @@ private:
   FieldVector<ctype, coorddimension> pos_{};
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

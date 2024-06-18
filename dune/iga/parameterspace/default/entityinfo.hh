@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
 #include <dune/common/reservedvector.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 template <typename HostIdType>
 struct IdType;
@@ -124,4 +124,4 @@ struct EntityInfoImpl<Traits, 0>
   ReservedVector<IdType<HostIdType>, 4> decendantIds;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

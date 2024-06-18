@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
 #include <mapbox/earcut.hpp>
@@ -47,19 +48,19 @@ struct SimplexGenerator
         switch (edgeInfo.idx) {
           case 0:
             vertices.push_back(refElement.template geometry<2>(0).center());
-          break;
+            break;
           case 1:
             vertices.push_back(refElement.template geometry<2>(1).center());
-          break;
+            break;
           case 2:
             vertices.push_back(refElement.template geometry<2>(3).center());
-          break;
+            break;
           case 3:
             vertices.push_back(refElement.template geometry<2>(2).center());
-          break;
+            break;
           default:
             assert(edgeInfo.idx < 4);
-          __builtin_unreachable();
+            __builtin_unreachable();
         }
       }
     }
@@ -85,7 +86,7 @@ private:
       for (auto local : Utilities::linspace(0.0, 1.0, parameters.boundaryDivisions))
         points.push_back(localGeometry.global({local}));
     } else {
-      // Guess initial amount of segments (a linear segment of lenght 1 should be devided by 1 divions)
+      // Guess initial amount of segments (a linear segment of length 1 should be divided by 1 divions)
       double curveLength = computeCurveLength(localGeometry);
       auto segments      = static_cast<unsigned int>(std::ceil(1 * curveLength * localGeometry.degree()[0]));
 
@@ -114,7 +115,7 @@ private:
 
   // Function to calculate the distance between two points
   static auto checkForConvergence(const auto& localGeometry, unsigned int numSegments, double curveLength,
-                                    double targetAccuracy) -> std::pair<bool, std::vector<Point>> {
+                                  double targetAccuracy) -> std::pair<bool, std::vector<Point>> {
     auto [totalDistance, points] = getPointsAndDistance(localGeometry, numSegments);
     auto converged               = std::abs((totalDistance - curveLength) / curveLength) < targetAccuracy;
     return std::make_pair(converged, points);
@@ -125,8 +126,8 @@ private:
     return std::get<0>(getPointsAndDistance(localGeometry, numSegments));
   }
 
-  static auto getPointsAndDistance(const auto& localGeometry, unsigned int numSegments)
-      -> std::pair<double, std::vector<Point>> {
+  static auto getPointsAndDistance(const auto& localGeometry,
+                                   unsigned int numSegments) -> std::pair<double, std::vector<Point>> {
     auto distance = [](const Point& p1, const Point& p2) {
       return std::sqrt(Dune::power(p2[0] - p1[0], 2) + Dune::power(p2[1] - p1[1], 2));
     };
@@ -143,7 +144,7 @@ private:
   }
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA
 
 // Add support for Dune::FieldVector in Earcut
 namespace mapbox::util {

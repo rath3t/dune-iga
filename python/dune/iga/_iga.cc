@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -14,8 +14,8 @@ PYBIND11_MODULE(_iga, m) {
   m.def(
       "registerParameterSpacePreferences",
       [](int boundaryDivisions = 5, double targetAccuracy = 1) {
-        Dune::IGA::DefaultTrim::Preferences::getInstance().targetAccuracy(targetAccuracy);
-        Dune::IGA::DefaultTrim::Preferences::getInstance().boundaryDivisions(boundaryDivisions);
+        Dune::IGA::DefaultParameterSpace::Preferences::getInstance().targetAccuracy(targetAccuracy);
+        Dune::IGA::DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(boundaryDivisions);
       },
       pybind11::arg("boundaryDivisions") = 5, pybind11::arg("targetAccuracy") = 1.0);
 }

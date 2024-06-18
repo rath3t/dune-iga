@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -21,10 +22,10 @@
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/concepts.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/identity/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 #include <dune/subgrid/test/common.hh>
 
 template <typename>
@@ -41,12 +42,12 @@ template <typename G>
 void checkConcepts() {
   static_assert(Dune::Concept::Grid<G>);
 
-  using GridEntity    = typename G::template Codim<0>::Entity;
-  using LeafGridView  = typename G::LeafGridView;
-  using LevelGridView = typename G::LevelGridView;
-  using GlobalIdSet   = typename G::GlobalIdSet;
-  using IndexSet      = typename LeafGridView::IndexSet;
-  using ParameterSpace       = typename G::ParameterSpace;
+  using GridEntity     = typename G::template Codim<0>::Entity;
+  using LeafGridView   = typename G::LeafGridView;
+  using LevelGridView  = typename G::LevelGridView;
+  using GlobalIdSet    = typename G::GlobalIdSet;
+  using IndexSet       = typename LeafGridView::IndexSet;
+  using ParameterSpace = typename G::ParameterSpace;
 
   using GridEntityReferenceType = decltype(referenceElement(GridEntity()));
   if constexpr (ParameterSpace::isAlwaysTrivial)
@@ -77,24 +78,36 @@ int main() {
 
   // Check concepts with trim
 
-  checkConcepts<PatchGrid<2, 2, DefaultTrim::PatchGridFamily>>();
-  checkConcepts<PatchGrid<2, 3, DefaultTrim::PatchGridFamily>>();
-  // checkConcepts<PatchGrid<3, 3, DefaultTrim::PatchGridFamily>>();
+  checkConcepts<PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>>();
+  checkConcepts<PatchGrid<2, 3, DefaultParameterSpace::PatchGridFamily>>();
+  // checkConcepts<PatchGrid<3, 3, DefaultParameterSpace::PatchGridFamily>>();
 
-  static_assert(not Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<1, 1, double>::ParameterSpace>);
-  static_assert(not Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<1, 2, double>::ParameterSpace>);
-  static_assert(not Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<1, 3, double>::ParameterSpace>);
-  // static_assert(not Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<3, 3, double>::ParameterSpace>);
+  static_assert(
+      not Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<1, 1, double>::ParameterSpace>);
+  static_assert(
+      not Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<1, 2, double>::ParameterSpace>);
+  static_assert(
+      not Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<1, 3, double>::ParameterSpace>);
+  // static_assert(not Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<3, 3,
+  // double>::ParameterSpace>);
 
-  static_assert(Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<2, 2, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<DefaultTrim::PatchGridFamily<2, 3, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<2, 2, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<DefaultParameterSpace::PatchGridFamily<2, 3, double>::ParameterSpace>);
 
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<1, 1, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<1, 2, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<1, 3, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<2, 2, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<2, 3, double>::ParameterSpace>);
-  static_assert(Dune::IGA::Concept::ParameterSpace<IdentityTrim::PatchGridFamily<3, 3, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<1, 1, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<1, 2, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<1, 3, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<2, 2, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<2, 3, double>::ParameterSpace>);
+  static_assert(
+      Dune::IGA::Concept::ParameterSpace<IdentityParameterSpace::PatchGridFamily<3, 3, double>::ParameterSpace>);
 
   return 0;
 }

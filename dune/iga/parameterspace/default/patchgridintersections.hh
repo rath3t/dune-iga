@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -11,7 +11,7 @@
  * @brief The TrimmedPatchGridLeafIntersection and TrimmedLevelIntersection classes
  */
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 // External forward declarations
 template <class Grid>
@@ -28,12 +28,14 @@ namespace Impl {
   namespace IntersectionTraits {
 
     template <class GridImp, IntersectionType type_>
-    using HostIntersection = std::conditional_t<type_ == IntersectionType::Leaf,
-                                                typename GridImp::ParameterSpace::ParameterSpaceTraits::HostLeafIntersection,
-                                                typename GridImp::ParameterSpace::ParameterSpaceTraits::HostLevelIntersection>;
+    using HostIntersection =
+        std::conditional_t<type_ == IntersectionType::Leaf,
+                           typename GridImp::ParameterSpace::ParameterSpaceTraits::HostLeafIntersection,
+                           typename GridImp::ParameterSpace::ParameterSpaceTraits::HostLevelIntersection>;
 
     template <class GridImp>
-    using Geometry = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry;
+    using Geometry =
+        typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry;
 
     template <class GridImp>
     using LocalGeometry = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalGeometry;
@@ -54,14 +56,15 @@ namespace Impl {
     using IdType                  = typename GridImp::GridFamily::ParameterSpaceTraits::GlobalIdSetId;
     using NormalVector            = FieldVector<ctype, dim>;
     using LocalCoordinate         = FieldVector<ctype, mydim>;
-    using EdgeInfo                = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::EntityInfo;
+    using EdgeInfo = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::EntityInfo;
 
     using IntersectionGeometry     = GeometryKernel::NURBSPatch<mydim, dim, ctype>;
     using HostLeafIntersection     = IntersectionTraits::HostIntersection<GridImp, type_>;
     using ParameterSpaceGridEntity = IntersectionTraits::ParameterSpaceGridEntity<GridImp>;
     using LocalGeometry            = IntersectionTraits::LocalGeometry<GridImp>;
     using Geometry                 = IntersectionTraits::Geometry<GridImp>;
-    using TrimmedLocalGeometry = typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedLocalGeometry;
+    using TrimmedLocalGeometry =
+        typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedLocalGeometry;
     using TrimmedGeometry =
         typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
 
@@ -78,7 +81,7 @@ namespace Impl {
     }
 
     ParameterSpaceGridEntity inside() const {
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(insideElementId_, level());
+      return patchGrid_->parameterSpace().entityContainer_.template entity<0>(insideElementId_, level());
     }
 
     ParameterSpaceGridEntity outside() const {
@@ -178,14 +181,15 @@ namespace Impl {
     using IdType                  = typename GridImp::GridFamily::ParameterSpaceTraits::GlobalIdSetId;
     using NormalVector            = FieldVector<ctype, dim>;
     using LocalCoordinate         = FieldVector<ctype, mydim>;
-    using EdgeInfo                = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::EntityInfo;
+    using EdgeInfo = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::EntityInfo;
 
     using IntersectionGeometry     = GeometryKernel::NURBSPatch<mydim, dim, ctype>;
     using HostLeafIntersection     = IntersectionTraits::HostIntersection<GridImp, type_>;
     using ParameterSpaceGridEntity = IntersectionTraits::ParameterSpaceGridEntity<GridImp>;
     using LocalGeometry            = IntersectionTraits::LocalGeometry<GridImp>;
     using Geometry                 = IntersectionTraits::Geometry<GridImp>;
-    using TrimmedLocalGeometry = typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedLocalGeometry;
+    using TrimmedLocalGeometry =
+        typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedLocalGeometry;
     using TrimmedGeometry =
         typename GridImp::GridFamily::ParameterSpaceTraits::template Codim<1>::TrimmedParameterSpaceGeometry;
     TrimmedHostIntersectionImpl() = default;
@@ -201,11 +205,11 @@ namespace Impl {
     }
 
     ParameterSpaceGridEntity inside() const {
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(insideElementId(), level());
+      return patchGrid_->parameterSpace().entityContainer_.template entity<0>(insideElementId(), level());
     }
 
     ParameterSpaceGridEntity outside() const {
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(outsideElementId(), level());
+      return patchGrid_->parameterSpace().entityContainer_.template entity<0>(outsideElementId(), level());
     }
 
     bool boundary() const {
@@ -252,9 +256,9 @@ namespace Impl {
     }
 
     int indexInOutside() const {
-      if (patchGrid_->trimmer().entityContainer_.isElementTrimmed(outsideElementId()))
-        return patchGrid_->trimmer().entityContainer_.outsideIntersectionIndex(insideElementId(), outsideElementId(),
-                                                                               indexInInside());
+      if (patchGrid_->parameterSpace().entityContainer_.isElementTrimmed(outsideElementId()))
+        return patchGrid_->parameterSpace().entityContainer_.outsideIntersectionIndex(
+            insideElementId(), outsideElementId(), indexInInside());
       return hostIntersection_.indexInOutside();
     }
 
@@ -293,11 +297,11 @@ namespace Impl {
         return hostIntersection_.inside().level();
     }
     IdType insideElementId() const {
-      auto hostId = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
+      auto hostId = patchGrid_->parameterSpace().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
       return {.entityIdType = IdType::EntityIdType::host, .id = hostId};
     }
     IdType outsideElementId() const {
-      auto hostId = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
+      auto hostId = patchGrid_->parameterSpace().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
       return {.entityIdType = IdType::EntityIdType::host, .id = hostId};
     }
 
@@ -334,11 +338,11 @@ namespace Impl {
           indexInInside_(indexInInside) {}
 
     ParameterSpaceGridEntity inside() const {
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(insideElementId(), level());
+      return patchGrid_->parameterSpace().entityContainer_.template entity<0>(insideElementId(), level());
     }
 
     ParameterSpaceGridEntity outside() const {
-      return patchGrid_->trimmer().entityContainer_.template entity<0>(outsideElementId(), level());
+      return patchGrid_->parameterSpace().entityContainer_.template entity<0>(outsideElementId(), level());
     }
 
     bool boundary() const {
@@ -354,8 +358,8 @@ namespace Impl {
       if (not boundary())
         DUNE_THROW(Dune::GridError, "BoundarySegmentIndex failed: Not a boundary");
 
-      auto yaspEle  = patchGrid_->trimmer().parameterSpaceGrid().template getHostEntity<0>(inside().hostEntity());
-      auto gridView = patchGrid_->trimmer().untrimmedParameterSpaceGrid_->levelGridView(yaspEle.level());
+      auto yaspEle = patchGrid_->parameterSpace().parameterSpaceGrid().template getHostEntity<0>(inside().hostEntity());
+      auto gridView = patchGrid_->parameterSpace().untrimmedParameterSpaceGrid_->levelGridView(yaspEle.level());
 
       auto yaspIntersection = *std::ranges::find_if(
           gridView.ibegin(yaspEle), gridView.iend(yaspEle),
@@ -393,9 +397,9 @@ namespace Impl {
     }
 
     int indexInOutside() const {
-      if (patchGrid_->trimmer().entityContainer_.isElementTrimmed(outsideElementId()))
-        return patchGrid_->trimmer().entityContainer_.outsideIntersectionIndex(insideElementId(), outsideElementId(),
-                                                                               indexInInside());
+      if (patchGrid_->parameterSpace().entityContainer_.isElementTrimmed(outsideElementId()))
+        return patchGrid_->parameterSpace().entityContainer_.outsideIntersectionIndex(
+            insideElementId(), outsideElementId(), indexInInside());
       return hostIntersection_.indexInOutside();
     }
 
@@ -432,12 +436,12 @@ namespace Impl {
     }
 
     IdType insideElementId() const {
-      auto hostId = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
+      auto hostId = patchGrid_->parameterSpace().parameterSpaceGrid().globalIdSet().id(hostIntersection_.inside());
       return {.entityIdType = IdType::EntityIdType::host, .id = hostId};
     }
 
     IdType outsideElementId() const {
-      auto hostId = patchGrid_->trimmer().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
+      auto hostId = patchGrid_->parameterSpace().parameterSpaceGrid().globalIdSet().id(hostIntersection_.outside());
       return {.entityIdType = IdType::EntityIdType::host, .id = hostId};
     }
 
@@ -565,10 +569,11 @@ class TrimmedLeafIntersection
 
 public:
   // The type used to store coordinates
-  typedef typename GridImp::ctype ctype;
+  using ctype           = typename GridImp::ctype;
   using LocalCoordinate = FieldVector<ctype, mydim>;
 
-  typedef typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry Geometry;
+  typedef
+      typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry Geometry;
   typedef typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalGeometry LocalGeometry;
   typedef FieldVector<ctype, dim> NormalVector;
   using IdType = typename GridImp::GridFamily::ParameterSpaceTraits::GlobalIdSetId;
@@ -597,7 +602,7 @@ public:
                           int indexInInside)
       : underlying_{Impl::TrimmedIntersectionImpl<GridImp, Impl::IntersectionType::Leaf>(patchGrid, insideElementId,
                                                                                          edgeInfo, indexInInside)} {}
-
+  // Todo re-add move constructors
   // TrimmedLeafIntersection(const GridImp* parameterSpaceGrid, HostLeafIntersection&& hostIntersection)
   //     : patchGrid_(parameterSpaceGrid),
   //       hostIntersection_{hostIntersection} {}
@@ -679,7 +684,7 @@ public:
   }
 
   /**
-   * @return Geometry of the intersection in the grid world space, here parameterspace geometry
+   * @return Geometry of the intersection in the grid world space, here parameterSpace geometry
    */
   Geometry geometry() const {
     return underlying_.geometry();
@@ -745,7 +750,8 @@ class TrimmedLevelIntersection
 
   using ParameterSpaceGridEntity =
       typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<0>::ParameterSpaceGridEntity;
-  typedef typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry Geometry;
+  typedef
+      typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalParameterSpaceGeometry Geometry;
   typedef typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::LocalGeometry LocalGeometry;
 
   using EdgeInfo = typename GridImp::ParameterSpace::ParameterSpaceTraits::template Codim<1>::EntityInfo;
@@ -882,4 +888,4 @@ private:
   IntersectionImpl underlying_{};
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

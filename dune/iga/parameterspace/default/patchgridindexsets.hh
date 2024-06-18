@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -9,7 +9,7 @@
 
 #include <dune/grid/common/indexidset.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 namespace Impl {
   enum class IndexSetType
@@ -55,15 +55,15 @@ namespace Impl {
     }
 
     std::size_t size(int codim) const {
-      return grid_->trimmer().entityContainer_.size(codim, level());
+      return grid_->parameterSpace().entityContainer_.size(codim, level());
     }
 
     std::size_t size(GeometryType type) const {
-      return grid_->trimmer().entityContainer_.size(type, level());
+      return grid_->parameterSpace().entityContainer_.size(type, level());
     }
 
     GeoTypes types(int codim) const {
-      return grid_->trimmer().entityContainer_.types(codim, level());
+      return grid_->parameterSpace().entityContainer_.types(codim, level());
     }
 
     template <class EntityType>
@@ -73,7 +73,7 @@ namespace Impl {
       else {
         if (not e.impl().isTrimmed())
           return hostIndexSet().contains(grid_->template getHostEntity<EntityType::codimension>(e).getHostEntity());
-        return grid_->trimmer().entityContainer_.contains(e, level());
+        return grid_->parameterSpace().entityContainer_.contains(e, level());
       }
     }
 
@@ -272,4 +272,4 @@ private:
   const GridImp* grid_;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

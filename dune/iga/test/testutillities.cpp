@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -27,7 +28,7 @@ auto testTransformations() {
   constexpr std::array vertexIndexMapping = {0u, 1u, 3u, 2u};
   constexpr std::array edgeIndexMapping   = {2u, 1u, 3u, 0u};
 
-  using Transformations = Dune::IGA::DefaultTrim::Transformations;
+  using Transformations = Dune::IGA::DefaultParameterSpace::Transformations;
 
   for (const auto i : Dune::range(4u)) {
     t.check(Transformations::mapToDune(2, i) == vertexIndexMapping[i])
@@ -59,10 +60,7 @@ auto testTransformations() {
 auto testTransformToSpan() {
   TestSuite t("Test TransformToSpan");
 
-  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
-  using GridFactory = Dune::GridFactory<PatchGrid>;
-
-  auto igaGridFactory = GridFactory();
+  auto igaGridFactory = makePatchGridFactory<2, 2>(withTrimmingCapabilities());
   igaGridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {1, 1});
   auto igaGrid = igaGridFactory.createGrid();
 
@@ -90,7 +88,7 @@ auto testTransformToSpan() {
 auto testForEachUntrimmedBoundary(int degreeElevate) {
   TestSuite t("Test testForEachUntrimmedBoundary");
 
-  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = IGA::PatchGrid<2, 2, IGA::DefaultParameterSpace::PatchGridFamily>;
   using GridView    = PatchGrid::LeafGridView;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
@@ -122,7 +120,7 @@ auto testForEachUntrimmedBoundary(int degreeElevate) {
 auto testClipUtils() {
   TestSuite t("testClipUtils", TestSuite::ThrowPolicy::AlwaysThrow);
 
-  using IGA::DefaultTrim::Util::isConsecutive;
+  using IGA::DefaultParameterSpace::Util::isConsecutive;
 
   t.check(isConsecutive(0, 1));
   t.check(isConsecutive(1, 2));
@@ -139,6 +137,7 @@ auto testClipUtils() {
   return t;
 }
 
+// Todo: move to factoryTest
 auto testFactoryFactories() {
   TestSuite t;
 

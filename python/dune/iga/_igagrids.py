@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from .generator import MySimpleGenerator
@@ -41,7 +41,7 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None, gridType=IGAGridType.Ident
             "If you don't pass the patch data you have to pass dimgrid and dimworld"
         )
 
-    trimmerType = "Dune::IGA::IdentityTrim::PatchGridFamily" if gridType == IGAGridType.Identity else "Dune::IGA::DefaultTrim::PatchGridFamily"
+    trimmerType = "Dune::IGA::IdentityParameterSpace::PatchGridFamily" if gridType == IGAGridType.Identity else "Dune::IGA::DefaultParameterSpace::PatchGridFamily"
 
     typeName = (
         "Dune::IGA::PatchGrid< " + str(dimgrid) + ", " + str(dimworld) + ", " + trimmerType + ", double>"

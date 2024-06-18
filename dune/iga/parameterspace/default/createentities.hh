@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -7,7 +7,7 @@
 
 #include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 namespace Util {
   auto sameCorner(const auto& corner1, const auto& corner2, double precision = 1e-10) -> bool {
@@ -30,7 +30,8 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::makeElementID(const HostEnti
 }
 
 template <int dim, int dimworld, typename ScalarType>
-auto ParameterSpaceImpl<dim, dimworld, ScalarType>::idForTrimmedVertex(const FieldVector<double, 2>& vertex) -> GlobalIdType {
+auto ParameterSpaceImpl<dim, dimworld, ScalarType>::idForTrimmedVertex(const FieldVector<double, 2>& vertex)
+    -> GlobalIdType {
   using PersistentIndexType = typename ParameterSpaceTraits::PersistentIndexType;
 
   auto& globalIdSetParameterSpace = parameterSpaceGrid_->globalIdSet();
@@ -67,7 +68,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::idForTrimmedHostEdge(
   PersistentIndexType foundIndex{};
   for (auto& [edgeId, edgeInfo] : entityContainer_.idToEdgeInfoMap) {
     if (edgeId.hostId.has_value() and edgeInfo.id.hostId.value() == hostEdgeId) {
-      // We have the same hostId, this doens't neccesarily mean that its the same edge
+      // We have the same hostId, this doesn't necessarily mean that its the same edge
       auto edgeGeo = edgeInfo.edgeGeometries.front().geometry;
       if (Util::isSameEdgeGeometry(edgeGeo, trimmedEdge.geometry.value())) {
         alreadyThere = true;
@@ -126,14 +127,14 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::createAndSaveElementInfo(
 
 template <int dim, int dimworld, typename ScalarType>
 void ParameterSpaceImpl<dim, dimworld, ScalarType>::collectElementEdges(int level, const HostEntity<0>& ele,
-                                                                 const ElementTrimData& eleTrimData) {
+                                                                        const ElementTrimData& eleTrimData) {
   auto& indexSet         = parameterSpaceGrid_->levelGridView(level).indexSet();
   GlobalIdType elementId = makeElementID(ele);
 
   auto& elementEdgeIndices        = entityContainer_.globalEdgesIdOfElementsMap_[elementId];
   auto& globalIdSetParameterSpace = parameterSpaceGrid_->globalIdSet();
 
-  // Define some lambdas (can be moved to seperate functions later)
+  // Define some lambdas (can be moved to separate functions later)
   auto addHostEdge = [&](const unsigned int localEdgeIndex) {
     auto hostEdgeId     = globalIdSetParameterSpace.subId(ele, localEdgeIndex, 1);
     GlobalIdType edgeId = {.entityIdType = GlobalIdType::EntityIdType::host, .id = hostEdgeId};
@@ -162,7 +163,7 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::collectElementEdges(int leve
   };
 
   auto addTrimmedHostEdge = [&](int localEdgeIndex, const typename ElementTrimData::EdgeInfo& edgeOfTrimmedElement) {
-    // To get neighborhoud information we save the original hostId
+    // To get neighborhood information we save the original hostId
     auto hostEdgeId     = globalIdSetParameterSpace.subId(ele, localEdgeIndex, 1);
     GlobalIdType edgeId = idForTrimmedHostEdge(hostEdgeId, edgeOfTrimmedElement);
     elementEdgeIndices.emplace_back(edgeId);
@@ -252,7 +253,7 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::collectElementEdges(int leve
 
 template <int dim, int dimworld, typename ScalarType>
 void ParameterSpaceImpl<dim, dimworld, ScalarType>::collectElementVertices(int level, const HostEntity<0>& ele,
-                                                                    const ElementTrimData& eleTrimData) {
+                                                                           const ElementTrimData& eleTrimData) {
   using VertexGeo = typename ParameterSpaceTraits::template Codim<2>::TrimmedParameterSpaceGeometry::PatchGeometry;
 
   GlobalIdType elementId = makeElementID(ele);
@@ -313,7 +314,8 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::collectElementVertices(int l
 }
 
 template <int dim, int dimworld, typename ScalarType>
-void ParameterSpaceImpl<dim, dimworld, ScalarType>::createElements(int level, const std::vector<ElementTrimData>& trimDatas) {
+void ParameterSpaceImpl<dim, dimworld, ScalarType>::createElements(int level,
+                                                                   const std::vector<ElementTrimData>& trimDatas) {
   using ElementEntity = typename ParameterSpaceTraits::template Codim<0>::ParameterSpaceGridEntity;
 
   auto& elementMap       = entityContainer_.idToElementInfoMap;
@@ -371,4 +373,4 @@ void ParameterSpaceImpl<dim, dimworld, ScalarType>::createSubEntities(int level)
     }
   }
 }
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

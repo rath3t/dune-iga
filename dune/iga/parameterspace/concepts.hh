@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include <concepts>
@@ -18,8 +20,9 @@ concept TrimDataContainer = requires(const T& t, size_t i) { t[i]; };
 template <typename T>
 concept ParameterSpace =
     T::isValid and
-    requires(T trimmer, const typename T::ParameterType& param, const typename T::ElementTrimData& elementTrimData,
-             const typename T::PatchTrimData& patchTrimData, const typename T::ParameterSpaceGrid& paramSpaceGrid) {
+    requires(T parameterspace, const typename T::ParameterType& param,
+             const typename T::ElementTrimData& elementTrimData, const typename T::PatchTrimData& patchTrimData,
+             const typename T::ParameterSpaceGrid& paramSpaceGrid) {
       { T::mydimension } -> std::convertible_to<int>;
       typename T::ctype;
       typename T::ParameterSpaceGrid;
@@ -42,12 +45,12 @@ concept ParameterSpace =
       // std::convertible_to<std::optional<std::reference_wrapper<const typename T::ElementTrimData>>>;
       // Uncomment the line above when the trimData method is added to the ParameterSpace concept.
 
-      { trimmer.globalRefine(0) } -> std::convertible_to<void>;
+      { parameterspace.globalRefine(0) } -> std::convertible_to<void>;
 
-      { trimmer.parameterSpaceGrid() } -> std::convertible_to<const typename T::ParameterSpaceGrid&>;
-      { trimmer.parameterSpaceGrid() } -> std::convertible_to<typename T::ParameterSpaceGrid&>;
+      { parameterspace.parameterSpaceGrid() } -> std::convertible_to<const typename T::ParameterSpaceGrid&>;
+      { parameterspace.parameterSpaceGrid() } -> std::convertible_to<typename T::ParameterSpaceGrid&>;
 
-      { trimmer.setParameters(std::declval<const typename T::ParameterType>()) } -> std::convertible_to<void>;
+      { parameterspace.setParameters(std::declval<const typename T::ParameterType>()) } -> std::convertible_to<void>;
 
       // { parameterspace.unTrimmedParameterSpaceGrid() } -> std::convertible_to<const typename
       // T::UntrimmedParameterSpaceGrid&>; { parameterspace.unTrimmedParameterSpaceGrid() } ->

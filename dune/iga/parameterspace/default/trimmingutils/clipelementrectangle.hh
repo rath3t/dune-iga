@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
 #include "cliputils.hh"
@@ -12,7 +13,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/geometrykernel/findintersection.hh>
 
-namespace Dune::IGA::DefaultTrim::Util {
+namespace Dune::IGA::DefaultParameterSpace::Util {
 
 auto clipElementRectangle(const auto& element,
                           const auto& patchTrimData) -> std::tuple<ElementTrimFlag, ClippingResult> {
@@ -60,10 +61,6 @@ auto clipElementRectangle(const auto& element,
 
     auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
 
-    // std::cout << "First Curve: " << firstTrimmingCurvePoint.z << " " << firstTrimmingCurveIndices << std::endl;
-    // std::cout << "Second Curve: " << secondTrimmingCurvePoint.z << " " << secondTrimmingCurveIndices << std::endl;
-    // std::cout << "Intersection: " << intersectionPoint.z << " " << intersectionIndices << std::endl;
-
     assert(firstTrimmingCurveIndices.loop == secondTrimmingCurveIndices.loop &&
            "The points of the trimming curves should be on the same loop");
 
@@ -90,6 +87,9 @@ auto clipElementRectangle(const auto& element,
 
   clipper.Execute(ClipType::Intersection, FillRule::NonZero, resultClosedPaths, resultOpenPaths);
   assert(resultOpenPaths.empty() && "There should be no open paths in the clipping result");
+  if (resultClosedPaths.size() > 1)
+    DUNE_THROW(Dune::GridError,
+               "Clipping was not successful: Multiple closed regions per element, please refine accordingly");
 
   auto isFullElement = [&](const auto& clippedEdges) {
     return clippedEdges.size() == 4 and
@@ -143,7 +143,7 @@ auto clipElementRectangle(const auto& element,
     }
   }
 
-  // Check again if element is full after adding addtional vertices
+  // Check again if element is full after adding additional vertices
   if (result.vertices_.size() == 4 and
       std::ranges::all_of(result.vertices_, [](const ClippingResult::Vertex& v) { return v.isHost(); })) {
     return std::make_tuple(ElementTrimFlag::full, ClippingResult{eleRect});
@@ -156,4 +156,4 @@ auto clipElementRectangle(const auto& element,
 
   return std::make_tuple(ElementTrimFlag::trimmed, result);
 }
-} // namespace Dune::IGA::DefaultTrim::Util
+} // namespace Dune::IGA::DefaultParameterSpace::Util

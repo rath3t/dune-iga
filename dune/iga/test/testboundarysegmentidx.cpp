@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -14,8 +15,8 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tupleutility.hh>
 #include <dune/common/tuplevector.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 
 using namespace Dune::IGA;
 using namespace Dune;
@@ -35,7 +36,7 @@ auto runTestHierachic(Dune::TestSuite& t, const std::string& fileName, int initi
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -45,7 +46,7 @@ auto runTestHierachic(Dune::TestSuite& t, const std::string& fileName, int initi
   const auto grid = gridFactory.createGrid();
   const auto gv   = grid->leafGridView();
 
-  auto numBoundarySegmentsUntrimmed = grid->trimmer().untrimmedParameterSpaceGrid_->numBoundarySegments();
+  const auto numBoundarySegmentsUntrimmed = grid->parameterSpace().untrimmedParameterSpaceGrid_->numBoundarySegments();
 
   for (const auto i : Dune::range(initialRefLevel, maxRefLevel)) {
     if (i > initialRefLevel)
@@ -90,7 +91,7 @@ auto runTestFlat(Dune::TestSuite& t, const std::string& fileName, int refLevel, 
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();

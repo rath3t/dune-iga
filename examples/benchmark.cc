@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
   using PatchGridI   = PatchGrid<2, 2>;
   using GridFactoryI = Dune::GridFactory<PatchGridI>;
 
-  using PatchGridD   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using PatchGridD   = PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>;
   using GridFactoryD = Dune::GridFactory<PatchGridD>;
 
   std::string input_file = "../dune/iga/test/auxiliaryfiles/quarter_plate.ibra";
@@ -83,8 +84,8 @@ int main(int argc, char** argv) {
       ele.impl().getQuadratureRule(2 * 2);
   };
 
-  DefaultTrim::Preferences::getInstance().boundaryDivisions(4);
-  DefaultTrim::Preferences::getInstance().targetAccuracy(1);
+  DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(4);
+  DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1);
 
   // auto timeQR6 = runBenchmark([&]() { makeQR(grid6.get()); }, 5);
   // auto timeQR7 = runBenchmark([&]() { makeQR(grid7.get()); }, 5);
@@ -101,8 +102,8 @@ int main(int argc, char** argv) {
   //              "8x8: \t\t "
   //           << timeQR8 << "\n";
   //
-  // DefaultTrim::Preferences::getInstance().boundaryDivisions(1);
-  // DefaultTrim::Preferences::getInstance().targetAccuracy(1e-5);
+  // DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(1);
+  // DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1e-5);
   //
   // timeQR6 = runBenchmark([&]() { makeQR(grid6.get()); }, 5);
   // timeQR7 = runBenchmark([&]() { makeQR(grid7.get()); }, 5);

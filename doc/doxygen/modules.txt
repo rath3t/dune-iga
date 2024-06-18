@@ -1,7 +1,8 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 /*!
   @defgroup ParameterSpace ParameterSpace
- @details The group of available trimmers, see the Dune::IGA::IdentityTrim::ParameterSpace for the interface definiton
+ @details The group of available trimmers, see the Dune::IGA::IdentityParameterSpace::ParameterSpace for the interface definition
 */
 

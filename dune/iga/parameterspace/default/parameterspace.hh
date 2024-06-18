@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -20,6 +20,7 @@
 #include <dune/iga/parameterspace/default/entitycontainer.hh>
 #include <dune/iga/parameterspace/default/entityinfo.hh>
 #include <dune/iga/parameterspace/default/idset.hh>
+#include <dune/iga/parameterspace/default/parameterspaceentity.hh>
 #include <dune/iga/parameterspace/default/patchgridentityseed.hh>
 #include <dune/iga/parameterspace/default/patchgridhierarchiciterator.hh>
 #include <dune/iga/parameterspace/default/patchgridindexsets.hh>
@@ -29,27 +30,27 @@
 #include <dune/iga/parameterspace/default/patchgridleveliterator.hh>
 #include <dune/iga/parameterspace/default/patchtrimdata.hh>
 #include <dune/iga/parameterspace/default/referenceelement.hh>
-#include <dune/iga/parameterspace/default/parameterspaceentity.hh>
 #include <dune/iga/parameterspace/default/trimmedlocalgeometry.hh>
 #include <dune/iga/parameterspace/identity/patchgridlocalgeometry.hh>
 #include <dune/iga/parameterspace/localgeometryvariant.hh>
 #include <dune/subgrid/subgrid.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 template <typename HostIdType>
 struct IdType;
 }
 template <typename HostIdType>
-struct std::hash<Dune::IGA::DefaultTrim::IdType<HostIdType>>
+struct std::hash<Dune::IGA::DefaultParameterSpace::IdType<HostIdType>>
 {
-  std::size_t operator()(const Dune::IGA::DefaultTrim::IdType<HostIdType>& k) const {
+  std::size_t operator()(const Dune::IGA::DefaultParameterSpace::IdType<HostIdType>& k) const {
     using std::hash;
 
     // Compute individual hash values for first, second and third and combine them using XOR
     // and bit shifting:
     // todo
     // return (hash<HostIdType>()(k.id) ^
-    //         hash<typename Dune::IGA::DefaultTrim::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1) >>
+    //         hash<typename Dune::IGA::DefaultParameterSpace::IdType<HostIdType>::ElementState>()(k.entityIdType) << 1)
+    //         >>
     //        1;
     return (hash<HostIdType>()(k.id));
   }
@@ -61,7 +62,7 @@ namespace GeometryKernel {
   class NURBSPatch;
 }
 
-namespace DefaultTrim {
+namespace DefaultParameterSpace {
 
   template <typename HostIdType>
   struct IdType
@@ -598,7 +599,7 @@ namespace DefaultTrim {
         boundarySegmentsArchive_;
   };
 
-} // namespace DefaultTrim
+} // namespace DefaultParameterSpace
 } // namespace Dune::IGA
 
 #include "createentities.hh"

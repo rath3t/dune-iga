@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -8,7 +8,7 @@
  * @brief The PatchGridEntitySeed class
  */
 
-namespace Dune::IGA::IdentityTrim {
+namespace Dune::IGA::IdentityParameterSpace {
 
 /**
  * @brief The EntitySeed class provides the minimal information needed to restore an Entity using the grid.
@@ -61,6 +61,6 @@ private:
   ParameterSpaceGridEntitySeed hostEntitySeed_;
 };
 
-} // namespace Dune::IGA::IdentityTrim
+} // namespace Dune::IGA::IdentityParameterSpace
 
 // #define DUNE_IDENTITY_GRID_ENTITY_SEED_HH

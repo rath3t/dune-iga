@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
@@ -27,7 +28,7 @@ auto test(int refinement) {
   std::cout << "Reinement " << refinement << std::endl;
   std::cout << "*********************\n\n";
 
-  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -66,9 +67,9 @@ int main(int argc, char** argv) try {
   Dune::MPIHelper::instance(argc, argv);
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  Preferences::getInstance().targetAccuracy(1e-3);
-  Preferences::getInstance().reconstructTrimmedLocalGeometry(false);
-  Preferences::getInstance().reportTrimmedElementGeometryTypeAsNone(false);
+  DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1e-3);
+  DefaultParameterSpace::Preferences::getInstance().reconstructTrimmedLocalGeometry(false);
+  DefaultParameterSpace::Preferences::getInstance().reportTrimmedElementGeometryTypeAsNone(false);
 
   t.subTest(test(0));
   t.subTest(test(1));

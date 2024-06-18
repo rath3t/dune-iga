@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 #include "elementtrimdata.hh"
 #include "trimmedlocalgeometry.hh"
@@ -10,7 +11,7 @@
 
 namespace Dune {
 namespace IGA {
-  namespace DefaultTrim {
+  namespace DefaultParameterSpace {
     // template <int mydim_, typename ScalarType>
     // struct ElementTrimData;
 
@@ -43,7 +44,7 @@ namespace IGA {
       static constexpr int mydimension = dim;
       static constexpr int dimension   = mydimension;
       // The coordinate field type.
-      using ParameterSpace            = typename GridImp::ParameterSpace;
+      using ParameterSpace     = typename GridImp::ParameterSpace;
       using ctype              = typename ParameterSpace::ctype;
       using ParameterSpaceGrid = YaspGrid<mydimension, TensorProductCoordinates<ctype, mydimension>>;
       using TrimDataType       = typename GridImp::ParameterSpace::ParameterSpaceTraits::ElementTrimData;
@@ -477,6 +478,6 @@ namespace IGA {
       // But this should have value semantics and therefore it should be cheap to copy, thus maybe store it at the
       // entity
     };
-  } // namespace DefaultTrim
+  } // namespace DefaultParameterSpace
 } // namespace IGA
 } // namespace Dune

@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
@@ -49,7 +50,7 @@ auto testNurbsBasis() {
   nurbsPatchData.controlPoints = {
       {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
       {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
- // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
       {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
   };
   nurbsPatchData.degree = order;
@@ -157,7 +158,7 @@ auto testPrePostDegreeRefinement() {
 
   t.check(basisNoRefine.size() == basisPreRefine.size());
 
-  // Now degree elevate gridNoRefine, this should now have the same effekt as gridPreRefineAndDegree
+  // Now degree elevate gridNoRefine, this should now have the same effect as gridPreRefineAndDegree
   gridNoRefine->degreeElevateOnAllLevels({1, 1});
 
   Functions::NurbsBasis<GridView> basisNoRefine2(gridNoRefine->leafGridView(), nurbs());
@@ -188,13 +189,11 @@ auto testPrePostDegreeRefinement() {
     for (const auto i : Dune::range(2)) {
       if (refinement[i] > 0) {
         auto newKnots = IGA::Splines::generateRefinedKnots(newPatchData.knotSpans, i, refinement[i]);
-        newPatchData    = IGA::Splines::knotRefinement(newPatchData, newKnots, i);
+        newPatchData  = IGA::Splines::knotRefinement(newPatchData, newKnots, i);
       }
     }
     return newPatchData;
   };
-
-
 
   gridFactory.insertJson("auxiliaryfiles/element_trim.ibra", true, {0, 0}, {0, 0}, {0, 0});
   const auto freshGrid = gridFactory.createGrid();
@@ -231,8 +230,6 @@ auto testPrePostDegreeRefinement() {
 
   t.subTest(checkBasis(basis1, EnableContinuityCheck()));
 
-
-
   return t;
 }
 
@@ -242,20 +239,20 @@ int main(int argc, char** argv) try {
 
   TestSuite t;
   std::cout << "==================================" << std::endl;
-  std::cout << "===============TEST IdentityTrim==" << std::endl;
+  std::cout << "===============TEST IdentityParameterSpace==" << std::endl;
   std::cout << "==================================" << std::endl;
 
-  //t.subTest(testNurbsBasis<IGA::IdentityTrim::PatchGridFamily>());
+  // t.subTest(testNurbsBasis<IGA::IdentityParameterSpace::PatchGridFamily>());
 
   std::cout << std::endl;
   std::cout << "==================================" << std::endl;
-  std::cout << "===============TEST DefaultTrim===" << std::endl;
+  std::cout << "===============TEST DefaultParameterSpace===" << std::endl;
   std::cout << "==================================" << std::endl;
 
-  //t.subTest(testNurbsBasis<IGA::DefaultTrim::PatchGridFamily>());
+  // t.subTest(testNurbsBasis<IGA::DefaultParameterSpace::PatchGridFamily>());
 
-  t.subTest(testPrePostDegreeRefinement<IGA::IdentityTrim::PatchGridFamily>());
-  t.subTest(testPrePostDegreeRefinement<IGA::DefaultTrim::PatchGridFamily>());
+  t.subTest(testPrePostDegreeRefinement<IGA::IdentityParameterSpace::PatchGridFamily>());
+  t.subTest(testPrePostDegreeRefinement<IGA::DefaultParameterSpace::PatchGridFamily>());
 
   return t.exit();
 } catch (Dune::Exception& e) {

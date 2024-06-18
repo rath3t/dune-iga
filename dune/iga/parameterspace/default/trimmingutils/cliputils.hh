@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
 #include <array>
@@ -10,7 +11,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/grid/common/exceptions.hh>
 
-namespace Dune::IGA::DefaultTrim::Util {
+namespace Dune::IGA::DefaultParameterSpace::Util {
 
 inline int giveEdgeIdx(const std::size_t e1, const std::size_t e2) {
   if ((e1 == 0 and e2 == 1) or (e1 == 1 and e2 == 0))
@@ -279,4 +280,4 @@ private:
   }
 };
 
-} // namespace Dune::IGA::DefaultTrim::Util
+} // namespace Dune::IGA::DefaultParameterSpace::Util

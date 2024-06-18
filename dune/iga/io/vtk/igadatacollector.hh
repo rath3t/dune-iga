@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -32,7 +32,6 @@ public:
   DiscontinuousIgaDataCollector(const GridView& gridView, unsigned int subSampleFull, unsigned int subSampleTrimmed)
       : Super(gridView),
         geometries_(gridView, subSampleFull, subSampleTrimmed) {}
-
 
   explicit DiscontinuousIgaDataCollector(const GridView& gridView)
       : DiscontinuousIgaDataCollector(gridView, 0, 0) {};

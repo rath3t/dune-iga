@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #define CHECK_RESERVEDVECTOR
 #ifdef HAVE_CONFIG_H
@@ -25,10 +26,10 @@
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/concepts.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/identity/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 #include <dune/subgrid/test/common.hh>
 
 using namespace Dune;
@@ -810,7 +811,7 @@ auto testNURBSCurve() {
   patchData.knotSpans     = knotSpans;
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
-  IGA::PatchGrid<dim, dimworld, IdentityTrim::PatchGridFamily> grid(patchData);
+  IGA::PatchGrid<dim, dimworld, IdentityParameterSpace::PatchGridFamily> grid(patchData);
 
   auto leafGridView  = grid.leafGridView();
   auto& leafIndexSet = leafGridView.indexSet();
@@ -970,14 +971,14 @@ int main(int argc, char** argv) try {
   TestSuite t;
 
   std::cout << "==================================" << std::endl;
-  std::cout << "===============TEST DefaultTrim===" << std::endl;
+  std::cout << "===============TEST DefaultParameterSpace===" << std::endl;
   std::cout << "==================================" << std::endl;
-  t.subTest(testGrids<DefaultTrim::PatchGridFamily>());
+  t.subTest(testGrids<DefaultParameterSpace::PatchGridFamily>());
 
   std::cout << "==================================" << std::endl;
-  std::cout << "===============TEST IdentityTrim===" << std::endl;
+  std::cout << "===============TEST IdentityParameterSpace===" << std::endl;
   std::cout << "==================================" << std::endl;
-  t.subTest(testGrids<IdentityTrim::PatchGridFamily>());
+  t.subTest(testGrids<IdentityParameterSpace::PatchGridFamily>());
 
   std::cout << "testNURBSCurve" << std::endl;
   t.subTest(testNURBSCurve());

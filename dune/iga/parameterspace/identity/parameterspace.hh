@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -10,7 +10,13 @@
 
 #pragma once
 
-#include <dune/iga/parameterspace/identity/idSet.hh>
+#include "dune/iga/hierarchicpatch/patchgridfwd.hh"
+#include <dune/geometry/referenceelements.hh>
+#include <dune/grid/concepts.hh>
+#include <dune/grid/yaspgrid.hh>
+#include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
+#include <dune/iga/hierarchicpatch/patchgridview.hh>
+#include <dune/iga/parameterspace/identity/idset.hh>
 #include <dune/iga/parameterspace/identity/patchgridentityseed.hh>
 #include <dune/iga/parameterspace/identity/patchgridhierarchiciterator.hh>
 #include <dune/iga/parameterspace/identity/patchgridindexsets.hh>
@@ -19,14 +25,6 @@
 #include <dune/iga/parameterspace/identity/patchgridleveliterator.hh>
 #include <dune/iga/parameterspace/identity/patchgridlocalgeometry.hh>
 
-
-#include "dune/iga/hierarchicpatch/patchgridfwd.hh"
-#include <dune/geometry/referenceelements.hh>
-#include <dune/grid/concepts.hh>
-#include <dune/grid/yaspgrid.hh>
-#include <dune/iga/hierarchicpatch/patchgridgeometry.hh>
-#include <dune/iga/hierarchicpatch/patchgridview.hh>
-
 namespace Dune::IGA {
 
 namespace GeometryKernel {
@@ -34,7 +32,7 @@ namespace GeometryKernel {
   class NURBSPatch;
 }
 
-namespace IdentityTrim {
+namespace IdentityParameterSpace {
 
   /**
    * @brief Parameter struct representing parameters for the trimming operation.
@@ -76,8 +74,8 @@ namespace IdentityTrim {
   template <int dim, int dimworld, typename ScalarType>
   struct PatchGridFamily
   {
-    using ctype   = ScalarType;
-    using Grid    = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
+    using ctype          = ScalarType;
+    using Grid           = PatchGrid<dim, dimworld, PatchGridFamily, ScalarType>;
     using ParameterSpace = ParameterSpaceImpl<dim, dimworld, ScalarType>;
 
     using PatchTrimData = PatchTrimDataImpl<dim,
@@ -176,9 +174,9 @@ namespace IdentityTrim {
   class ParameterSpaceImpl
   {
   public:
-    using GridFamily    = PatchGridFamily<dim, dimworld, ScalarType>; ///< Scalar type for the coordinates.
-    using PatchTrimData = typename GridFamily::PatchTrimData;
-    using GridTraits    = typename GridFamily::Traits;
+    using GridFamily           = PatchGridFamily<dim, dimworld, ScalarType>; ///< Scalar type for the coordinates.
+    using PatchTrimData        = typename GridFamily::PatchTrimData;
+    using GridTraits           = typename GridFamily::Traits;
     using ParameterSpaceTraits = typename GridFamily::ParameterSpaceTraits;
 
     static constexpr bool isValid = true;
@@ -281,7 +279,7 @@ namespace IdentityTrim {
      * @param trimData Optional patch trim data.
      */
     ParameterSpaceImpl(GridImp& grid, const std::optional<typename GridFamily::PatchTrimData>& trimData,
-                const ParameterType& par = {})
+                       const ParameterType& par = {})
         : grid_{&grid},
           leafIndexSet_(std::make_unique<LeafIndexSet>(*grid_)),
           globalIdSet_(std::make_unique<GlobalIdSet>(*grid_)),
@@ -401,5 +399,5 @@ namespace IdentityTrim {
     std::unique_ptr<ParameterSpaceGrid> parameterSpaceGrid_; ///< The parameter space grid.
   };
 
-} // namespace IdentityTrim
+} // namespace IdentityParameterSpace
 } // namespace Dune::IGA

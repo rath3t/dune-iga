@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include <clipper2/clipper.core.h>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 namespace Impl {
   template <typename TrimmingCurve>
@@ -151,7 +153,7 @@ struct PatchTrimDataImpl
   }
   const auto& clipperLoops() const {
     if (not finished_)
-      DUNE_THROW(Dune::GridError, "Call parameterspace.setup() before quering for loops");
+      DUNE_THROW(Dune::GridError, "Call parameterspace.setup() before querying for loops");
     return manager_.loops_;
   }
 
@@ -209,4 +211,4 @@ private:
   CurveManager manager_;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

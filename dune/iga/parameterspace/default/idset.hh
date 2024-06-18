@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
 #include <variant>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 template <class GridImp>
 class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
@@ -45,8 +45,6 @@ public:
 
   IdType subId(const typename std::remove_const<GridImp>::type::Traits::template Codim<0>::Entity& e, int i,
                int codim) const {
-    // @todo Trim, the sub indeces are wrong!!!
-    //  Return sub id of the host entity
     return e.impl().getLocalEntity().subId(i, codim);
   }
 
@@ -61,4 +59,4 @@ public:
 
   const GridImp* grid_;
 };
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

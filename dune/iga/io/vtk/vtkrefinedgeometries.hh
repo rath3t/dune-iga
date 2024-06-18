@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -35,21 +35,20 @@ private:
 
 public:
   IGARefinedGeometries(const GridView& gridView, unsigned int subSampleFull, unsigned int subSampleTrimmed) {
-
     using ParameterSpace = typename GridView::GridViewImp::ParameterSpaceType;
 
     createCubeRefinement(subSampleFull);
 
-    if constexpr (std::is_same_v<ParameterSpace, DefaultTrim::ParameterSpaceImpl<ParameterSpace::mydimension,
-                                                                                 ParameterSpace::dimensionworld,
-                                                                                 typename ParameterSpace::ctype>>) {
+    if constexpr (std::is_same_v<ParameterSpace, DefaultParameterSpace::ParameterSpaceImpl<
+                                                     ParameterSpace::mydimension, ParameterSpace::dimensionworld,
+                                                     typename ParameterSpace::ctype>>) {
       const auto& idSet = gridView.grid().globalIdSet();
 
       using SimplexGeneratorImpl = SimplexGenerator<typename GridView::Grid>;
 
       const auto parameters = typename SimplexGeneratorImpl::Parameters{
-          .boundaryDivisions = DefaultTrim::Preferences::getInstance().boundaryDivisions(),
-          .targetAccuracy    = DefaultTrim::Preferences::getInstance().targetAccuracy()};
+          .boundaryDivisions = DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(),
+          .targetAccuracy    = DefaultParameterSpace::Preferences::getInstance().targetAccuracy()};
 
       for (const auto& element : elements(gridView)) {
         if (element.impl().isTrimmed()) {

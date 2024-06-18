@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -122,10 +122,10 @@ namespace Impl {
     // intersection of codimension 1 of this neighbor with element where iteration started.
     // Here returned element is in GLOBAL coordinates of the element where iteration started.
     Geometry geometry() const {
-      // @todo trim this will be wrong as soon as the intersection geometry has a special geoemtry
-      auto geo =
-          typename Geometry::Implementation(parameterSpaceIntersection_.geometry(),
-                                            patchGridGeometry().template localView<1, typename GridImp::ParameterSpace>());
+      // @todo trim this will be wrong as soon as the intersection geometry has a special geometry
+      auto geo = typename Geometry::Implementation(
+          parameterSpaceIntersection_.geometry(),
+          patchGridGeometry().template localView<1, typename GridImp::ParameterSpace>());
       return Geometry(geo);
     }
 

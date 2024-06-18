@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 {
-  "dockerComposeFile": [
-    "../docker-compose.yml"
-  ],
+	"dockerComposeFile": [
+		"../docker-compose.yml"
+	],
 	"workspaceFolder": "/workspaces/dune-iga",
 	"service": "OpenIkarusContainer-clang",
 	"shutdownAction": "stopCompose",
@@ -11,23 +13,30 @@
 				"llvm-vs-code-extensions.vscode-clangd",
 				"ms-vscode.cpptools",
 				"ms-vscode.cmake-tools",
-				"ms-python.python"
+				"ms-python.python",
+				"xaver.clang-format"
 			],
 			"settings": {
 				"C_Cpp.intelliSenseEngine": "disabled",
-				"cmake.configureArgs" :  [
+				"cmake.configureArgs": [
 					"-DADD_FORMATTARGET=1"
-				  ],
+				],
 				"python.pythonPath": "/dune/dune-common/build-cmake/dune-env/bin/python",
 				"python.defaultInterpreterPath": "/dune/dune-common/build-cmake/dune-env/bin/python",
 				"clangd.arguments": [
 					"--compile-commands-dir=${workspaceFolder}/build",
 					"--completion-style=detailed",
-					"--header-insertion=never"
+					"--header-insertion=never",
+					"-pretty"
 				],
+				"clangd.path": "/usr/bin/clangd-18",
 				"cmake.automaticReconfigure": false,
-				"cmake.configureOnEdit": false
+				"cmake.configureOnEdit": false,
+				"clang-format.executable": "/usr/bin/clang-format-18",
+				"[cpp]": {
+					"editor.defaultFormatter": "xaver.clang-format"
+				}
 			}
 		}
 	}
-  }
+}

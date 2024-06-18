@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.16)
@@ -51,7 +51,7 @@ if(ADD_SANDBOX_TARGET)
 endif()
 
 if(ADD_EXAMPLES_TARGET)
-    add_subdirectory(examples)
+  add_subdirectory(examples)
 endif()
 
 add_subdirectory(dune)
@@ -59,7 +59,6 @@ add_subdirectory(cmake)
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
 endif()
-
 
 if(BUILD_DOC)
   add_subdirectory(doc)

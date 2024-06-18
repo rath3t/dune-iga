@@ -1,8 +1,8 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
-namespace Dune::IGA::IdentityTrim {
+namespace Dune::IGA::IdentityParameterSpace {
 template <class GridImp>
 class PatchGridGlobalIdSet : public IdSet<GridImp, PatchGridGlobalIdSet<GridImp>,
                                           typename std::remove_const_t<GridImp>::Traits::GlobalIdSet::IdType>
@@ -86,4 +86,4 @@ public:
 
   const GridImp* grid_;
 };
-} // namespace Dune::IGA::IdentityTrim
+} // namespace Dune::IGA::IdentityParameterSpace

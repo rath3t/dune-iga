@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 #include <clipper2/clipper.h>
 
@@ -10,17 +11,17 @@
 #include <dune/iga/parameterspace/default/trimmingutils/clipelementrectangle.hh>
 #include <dune/iga/parameterspace/default/trimmingutils/trimutils.hh>
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 template <int dim, int dimworld, typename ScalarType>
 auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity<0>& element, const auto& gv,
-                                                         const PatchTrimData& patchTrimData,
-                                                         bool initFlag) -> ElementTrimData {
+                                                                const PatchTrimData& patchTrimData,
+                                                                bool initFlag) -> ElementTrimData {
   auto geo = element.geometry();
 
   using CurveIndex = Impl::CurveLoopIndexEncoder::IndexResult;
 
-  static constexpr int numberOfCorners = 4;
+  constexpr int numberOfCorners = 4;
   std::array<FieldVector<double, 2>, numberOfCorners> corners;
   for (const auto i : Dune::range(numberOfCorners))
     corners[i] = geo.corner(Util::vertexIndexMapping[i]);
@@ -47,7 +48,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
   };
 
   auto throwGridError = [] {
-    DUNE_THROW(Dune::GridError, "TrimElement wasn't successfull. Could not connect element trim curves");
+    DUNE_THROW(Dune::GridError, "TrimElement wasn't successful. Could not connect element trim curves");
   };
 
   auto assertPoint = [&](const Clipper2Lib::PointD& ip, const FieldVector<ScalarType, dim>& curvePt,
@@ -99,7 +100,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
     auto pt1 = vV1.pt;
     auto pt2 = vV2.pt;
 
-    // First case edge is completly untrimmed
+    // First case edge is completely untrimmed
     if (vV1.isHost() and vV2.isHost()) {
       if (not isConsecutive(vV1.hostId(), vV2.hostId())) {
         // if indices are not consecutive, we add a New New Segment
@@ -291,4 +292,4 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
   elementTrimData.finalize();
   return std::move(elementTrimData);
 }
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -19,9 +20,9 @@
 #include <dune/iga/geometrykernel/makecirculararc.hh>
 #include <dune/iga/geometrykernel/makesurfaceofrevolution.hh>
 #include <dune/iga/hierarchicpatch/gridcapabilities.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/identity/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 
 /********
  *TODO This test is currently disabled as the interface in gridfactory cannot handle curve insertion atm (HJ)
@@ -32,7 +33,7 @@ using namespace Dune::IGA;
 
 auto testFactoryWithTorus() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
-  using Grid = Dune::IGA::PatchGrid<1, 3, IdentityTrim::PatchGridFamily>;
+  using Grid = Dune::IGA::PatchGrid<1, 3, IdentityParameterSpace::PatchGridFamily>;
   Dune::GridFactory<Grid> gridFactory;
   const double r = 1.0;
   auto circle    = makeCircularArc(r);
@@ -67,7 +68,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 2;
-  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
@@ -112,7 +113,7 @@ auto testFactoryWithPlateWithTriangularTrim2D() {
   for (auto edgegeo : edges(grid->leafGridView()) | extractGeo)
     circumference += edgegeo.volume();
 
-  // we created a triangle therfore the area should be a triangle
+  // we created a triangle therefore the area should be a triangle
   t.check(FloatCmp::eq(volume, 0.5 * Lx * Ly), "Triangle volume in 2D")
       << "The volume is " << volume << " but should be " << 0.5 * Lx * Ly;
   double expectedCircumference = Lx + Ly + std::hypot(Lx, Ly);
@@ -126,7 +127,7 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
@@ -171,7 +172,7 @@ auto testFactoryWithPlateWithTriangularTrim3D() {
   t.check(grid->size(0, 1) == 3) << "There should only be " << 3 << " edges in this grid, but there are "
                                  << grid->size(0, 1);
 
-  // we created a triangle therfore the area should be a triangle
+  // we created a triangle therefore the area should be a triangle
   t.check(FloatCmp::eq(volume, 0.5 * Lx * Ly), "Triangle volume in 3D")
       << "The volume is " << volume << " but should be " << 0.5 * Lx * Ly;
   double expectedCircumference = Lx + Ly + std::hypot(Lx, Ly);
@@ -187,7 +188,7 @@ auto testFactoryWithPlateWithCircularTrim3D() {
 
   constexpr int gridDim   = 2;
   constexpr auto dimworld = 3;
-  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, IdentityTrim::PatchGridFamily>;
+  using Grid              = Dune::IGA::PatchGrid<gridDim, dimworld, IdentityParameterSpace::PatchGridFamily>;
   const std::array order  = {2, 2};
 
   const std::array<std::vector<double>, gridDim> knotSpans = {
@@ -231,7 +232,7 @@ auto testFactoryWithPlateWithCircularTrim3D() {
 
   const auto pi = std::numbers::pi_v<double>;
 
-  // we created a rectangle with an ellipse therfore the area should be a rectangle-ellipse
+  // we created a rectangle with an ellipse therefore the area should be a rectangle-ellipse
   const double expectedVolume = Lx * Ly - pi * Lx / 2 * Ly / 2;
   t.check(FloatCmp::eq(volume, expectedVolume), "rectangle-ellipse volume in 3D")
       << "The volume is " << volume << " but should be " << expectedVolume;

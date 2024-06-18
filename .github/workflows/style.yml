@@ -5,8 +5,6 @@ name: CodeStyle
 
 on:
   push:
-
-
   pull_request:
     types: [ opened ]
     branches:
@@ -31,7 +29,8 @@ jobs:
          path: 'repo'
       - name: Install format dependencies
         run: |
-          sudo cp /usr/bin/clang-format-13 /usr/bin/clang-format
+          pip install clang-format
+          clang-format --version
           pip install cmake_format==0.6.13 pyyaml
           pip install black==23.3.0
 

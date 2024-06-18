@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -12,7 +12,7 @@
  * @brief The PatchGridLeafIntersectionIterator and PatchGridLevelIntersectionIterator classes
  */
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 namespace Impl {
 
@@ -95,8 +95,9 @@ namespace Impl {
       auto& entityInfo   = localEntity_.entityInfo();
       auto& trimData     = localEntity_.trimData();
       auto& edgeTrimInfo = trimData.edge(iterator_);
-      auto edgeId   = patchGrid_->trimmer().entityContainer_.globalEdgesIdOfElementsMap_.at(entityInfo.id)[iterator_];
-      auto edgeInfo = patchGrid_->trimmer().entityContainer_.idToEdgeInfoMap.at(edgeId);
+      auto edgeId =
+          patchGrid_->parameterSpace().entityContainer_.globalEdgesIdOfElementsMap_.at(entityInfo.id)[iterator_];
+      auto edgeInfo = patchGrid_->parameterSpace().entityContainer_.idToEdgeInfoMap.at(edgeId);
 
       if (edgeInfo.isTrimmedHost() or not edgeInfo.isTrimmed()) {
         auto localIntersection = findLocalIntersection(edgeInfo, edgeTrimInfo, edgeInfo.isTrimmed());
@@ -153,8 +154,8 @@ namespace Impl {
       ++hostIterator_;
     }
     Intersection dereference() const {
-      auto parameterspaceIntersection = ParameterSpaceIntersection(patchGrid_, *hostIterator_);
-      auto realIntersection           = typename Intersection::Implementation(patchGrid_, parameterspaceIntersection);
+      auto parameterSpaceIntersection = ParameterSpaceIntersection(patchGrid_, *hostIterator_);
+      auto realIntersection           = typename Intersection::Implementation(patchGrid_, parameterSpaceIntersection);
       return Intersection(realIntersection);
     }
 
@@ -210,9 +211,10 @@ class PatchGridLeafIntersectionIterator
   typedef typename GridImp::ctype ctype;
 
   using ParameterSpaceIntersectionIterator = typename GridImp::ParameterSpaceGrid::LeafGridView::IntersectionIterator;
-  using ParameterSpaceLeafIntersection     = typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLeafIntersection;
-  using LeafIntersection                   = typename GridImp::Traits::LeafIntersection;
-  using LocalEntity                        = Impl::IntersectionIteratorTraits::LocalEntity<GridImp>;
+  using ParameterSpaceLeafIntersection =
+      typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLeafIntersection;
+  using LeafIntersection = typename GridImp::Traits::LeafIntersection;
+  using LocalEntity      = Impl::IntersectionIteratorTraits::LocalEntity<GridImp>;
 
 public:
   using Intersection  = Dune::Intersection<const GridImp, PatchGridLeafIntersection<GridImp>>;
@@ -258,11 +260,12 @@ class PatchGridLevelIntersectionIterator
   typedef typename GridImp::ctype ctype;
 
   using ParameterSpaceIntersectionIterator = typename GridImp::ParameterSpaceGrid::LevelGridView::IntersectionIterator;
-  using ParameterSpaceLevelIntersection    = typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLevelIntersection;
-  using LevelIntersection                  = typename GridImp::Traits::LevelIntersection;
-  using TrimInfo                           = typename GridImp::ParameterSpace::ElementTrimData;
-  using EntityInfo                         = Impl::IntersectionIteratorTraits::EntityInfo<GridImp>;
-  using LocalEntity                        = Impl::IntersectionIteratorTraits::LocalEntity<GridImp>;
+  using ParameterSpaceLevelIntersection =
+      typename GridImp::ParameterSpace::ParameterSpaceTraits::ParameterSpaceLevelIntersection;
+  using LevelIntersection = typename GridImp::Traits::LevelIntersection;
+  using TrimInfo          = typename GridImp::ParameterSpace::ElementTrimData;
+  using EntityInfo        = Impl::IntersectionIteratorTraits::EntityInfo<GridImp>;
+  using LocalEntity       = Impl::IntersectionIteratorTraits::LocalEntity<GridImp>;
 
 public:
   using Intersection = Dune::Intersection<const GridImp, PatchGridLevelIntersection<GridImp>>;
@@ -301,4 +304,4 @@ private:
   IteratorImpl underlying_{};
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
-namespace Dune::IGA::DefaultTrim {
+#include <dune/iga/parameterspace/default/patchgridentityseed.hh>
+
+namespace Dune::IGA::DefaultParameterSpace {
 
 template <class GridImp>
 class PatchGridHierarchicIterator;
@@ -23,9 +27,10 @@ class TrimmedParameterSpaceGridEntity
   using GlobalIdSetIdType = typename ParameterSpace::ParameterSpaceTraits::GlobalIdSetId;
   using EntityInfo        = typename ParameterSpace::ParameterSpaceTraits::template Codim<codim_>::EntityInfo;
 
-  using TrimInfo = std::conditional_t<codim_ == 0, typename ParameterSpace::ElementTrimData,
-                                      std::conditional_t<codim_ == 1, typename ParameterSpace::ElementTrimData::EdgeInfo,
-                                                         typename ParameterSpace::ElementTrimData::VertexInfo>>;
+  using TrimInfo =
+      std::conditional_t<codim_ == 0, typename ParameterSpace::ElementTrimData,
+                         std::conditional_t<codim_ == 1, typename ParameterSpace::ElementTrimData::EdgeInfo,
+                                            typename ParameterSpace::ElementTrimData::VertexInfo>>;
 
   using HostParameterSpaceGridEntity =
       typename ParameterSpace::ParameterSpaceTraits::template Codim<codim_>::HostParameterSpaceGridEntity;
@@ -108,16 +113,17 @@ public:
     if (codim == 0)
       return index();
 
-    return grid_->trimmer().entityContainer_.template subIndexFromId<codim_>(entityInfo_.id, i, codim, this->level());
+    return grid_->parameterSpace().entityContainer_.template subIndexFromId<codim_>(entityInfo_.id, i, codim,
+                                                                                    this->level());
   }
 
   template <typename = void>
   requires(codim_ == 0)
   auto& subId(int i, int codim) const {
-    return grid_->trimmer().entityContainer_.subId(entityInfo_.id, i, codim);
+    return grid_->parameterSpace().entityContainer_.subId(entityInfo_.id, i, codim);
   }
 
-  // TODO isnt this the same as hostEntity()
+  // TODO isn't this the same as hostEntity()
   HostParameterSpaceGridEntity getHostEntity() const {
     if (codim_ == 0 or not isTrimmed() or not Preferences::getInstance().reconstructTrimmedLocalGeometry())
       return hostEntity_;
@@ -162,13 +168,12 @@ public:
   }
 
   /** @brief Return the element type identifier
- */
+   */
   [[nodiscard]] GeometryType type() const {
     if (isTrimmed() or Preferences::getInstance().reportTrimmedElementGeometryTypeAsNone())
       return GeometryTypes::none(mydimension);
     return GeometryTypes::cube(mydimension);
   }
-
 
   /** @brief The partition type for parallel computing */
   [[nodiscard]] PartitionType partitionType() const {
@@ -215,7 +220,7 @@ public:
   [[nodiscard]] TrimmedParameterSpaceGridEntity<cc, mydimension, GridImp> subEntity(int i) const {
     if constexpr (cc == 0)
       return *this;
-    auto entity = grid_->trimmer().entityContainer_.template entity<cc>(subId(i, cc), this->level());
+    auto entity = grid_->parameterSpace().entityContainer_.template entity<cc>(subId(i, cc), this->level());
     return entity;
   }
 
@@ -262,7 +267,7 @@ public:
   requires(codim_ == 0)
   decltype(auto) father() const {
     assert(entityInfo_.fatherId.has_value());
-    return grid_->trimmer().entityContainer_.template entity<0>(entityInfo_.fatherId.value(), this->level());
+    return grid_->parameterSpace().entityContainer_.template entity<0>(entityInfo_.fatherId.value(), this->level());
     // return TrimmedParameterSpaceGridEntity(grid_, hostEntity_.father(),
     // grid_->parameterspace().entityContainer_.idToElementInfoMap.at( entityInfo_.fatherId.value()));
   }
@@ -317,10 +322,9 @@ public:
   }
 
   QuadratureRule<double, dim> getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
-                                                const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const
-  {
-    auto degree = grid_->patchGeometry(this->level()).degree();
-    int order   = p_order.value_or(mydimension * *std::ranges::max_element(degree));
+                                                const QuadratureType::Enum qt = QuadratureType::GaussLegendre) const {
+    // The parameterSpace has linear geometry, so if no order is specified, we assume it to be myDimension
+    int order = p_order.value_or(mydimension);
     if (not isTrimmed())
       return QuadratureRules<double, mydimension>::rule(this->type(), order, qt);
 
@@ -335,4 +339,4 @@ private:
   std::optional<TrimInfo> trimData_{};
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace

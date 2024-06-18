@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #pragma once
 
 #define DUNE_FMatrix_WITH_CHECKING
@@ -42,7 +43,7 @@ auto findIntersectionLinearCurveAndLine(const GeoCurve& geoCurve, const FieldVec
       return std::make_tuple(IntersectionCurveAndLine::disjoint, sol, curveP0);
     return std::make_tuple(IntersectionCurveAndLine::intersect, sol, geoCurve.global(sol[0]));
   }
-  // If system is not solvable, the lines are paralell and therefore have no intersection
+  // If system is not solvable, the lines are parallel and therefore have no intersection
   return std::make_tuple(IntersectionCurveAndLine::parallel, tParameter, curveP0);
 }
 
@@ -70,7 +71,7 @@ auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<Sc
 
   tParameter[0] = std::clamp(tParameter[0], geoCurve.domain()[0].front(), geoCurve.domain()[0].back());
 
-  bool sucess             = false;
+  bool success            = false;
   const int maxIterations = 1000;
   FieldVector<ScalarType, 2> curvePoint;
   auto domain = geoCurve.domain();
@@ -101,15 +102,15 @@ auto findIntersectionCurveAndLine(const GeoCurve& geoCurve, const FieldVector<Sc
 
     // Check for convergence
     if (deltaT.two_norm() < tol) {
-      sucess     = true;
+      success    = true;
       curvePoint = geoCurve.global(tParameter[0]);
       break;
     }
   }
 
   if (not domain[0].checkInside(tParameter[0]))
-    sucess = false;
-  return std::make_tuple(sucess ? IntersectionCurveAndLine::intersect : IntersectionCurveAndLine::disjoint, tParameter,
+    success = false;
+  return std::make_tuple(success ? IntersectionCurveAndLine::intersect : IntersectionCurveAndLine::disjoint, tParameter,
                          curvePoint);
 }
 } // namespace Dune::IGA

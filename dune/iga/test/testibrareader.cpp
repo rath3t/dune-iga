@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The Ikarus Developers mueller@ibb.uni-stuttgart.de
-// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -17,9 +18,9 @@
 #include <dune/iga/hierarchicpatch/patchgridfactory.hh>
 #include <dune/iga/io/griddrawer.hh>
 #include <dune/iga/io/vtk/igadatacollector.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/identity/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune::IGA;
@@ -28,7 +29,8 @@ template <bool trimmed>
 auto testIbraReader() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  using PatchGrid   = std::conditional_t<trimmed, PatchGrid<2, 2, DefaultTrim::PatchGridFamily>, PatchGrid<2, 2>>;
+  using PatchGrid =
+      std::conditional_t<trimmed, PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>, PatchGrid<2, 2>>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -78,7 +80,8 @@ template <bool trimmed>
 auto testIbraReader3d() {
   Dune::TestSuite t("", Dune::TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  using PatchGrid   = std::conditional_t<trimmed, PatchGrid<2, 3, DefaultTrim::PatchGridFamily>, PatchGrid<2, 3>>;
+  using PatchGrid =
+      std::conditional_t<trimmed, PatchGrid<2, 3, DefaultParameterSpace::PatchGridFamily>, PatchGrid<2, 3>>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -122,7 +125,7 @@ int main(int argc, char** argv) try {
 
   createOutputFolder("out");
   createOutputFolder("out_u");
-  DefaultTrim::Preferences::getInstance().targetAccuracy(1e-3);
+  DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1e-3);
 
   t.subTest(testIbraReader<true>());
   t.subTest(testIbraReader3d<true>());

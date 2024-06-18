@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -97,7 +97,7 @@ bool clampToBoundaryAndCheckIfIsAtAllBoundaries(FieldVector<ScalarType, dim>& x,
 
 /**
  * @brief A view with N coordinates between a and b including a and b
- * \details The algorithm makes sure a and b appear exaclty as given in the returned view
+ * \details The algorithm makes sure a and b appear exactly as given in the returned view
  * @tparam T the type of the coordinates
  * @param a left border of the linspace
  * @param b right border of the linspace

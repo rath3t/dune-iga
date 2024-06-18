@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #define DUNE_CHECK_BOUNDS
@@ -14,10 +14,10 @@
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/common/rangeutilities.hh>
 #include <dune/common/test/testsuite.hh>
-#include <dune/iga/io/vtk/igadatacollector.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/integrationrules/simplexintegrationrulegenerator.hh>
+#include <dune/iga/io/vtk/igadatacollector.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 using namespace Dune;
@@ -25,11 +25,12 @@ using namespace Dune::IGA;
 
 template <bool useEle, bool useBoundaryDivisions = false>
 requires(!(!useEle and useBoundaryDivisions))
-auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int refLevel, double referenceArea, unsigned int splitter = 100) {
+auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int refLevel, double referenceArea,
+                         unsigned int splitter = 100) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   using IntegrationRuleGenerator = SimplexIntegrationRuleGenerator<const PatchGrid>;
@@ -42,12 +43,12 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
   auto gv         = grid->leafGridView();
 
   if constexpr (useEle and not useBoundaryDivisions) {
-    DefaultTrim::Preferences::getInstance().boundaryDivisions(20);
-    DefaultTrim::Preferences::getInstance().targetAccuracy(1);
+    DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(20);
+    DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1);
   }
   if constexpr (useEle and useBoundaryDivisions) {
-    DefaultTrim::Preferences::getInstance().boundaryDivisions(5);
-    DefaultTrim::Preferences::getInstance().targetAccuracy(1e-6);
+    DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(5);
+    DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1e-6);
   }
 
   auto parameters = IntegrationRuleGenerator::Parameters{.boundaryDivisions = 20};
@@ -73,12 +74,12 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
 auto testBoundaryDivisionsPreference() {
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
 
-  DefaultTrim::Preferences::getInstance().targetAccuracy(2);
+  DefaultParameterSpace::Preferences::getInstance().targetAccuracy(2);
 
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -94,8 +95,9 @@ auto testBoundaryDivisionsPreference() {
   };
 
   auto lastnQP = 0ul;
+  DefaultParameterSpace::Preferences::getInstance().targetAccuracy(2); // So we go into boundaryDivisions
   for (const auto i : Dune::range(5)) {
-    DefaultTrim::Preferences::getInstance().boundaryDivisions(i);
+    DefaultParameterSpace::Preferences::getInstance().boundaryDivisions(i);
     const auto newQP = getNQP();
     t.check(newQP > lastnQP)
         << "There have to be more Quadrature Points for a higher number of prescribed boundary divisions";
@@ -111,9 +113,8 @@ auto testTargetAccuracyPreference() {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
-
 
   auto gridFactory = GridFactory();
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{100});
@@ -131,7 +132,7 @@ auto testTargetAccuracyPreference() {
 
   auto lastnQP = 0ul;
   for (const auto acc : testAccuracies) {
-    DefaultTrim::Preferences::getInstance().targetAccuracy(acc);
+    DefaultParameterSpace::Preferences::getInstance().targetAccuracy(acc);
     const auto newQP = getNQP();
     t.check(newQP >= lastnQP)
         << "There have to be more Quadrature Points for a higher or same number of prescribed target accuracy.";
@@ -160,7 +161,7 @@ struct AlternativetIntegrationRuleGenerator
 auto testIntegrationRulePolicy() {
   TestSuite t("", TestSuite::ThrowPolicy::AlwaysThrow);
 
-  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();

@@ -51,7 +51,8 @@ namespace GeometryKernel {
    * @tparam PatchGeometry Type of the patch geometry.
    * @tparam ParameterSpaceType_ Type of the parameterspace.
    */
-  template <int codim, typename PatchGeometry, typename ParameterSpaceType_, typename LocalParameterSpaceGeometry = void>
+  template <int codim, typename PatchGeometry, typename ParameterSpaceType_,
+            typename LocalParameterSpaceGeometry = void>
   struct PatchGeometryLocalView
   {
     using ctype                        = typename PatchGeometry::ctype; ///< Scalar type for coordinates.
@@ -60,8 +61,8 @@ namespace GeometryKernel {
     static constexpr int numberOfSecondDerivatives =
         mydimension * (mydimension + 1) / 2; ///< Number of second derivatives of the local view.
     static constexpr int patchNumberOfSecondDerivatives =
-        gridDimension * (gridDimension + 1) / 2;                     ///< Number of second derivatives for the patch.
-    using ParameterSpace            = ParameterSpaceType_;                         ///< Type of the associated parameterspace.
+        gridDimension * (gridDimension + 1) / 2;    ///< Number of second derivatives for the patch.
+    using ParameterSpace     = ParameterSpaceType_; ///< Type of the associated parameterspace.
     using ParameterSpaceGrid = typename ParameterSpace::ParameterSpaceGrid; ///< Type of the parameter space grid.
 
     static constexpr std::integral auto worlddimension = PatchGeometry::worlddimension; ///< Dimension of the world.
@@ -139,11 +140,11 @@ namespace GeometryKernel {
      * @return Global coordinates of the center.
      */
     [[nodiscard]] GlobalCoordinate center() const {
-      // TODO Test this? Also not really good like that
-      if constexpr (mydimension == gridDimension and not ParameterSpace::isAlwaysTrivial)
-        return global(parameterSpaceGeometry->local(parameterSpaceGeometry->center()));
-      else
-        return global(LocalCoordinate(0.5));
+      if constexpr (mydimension == gridDimension and not ParameterSpace::isAlwaysTrivial) {
+        if (parameterSpaceGeometry->isTrimmed())
+          return GeometryKernel::position(centerOfMass(*parameterSpaceGeometry), nurbsLocalView_, localControlPointNet);
+      }
+      return global(LocalCoordinate(0.5));
     }
 
     /**
@@ -208,21 +209,20 @@ namespace GeometryKernel {
      * @brief Compute the volume of the patch.
      * @return Volume of the patch.
      */
-    [[nodiscard]] double volume() const { // TODO: Test this
+    [[nodiscard]] double volume() const {
       int order = mydimension * *std::ranges::max_element(patchGeometry_->patchData_.degree);
 
       auto rule = [&]() {
         if constexpr (ParameterSpace::isAlwaysTrivial or mydimension != 2)
           return QuadratureRules<ctype, mydimension>::rule(GeometryTypes::cube(mydimension), order);
         else {
-         return parameterSpaceGeometry->getQuadratureRule(order);
+          return parameterSpaceGeometry->getQuadratureRule(order);
         }
       }();
 
       Volume vol = 0.0;
       for (auto& gp : rule)
-        vol +=
-            integrationElement(globalInParameterSpace(gp.position())) * gp.weight() * parameterSpaceGeometry->volume();
+        vol += integrationElement(gp.position()) * gp.weight();
       return vol;
     }
 
@@ -377,7 +377,7 @@ namespace GeometryKernel {
       Hessian h = transposedView(dgdtSquared) * dfdgdg;
 
       /* if trimming is enabled the parameter space geometry is potentially non-linear,
-       * the resutling Hessian has another contribution due to chain-rule, namely the second derivative of g */
+       * the resulting Hessian has another contribution due to chain-rule, namely the second derivative of g */
       if constexpr (not ParameterSpace::template isLocalGeometryLinear<codim>) {
         // const auto dgdtdt = parameterSpaceGeometry->hessian(ouInPatch);
         //

@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
+
 #define DUNE_CHECK_BOUNDS
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -14,8 +15,8 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tupleutility.hh>
 #include <dune/common/tuplevector.hh>
-#include <dune/iga/patchgrid.hh>
 #include <dune/iga/parameterspace/default/parameterspace.hh>
+#include <dune/iga/patchgrid.hh>
 
 using namespace Dune::IGA;
 using namespace Dune;
@@ -95,7 +96,7 @@ auto testIntersections(auto& grid, bool trimmed, int refLevel) {
       resLevel = resTuple;
   });
 
-  // Cehck level == leaf
+  // Check level == leaf
   t.check(std::get<0>(resLevel) == std::get<0>(resLeaf));
   //
   for (const auto i : Dune::range(std::get<0>(resLevel))) {
@@ -158,7 +159,7 @@ auto testInsideOutside(auto& grid) {
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  Dune::TestSuite t("Inside Outisde Test", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
+  Dune::TestSuite t("Inside Outside Test", Dune::TestSuite::ThrowPolicy::AlwaysThrow);
 
   auto gridView  = grid.leafGridView();
   auto& indexSet = gridView.indexSet();
@@ -240,9 +241,9 @@ auto testInsideOutside(auto& grid) {
 auto testReportFullIntersections() {
   TestSuite t;
 
-  Preferences::getInstance().reconstructTrimmedLocalGeometry(false);
+  DefaultParameterSpace::Preferences::getInstance().reconstructTrimmedLocalGeometry(false);
 
-  using PatchGrid   = PatchGrid<2, 2, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<2, 2, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();
@@ -266,7 +267,7 @@ auto testReportFullIntersections() {
   for (const auto& ele : elements(leafGridView))
     t.check(count(ele, levelGridView) == 4);
 
-  Preferences::getInstance().reconstructTrimmedLocalGeometry(true);
+  DefaultParameterSpace::Preferences::getInstance().reconstructTrimmedLocalGeometry(true);
 
   return t;
 }
@@ -275,7 +276,7 @@ auto runIntersectionTest(Dune::TestSuite& t, const std::string& fileName, bool t
   constexpr int gridDim  = 2;
   constexpr int dimworld = 2;
 
-  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultTrim::PatchGridFamily>;
+  using PatchGrid   = PatchGrid<gridDim, dimworld, DefaultParameterSpace::PatchGridFamily>;
   using GridFactory = Dune::GridFactory<PatchGrid>;
 
   auto gridFactory = GridFactory();

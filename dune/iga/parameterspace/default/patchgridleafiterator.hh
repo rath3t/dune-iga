@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright © DUNE Project contributors, see file LICENSE.md in module root
-// SPDX-License-Identifier: LicenseRef-GPL-2.0-only-with-DUNE-exception
+// SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 
@@ -9,7 +9,7 @@
  * @brief The PatchGridLeafIterator class
  */
 
-namespace Dune::IGA::DefaultTrim {
+namespace Dune::IGA::DefaultParameterSpace {
 
 /** @brief Iterator over all entities of a given codimension and level of a grid.
  *  @ingroup PatchGrid
@@ -17,8 +17,6 @@ namespace Dune::IGA::DefaultTrim {
 template <int codim, PartitionIteratorType pitype, class GridImp>
 class PatchGridLeafIterator
 {
-private:
-  // LevelIterator to the equivalent entity in the host grid
   using IteratorImplR = typename GridImp::ParameterSpace::template ParameterSpaceLeafIterator<codim, pitype>;
   using OLDIteratorImpl =
       typename GridImp::ParameterSpaceGrid::template Codim<codim>::template Partition<pitype>::LeafIterator;
@@ -35,12 +33,12 @@ public:
   explicit PatchGridLeafIterator(const GridImp* patchGrid)
       : patchGrid_(patchGrid),
         parameterSpaceLeafIterator(
-            patchGrid_->trimmer().entityContainer_.template begin<codim>(patchGrid_->maxLevel())) {}
+            patchGrid_->parameterSpace().entityContainer_.template begin<codim>(patchGrid_->maxLevel())) {}
 
   explicit PatchGridLeafIterator(const GridImp* patchGrid, [[maybe_unused]] bool endDummy)
       : patchGrid_(patchGrid),
-        parameterSpaceLeafIterator(patchGrid_->trimmer().entityContainer_.template end<codim>(patchGrid_->maxLevel())) {
-  }
+        parameterSpaceLeafIterator(
+            patchGrid_->parameterSpace().entityContainer_.template end<codim>(patchGrid_->maxLevel())) {}
 
   // prefix increment
   void increment() {
@@ -70,4 +68,4 @@ private:
   IteratorImpl parameterSpaceLeafIterator;
 };
 
-} // namespace Dune::IGA::DefaultTrim
+} // namespace Dune::IGA::DefaultParameterSpace
