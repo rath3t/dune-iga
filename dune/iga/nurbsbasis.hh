@@ -87,7 +87,7 @@ namespace Dune::Functions {
 
       for (size_t i = 0; i < out.size(); i++)
         for (int j = 0; j < dim; j++)
-          out[i][0][j] *= scaling_diagonal(j);
+          out[i][0][j] *= scaling_.diagonal(j);
     }
 
     //! \brief Evaluate all shape functions and derivatives of any degree
