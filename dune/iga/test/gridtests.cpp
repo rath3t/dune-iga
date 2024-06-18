@@ -17,6 +17,7 @@
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh
 #include <dune/functions/functionspacebases/test/basistest.hh>
 #include <dune/grid/io/file/vtk/subsamplingvtkwriter.hh>
 #include <dune/grid/test/checkentitylifetime.hh>
