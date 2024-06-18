@@ -607,13 +607,14 @@ auto testNurbsBasis() {
     using namespace Functions::BasisFactory;
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, nurbs());
-    
+    test.subTest(checkJacobianAndPartialConsistency(basis2));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
   {
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView);
+    test.subTest(checkJacobianAndPartialConsistency(basis2));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
@@ -621,6 +622,7 @@ auto testNurbsBasis() {
     // Check basis created via makeBasis
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, nurbs());
+    test.subTest(checkJacobianAndPartialConsistency(basis2));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
@@ -628,6 +630,7 @@ auto testNurbsBasis() {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(nurbs()));
+    test.subTest(checkJacobianAndPartialConsistency(basis2));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
@@ -636,6 +639,7 @@ auto testNurbsBasis() {
     auto gridViewNew = grid.leafGridView();
     // Check lower order basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridViewNew, gridViewNew.impl().lowerOrderPatchData());
+    test.subTest(checkJacobianAndPartialConsistency(basis2));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
   return test;
