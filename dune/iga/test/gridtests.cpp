@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #ifdef HAVE_CONFIG_H
-#  include "config.h"
+  #include "config.h"
 #endif
 #include <iostream>
 
@@ -30,7 +30,8 @@ using namespace Dune;
 using namespace Dune::IGA;
 
 template <typename T, int worldDim, int Items>
-struct Compare {
+struct Compare
+{
   constexpr bool operator()(const std::array<FieldVector<double, worldDim>, Items>& lhs,
                             const std::array<FieldVector<double, worldDim>, Items>& rhs) const {
     return std::ranges::lexicographical_compare(std::ranges::join_view(lhs), std::ranges::join_view(rhs));
@@ -85,8 +86,8 @@ auto checkUniqueSurfaces(const auto& gridView) {
 
 auto testNURBSGridCurve() {
   ////////////////////////////////////////////////////////////////
-  //  Second test
-  //  A B-Spline curve of dimWorld 3
+  // Second test
+  // A B-Spline curve of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -97,13 +98,20 @@ auto testNURBSGridCurve() {
 
   const std::array<int, dim> order                     = {3};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 0, 1, 3, 4, 4, 4, 5, 5, 5, 5}}};
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {1, 3, 4}, .w = 1}, {.p = {2, 2, 2}, .w = 3}, {.p = {3, 4, 5}, .w = 1},
-         {.p = {5, 1, 7}, .w = 2}, {.p = {4, 7, 2}, .w = 1}, {.p = {8, 6, 2}, .w = 1},
-         {.p = {2, 9, 9}, .w = 7}, {.p = {1, 4, 3}, .w = 1}, {.p = {1, 7, 1}, .w = 5}};
+  const std::vector<ControlPoint> controlPoints = {
+      {.p = {1, 3, 4}, .w = 1},
+      {.p = {2, 2, 2}, .w = 3},
+      {.p = {3, 4, 5}, .w = 1},
+      {.p = {5, 1, 7}, .w = 2},
+      {.p = {4, 7, 2}, .w = 1},
+      {.p = {8, 6, 2}, .w = 1},
+      {.p = {2, 9, 9}, .w = 7},
+      {.p = {1, 4, 3}, .w = 1},
+      {.p = {1, 7, 1}, .w = 5}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -126,7 +134,7 @@ auto testNURBSGridCurve() {
 
   for (int eleIndex = 0;
        auto& ele :
-       elements(gridView))  // This test also exists in grid check, but it is more convenient to debug it here
+       elements(gridView)) // This test also exists in grid check, but it is more convenient to debug it here
   {
     const int numCorners = ele.subEntities(dim);
     for (int c = 0; c < numCorners; ++c) {
@@ -140,9 +148,9 @@ auto testNURBSGridCurve() {
 
   Dune::RefinementIntervals refinementIntervals1(subSampling);
   SubsamplingVTKWriter<decltype(gridView)> vtkWriter(gridView, refinementIntervals1);
-  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample");
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample");
   vtkWriter.write("NURBSGridTest-CurveNewFineResample-R");
-  //  vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
+  // vtkWriter.write("NURBSGridTest-CurveNewFineResample_knotRefine");
   gridcheck(grid);
   return t;
 }
@@ -159,15 +167,18 @@ void testNURBSGridSurface() {
   const auto dimworld              = 3;
   const std::array<int, dim> order = {2, 2};
 
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  //  const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
-  //      = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
+  // const std::vector<std::vector<FieldVector<double, dimworld> > > controlPointsold
+  //     = {{{0, 0, 1}, {1, 0, 1}, {2, 0, 2}}, {{0, 1, 0}, {1, 1, 0}, {2, 1, 0}}, {{0, 2, 1}, {1, 2, 2}, {2, 2, 2}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
-         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
+      {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
+      {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
 
@@ -199,7 +210,9 @@ auto test3DGrid() {
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
   Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
-  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  nurbsPatchData.knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   std::vector<std::vector<std::vector<ControlPoint>>> controlp;
   std::array<int, dim> dimSize = {3, 3, 3};
@@ -208,10 +221,11 @@ auto test3DGrid() {
     for (int j = 0; j < dimSize[1]; ++j) {
       controlp[i].emplace_back();
       for (int k = 0; k < dimSize[2]; ++k) {
-        controlp[i][j].push_back(
-            {.p = {i * i * lx / (dimSize[0] - 1) + 1, 2 * i * j * k * ly / (dimSize[1] - 1) + (k + 1) + (j + 1),
-                   k * k * lz / (dimSize[2] - 1)},
-             .w = 1});
+        controlp[i][j].push_back({
+            .p = {i * i * lx / (dimSize[0] - 1) + 1, 2 * i * j * k * ly / (dimSize[1] - 1) + (k + 1) + (j + 1),
+                  k * k * lz / (dimSize[2] - 1)},
+            .w = 1
+        });
       }
     }
   }
@@ -222,21 +236,21 @@ auto test3DGrid() {
   auto additionalKnots = std::vector<double>(2);
   additionalKnots[0]   = 0.1;
   additionalKnots[1]   = 0.3;
-  //  additionalKnots[2] = 0.6;
-  //  additionalKnots[1] = 3.5;
-  //  nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
-  //  nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
+  // additionalKnots[2] = 0.6;
+  // additionalKnots[1] = 3.5;
+  // nurbsPatchData = knotRefinement<dim>(nurbsPatchData, additionalKnots, 2);
+  // nurbsPatchData = degreeElevate(nurbsPatchData,0,1);
+  // nurbsPatchData = degreeElevate(nurbsPatchData, 1, 2);
+  // nurbsPatchData = degreeElevate(nurbsPatchData,2,1);
   IGA::NURBSGrid<3, 3> grid(nurbsPatchData);
-  //  grid.globalRefine(1);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(0,1);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(1,2);
-  //  gridcheck(grid);
-  //  grid.globalRefineInDirection(2, 3);
-  //  gridcheck(grid);
+  // grid.globalRefine(1);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(0,1);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(1,2);
+  // gridcheck(grid);
+  // grid.globalRefineInDirection(2, 3);
+  // gridcheck(grid);
 
   auto gridView = grid.leafGridView();
   TestSuite t;
@@ -270,17 +284,20 @@ void testFactory() {
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
   Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
-  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  nurbsPatchData.knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
-         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
-         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
+      {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   nurbsPatchData.controlPoints = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -330,8 +347,8 @@ auto testTorusGeometry() {
 
   double gaussBonnet = 0.0;
   for (auto& ele : elements(gridView)) {
-    const auto rule
-        = Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * (*std::ranges::max_element(grid.patchData().degree)));
+    const auto rule =
+        Dune::QuadratureRules<double, 2>::rule(ele.type(), 2 * (*std::ranges::max_element(grid.patchData().degree)));
     for (auto& gp : rule) {
       const auto Kinc = ele.geometry().impl().gaussianCurvature(gp.position());
       const auto Kmax = 1 / (r * (R + r));
@@ -368,18 +385,21 @@ auto testNURBSSurface() {
   const auto dimworld              = 3UL;
   const std::array<int, dim> order = {2, 2};
 
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
-  using ControlPoint                                   = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
+  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
-         {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {{.p = {0, 0, 1}, .w = 2}, {.p = {1, 0, 1}, .w = 2}, {.p = {2, 0, 2}, .w = 1}},
+      {{.p = {0, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 4}, {.p = {2, 1, 0}, .w = 1}},
+      {{.p = {0, 2, 1}, .w = 1}, {.p = {1, 2, 2}, .w = 2}, {.p = {2, 2, 2}, .w = 4}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   //
 
-  //  auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
+  // auto weightNet  = MultiDimensionNet<dim, double>(dimsize, weight);
   auto controlNet = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
 
   IGA::NURBSPatch<dim, dimworld> patch(knotSpans, controlNet, order);
@@ -397,7 +417,7 @@ auto testNURBSCurve() {
   unsigned int subSampling = 5;
 
   ////////////////////////////////////////////////////////////////
-  //  Create a B-spline curve in 3d
+  // Create a B-spline curve in 3d
   ////////////////////////////////////////////////////////////////
 
   const int dim      = 1;
@@ -406,11 +426,18 @@ auto testNURBSCurve() {
   const std::array<int, dim> order                     = {2};
   const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 5}}};
 
-  using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {1, 3, 4}, .w = 2}, {.p = {2, 2, 2}, .w = 2}, {.p = {3, 4, 5}, .w = 1},
-         {.p = {5, 1, 7}, .w = 1}, {.p = {4, 7, 2}, .w = 4}, {.p = {8, 6, 2}, .w = 2},
-         {.p = {2, 9, 9}, .w = 1}, {.p = {1, 4, 3}, .w = 2}, {.p = {1, 7, 1}, .w = 4}};
+  using ControlPoint                            = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
+  const std::vector<ControlPoint> controlPoints = {
+      {.p = {1, 3, 4}, .w = 2},
+      {.p = {2, 2, 2}, .w = 2},
+      {.p = {3, 4, 5}, .w = 1},
+      {.p = {5, 1, 7}, .w = 1},
+      {.p = {4, 7, 2}, .w = 4},
+      {.p = {8, 6, 2}, .w = 2},
+      {.p = {2, 9, 9}, .w = 1},
+      {.p = {1, 4, 3}, .w = 2},
+      {.p = {1, 7, 1}, .w = 4}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -425,8 +452,8 @@ auto testNURBSCurve() {
 
 void testNurbsGridCylinder() {
   ////////////////////////////////////////////////////////////////
-  //  First test
-  //  A B-Spline surface of dimWorld 3
+  // First test
+  // A B-Spline surface of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -442,15 +469,18 @@ void testNurbsGridCylinder() {
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
-  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  const std::array<std::vector<double>, dim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
-         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
-         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
+      {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
+  };
 
   std::array<int, dim> dimsize = {static_cast<int>(controlPoints.size()), static_cast<int>(controlPoints[0].size())};
   auto controlNet              = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -518,19 +548,21 @@ auto checkJacobianAndPartialConsistency(const Basis& basis) {
   static_assert(Basis::LocalView::Element::Geometry::mydimension == 2);
 
   // 4 random Gauss points, center position, 0th, 1st, 2nd and 3rd geometry corners and with tolerances
-  std::array<Dune::FieldVector<double, 2>, numTestPos> gpPos = {{{0.2113248654051871, 0.7886751345948129},
-                                                                 {0.7886751345948129, 0.2113248654051871},
-                                                                 {0.2113248654051871, 0.2113248654051871},
-                                                                 {0.7886751345948129, 0.7886751345948129},
-                                                                 {0.5, 0.5},
-                                                                 {0.0, 0.0},
-                                                                 {1.0, 0.0},
-                                                                 {0.0, 1.0},
-                                                                 {1.0, 1.0},
-                                                                 {0.0 + posTol, 0.0 + posTol},
-                                                                 {1.0 - posTol, 0.0 + posTol},
-                                                                 {0.0 + posTol, 1.0 - posTol},
-                                                                 {1.0 - posTol, 1.0 - posTol}}};
+  std::array<Dune::FieldVector<double, 2>, numTestPos> gpPos = {
+      {{0.2113248654051871, 0.7886751345948129},
+       {0.7886751345948129, 0.2113248654051871},
+       {0.2113248654051871, 0.2113248654051871},
+       {0.7886751345948129, 0.7886751345948129},
+       {0.5, 0.5},
+       {0.0, 0.0},
+       {1.0, 0.0},
+       {0.0, 1.0},
+       {1.0, 1.0},
+       {0.0 + posTol, 0.0 + posTol},
+       {1.0 - posTol, 0.0 + posTol},
+       {0.0 + posTol, 1.0 - posTol},
+       {1.0 - posTol, 1.0 - posTol}}
+  };
 
   auto localView = basis.localView();
 
@@ -545,8 +577,8 @@ auto checkJacobianAndPartialConsistency(const Basis& basis) {
 
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
-  //  First test
-  //  A B-Spline surface of dimWorld 3
+  // First test
+  // A B-Spline surface of dimWorld 3
   ////////////////////////////////////////////////////////////////
 
   // parameters
@@ -562,24 +594,27 @@ auto testNurbsBasis() {
   // quarter cylindrical surface
   const double l   = 10;
   const double rad = 5;
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{0, 0, 0,0.5, 1, 1, 1}, {0, 0, 1, 1}}};
 
   using ControlPoint = Dune::IGA::NURBSPatchData<dim, dimworld>::ControlPointType;
   Dune::IGA::NURBSPatchData<dim, dimworld> nurbsPatchData;
-  nurbsPatchData.knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}};
+  nurbsPatchData.knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 1, 1}}
+  };
 
-  nurbsPatchData.controlPoints
-      = {{{.p = {0, 0, rad}, .w = 1}, {.p = {0, l, rad}, .w = 1}},
-         {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
-         //          {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
-         {{.p = {rad, 0, 0}, .w = 1}, {.p = {rad, l, 0}, .w = 1}}};
+  nurbsPatchData.controlPoints = {
+      {        {.p = {0, 0, rad}, .w = 1},         {.p = {0, l, rad}, .w = 1}},
+      {{.p = {rad, 0, rad}, .w = invsqr2}, {.p = {rad, l, rad}, .w = invsqr2}},
+      // {{.p = {rad*2, 0,   0}, .w =       1},  {.p = {rad*2, l*2,   0}, .w = 1     }},
+      {        {.p = {rad, 0, 0}, .w = 1},         {.p = {rad, l, 0}, .w = 1}}
+  };
   nurbsPatchData.degree = order;
 
   IGA::NURBSGrid<dim, dimworld> grid(nurbsPatchData);
-  //  grid.globalRefine(1);
+  // grid.globalRefine(1);
   grid.globalRefineInDirection(0, 2);
   grid.globalDegreeElevate(2);
-  //  grid.globalRefineInDirection(1, 3);
+  // grid.globalRefineInDirection(1, 3);
   auto gridView        = grid.leafGridView();
   const auto& indexSet = gridView.indexSet();
 
@@ -650,19 +685,19 @@ auto testBsplineBasisFunctions() {
   test.check(eq(N[1], 0.48), "P=2,N1,u=0.3");
   test.check(eq(N[2], 0.36), "P=2,N2,u=0.3");
 
-  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(0.5, knots, degree);  // try knot span boundary
+  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(0.5, knots, degree); // try knot span boundary
 
   test.check(eq(N[0], 1.0), "P=2,N0,u=0.5");
   test.check(eq(N[1], 0.0), "P=2,N1,u=0.5");
   test.check(eq(N[2], 0.0), "P=2,N2,u=0.5");
 
-  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(0.0, knots, degree);  // try left end
+  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(0.0, knots, degree); // try left end
 
   test.check(eq(N[0], 1.0), "P=2,N0,u=0.0");
   test.check(eq(N[1], 0.0), "P=2,N1,u=0.0");
   test.check(eq(N[2], 0.0), "P=2,N2,u=0.0");
 
-  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(3.0, knots, degree);  // try right end
+  N = Dune::IGA::BsplineBasis1D<double>::basisFunctions(3.0, knots, degree); // try right end
 
   test.check(eq(N[0], 0.0), "P=2,N0,u=3");
   test.check(eq(N[1], 0.0), "P=2,N1,u=3");
@@ -731,10 +766,13 @@ auto testBsplineBasisFunctions() {
   }
 
   Dune::FieldVector<double, 2> xieta{0.2, 0.25};
-  std::array<std::vector<double>, 2> knots2 = {{{0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3}, {0, 0, 0, 2, 2, 2}}};
+  std::array<std::vector<double>, 2> knots2 = {
+      {{0, 0, 0, 0.5, 0.5, 2, 2, 3, 3, 3}, {0, 0, 0, 2, 2, 2}}
+  };
   std::array<int, 2> degree2{2, 2};
-  const std::vector<std::vector<double>> weights2
-      = {{{1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13, 14}, {15, 16, 17, 18, 19, 20, 21}}};
+  const std::vector<std::vector<double>> weights2 = {
+      {{1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13, 14}, {15, 16, 17, 18, 19, 20, 21}}
+  };
   std::array<int, 2> dimsize = {static_cast<int>(weights2.size()), static_cast<int>(weights2[0].size())};
   MultiDimensionNet<2UL, double> weightNet(dimsize, weights2);
 
@@ -742,7 +780,7 @@ auto testBsplineBasisFunctions() {
 
   test.check(N_Nurbs.size() == (degree2[0] + 1) * (degree2[1] + 1));
 
-  test.check(eq(N_Nurbs[0], 0.04023722627737226), "Nurbs2d P=2,N0");  // check ansatzfunctions in domain
+  test.check(eq(N_Nurbs[0], 0.04023722627737226), "Nurbs2d P=2,N0"); // check ansatzfunctions in domain
   test.check(eq(N_Nurbs[1], 0.4291970802919708), "Nurbs2d P=2,N1");
   test.check(eq(N_Nurbs[2], 0.2682481751824818), "Nurbs2d P=2,N2");
   test.check(eq(N_Nurbs[3], 0.02299270072992701), "Nurbs2d P=2,N3");
@@ -755,7 +793,7 @@ auto testBsplineBasisFunctions() {
 
   xieta   = {0, 0.1};
   N_Nurbs = Dune::IGA::Nurbs<2>::basisFunctions(xieta, knots2, degree2, weightNet).directGetAll();
-  test.check(eq(N_Nurbs[0], 0.8204545454545455), "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+  test.check(eq(N_Nurbs[0], 0.8204545454545455), "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(N_Nurbs[1], 0.0), "Nurbs P=2,N1");
   test.check(eq(N_Nurbs[2], 0.0), "Nurbs P=2,N2");
   test.check(eq(N_Nurbs[3], 0.1727272727272728), "Nurbs P=2,N3");
@@ -770,7 +808,7 @@ auto testBsplineBasisFunctions() {
   auto dN_Nurbs = Dune::IGA::Nurbs<2>::basisFunctionDerivatives(xieta, knots2, degree2, weightNet, 5);
 
   test.check(eq(dN_Nurbs.get({0, 0}).get({0, 0}), 0.8204545454545455),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 0}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 0}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 0}).get({0, 1}), 0.1727272727272728), "Nurbs P=2,N3");
@@ -782,7 +820,7 @@ auto testBsplineBasisFunctions() {
 
   // first derivative in u dir
   test.check(eq(dN_Nurbs.get({1, 0}).get({0, 0}), -24.166115702479335),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({1, 0}).get({1, 0}), 26.25454545454545), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({1, 0}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({1, 0}).get({0, 1}), -5.0876033057851231), "Nurbs P=2,N3");
@@ -794,7 +832,7 @@ auto testBsplineBasisFunctions() {
 
   // second derivative in u dir
   test.check(eq(dN_Nurbs.get({2, 0}).get({0, 0}), 1236.8386175807659),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({2, 0}).get({1, 0}), -1441.6132231404956), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({2, 0}).get({2, 0}), 98.454545454545439), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({2, 0}).get({0, 1}), 260.38707738542439), "Nurbs P=2,N3");
@@ -806,7 +844,7 @@ auto testBsplineBasisFunctions() {
 
   // third derivative in u dir
   test.check(eq(dN_Nurbs.get({3, 0}).get({0, 0}), -94449.494433440283),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({3, 0}).get({1, 0}), 110086.82794891056), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({3, 0}).get({2, 0}), -7518.3471074380141), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({3, 0}).get({0, 1}), -19884.104091250589), "Nurbs P=2,N3");
@@ -818,7 +856,7 @@ auto testBsplineBasisFunctions() {
 
   // fourth derivative in u dir
   test.check(eq(dN_Nurbs.get({4, 0}).get({0, 0}), 9616675.7968593743),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({4, 0}).get({1, 0}), -11208840.663889075), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({4, 0}).get({2, 0}), 765504.432757325), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({4, 0}).get({0, 1}), 2024563.3256546052), "Nurbs P=2,N3");
@@ -830,7 +868,7 @@ auto testBsplineBasisFunctions() {
 
   // fifth derivative in u dir
   test.check(eq(dN_Nurbs.get({5, 0}).get({0, 0}), -1223940555.9639204),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({5, 0}).get({1, 0}), 1426579720.8586094), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({5, 0}).get({2, 0}), -97427836.896386802), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({5, 0}).get({0, 1}), -257671695.99240425), "Nurbs P=2,N3");
@@ -842,7 +880,7 @@ auto testBsplineBasisFunctions() {
 
   // first derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 1}).get({0, 0}), -1.609504132231405),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 1}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 1}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 1}).get({0, 1}), 1.479338842975206), "Nurbs P=2,N3");
@@ -854,7 +892,7 @@ auto testBsplineBasisFunctions() {
 
   // second derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 2}).get({0, 0}), 3.380916604057099),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 2}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 2}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 2}).get({0, 1}), -4.507888805409466), "Nurbs P=2,N3");
@@ -866,7 +904,7 @@ auto testBsplineBasisFunctions() {
 
   // third derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 3}).get({0, 0}), -9.220681647428448),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 3}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 3}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 3}).get({0, 1}), 12.29424219657127), "Nurbs P=2,N3");
@@ -878,7 +916,7 @@ auto testBsplineBasisFunctions() {
 
   // fourth derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 4}).get({0, 0}), 33.52975144519434),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 4}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 4}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 4}).get({0, 1}), -44.70633526025914), "Nurbs P=2,N3");
@@ -890,7 +928,7 @@ auto testBsplineBasisFunctions() {
 
   // fifth derivative in v dir
   test.check(eq(dN_Nurbs.get({0, 5}).get({0, 0}), -152.4079611145197),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({0, 5}).get({1, 0}), 0.0), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({0, 5}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({0, 5}).get({0, 1}), 203.2106148193597), "Nurbs P=2,N3");
@@ -902,7 +940,7 @@ auto testBsplineBasisFunctions() {
 
   // 1,1 mixed derivative
   test.check(eq(dN_Nurbs.get({1, 1}).get({0, 0}), 66.39293764087149),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({1, 1}).get({1, 0}), -51.50413223140495), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({1, 1}).get({2, 0}), 0.0), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({1, 1}).get({0, 1}), -39.5762584522915), "Nurbs P=2,N3");
@@ -914,7 +952,7 @@ auto testBsplineBasisFunctions() {
 
   // 2,1 mixed derivative
   test.check(eq(dN_Nurbs.get({2, 1}).get({0, 0}), -4511.311932245063),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({2, 1}).get({1, 0}), 4043.131480090156), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({2, 1}).get({2, 0}), -193.1404958677686), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({2, 1}).get({0, 1}), 1791.166723584455), "Nurbs P=2,N3");
@@ -937,7 +975,7 @@ auto testBsplineBasisFunctions() {
 
   // 3,1 mixed derivative
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 0}), 430363.3606745686),
-             "Nurbs P=2,N0");  // check ansatzfunctions on boundaries
+             "Nurbs P=2,N0"); // check ansatzfunctions on boundaries
   test.check(eq(dN_Nurbs.get({3, 1}).get({1, 0}), -408827.1566149851), "Nurbs P=2,N1");
   test.check(eq(dN_Nurbs.get({3, 1}).get({2, 0}), 21583.77160030052), "Nurbs P=2,N2");
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 1}), -118703.546081676), "Nurbs P=2,N3");
@@ -960,17 +998,18 @@ void gridCheck() {
 
   IGA::NURBSGrid<2UL, 3UL> grid(patch);
   grid.globalRefine(2);
-  //  grid.globalRefineInDirection(0,2);
+  // grid.globalRefineInDirection(0,2);
   auto gridView = grid.leafGridView();
 
-  //  Dune::checkIndexSet(grid,gridView_,std::cout);
+  // Dune::checkIndexSet(grid,gridView_,std::cout);
 }
 
 template <typename C>
 bool checkIfFinite(const C& v) {
   for (auto& vi : v) {
     if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
-      if (not std::isfinite(vi)) return false;
+      if (not std::isfinite(vi))
+        return false;
     } else {
       return checkIfFinite(vi);
     }
@@ -982,7 +1021,8 @@ template <typename C>
 bool checkIfZero(const C& v) {
   for (auto& vi : v) {
     if constexpr (std::is_arithmetic_v<std::remove_cvref_t<decltype(vi)>>) {
-      if (std::abs(vi) > 1e-13) return false;
+      if (std::abs(vi) > 1e-13)
+        return false;
     } else {
       return checkIfZero(vi);
     }
@@ -996,14 +1036,17 @@ auto testPlate() {
   const std::array<int, gridDim> order = {2, 2};
   TestSuite t;
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0.5, 0, 0}, .w = 1}, {.p = {1, 0, 0}, .w = 1}},
-         {{.p = {0, 0.5, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {1, 0.5, 0}, .w = 1}},
-         {{.p = {0, 1, 0}, .w = 1}, {.p = {0.5, 1, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {  {.p = {0, 0, 0}, .w = 1},   {.p = {0.5, 0, 0}, .w = 1},   {.p = {1, 0, 0}, .w = 1}},
+      {{.p = {0, 0.5, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {1, 0.5, 0}, .w = 1}},
+      {  {.p = {0, 1, 0}, .w = 1},   {.p = {0.5, 1, 0}, .w = 1},   {.p = {1, 1, 0}, .w = 1}}
+  };
 
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
@@ -1015,10 +1058,10 @@ auto testPlate() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
   auto grid               = std::make_shared<Grid>(patchData);
-  //  grid->globalRefine(1);
+  // grid->globalRefine(1);
   //
   grid->globalDegreeElevate(4);
-  //  grid->globalRefine(1);
+  // grid->globalRefine(1);
   auto gridView = grid->leafGridView();
   Dune::GeometryChecker<decltype(grid)> geometryChecker;
   geometryChecker.checkGeometry(gridView);
@@ -1059,12 +1102,12 @@ auto testPlate() {
 
       t.check(checkIfFinite(global)) << "checkIfFinite(global) failed";
       t.check(checkIfFinite(J)) << "checkIfFinite(J) failed";
-      //      t.check(checkIfZero(J2))<<"checkIfZero(J2) "<<J2;  // J2 should be zero since the grid is linearly
-      //      parametrized
+      // t.check(checkIfZero(J2))<<"checkIfZero(J2) "<<J2;  // J2 should be zero since the grid is linearly
+      // parametrized
       t.check(std::abs(J2[0][2]) < 1e-14)
-          << "checkIfZero(J2[0][2])" << J2;  // The grid is plane, therefore, the curvature should be also inplane
+          << "checkIfZero(J2[0][2])" << J2; // The grid is plane, therefore, the curvature should be also inplane
       t.check(std::abs(J2[1][2]) < 1e-14)
-          << "checkIfZero(J2[1][2])" << J2;  // The grid is plane, therefore, the curvature should be also inplane
+          << "checkIfZero(J2[1][2])" << J2; // The grid is plane, therefore, the curvature should be also inplane
 
       localBasis.evaluateFunction(localV, N);
       localBasis.evaluateJacobian(localV, dN);
@@ -1091,14 +1134,15 @@ auto testCurveHigherOrderDerivatives() {
   // parameters
 
   const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 0.5, 1, 1, 1}}};
-  //  const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
+  // const std::array<std::vector<double>, dim> knotSpans = {{{ 0, 0, 1,1}}};
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  const std::vector<ControlPoint> controlPoints
-      = {{.p = {0.086956521739130, -0.434782608695652, 0}, .w = 11.5},
-         {.p = {0.200000000000000, 5.400000000000000, 0.200000000000000}, .w = 5},
-         {.p = {1.857142857142857, 0.142857142857143, 0}, .w = 7},
-         {.p = {3.714285714285714, 0.285714285714286, 2.000000000000000}, .w = 3.5}};
+  const std::vector<ControlPoint> controlPoints = {
+      {               .p = {0.086956521739130, -0.434782608695652, 0}, .w = 11.5},
+      {.p = {0.200000000000000, 5.400000000000000, 0.200000000000000},    .w = 5},
+      {                .p = {1.857142857142857, 0.142857142857143, 0},    .w = 7},
+      {.p = {3.714285714285714, 0.285714285714286, 2.000000000000000},  .w = 3.5}
+  };
 
   std::array<int, gridDim> dimsize = {static_cast<int>(controlPoints.size())};
   auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -1108,15 +1152,16 @@ auto testCurveHigherOrderDerivatives() {
   patchData.degree        = order;
   patchData.controlPoints = controlNet;
 
-  std::vector<Dune::FieldVector<double, 3>> expectedControlPoints
-      = {{0.086956521739130, -0.434782608695652, 0},
-         {0.121212121212121, 1.333333333333333, 0.060606060606061},
-         {0.320000000000000, 3.120000000000000, 0.120000000000000},
-         {0.727272727272727, 3.727272727272727, 0.136363636363636},
-         {1.538461538461539, 1.153846153846154, 0.038461538461538},
-         {1.920000000000000, 0.506666666666667, 0.200000000000000},
-         {2.476190476190476, 0.190476190476190, 0.666666666666667},
-         {3.714285714285714, 0.285714285714286, 2.000000000000000}};
+  std::vector<Dune::FieldVector<double, 3>> expectedControlPoints = {
+      {0.086956521739130, -0.434782608695652,                 0},
+      {0.121212121212121,  1.333333333333333, 0.060606060606061},
+      {0.320000000000000,  3.120000000000000, 0.120000000000000},
+      {0.727272727272727,  3.727272727272727, 0.136363636363636},
+      {1.538461538461539,  1.153846153846154, 0.038461538461538},
+      {1.920000000000000,  0.506666666666667, 0.200000000000000},
+      {2.476190476190476,  0.190476190476190, 0.666666666666667},
+      {3.714285714285714,  0.285714285714286, 2.000000000000000}
+  };
 
   std::vector<double> expectedWeights = {11.5, 8.25, 6.25, 5.5, 6.5, 6.25, 5.25, 3.5};
 
@@ -1142,7 +1187,7 @@ auto testCurveHigherOrderDerivatives() {
     auto patchDataN  = degreeElevate(patchData, 0, i);
     auto patchDataPN = std::make_shared<Dune::IGA::NURBSPatchData<gridDim, dimworld>>(patchDataN);
     NURBSPatchGeometry<gridDim, dimworld> geo2(patchDataPN);
-    //    t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
+    // t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
     for (int j = 0; j < samples + 1; ++j) {
       const Dune::FieldVector<double, 1> u = {j / static_cast<double>(samples)};
       t.check(Dune::FloatCmp::eq(geo2.global(u), evaluatedPoints[j], 1e-10))
@@ -1186,24 +1231,27 @@ auto testSurfaceHigherOrderDerivatives() {
   constexpr auto dimworld              = 3;
   const std::array<int, gridDim> order = {2, 2};
 
-  const std::array<std::vector<double>, gridDim> knotSpans = {{{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}};
+  const std::array<std::vector<double>, gridDim> knotSpans = {
+      {{0, 0, 0, 1, 1, 1}, {0, 0, 0, 1, 1, 1}}
+  };
 
   using ControlPoint = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointType;
 
-  //  const std::vector<std::vector<ControlPoint>> controlPoints
-  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
-  //         {{.p = {0.5, 0,0}, .w = 1}, {.p = {0.5, 0.5,0}, .w = 1}},
-  //         {{.p = {1, 0,0}, .w = 1}, {.p = {1, 0.5,0}, .w = 1}}};
+  // const std::vector<std::vector<ControlPoint>> controlPoints
+  //     = {{{.p = {0, 0,0}, .w = 1}, {.p = {0, 0.5,0}, .w = 1}},
+  //        {{.p = {0.5, 0,0}, .w = 1}, {.p = {0.5, 0.5,0}, .w = 1}},
+  //        {{.p = {1, 0,0}, .w = 1}, {.p = {1, 0.5,0}, .w = 1}}};
 
-  const std::vector<std::vector<ControlPoint>> controlPoints
-      = {{{.p = {0, 0, 0}, .w = 1}, {.p = {0, 0.5, 0}, .w = 1}, {.p = {0, 1, 0}, .w = 1}},
-         {{.p = {0.5, 0, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {0.5, 1, 0}, .w = 1}},
-         {{.p = {1, 0, 0}, .w = 1}, {.p = {1, 0.5, 0}, .w = 1}, {.p = {1, 1, 0}, .w = 1}}};
+  const std::vector<std::vector<ControlPoint>> controlPoints = {
+      {  {.p = {0, 0, 0}, .w = 1},   {.p = {0, 0.5, 0}, .w = 1},   {.p = {0, 1, 0}, .w = 1}},
+      {{.p = {0.5, 0, 0}, .w = 1}, {.p = {0.5, 0.5, 0}, .w = 3}, {.p = {0.5, 1, 0}, .w = 1}},
+      {  {.p = {1, 0, 0}, .w = 1},   {.p = {1, 0.5, 0}, .w = 1},   {.p = {1, 1, 0}, .w = 1}}
+  };
 
-  //  const std::vector<std::vector<ControlPoint>> controlPoints
-  //      = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
-  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
-  //         {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
+  // const std::vector<std::vector<ControlPoint>> controlPoints
+  //     = {{{.p = {0, 0,0}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //        {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}},
+  //        {{.p = {}, .w = 1}, {.p = {}, .w = 1}, {.p = {}, .w = 1}}};
   std::array<int, gridDim> dimsize = {(int)(controlPoints.size()), (int)(controlPoints[0].size())};
 
   auto controlNet = Dune::IGA::NURBSPatchData<gridDim, dimworld>::ControlPointNetType(dimsize, controlPoints);
@@ -1215,13 +1263,13 @@ auto testSurfaceHigherOrderDerivatives() {
   auto additionalKnots    = std::vector<double>(1);
   additionalKnots[0]      = 0.5;
   patchData               = knotRefinement<2>(patchData, additionalKnots, 1);
-  //  const double R       = 2.0;
-  //  const double r       = 1.0;
-  //  auto circle          = makeCircularArc(r);
-  //  auto patchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 10.0);
-  //  patchData       = degreeElevate(patchData, 0, 2);
-  //  patchData       = degreeElevate(patchData, 1, 2);
-  //  auto additionalKnots = std::vector<double>(1);
+  // const double R       = 2.0;
+  // const double r       = 1.0;
+  // auto circle          = makeCircularArc(r);
+  // auto patchData  = makeSurfaceOfRevolution(circle, {R, 0, 0}, {0, 1, 0}, 10.0);
+  // patchData       = degreeElevate(patchData, 0, 2);
+  // patchData       = degreeElevate(patchData, 1, 2);
+  // auto additionalKnots = std::vector<double>(1);
   ////  additionalKnots[0]   = 0.1;
   ////  patchData       = knotRefinement<2>(patchData, additionalKnots, 1);
 
@@ -1233,7 +1281,7 @@ auto testSurfaceHigherOrderDerivatives() {
   std::vector<Dune::FieldVector<double, 3>> evaluatedPoints;
   std::vector<Dune::FieldMatrix<double, 2, 3>> evaluatedJacobians;
   std::vector<Dune::FieldMatrix<double, 3, 3>> evaluatedHessians;
-  //  std::vector<double> evaluatedJacobians;
+  // std::vector<double> evaluatedJacobians;
   for (int i = 0; i < samples + 1; ++i) {
     for (int j = 0; j < samples + 1; ++j) {
       const Dune::FieldVector<double, 2> u = {i / static_cast<double>(samples), j / static_cast<double>(samples)};
@@ -1242,13 +1290,13 @@ auto testSurfaceHigherOrderDerivatives() {
       const auto [pos, J, H] = geo.zeroFirstAndSecondDerivativeOfPosition(u);
       evaluatedHessians.push_back(H);
       evaluatedJacobians.push_back(geo.jacobianTransposed(u));
-      //    evaluatedJacobians.push_back(geo.impl()(u));
+      // evaluatedJacobians.push_back(geo.impl()(u));
     }
   }
 
   for (int i = 1; i < 2; ++i) {
     std::cout << "degree elevate " << i << std::endl;
-    //    auto patchDataN= degreeElevate(patchData,0,i);
+    // auto patchDataN= degreeElevate(patchData,0,i);
     auto patchDataN = degreeElevate(patchData, 1, i);
     std::cout << "KnotsU:" << std::endl;
     for (auto kn : patchDataN.knotSpans[0])
@@ -1260,7 +1308,7 @@ auto testSurfaceHigherOrderDerivatives() {
     for (auto cp : patchDataN.controlPoints.directGetAll())
       std::cout << cp.p << " w: " << cp.w << std::endl;
     NURBSPatchGeometry<gridDim, dimworld> geo2(patchDataPN);
-    //    t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
+    // t.check(Dune::FloatCmp::eq(geo2.volume(),vol,1e-10))<<"vol "<<vol<<" is "<<geo2.volume();
     for (int j = 0, index = 0; j < samples + 1; ++j) {
       for (int k = 0; k < samples + 1; ++k) {
         const Dune::FieldVector<double, 2> u = {j / static_cast<double>(samples), k / static_cast<double>(samples)};

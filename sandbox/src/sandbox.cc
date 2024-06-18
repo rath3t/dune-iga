@@ -10,7 +10,7 @@
 #include "dune/iga/utils/igahelpers.hh"
 #include <dune/common/parametertreeparser.hh>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::cout << "Hello this is dune-iga" << std::endl;
   return 0;
 }
