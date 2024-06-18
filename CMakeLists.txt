@@ -41,10 +41,7 @@ include(DuneMacros)
 dune_project()
 dune_enable_all_packages()
 
-dune_add_library(duneiga INTERFACE
-  EXPORT_NAME Iga
-  LINK_LIBRARIES ${DUNE_LIBS})
-
+dune_add_library(duneiga INTERFACE EXPORT_NAME Iga LINK_LIBRARIES ${DUNE_LIBS})
 
 if(ADD_SANDBOX_TARGET)
   add_subdirectory(sandbox)
