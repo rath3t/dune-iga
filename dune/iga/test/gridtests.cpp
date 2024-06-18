@@ -537,7 +537,7 @@ auto checkJacobianAndPartialConsistency(const Basis& basis)
   
   auto localView = basis.localView();
 
-  for(const auto& e : elements(basis.gridView())
+  for(const auto& e : elements(basis.gridView()))
     {
       localView.bind(e);
       for (int i = 0; i < numTestPos; ++i) 
