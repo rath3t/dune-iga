@@ -480,7 +480,73 @@ void testNurbsGridCylinder() {
   testSuite.subTest(checkUniqueEdges(gridView));
 }
 
-// template <int dim>
+template <typename LocalView>
+auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos) {
+
+  TestSuite test;
+  auto& fe               = localView.tree().finiteElement();
+  const auto& localBasis = fe.localBasis();
+
+  static constexpr int gridDim = LocalView::Element::Geometry::mydimension;
+
+  std::vector<Dune::FieldMatrix<double, 1, gridDim>> referenceGradients;
+  localBasis.evaluateJacobian(pos, referenceGradients);
+
+  std::array<std::vector<Dune::FieldVector<double, 1>>,gridDim> dNdxi;
+  std::vector<Dune::FieldVector<double, 1>> dNdeta;
+  std::array<int,gridDim> dir{};
+  constexpr double tol = 1e-14;
+  for(int d=0; d<gridDim; ++d)
+    {
+      dir[d]=1;
+      localBasis.partial(dir, pos, dNdxi[d]);
+      for(int j=0; j<referenceGradients.size(); ++j)
+        t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[d][j][0], tol))<< "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[d][j][0];
+      dir[d]=0;
+    }
+
+  return t;
+}
+
+
+template <typename Basis>
+auto checkJacobianAndPartialConsistency(const Basis& basis) 
+{
+      constexpr int numTestPos = 13;
+    constexpr double posTol  = 1e-8;
+
+  static_assert(Basis::LocalView::Element::Geometry::mydimension==2);
+  
+    // 4 random Gauss points, center position, 0th, 1st, 2nd and 3rd geometry corners and with tolerances
+    std::array<Dune::FieldVector<double, 2>, numTestPos> gpPos = {
+        {{0.2113248654051871, 0.7886751345948129},
+         {0.7886751345948129, 0.2113248654051871},
+         {0.2113248654051871, 0.2113248654051871},
+         {0.7886751345948129, 0.7886751345948129},
+         {0.5, 0.5},
+         {0.0, 0.0},
+         {1.0, 0.0},
+         {0.0, 1.0},
+         {1.0, 1.0},
+         {0.0 + posTol, 0.0 + posTol},
+         {1.0 - posTol, 0.0 + posTol},
+         {0.0 + posTol, 1.0 - posTol},
+         {1.0 - posTol, 1.0 - posTol}}
+    };
+  
+  auto localView = basis.localView();
+
+  for(const auto& e : elements(basis.gridView())
+    {
+      localView.bind(e);
+      for (int i = 0; i < numTestPos; ++i) 
+      checkJacobianAndPartial(localView,gpPos[i]);
+    }
+}
+
+
+
+
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
   //  First test
