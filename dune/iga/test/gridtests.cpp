@@ -512,7 +512,7 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
 template <typename Basis>
 auto checkJacobianAndPartialConsistency(const Basis& basis) 
 {
-  TestSuite test;
+  TestSuite t;
       constexpr int numTestPos = 13;
     constexpr double posTol  = 1e-8;
 
