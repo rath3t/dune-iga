@@ -482,9 +482,9 @@ void testNurbsGridCylinder() {
 }
 
 template <typename LocalView>
-auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos) {
+auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos, int i) {
 
-  TestSuite t;
+  TestSuite t("Check the point with number" +std::to_string(i));
   auto& fe               = localView.tree().finiteElement();
   const auto& localBasis = fe.localBasis();
 
@@ -543,7 +543,7 @@ auto checkJacobianAndPartialConsistency(const Basis& basis)
     {
       localView.bind(e);
       for (int i = 0; i < numTestPos; ++i) 
-        t.subTest(checkJacobianAndPartial(localView,gpPos[i]));
+        t.subTest(checkJacobianAndPartial(localView,gpPos[i],i));
     }
 
   return t;
