@@ -631,8 +631,8 @@ auto testNurbsBasis() {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(nurbs()));
-    test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,0));
-        test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,1));
+    test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,0)));
+        test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,1)));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
