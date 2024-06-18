@@ -1,13 +1,12 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers
-# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 # set HAVE_AUTODIFF for config.h
 set(HAVE_AUTODIFF ${autodiff_FOUND})
 
 # register all autodiff related flags
 if(autodiff_FOUND)
-  dune_register_package_flags(LIBRARIES autodiff::autodiff COMPILE_DEFINITIONS
-                              "ENABLE_AUTODIFF=1")
+  dune_register_package_flags(LIBRARIES autodiff::autodiff COMPILE_DEFINITIONS "ENABLE_AUTODIFF=1")
 endif()
 
 # add function to link against the autodiff library

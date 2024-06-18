@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 try:
@@ -17,9 +17,10 @@ from skbuild import setup
 # /dune/dune-common/build-cmake/run-in-dune-env python -m twine upload dist/* --verbose
 
 duneigaVersion = "0.1.7"
-duneVersion = "2.9.0"
+duneVersion = "2.10.0"
 
 metadata = metaData(duneVersion)[1]
 metadata["version"] = duneigaVersion
 
+metadata["name"] = "dune-iga-experimental"
 setup(**metadata)

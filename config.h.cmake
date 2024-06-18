@@ -43,6 +43,9 @@
 /* Define to the revision of dune-iga */
 #define DUNE_IGA_VERSION_REVISION @DUNE_IGA_VERSION_REVISION@
 
+/* Define the clipper lib z coordinate */
+#define USINGZ 1
+
 /* end dune-iga
    Everything below here will be overwritten
 */

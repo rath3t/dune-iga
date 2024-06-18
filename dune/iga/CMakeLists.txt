@@ -1,30 +1,18 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers
-# mueller@ibb.uni-stuttgart.de SPDX-License-Identifier: LGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
-# install headers
-install(
-  FILES bsplinealgorithms.hh
-        controlpoint.hh
-        gridcapabilities.hh
-        nurbsalgorithms.hh
-        nurbsbasis.hh
-        nurbsgeometry.hh
-        nurbsgrid.hh
-        nurbsgridentity.hh
-        nurbsgridindexsets.hh
-        nurbsgridleafiterator.hh
-        nurbsgridtraits.hh
-        nurbsidset.hh
-        nurbsintersection.hh
-        nurbsleafgridview.hh
-        nurbslocalgeometry.hh
-        nurbspatch.hh
-        nurbspatchdata.hh
-        nurbspatchgeometry.hh
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga)
+install(FILES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga)
+
+add_subdirectory(geometrykernel)
+add_subdirectory(hierarchicpatch)
+add_subdirectory(io)
+add_subdirectory(splines)
+add_subdirectory(parameterspace)
+add_subdirectory(integrationrules)
+add_subdirectory(utils)
 
 add_subdirectory(test)
-add_subdirectory(geometry)
-add_subdirectory(io)
-add_subdirectory(trim)
-add_subdirectory(utils)
+
+set(HEADERS nurbsbasis.hh patchgrid.hh)
+
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/iga/)

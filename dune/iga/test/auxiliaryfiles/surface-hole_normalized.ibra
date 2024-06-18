@@ -1,0 +1,160 @@
+[
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<0>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,1.0],
+    "nb_poles": 2,
+    "poles": [[0.0,0.0],[1.0,0.0]]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<1>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,1.0],
+    "nb_poles": 2,
+    "poles": [[1.0,0.0],[1.0,1.0]]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<2>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,1.0],
+    "nb_poles": 2,
+    "poles": [[1.0,1.0],[0.0,1.0]]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<3>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 1,
+    "knots": [0.0,1.0],
+    "nb_poles": 2,
+    "poles": [[0.0,1.0],[0.0,0.0]]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<4>",
+    "type": "NurbsCurveGeometry2D",
+    "degree": 2,
+    "knots": [-1.8849555921538759,-1.8849555921538759,-1.4137166941154069,-1.4137166941154069,-0.94247779607693793,-0.94247779607693793,-0.47123889803846897,-0.47123889803846897,0.0,0.0],
+    "nb_poles": 9,
+    "poles": [[0.8,0.5],[0.79999999999999993,0.19999999999999998],[0.49999999999999994,0.2],[0.19999999999999998,0.2],[0.2,0.5],[0.2,0.8],[0.5,0.8],[0.8,0.8],[0.8,0.5]],
+    "weights": [1.0,0.70710678118654757,1.0,0.70710678118654757,1.0,0.70710678118654757,1.0,0.70710678118654757,1.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsSurfaceGeometry3D<0>",
+    "type": "NurbsSurfaceGeometry3D",
+    "degree_u": 1,
+    "degree_v": 1,
+    "knots_u": [0.0,1.0],
+    "knots_v": [0.0,1.0],
+    "nb_poles_u": 2,
+    "nb_poles_v": 2,
+    "poles": [[0.0,0.0,0.0],[0.0,1.0,0.0],[1.0,0.0,0.0],[1.0,1.0,0.0]]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepFace<0>",
+    "type": "BrepFace",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loops": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<1>"],
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsSurfaceGeometry3D<0>"
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>",
+    "type": "BrepLoop",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "face": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepFace<0>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<1>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<2>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<1>",
+    "type": "BrepLoop",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "face": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepFace<0>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<4>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<0>",
+    "type": "BrepTrim",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loop": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>",
+    "Edge": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<0>",
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<0>",
+    "domain": [0.0,1.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<1>",
+    "type": "BrepTrim",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loop": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>",
+    "Edge": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<1>",
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<1>",
+    "domain": [0.0,1.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<2>",
+    "type": "BrepTrim",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loop": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>",
+    "Edge": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<2>",
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<2>",
+    "domain": [0.0,1.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<3>",
+    "type": "BrepTrim",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loop": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>",
+    "Edge": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<3>",
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<3>",
+    "domain": [0.0,1.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<4>",
+    "type": "BrepTrim",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "loop": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<1>",
+    "Edge": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<4>",
+    "geometry": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<4>",
+    "domain": [-1.8849555921538759,0.0]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<0>",
+    "type": "BrepEdge",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<0>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<1>",
+    "type": "BrepEdge",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<1>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<2>",
+    "type": "BrepEdge",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<2>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<3>",
+    "type": "BrepEdge",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<3>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<4>",
+    "type": "BrepEdge",
+    "brep": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<4>"]
+  },
+  {
+    "key": "rhino<648ec517-f92c-4973-88d1-9b488f593126>",
+    "type": "Brep",
+    "curve_geometries_2d": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<1>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<2>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<3>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsCurveGeometry2D<4>"],
+    "surface_geometries_3d": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.NurbsSurfaceGeometry3D<0>"],
+    "faces": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepFace<0>"],
+    "loops": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepLoop<1>"],
+    "trims": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<1>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<2>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<3>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepTrim<4>"],
+    "edges": ["rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<0>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<1>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<2>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<3>","rhino<648ec517-f92c-4973-88d1-9b488f593126>.BrepEdge<4>"]
+  }
+]

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 # The top part of this code is taken from https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/dune/python/test/poisson.py
 # Thus, see also their license https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/COPYING
@@ -19,6 +19,8 @@ from dune.common import FieldVector
 import os
 
 os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
+os.environ['DUNE_LOG_LEVEL'] = 'debug'
+os.environ['DUNE_SAVE_BUILD'] = 'console'
 
 # f(x) = 1
 f = lambda x: 1

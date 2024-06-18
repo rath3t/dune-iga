@@ -1,12 +1,12 @@
-# SPDX-FileCopyrightText: 2023 The dune-iga developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
-from dune.generator.generator import SimpleGenerator
+from .generator import MySimpleGenerator
 
 
 def boundaryPatch(gridView, booleanVector):
-    generator = SimpleGenerator("BoundaryPatch", "Dune::IGA::Python")
+    generator = MySimpleGenerator("BoundaryPatch", "Dune::IGA::Python")
     element_type = f"BoundaryPatch<{gridView.cppTypeName}>"
 
     includes = []
