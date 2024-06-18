@@ -483,7 +483,7 @@ void testNurbsGridCylinder() {
 template <typename LocalView>
 auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos) {
 
-  TestSuite test;
+  TestSuite t;
   auto& fe               = localView.tree().finiteElement();
   const auto& localBasis = fe.localBasis();
 
@@ -512,6 +512,7 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
 template <typename Basis>
 auto checkJacobianAndPartialConsistency(const Basis& basis) 
 {
+  TestSuite test;
       constexpr int numTestPos = 13;
     constexpr double posTol  = 1e-8;
 
@@ -540,8 +541,10 @@ auto checkJacobianAndPartialConsistency(const Basis& basis)
     {
       localView.bind(e);
       for (int i = 0; i < numTestPos; ++i) 
-      checkJacobianAndPartial(localView,gpPos[i]);
+      t.subTest(checkJacobianAndPartial(localView,gpPos[i]));
     }
+
+  return t;
 }
 
 
@@ -604,6 +607,7 @@ auto testNurbsBasis() {
     using namespace Functions::BasisFactory;
     // Check basis created via its constructor
     Functions::NurbsBasis<GridView> basis2(gridView, nurbs());
+    
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 
