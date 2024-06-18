@@ -39,8 +39,8 @@ namespace Dune::Python {
 #endif
 namespace Dune::Python::IGA {
   template <class Grid>
-  requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, Grid>::value) inline static std::shared_ptr<
-      Grid> reader(const pybind11::dict& dict) {
+    requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, Grid>::value)
+  inline static std::shared_ptr<Grid> reader(const pybind11::dict& dict) {
     std::string file_path;
     Dune::Python::IGA::Reader reader  = IGA::Reader::json;
     bool trim                         = true;
@@ -72,8 +72,8 @@ namespace Dune::Python::IGA {
   }
 
   template <class NURBSGrid, class... options>
-  requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, NURBSGrid>::value) void registerHierarchicalGrid(
-      pybind11::module module, pybind11::class_<NURBSGrid, options...> cls) {
+    requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid, NURBSGrid>::value)
+  void registerHierarchicalGrid(pybind11::module module, pybind11::class_<NURBSGrid, options...> cls) {
     using pybind11::operator""_a;
 
     static constexpr std::integral auto dimension      = NURBSGrid::dimension;
@@ -123,7 +123,6 @@ namespace Dune::Python::IGA {
           self.globalRefineInDirection(dir, refinementLevel, omitTrim);
         },
         pybind11::arg("dir"), pybind11::arg("refinementLevel"), pybind11::arg("omitTrim") = false);
-    cls.def(
-        "patchData", [](const NURBSGrid& self, int i = 0) { return self.patchData(i); }, pybind11::arg("i") = 0);
+    cls.def("patchData", [](const NURBSGrid& self, int i = 0) { return self.patchData(i); }, pybind11::arg("i") = 0);
   }
 }  // namespace Dune::Python::IGA

@@ -78,9 +78,10 @@ namespace Dune::IGA {
    * @return subNet with the strideSizes degree+1 per direction
    */
   template <std::integral auto dim, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
-      std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
-      const MultiDimensionNet<dim, NetValueType>& net) {
+    requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType>
+             || is_instantiation_of<ControlPoint, NetValueType>::value)
+  auto netOfSpan(std::array<int, dim> subNetStart, const std::array<int, dim>& degree,
+                 const MultiDimensionNet<dim, NetValueType>& net) {
     std::array<int, dim> order = Impl::ordersFromDegrees(degree);
     for (std::size_t i = 0; i < dim; ++i)
       subNetStart[i] -= degree[i];
@@ -89,9 +90,12 @@ namespace Dune::IGA {
 
   /** \brief Same as netOfSpan above but the start is searched for using the knotvector value   */
   template <std::floating_point ScalarType, std::integral auto dim, std::integral auto dim2, typename NetValueType>
-  requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType> || is_instantiation_of<ControlPoint, NetValueType>::value) auto netOfSpan(
-      const Dune::FieldVector<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
-      const std::array<int, dim2>& degree, const MultiDimensionNet<dim2, NetValueType>& net) requires(dim == dim2) {
+    requires(std::floating_point<NetValueType> || Concept::Vector<NetValueType>
+             || is_instantiation_of<ControlPoint, NetValueType>::value)
+  auto netOfSpan(const Dune::FieldVector<ScalarType, dim>& u, const std::array<std::vector<ScalarType>, dim2>& knots,
+                 const std::array<int, dim2>& degree, const MultiDimensionNet<dim2, NetValueType>& net)
+    requires(dim == dim2)
+  {
     auto subNetStart = findSpanCorrected(degree, u, knots);
     return netOfSpan(subNetStart, degree, net);
   }
@@ -334,7 +338,7 @@ namespace Dune::IGA {
         return oldCPs.get(multiIndex);
       };
 
-      auto newCurve = [&newCPs, &refinementDirection, multiIndex ](int i) mutable -> auto& {
+      auto newCurve = [&newCPs, &refinementDirection, multiIndex](int i) mutable -> auto& {
         multiIndex[refinementDirection] = i;
         return newCPs.get(multiIndex);
       };
@@ -382,7 +386,7 @@ namespace Dune::IGA {
           ebpts[i].setZero();
           for (int j = std::max(0, i - t); j <= std::min(p, i); ++j)
             ebpts[i] += bezalfs[i][j] * bpts[j];
-        }                // End of degree elevating Bezier
+        }  // End of degree elevating Bezier
         if (oldr > 1) {  // Must remove knot u = U[a] oldr times
           int first            = kind - 2;
           int last             = kind;

@@ -482,9 +482,9 @@ void testNurbsGridCylinder() {
 }
 
 template <typename LocalView>
-auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos, int i) {
-
-  TestSuite t("Check the point with number" +std::to_string(i));
+auto checkJacobianAndPartial(const LocalView& localView,
+                             Dune::FieldVector<double, LocalView::Element::Geometry::mydimension> pos, int i) {
+  TestSuite t("Check the point with number" + std::to_string(i));
   auto& fe               = localView.tree().finiteElement();
   const auto& localBasis = fe.localBasis();
 
@@ -493,64 +493,55 @@ auto checkJacobianAndPartial(const LocalView& localView,Dune::FieldVector<double
   std::vector<Dune::FieldMatrix<double, 1, gridDim>> referenceGradients;
   localBasis.evaluateJacobian(pos, referenceGradients);
 
-
-  std::array<unsigned int,gridDim> dir{};
+  std::array<unsigned int, gridDim> dir{};
   constexpr double tol = 1e-14;
-  for(int d=0; d<gridDim; ++d)
-    {
-      std::vector<Dune::FieldVector<double, 1>> dNdxi;
-      dir[d]=1;
-      localBasis.partial(dir, pos, dNdxi);
-      for(int j=0; j<referenceGradients.size(); ++j)
-        t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[j][0], tol))<< 
-          "The failed direction is "<<d<<" with the values "<<referenceGradients[j][0][d] <<" " <<dNdxi[j][0]<<"\n The pos is "<<pos;
-      dir[d]=0;
-    }
+  for (int d = 0; d < gridDim; ++d) {
+    std::vector<Dune::FieldVector<double, 1>> dNdxi;
+    dir[d] = 1;
+    localBasis.partial(dir, pos, dNdxi);
+    for (int j = 0; j < referenceGradients.size(); ++j)
+      t.check(Dune::FloatCmp::eq(referenceGradients[j][0][d], dNdxi[j][0], tol))
+          << "The failed direction is " << d << " with the values " << referenceGradients[j][0][d] << " " << dNdxi[j][0]
+          << "\n The pos is " << pos;
+    dir[d] = 0;
+  }
 
   return t;
 }
-
 
 template <typename Basis>
-auto checkJacobianAndPartialConsistency(const Basis& basis) 
-{
+auto checkJacobianAndPartialConsistency(const Basis& basis) {
   TestSuite t;
-      constexpr int numTestPos = 13;
-    constexpr double posTol  = 1e-8;
+  constexpr int numTestPos = 13;
+  constexpr double posTol  = 1e-8;
 
-  static_assert(Basis::LocalView::Element::Geometry::mydimension==2);
-  
-    // 4 random Gauss points, center position, 0th, 1st, 2nd and 3rd geometry corners and with tolerances
-    std::array<Dune::FieldVector<double, 2>, numTestPos> gpPos = {
-        {{0.2113248654051871, 0.7886751345948129},
-         {0.7886751345948129, 0.2113248654051871},
-         {0.2113248654051871, 0.2113248654051871},
-         {0.7886751345948129, 0.7886751345948129},
-         {0.5, 0.5},
-         {0.0, 0.0},
-         {1.0, 0.0},
-         {0.0, 1.0},
-         {1.0, 1.0},
-         {0.0 + posTol, 0.0 + posTol},
-         {1.0 - posTol, 0.0 + posTol},
-         {0.0 + posTol, 1.0 - posTol},
-         {1.0 - posTol, 1.0 - posTol}}
-    };
-  
+  static_assert(Basis::LocalView::Element::Geometry::mydimension == 2);
+
+  // 4 random Gauss points, center position, 0th, 1st, 2nd and 3rd geometry corners and with tolerances
+  std::array<Dune::FieldVector<double, 2>, numTestPos> gpPos = {{{0.2113248654051871, 0.7886751345948129},
+                                                                 {0.7886751345948129, 0.2113248654051871},
+                                                                 {0.2113248654051871, 0.2113248654051871},
+                                                                 {0.7886751345948129, 0.7886751345948129},
+                                                                 {0.5, 0.5},
+                                                                 {0.0, 0.0},
+                                                                 {1.0, 0.0},
+                                                                 {0.0, 1.0},
+                                                                 {1.0, 1.0},
+                                                                 {0.0 + posTol, 0.0 + posTol},
+                                                                 {1.0 - posTol, 0.0 + posTol},
+                                                                 {0.0 + posTol, 1.0 - posTol},
+                                                                 {1.0 - posTol, 1.0 - posTol}}};
+
   auto localView = basis.localView();
 
-  for(const auto& e : elements(basis.gridView()))
-    {
-      localView.bind(e);
-      for (int i = 0; i < numTestPos; ++i) 
-        t.subTest(checkJacobianAndPartial(localView,gpPos[i],i));
-    }
+  for (const auto& e : elements(basis.gridView())) {
+    localView.bind(e);
+    for (int i = 0; i < numTestPos; ++i)
+      t.subTest(checkJacobianAndPartial(localView, gpPos[i], i));
+  }
 
   return t;
 }
-
-
-
 
 auto testNurbsBasis() {
   ////////////////////////////////////////////////////////////////
@@ -632,8 +623,8 @@ auto testNurbsBasis() {
     // Check whether a B-Spline basis can be combined with other bases.
     using namespace Functions::BasisFactory;
     auto basis2 = makeBasis(gridView, power<2>(nurbs()));
-    test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,0)));
-        test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2,1)));
+    test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2, 0)));
+    test.subTest(checkJacobianAndPartialConsistency(Functions::subspaceBasis(basis2, 1)));
     test.subTest(checkBasis(basis2, EnableContinuityCheck(), EnableContinuityCheck()));
   }
 

@@ -808,7 +808,7 @@ namespace Dune::IGA::Trim {
       bool alreadyVisited = false;
 
       explicit IntersectionPoint(const ClipperPoint& _clipperPoint)
-          : point({toFloatDomain(_clipperPoint.x), toFloatDomain(_clipperPoint.y)}){};
+          : point({toFloatDomain(_clipperPoint.x), toFloatDomain(_clipperPoint.y)}) {};
     };
 
     struct IntersectionResult {

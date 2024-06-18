@@ -29,48 +29,37 @@ namespace Dune::IGA::Concept {
   };
 
   template <typename L, typename R>
-  concept MultiplyAble = requires(L x, R y) {
-    x* y;
-  };
+  concept MultiplyAble = requires(L x, R y) { x* y; };
 
   template <typename L, typename R>
-  concept AddAble = requires(L x, R y) {
-    x + y;
-  };
+  concept AddAble = requires(L x, R y) { x + y; };
 
   template <typename L, typename R>
-  concept SubstractAble = requires(L x, R y) {
-    x - y;
-  };
+  concept SubstractAble = requires(L x, R y) { x - y; };
 
   template <typename L, typename R>
-  concept MultiplyAssignAble = requires(L x, R y) {
-    x *= y;
-  };
+  concept MultiplyAssignAble = requires(L x, R y) { x *= y; };
 
   template <typename L, typename R>
-  concept DivideAssignAble = requires(L x, R y) {
-    x /= y;
-  };
+  concept DivideAssignAble = requires(L x, R y) { x /= y; };
 
   template <typename L, typename R>
-  concept DivideAble = requires(L x, R y) {
-    x / y;
-  };
+  concept DivideAble = requires(L x, R y) { x / y; };
 
   /** \concept This concepts extends the geometry of DUNE grid entities
    *
    * @tparam G
    */
   template <typename G>
-  concept NurbsGeometry = Dune::Concept::Geometry<G> && requires(const G g, typename G::GlobalCoordinate global,
-                                                                 typename G::LocalCoordinate local) {
-    {
-      g.zeroFirstAndSecondDerivativeOfPosition(local)
-      } -> std::convertible_to<
-          std::tuple<typename G::GlobalCoordinate, typename G::JacobianTransposed, typename G::Hessian>>;
-    { g.domainMidPoint() } -> std::convertible_to<typename G::LocalCoordinate>;
-    { g.domain() } -> std::convertible_to<std::array<Utilities::Domain<double>, G::mydimension>>;
-  };
+  concept NurbsGeometry
+      = Dune::Concept::Geometry<G>
+        && requires(const G g, typename G::GlobalCoordinate global, typename G::LocalCoordinate local) {
+             {
+               g.zeroFirstAndSecondDerivativeOfPosition(local)
+             } -> std::convertible_to<
+                   std::tuple<typename G::GlobalCoordinate, typename G::JacobianTransposed, typename G::Hessian>>;
+             { g.domainMidPoint() } -> std::convertible_to<typename G::LocalCoordinate>;
+             { g.domain() } -> std::convertible_to<std::array<Utilities::Domain<double>, G::mydimension>>;
+           };
 
 }  // namespace Dune::IGA::Concept

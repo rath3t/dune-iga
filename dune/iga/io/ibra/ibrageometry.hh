@@ -44,7 +44,8 @@ namespace Dune::IGA::Ibra {
   };
 
   template <int dim, int worldDim>
-  requires(dim < 3) && (worldDim >= dim) struct IbraNURBSData : public IbraBase {
+    requires(dim < 3) && (worldDim >= dim)
+  struct IbraNURBSData : public IbraBase {
     std::array<int, dim> degree{};
     std::array<int, dim> n_controlPoints{};
     std::array<std::vector<double>, dim> knots;

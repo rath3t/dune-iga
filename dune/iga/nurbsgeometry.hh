@@ -205,19 +205,23 @@ namespace Dune::IGA {
       return transpose(jacobianInverseTransposed(local));
     }
 
-    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate unitNormal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto N = normal(local);
       return N / N.two_norm();
     }
 
-    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const requires(mydimension == 2)
-        && (coorddimension == 3) {
+    [[nodiscard]] GlobalCoordinate normal(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       auto J = jacobianTransposed(local);
       return cross(J[0], J[1]);
     }
 
-    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const requires(mydimension == 2) {
+    [[nodiscard]] ctype gaussianCurvature(const LocalCoordinate& local) const
+      requires(mydimension == 2)
+    {
       auto metricDet = metric(local).determinant();
       auto secondF   = secondFundamentalForm(local).determinant();
       return secondF / metricDet;
@@ -230,7 +234,9 @@ namespace Dune::IGA {
       return metric;
     }
 
-    auto secondFundamentalForm(const LocalCoordinate& local) const requires(mydimension == 2) && (coorddimension == 3) {
+    auto secondFundamentalForm(const LocalCoordinate& local) const
+      requires(mydimension == 2) && (coorddimension == 3)
+    {
       const auto secDerivatives = secondDerivativeOfPosition(local);
       const auto unitnormal     = unitNormal(local);
       FieldMatrix<ctype, mydimension, mydimension> b;

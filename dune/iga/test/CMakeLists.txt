@@ -20,7 +20,7 @@ foreach(_test ${TESTS})
   )
   # target_link_options(${_test} PUBLIC -fsanitize=address -static-libasan)
 
-  set_source_files_properties(${_test}.cc COMPILE_FLAGS -fno-var-tracking )
+  set_source_files_properties(${_test}.cc COMPILE_FLAGS -fno-var-tracking)
   target_compile_options(${_test} PUBLIC -DDUNE_GRID_HAVE_CONCEPTS=0)
 
   if(ENABLE_TEST_COVERAGE)

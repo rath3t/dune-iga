@@ -16,7 +16,8 @@
 namespace Dune::Vtk {
   /// Implementation of Discontinuous DataCollector for Iga cells with or without trimming information
   template <class GridView>
-  requires(GridView::dimension == 2) class DiscontinuousIgaDataCollector
+    requires(GridView::dimension == 2)
+  class DiscontinuousIgaDataCollector
       : public UnstructuredDataCollectorInterface<GridView, DiscontinuousIgaDataCollector<GridView>, Partitions::All> {
     using Self  = DiscontinuousIgaDataCollector;
     using Super = UnstructuredDataCollectorInterface<GridView, Self, Partitions::All>;
@@ -29,11 +30,11 @@ namespace Dune::Vtk {
     DiscontinuousIgaDataCollector(GridView const& gridView, int subSampleFull, int subSampleTrimmed)
         : Super(gridView), geometries_(gridView, subSampleFull, subSampleTrimmed) {}
     // Does not subsample
-    explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0){};
+    explicit DiscontinuousIgaDataCollector(GridView const& gridView) : DiscontinuousIgaDataCollector(gridView, 0, 0) {};
 
     // Sub-samples trimmed elements by creating a new grid
     DiscontinuousIgaDataCollector(GridView const& gridView, int subsample)
-        : DiscontinuousIgaDataCollector(gridView, subsample, subsample){};
+        : DiscontinuousIgaDataCollector(gridView, subsample, subsample) {};
 
     /// Construct the point sets
     void updateImpl() {

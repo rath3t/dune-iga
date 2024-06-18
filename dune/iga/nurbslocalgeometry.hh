@@ -222,13 +222,16 @@ namespace Dune::IGA {
      *
      *  \param[in] local local coordinates for each dimension
      */
-    GlobalCoordinate unitNormal(const LocalCoordinate& local) const requires(mydimension == 2) {
+    GlobalCoordinate unitNormal(const LocalCoordinate& local) const
+      requires(mydimension == 2)
+    {
       auto J = jacobianTransposed(local);
       auto N = cross(J[0], J[1]);
       return N / N.two_norm();
     }
 
-   private : Dune::Geo::ReferenceElements<ctype, mydimension> referenceElement_;
+   private:
+    Dune::Geo::ReferenceElements<ctype, mydimension> referenceElement_;
     int localIndexInElement_;
     bool isTrimmed_{false};
   };

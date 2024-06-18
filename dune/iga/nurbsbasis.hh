@@ -97,10 +97,9 @@ namespace Dune::Functions {
       scaling_.umv(in, globalIn);
       preBasis_.partial(directions, globalIn, out, lFE_.currentKnotSpan_);
 
-      
-      for (size_t i = 0; i < out.size(); i++) 
-          for (std::size_t d = 0; unsigned int dir : directions)
-            out[i][0] *= Dune::power(scaling_.diagonal(d++),dir);
+      for (size_t i = 0; i < out.size(); i++)
+        for (std::size_t d = 0; unsigned int dir : directions)
+          out[i][0] *= Dune::power(scaling_.diagonal(d++), dir);
     }
 
     /** \brief Polynomial degree of the shape functions
@@ -649,7 +648,7 @@ namespace Dune::Functions {
                  std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
       const auto dN = IGA::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
           in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
-          std::accumulate(order.begin(), order.end(), 0),false,currentKnotSpan);
+          std::accumulate(order.begin(), order.end(), 0), false, currentKnotSpan);
 
       auto& dNpart = dN.get(order).directGetAll();
       out.reserve(dNpart.size());

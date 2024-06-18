@@ -15,7 +15,7 @@ namespace Dune::IGA {
 
     TransformToSpan() = default;
     explicit TransformToSpan(std::pair<std::array<double, dim>, std::array<double, dim>>& input)
-        : scaling_(input.first), offset_(input.second){};
+        : scaling_(input.first), offset_(input.second) {};
 
     template <typename VecType>
     [[nodiscard]] auto transform(const VecType& cp) const -> VecType {
@@ -124,8 +124,8 @@ namespace Dune::IGA {
 
   template <int dim, typename Transformer = TransformToSpan<dim>, typename Index = std::uint64_t,
             typename Point = Dune::FieldVector<double, dim>>
-  auto triangulate(auto& boundaries, const Transformer& transformer)
-      -> std::pair<std::vector<Index>, std::vector<Point>> {
+  auto triangulate(auto& boundaries,
+                   const Transformer& transformer) -> std::pair<std::vector<Index>, std::vector<Point>> {
     // Construct mesh with Earcut
     // C.f. https://github.com/mapbox/earcut.hpp
 

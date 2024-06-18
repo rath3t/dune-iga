@@ -14,7 +14,8 @@ namespace Dune::IGA {
 }
 namespace Dune::Capabilities {
   template <std::integral auto dim, std::integral auto dimworld, int codim, typename ScalarType>
-  requires(dim <= 3) struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {
+    requires(dim <= 3)
+  struct hasEntity<Dune::IGA::NURBSGrid<dim, dimworld, ScalarType>, codim> {
     static const bool v = true;
   };
 

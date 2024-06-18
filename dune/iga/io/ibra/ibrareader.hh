@@ -21,7 +21,8 @@ namespace Dune::IGA {
 
   // At the moment only gridDim und worldDim == 2 or 3 supported
   template <int gridDim, int worldDim, typename ScalarType = double>
-  requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim) class IbraReader {
+    requires(gridDim == 2) && (worldDim == 2 || worldDim == 3) && (gridDim <= worldDim)
+  class IbraReader {
    public:
     using Grid                = Dune::IGA::NURBSGrid<gridDim, worldDim, ScalarType>;
     using ControlPoint        = Dune::IGA::NURBSPatchData<gridDim, worldDim>::ControlPointType;
@@ -38,11 +39,12 @@ namespace Dune::IGA {
     }
 
     template <typename InputStringType>
-    requires(not std::convertible_to<
-                 std::string, InputStringType> and not std::convertible_to<InputStringType, const char*>) static std::
-        unique_ptr<Grid> read(InputStringType& ibraInputFile, const bool trim = true,
-                              std::array<int, 2> elevateDegree = {0, 0}, std::array<int, 2> preKnotRefine = {0, 0},
-                              std::array<int, 2> postKnotRefine = {0, 0}) {
+      requires(not std::convertible_to<std::string, InputStringType>
+               and not std::convertible_to<InputStringType, const char*>)
+    static std::unique_ptr<Grid> read(InputStringType& ibraInputFile, const bool trim = true,
+                                      std::array<int, 2> elevateDegree  = {0, 0},
+                                      std::array<int, 2> preKnotRefine  = {0, 0},
+                                      std::array<int, 2> postKnotRefine = {0, 0}) {
       using json = nlohmann::json;
 
       // Result

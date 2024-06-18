@@ -25,8 +25,9 @@ namespace Dune::IGA::Utilities {
   };
 
   template <typename ScalarType, int dim, size_t dim2>
-  requires(dim == dim2) auto clampToBoundaryAndCheckIfIsAtAllBoundaries(
-      Dune::FieldVector<ScalarType, dim>& x, const std::array<Domain<ScalarType>, dim2>& domain = {}) {
+    requires(dim == dim2)
+  auto clampToBoundaryAndCheckIfIsAtAllBoundaries(Dune::FieldVector<ScalarType, dim>& x,
+                                                  const std::array<Domain<ScalarType>, dim2>& domain = {}) {
     int breakDueToBoundaryCounter = 0;
 
     for (int j = 0; j < dim; ++j) {

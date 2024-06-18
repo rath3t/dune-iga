@@ -9,7 +9,8 @@ namespace Dune::IGA {
    * an implementation by hand otherwise
    */
   template <Concept::Vector VectorType>
-  requires(VectorType::dimension == 3) inline VectorType cross(const VectorType& a, const VectorType& b) {
+    requires(VectorType::dimension == 3)
+  inline VectorType cross(const VectorType& a, const VectorType& b) {
     if constexpr (requires { a.cross(b); })
       return a.cross(b);
     else

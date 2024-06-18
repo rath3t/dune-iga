@@ -6,7 +6,7 @@
 #include <span>
 
 #include <dune/common/iteratorfacades.hh>
-//#include "dune/iga/nurbsleafgridview.hh"
+// #include "dune/iga/nurbsleafgridview.hh"
 #include "dune/iga/nurbspatch.hh"
 
 namespace Dune::IGA {

@@ -97,7 +97,7 @@ namespace Dune::IGA {
     explicit NURBSGrid(const NURBSPatchData<dim, dimworld, ScalarType>& nurbsPatchData,
                        std::optional<std::shared_ptr<TrimData>> _trimData = std::nullopt)
         : entityVector{std::make_unique<decltype(gridEntityTupleGenerator<NURBSGrid, dimension>(
-            std::make_integer_sequence<int, dimension + 1>()))>()},
+              std::make_integer_sequence<int, dimension + 1>()))>()},
           coarsestPatchRepresentation_{nurbsPatchData},
           currentPatchRepresentation_{coarsestPatchRepresentation_},
           leafPatches_{std::make_shared<std::vector<NURBSPatch<dim, dimworld, ScalarType>>>(

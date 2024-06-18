@@ -215,9 +215,8 @@ auto testIbraReader() {
 auto testDataCollectorAndVtkWriter() {
   TestSuite t;
 
-  auto lambdaf = [](auto x) {
-    return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])});
-  };
+  auto lambdaf
+      = [](auto x) { return Dune::FieldVector<double, 2>({std::sin(x[0]), std::cos(3 * x[0]) + std::sin(4 * x[1])}); };
   std::vector<std::string> geometries{"element_trim_xb", "surface-hole"};
 
   for (auto& fileName : geometries) {

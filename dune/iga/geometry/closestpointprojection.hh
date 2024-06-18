@@ -19,7 +19,8 @@ namespace Dune::IGA {
       -> std::tuple<Dune::FieldVector<typename Geo<dim, dimworld, GeoArgs>::ctype, dim>,
                     typename Geo<dim, dimworld, GeoArgs>::ctype, typename Geo<dim, dimworld, GeoArgs>::ctype,
                     typename Geo<dim, dimworld, GeoArgs>::ctype>
-  requires(dim == 1 or dim == 2) {
+    requires(dim == 1 or dim == 2)
+  {
     using Geometry = Geo<dim, dimworld, GeoArgs>;
     using ctype    = typename Geometry::ctype;
 
