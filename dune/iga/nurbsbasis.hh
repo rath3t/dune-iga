@@ -91,16 +91,16 @@ namespace Dune::Functions {
     }
 
     //! \brief Evaluate all shape functions and derivatives of any degree
-    inline void partial(const typename std::array<unsigned int, dim>& order, const typename Traits::DomainType& in,
+    inline void partial(const typename std::array<unsigned int, dim>& directions, const typename Traits::DomainType& in,
                         std::vector<typename Traits::RangeType>& out) const {
       FieldVector<D, dim> globalIn = offset_;
       scaling_.umv(in, globalIn);
-      preBasis_.partial(order, globalIn, out, lFE_.currentKnotSpan_);
+      preBasis_.partial(directions, globalIn, out, lFE_.currentKnotSpan_);
 
       
       for (size_t i = 0; i < out.size(); i++) 
-          for (std::size_t d = 0; unsigned int orderPerDir : order)
-            out[i][0] *= Dune::power(scaling_.diagonal(d++),orderPerDir);
+          for (std::size_t d = 0; unsigned int dir : directions)
+            out[i][0] *= Dune::power(scaling_.diagonal(d++),dir);
     }
 
     /** \brief Polynomial degree of the shape functions
@@ -649,7 +649,7 @@ namespace Dune::Functions {
                  std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
       const auto dN = IGA::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
           in, patchData_.knotSpans, patchData_.degree, extractWeights(patchData_.controlPoints),
-          std::accumulate(order.begin(), order.end(), 0));
+          std::accumulate(order.begin(), order.end(), 0),false,currentKnotSpan);
 
       auto& dNpart = dN.get(order).directGetAll();
       out.reserve(dNpart.size());
