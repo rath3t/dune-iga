@@ -180,8 +180,8 @@ namespace Dune::IGA {
     int numBoundarySegments() const { return getPatch().numBoundarySegments(); }
     int size(int level, int codim) const { return this->size(codim); }
 
-    const GridView& leafGridView() const { return *leafGridView_; }
-    const GridView& levelGridView([[maybe_unused]] int level) const { return *leafGridView_; }
+     GridView leafGridView() const { return *leafGridView_; }
+     GridView levelGridView([[maybe_unused]] int level) const { return *leafGridView_; }
     int getMark(const ElementEntity& element) const { return 0; }
     bool mark(int refCount, const ElementEntity& element) const { return false; }
 
