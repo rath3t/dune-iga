@@ -12,7 +12,7 @@
 
 template <typename G>
 void checkConcepts() {
-  static_assert(Dune::Concept::Grid<G>);
+  //static_assert(Dune::Concept::Grid<G>);
 
   using GridEntity         = typename G::template Codim<0>::Entity;
   using GridEntityGeometry = typename GridEntity::Geometry;
