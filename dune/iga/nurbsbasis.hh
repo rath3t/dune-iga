@@ -100,7 +100,7 @@ namespace Dune::Functions {
       
       for (size_t i = 0; i < out.size(); i++) 
           for (std::size_t d = 0; unsigned int orderPerDir : order)
-            out[i][0] *= Dune::power(scaling_.diagonal(d),orderPerDir);
+            out[i][0] *= Dune::power(scaling_.diagonal(d++),orderPerDir);
     }
 
     /** \brief Polynomial degree of the shape functions
