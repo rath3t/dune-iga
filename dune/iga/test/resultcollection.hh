@@ -4,8 +4,8 @@
 #pragma once
 
 #include <dune/common/exceptions.hh>
-#include <Eigen/Core>
 
+#include <Eigen/Core>
 
 // assume px = py = 2 with C1 continuity, resulting in 9 CPs per element
 template <int refinementLevel, int numTestPos>
