@@ -717,7 +717,7 @@ public:
                std::vector<FieldVector<R, 1>>& out, const std::array<int, dim>& currentKnotSpan) const {
     const auto dN = IGA::Splines::Nurbs<dim, ScalarType>::basisFunctionDerivatives(
         in, patchData_.knotSpans, patchData_.degree, IGA::Splines::extractWeights(patchData_.controlPoints),
-        std::accumulate(order.begin(), order.end(), 0), false, currentKnotSpan);
+        std::accumulate(order.begin(), order.end(), 0), currentKnotSpan);
 
     auto& dNpart = dN.get(order).directGetAll();
     out.reserve(dNpart.size());

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ranges>
 
+#include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
 
 template <typename T, int worldDim, int Items>
@@ -27,4 +28,23 @@ inline void createOutputFolder(const std::string& folderName) {
       std::cerr << "Error creating folder: " << e.what() << std::endl;
     }
   }
+}
+
+template <typename TestSuiteType, typename ScalarType>
+requires std::is_integral_v<ScalarType>
+void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expectedVal,
+                  const std::string& messageIfFailed = "") {
+  if constexpr (std::is_integral_v<ScalarType>)
+    t.check(val == expectedVal) << std::setprecision(16) << "Incorrect Scalar integer:\t" << expectedVal << " Actual:\t"
+                                << val << messageIfFailed;
+}
+
+template <typename TestSuiteType, typename ScalarType>
+requires(not std::is_integral_v<ScalarType>)
+void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expectedVal,
+                  const std::string& messageIfFailed = "",
+                  double tol                         = Dune::FloatCmp::DefaultEpsilon<ScalarType>::value()) {
+  t.check(Dune::FloatCmp::eq(val, expectedVal, tol))
+      << std::setprecision(16) << "Incorrect Scalar floating point:\t" << expectedVal << " Actual:\t" << val
+      << ". The used tolerance was " << tol << messageIfFailed;
 }

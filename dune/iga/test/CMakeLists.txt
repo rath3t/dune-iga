@@ -20,6 +20,7 @@ set(TESTS
     testunstructuredgridcreation
     testnotreconstructedgrid
     testtrimmedgeometry
+    testshapefunctionsandderivatives
 )
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
 
