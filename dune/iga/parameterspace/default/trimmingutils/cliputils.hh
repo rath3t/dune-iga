@@ -66,7 +66,7 @@ struct ClippingResult
     struct HostVertexImpl
     {
       size_t hostIdx{};
-      std::optional<size_t> additionalZVal{};
+      std::set<size_t> additionalZVals{};
     };
     struct NewVertexImpl
     {
@@ -110,10 +110,15 @@ struct ClippingResult
       assert(isNew());
       return std::get<NewVertexImpl>(vertexData).trimmingCurveZ;
     }
-    auto additionalZValue() const {
+    auto additionalZValues() const {
       assert(isHost());
-      return std::get<HostVertexImpl>(vertexData).additionalZVal;
+      return std::get<HostVertexImpl>(vertexData).additionalZVals;
     }
+    void addAdditionalZValue(size_t value) {
+      assert(isHost());
+      std::get<HostVertexImpl>(vertexData).additionalZVals.emplace(value);
+    }
+
     auto hostId() const {
       assert(isHost());
       return std::get<HostVertexImpl>(vertexData).hostIdx;
@@ -125,7 +130,7 @@ struct ClippingResult
     static Vertex HostVertex(const Clipper2Lib::PointD& pt, size_t hostIdx) {
       return Vertex{.pt = pt, .vertexData = HostVertexImpl(hostIdx)};
     }
-    static Vertex HostVertex(const Clipper2Lib::PointD& pt, size_t hostIdx, std::optional<size_t> additionalZ) {
+    static Vertex HostVertex(const Clipper2Lib::PointD& pt, size_t hostIdx, const std::set<size_t>& additionalZ) {
       return Vertex{.pt = pt, .vertexData = HostVertexImpl(hostIdx, additionalZ)};
     }
     static Vertex NewVertex(int onEdgeIdx, const Clipper2Lib::PointD& pt, u_int64_t trimmingCurveZ) {
@@ -156,10 +161,13 @@ struct ClippingResult
       vertices_.emplace_back(Vertex::HostVertex(originalVertices_[pt.z], pt.z));
   }
   void addOriginalVertex(const size_t hostIdx, std::optional<size_t> additionalZVal = std::nullopt) {
-    if (auto [alreadyThere, idx] = isAlreadyThere(hostIdx); not alreadyThere  )
-      vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx], hostIdx, additionalZVal));
-    else
-      std::get<Vertex::HostVertexImpl>(vertices_[idx].vertexData).additionalZVal = additionalZVal;
+    if (auto [alreadyThere, idx] = isAlreadyThere(hostIdx); not alreadyThere) {
+      std::set<size_t> additionalZVals{};
+      if (additionalZVal.has_value())
+        additionalZVal.emplace(additionalZVal.value());
+      vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx], hostIdx, additionalZVals));
+    } else if (additionalZVal.has_value())
+      vertices_[idx].addAdditionalZValue(additionalZVal.value());
   }
 
   void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {

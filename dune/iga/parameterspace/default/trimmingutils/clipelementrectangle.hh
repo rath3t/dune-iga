@@ -108,6 +108,8 @@ auto clipElementRectangle(const auto& element, const auto& patchTrimData)
   for (const auto& pt : resultClosedPaths.front()) {
     if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost)
       result.addOriginalVertex(idx);
+    //      result.addOriginalVertex(idx, pt.z > 4 ? std::optional<size_t>(pt.z) : std::nullopt);
+
   }
 
   // Now we have to check for points inside the elements
