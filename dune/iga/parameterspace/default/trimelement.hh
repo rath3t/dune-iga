@@ -15,8 +15,8 @@ namespace Dune::IGA::DefaultParameterSpace {
 
 template <int dim, int dimworld, typename ScalarType>
 auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity<0>& element, const auto& gv,
-                                                                const PatchTrimData& patchTrimData,
-                                                                bool initFlag) -> ElementTrimData {
+                                                                const PatchTrimData& patchTrimData, bool initFlag)
+    -> ElementTrimData {
   auto geo = element.geometry();
 
   using CurveIndex = Impl::CurveLoopIndexEncoder::IndexResult;
@@ -112,6 +112,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
 
           foundVertices.push_back(curvePoint);
         }
+        currentCurveIdx = getTrimmingCurveIdxFromHost(vV1);
         auto [tParam, curvePoint] =
             Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.hostId(), pt2, corners);
         assertPoint(pt2, curvePoint);

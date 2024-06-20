@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
+#include <cassert>
 #include <clipper2/clipper.core.h>
+
+#include "dune/grid/common/exceptions.hh"
+#include "dune/iga/geometrykernel/geohelper.hh"
 
 namespace Dune::IGA::DefaultParameterSpace {
 
@@ -139,8 +143,10 @@ struct PatchTrimDataImpl
     idx_t splitter_{};
   };
 
-  void addLoop() {
+  /** \brief adds new loop and returns index to this loop **/
+  int addLoop() {
     loops_.push_back({});
+    return loops().size() - 1;
   }
 
   void insertTrimCurve(const TrimmingCurve& curve, const int toLoop) {
@@ -163,6 +169,10 @@ struct PatchTrimDataImpl
 
   auto getZValue(int loopIndex, int edgeIndex, int sampleIndex) const {
     return manager_.getZValue(loopIndex, edgeIndex, sampleIndex);
+  }
+
+  auto getSplitter() const {
+    return manager_.splitter_;
   }
 
   auto getCurve(const typename CurveManager::idx_t val) const -> const TrimmingCurve& {

@@ -84,7 +84,7 @@ auto testBsplineBasisFunctions() {
   test.check(eq(dN[3][1], 16.0), "P=3,dN31,u=1.45");
   test.check(eq(dN[3][2], -18.0), "P=3,dN32,u=1.45");
   test.check(eq(dN[3][3], 6.0), "P=3,dN33,u=1.45");
-  // https://godbolt.org/z/Ta3fzW553
+
   auto Nf                           = Dune::IGA::Splines::BsplineBasis<double>(knots, degree);
   std::vector<double> NAtEvalPoints = {1,
                                        0.1714677640603567,
@@ -296,17 +296,6 @@ auto testBsplineBasisFunctions() {
   test.check(eq(dN_Nurbs.get({2, 1}).get({0, 2}), 178.898026091114), "Nurbs P=2,N6");
   test.check(eq(dN_Nurbs.get({2, 1}).get({1, 2}), -91.08940646130728), "Nurbs P=2,N7");
   test.check(eq(dN_Nurbs.get({2, 1}).get({2, 2}), 5.900826446280992), "Nurbs P=2,N8");
-
-  // std::cout<<std::setprecision(16)<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({0,0})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({1,0})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({2,0})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({0,1})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({1,1})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({2,1})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({0,2})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({1,2})<<std::endl;
-  // std::cout<<dN_Nurbs.get({3,1}).get({2,2})<<std::endl;
 
   // 3,1 mixed derivative
   test.check(eq(dN_Nurbs.get({3, 1}).get({0, 0}), 430363.3606745686),

@@ -15,8 +15,8 @@
 
 namespace Dune::IGA::DefaultParameterSpace::Util {
 
-auto clipElementRectangle(const auto& element,
-                          const auto& patchTrimData) -> std::tuple<ElementTrimFlag, ClippingResult> {
+auto clipElementRectangle(const auto& element, const auto& patchTrimData)
+    -> std::tuple<ElementTrimFlag, ClippingResult> {
   using namespace Clipper2Lib;
 
   auto eleGeo                          = element.geometry();
@@ -50,16 +50,23 @@ auto clipElementRectangle(const auto& element,
 
     const auto edgeIdx = giveEdgeIdx(rectangleFirstPoint.z - 1, rectangleSecondPoint.z - 1);
 
-    auto firstTrimmingCurveIndices  = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
-    auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
+    const auto vertexZValue = secondTrimmingCurvePoint.z;
+
+    // Now check that we don't have a parallel intersection
+    if (checkParallel(patchTrimData.getCurve(vertexZValue), edgeIdx)) {
+      return;
+    }
 
     const auto [isHost, idx] = isCornerVertex(intersectionPoint, eleRect);
     if (isHost) {
-      result.addOriginalVertex(idx, secondTrimmingCurvePoint.z);
+      result.addOriginalVertex(idx, vertexZValue);
       return;
     }
 
     auto intersectionIndices = patchTrimData.getIndices(intersectionPoint.z);
+
+    auto firstTrimmingCurveIndices  = patchTrimData.getIndices(firstTrimmingCurvePoint.z);
+    auto secondTrimmingCurveIndices = patchTrimData.getIndices(secondTrimmingCurvePoint.z);
 
     assert(firstTrimmingCurveIndices.loop == secondTrimmingCurveIndices.loop &&
            "The points of the trimming curves should be on the same loop");
@@ -69,12 +76,6 @@ auto clipElementRectangle(const auto& element,
            firstTrimmingCurveIndices.curve == intersectionIndices.curve &&
                "The indices of the trimming curves should be the same or the intersection point should be on one of "
                "the two second curves");
-    const auto vertexZValue = secondTrimmingCurvePoint.z;
-
-    // Now check that we don't have a parallel intersection
-    if (checkParallel(patchTrimData.getCurve(vertexZValue), edgeIdx)) {
-      return;
-    }
 
     result.addNewVertex(edgeIdx, intersectionPoint, vertexZValue);
   });
@@ -128,7 +129,11 @@ auto clipElementRectangle(const auto& element,
 
       auto [isHost, idx] = isCornerVertex(ptClipper, eleRect);
       if (isHost) {
-        result.addOriginalVertex(idx);
+        size_t additionalZVal = patchTrimData.getZValue(0, cI,
+                                                        i == 0           ? 0
+                                                        : curve.affine() ? 1
+                                                                         : patchTrimData.getSplitter() - 1);
+        result.addOriginalVertex(idx, additionalZVal);
         continue;
       }
 

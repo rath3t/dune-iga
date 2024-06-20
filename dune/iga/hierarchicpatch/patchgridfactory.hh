@@ -39,8 +39,24 @@ public:
     patchTrimData_ = patchTrimData;
   }
 
-  void insertTrimmingCurve(const IGA::NURBSPatchData<dim - 1, dim, ctype>& curve) {
-    DUNE_THROW(NotImplemented, "insertTrimmingCurve not yet implemented, stay tuned ");
+  /**
+   * @brief Here you can manually add trimming curves in a closed loop. This feature is still experimental.
+   * You have to add the curves in the coordinates of the parameter space of the patch, otherwise it will not work
+   * @tparam Range a random-acccess range
+   * @param curves range with NURBSPatchData
+   */
+  template <std::ranges::random_access_range Range>
+  requires(std::same_as<typename std::remove_cvref_t<Range>::value_type, IGA::NURBSPatchData<dim - 1, dim, ctype>> and
+           not ParameterSpaceType::isAlwaysTrivial)
+  void insertTrimLoop(Range&& curves) {
+    using TrimmingCurve = typename PatchGrid::GridFamily::ParameterSpaceTraits::TrimmingCurve;
+    // Todo Check consecutive and closed and orientation
+    if (not patchTrimData_.has_value())
+      patchTrimData_ = PatchTrimData{};
+    int loopIdx = patchTrimData_->addLoop();
+
+    for (auto&& curveData : curves)
+      patchTrimData_->insertTrimCurve(TrimmingCurve{curveData}, loopIdx);
   }
 
   void insertTrimParameters(const TrimParameterType& par) {

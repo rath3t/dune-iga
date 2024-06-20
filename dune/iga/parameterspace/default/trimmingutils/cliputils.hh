@@ -152,12 +152,14 @@ struct ClippingResult
   void addOriginalVertex(const Clipper2Lib::PointD& pt) {
     assert(pt.z < 5);
     if (FloatCmp::eq(pt.x, originalVertices_[pt.z].x) and FloatCmp::eq(pt.y, originalVertices_[pt.z].y) and
-        not isAlreadyThere(pt.z))
+        not isAlreadyThere(pt.z).first)
       vertices_.emplace_back(Vertex::HostVertex(originalVertices_[pt.z], pt.z));
   }
   void addOriginalVertex(const size_t hostIdx, std::optional<size_t> additionalZVal = std::nullopt) {
-    if (not isAlreadyThere(hostIdx))
+    if (auto [alreadyThere, idx] = isAlreadyThere(hostIdx); not alreadyThere  )
       vertices_.emplace_back(Vertex::HostVertex(originalVertices_[hostIdx], hostIdx, additionalZVal));
+    else
+      std::get<Vertex::HostVertexImpl>(vertices_[idx].vertexData).additionalZVal = additionalZVal;
   }
 
   void addNewVertex(const int edgeIdx, const Clipper2Lib::PointD& pt, const size_t trimmingCurveZ) {
@@ -232,13 +234,13 @@ private:
     });
     return it != vertices_.end();
   }
-  auto isAlreadyThere(const size_t hostIdx) -> bool {
+  auto isAlreadyThere(const size_t hostIdx) -> std::pair<bool, size_t> {
     const auto it = std::ranges::find_if(vertices_, [&](const Vertex& vV) {
       if (vV.isHost())
         return vV.hostId() == hostIdx;
       return false;
     });
-    return it != vertices_.end();
+    return std::make_pair(it != vertices_.end(), std::ranges::distance(vertices_.begin(), it));
   }
 
   // Sort the points based on polar angle with respect to the reference point
