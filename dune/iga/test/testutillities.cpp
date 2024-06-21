@@ -18,6 +18,7 @@
 #include <dune/iga/parameterspace/default/parameterspace.hh>
 #include <dune/iga/parameterspace/default/trimmingutils/cliputils.hh>
 #include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
+#include <dune/iga/utils/expected.hh>
 #include <dune/iga/utils/igahelpers.hh>
 
 using namespace Dune;
@@ -137,16 +138,42 @@ auto testClipUtils() {
   return t;
 }
 
-// Todo: move to factoryTest
-auto testFactoryFactories() {
-  TestSuite t;
+enum class compute_error
+{
+  negative_number,
+  to_big_number
+};
 
-  constexpr int dim      = 2;
-  constexpr int worlddim = 2;
+auto testExpected() {
+  TestSuite t("", TestSuite::ThrowPolicy::ThrowOnRequired);
 
-  auto identityFactory = makePatchGridFactory<dim, worlddim>();
+  auto computeNumber = [](int i) -> Std::expected<int, compute_error> {
+    if (i < 0)
+      return Std::unexpected(compute_error::negative_number);
+    if (i < 5)
+      return i * 5;
 
-  auto defaultFactory = makePatchGridFactory<dim, worlddim>(withTrimmingCapabilities());
+    return Std::unexpected(compute_error::to_big_number);
+  };
+
+  auto v1 = computeNumber(-1);
+  auto v2 = computeNumber(3);
+  auto v3 = computeNumber(10);
+
+  t.require(not v1.has_value()) << "v1 reports to have a value, but shouldn't";
+  t.check(not v1) << "v1 reports to have a value, but shouldn't";
+  t.check(v1.value_or(3) == 3) << "v1 value_or should yield 3, but yields " << v1.value_or(3);
+  t.check(v1.error() == compute_error::negative_number) << "v1 should report negative number, but doesn't";
+
+  t.require(v2.has_value()) << "v2 reports to have not have a value, but should";
+  // t.check(static_cast<bool>(v2));
+  t.check(*v2 == 15) << "v2 should yield a value of 15, but yields " << *v2;
+  t.check(v2.value_or(3) == 15) << "v2 value_or should yield 15, but yields " << v2.value_or(3);
+
+  t.require(not v3.has_value()) << "v1 reports to have a value, but shouldn't";
+  t.check(not v3) << "v3 reports to have a value, but shouldn't";
+  t.check(v3.value_or(3) == 3) << "v3 value_or should yield 3, but yields " << v1.value_or(3);
+  t.check(v3.error() == compute_error::to_big_number) << "v3 should report to_big_number, but doesn't";
 
   return t;
 }
@@ -167,7 +194,7 @@ int main(int argc, char** argv) try {
   t.subTest(testForEachUntrimmedBoundary(1));
   t.subTest(testForEachUntrimmedBoundary(2));
 
-  t.subTest(testFactoryFactories());
+  t.subTest(testExpected());
 
   t.report();
 

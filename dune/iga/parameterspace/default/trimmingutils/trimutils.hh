@@ -14,8 +14,8 @@
 
 namespace Dune::IGA::DefaultParameterSpace::Util {
 template <typename ScalarType, int dim>
-auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2,
-                     const double prec) -> bool {
+auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2, const double prec)
+    -> bool {
   return FloatCmp::eq(pt1.x, pt2[0], prec) and FloatCmp::eq(pt1.y, pt2[1], prec);
 }
 
@@ -49,8 +49,19 @@ auto createHostGeometry(auto& vertex1, auto& vertex2) -> TrimmingCurve {
   return GeometryKernel::NURBSPatch(patchData);
 }
 
-auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip,
-                          const auto& corners) -> std::pair<double, FieldVector<double, 2>> {
+enum class FindIntersectionError
+{
+  parallel,
+  notSuccessful
+};
+struct FindIntersectionResult
+{
+  double tParam{};
+  FieldVector<double, 2> curvePoint{};
+};
+
+auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip, const auto& corners)
+    -> Std::expected<FindIntersectionResult, FindIntersectionError> {
   auto pos         = corners[edgeIdx];
   auto dir         = edgeDirections[edgeIdx];
   double lineGuess = (edgeIdx == 0 or edgeIdx == 2) ? (ip.x - pos[0]) / dir[0] : (ip.y - pos[1]) / dir[1];
@@ -58,7 +69,7 @@ auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip
   // Catch a trivial but difficult case (algorithm sometimes is not able to converge to endPoint)
   if (auto endPoint = curvePatchGeo.corner(1);
       approxSamePoint(ip, endPoint, 1e-8) and not FloatCmp::eq(endPoint, curvePatchGeo.corner(0))) {
-    return std::make_pair(curvePatchGeo.domain()[0][1], endPoint);
+    return FindIntersectionResult{curvePatchGeo.domain()[0][1], endPoint};
   }
 
   // Todo use z-Value to get a good starting point, not brute-force
@@ -66,18 +77,18 @@ auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip
 
   auto [success, tParam, curvePoint] = findIntersectionCurveAndLine(curvePatchGeo, pos, dir, guessTParam);
   if (success == IntersectionCurveAndLine::intersect)
-    return std::make_pair(tParam[0], curvePoint);
+    return FindIntersectionResult(tParam[0], curvePoint);
   if (success == IntersectionCurveAndLine::parallel) {
-    DUNE_THROW(Dune::GridError, "Couldn't find intersection Point, lines are parallel");
+    return Std::unexpected(FindIntersectionError::parallel);
   }
 
   auto domain = curvePatchGeo.domain();
   if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0].front()})))
-    return std::make_pair(domain[0][0], curvePoint);
+    return FindIntersectionResult(domain[0][0], curvePoint);
   if (FloatCmp::eq(curvePoint, curvePatchGeo.global({domain[0].back()})))
-    return std::make_pair(domain[0].back(), curvePoint);
+    return FindIntersectionResult(domain[0].back(), curvePoint);
 
-  DUNE_THROW(Dune::GridError, "Couldn't find intersection Point");
+  return Std::unexpected(FindIntersectionError::notSuccessful);
 };
 
 template <typename Entity>

@@ -56,7 +56,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
 
   auto assertPoint = [&](const Clipper2Lib::PointD& ip, const FieldVector<ScalarType, dim>& curvePt,
                          double prec = 0.01) {
-    if (not(FloatCmp::eq(ip.x, curvePt[0], prec) and FloatCmp::eq(ip.y, curvePt[1], prec))) {
+    if (not Util::approxSamePoint(ip, curvePt, prec)) {
       std::cout << "Found ClipperPoint " << ip << " does not coincide with determined point on Curve " << curvePt
                 << std::endl;
       throwGridError();
@@ -70,6 +70,13 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
   const auto& idSet = gv.grid().globalIdSet();
   auto yaspID       = idSet.id(element);
 
+  auto findSegmentWithSameCurveIdx = [&](const auto& archiveData, const CurveIndex& index) {
+    return std::ranges::find_if(archiveData, [&](const auto& item) {
+      const auto& [i_, t1_, t2_, b_] = item;
+      return i_.loop == index.loop and i_.curve == index.curve;
+    });
+  };
+
   auto addNewBoundarySegementIdx = [&](const CurveIndex& index, double t1, double t2) {
     if (initFlag) {
       elementTrimData.addBoundarySegmentIdxToLastEdge(numBoundarySegments_);
@@ -78,11 +85,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
     } else {
       auto fatherId    = idSet.id(Util::coarsestFather(element));
       auto archiveData = boundarySegmentsArchive_.at(fatherId);
-      auto it          = std::ranges::find_if(archiveData, [&](const auto& item) {
-        const auto& [i_, t1_, t2_, b_] = item;
-        // TODO generalize for more than one segment with the same curve Idx
-        return i_.loop == index.loop and i_.curve == index.curve;
-      });
+      auto it          = findSegmentWithSameCurveIdx(archiveData, index);
       assert(it != archiveData.end());
       elementTrimData.addBoundarySegmentIdxToLastEdge(std::get<3>(*it));
     }
@@ -107,39 +110,33 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
     if (vV1.isHost() and vV2.isHost()) {
       if (not isConsecutive(vV1.hostId(), vV2.hostId())) {
         // if indices are not consecutive, we add a New New Segment
-        // TODO The following is maybe one of the worst code segments i ever wrote
         if (foundVertices.empty()) {
           auto [tParam, curvePoint] = [&]() {
             for (auto&& val : getTrimmingCurveIdxFromHost(vV1)) {
-              try {
-                currentCurveIdx = val;
-                auto res =
-                    Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.hostId(), pt1, corners);
-                assertPoint(pt1, res.second);
-                return res;
-              } catch (Dune::GridError& e) {
-                std::cout << "Error\n";
-              }
+              currentCurveIdx = val;
+              auto findIntersectionResult =
+                  Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.hostId(), pt1, corners);
+              if (findIntersectionResult.has_value() and
+                  Util::approxSamePoint(pt1, findIntersectionResult.value().curvePoint, 0.01))
+                return findIntersectionResult.value();
             }
-            DUNE_THROW(Dune::GridError, "Bad");
+            throwGridError();
+            __builtin_unreachable();
           }();
-
           foundVertices.push_back(curvePoint);
         }
 
         auto [tParam, curvePoint] = [&]() {
           for (auto&& val : getTrimmingCurveIdxFromHost(vV1)) {
-            try {
-              currentCurveIdx = val;
-              auto res =
-                  Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.hostId(), pt2, corners);
-              assertPoint(pt2, res.second);
-              return res;
-            } catch (Dune::GridError& e) {
-              std::cout << "Error\n";
-            }
+            currentCurveIdx = val;
+            auto findIntersectionResult =
+                Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.hostId(), pt2, corners);
+            if (findIntersectionResult.has_value() and
+                Util::approxSamePoint(pt2, findIntersectionResult.value().curvePoint, 0.01))
+              return findIntersectionResult.value();
           }
-          DUNE_THROW(Dune::GridError, "Bad");
+          throwGridError();
+          __builtin_unreachable();
         }();
 
         auto elementTrimmingCurve =
@@ -162,13 +159,13 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
         if (foundVertices.empty()) {
           currentCurveIdx = getTrimmingCurveIdxFromHost(vV1)[0];
           auto [currentT, curvePoint] =
-              Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.hostId(), pt1, corners);
+              Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.hostId(), pt1, corners).value();
           assertPoint(pt1, curvePoint);
 
           foundVertices.push_back(curvePoint);
         }
         auto [tParam, curvePoint] =
-            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners);
+            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners).value();
         assertPoint(pt2, curvePoint);
 
         auto elementTrimmingCurve =
@@ -182,7 +179,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
       } else {
         currentCurveIdx = getTrimmingCurveIdx(vV2);
         auto [tParam, curvePoint] =
-            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners);
+            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners).value();
         assertPoint(pt2, curvePoint);
 
         FieldVector<ScalarType, dim> p =
@@ -201,7 +198,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
       if (foundVertices.empty()) {
         currentCurveIdx = getTrimmingCurveIdx(vV1);
         auto [currentT, curvePoint] =
-            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.edgeId(), pt1, corners);
+            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.edgeId(), pt1, corners).value();
         assertPoint(pt1, curvePoint);
 
         foundVertices.push_back(curvePoint);
@@ -211,12 +208,12 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
         throwGridError();
 
       auto [tParam, curvePoint] =
-          Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners);
+          Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.edgeId(), pt2, corners).value();
       assertPoint(pt2, curvePoint);
 
       // If currentT > tParam it can have 2 reasons. 1) the trim id only on one side of the element, and it has to
       // connect back or 2) if the trimming curve consist only of one curve where it has the same front and back
-      // Controlpoint, so sometimes the wrong tParam (front or back) gets determined
+      // ControlPoint, so sometimes the wrong tParam (front or back) gets determined
       if (currentT > tParam) {
         bool success = false;
         if (currentCurveIdx.loop > 0 && patchTrimData.loops()[currentCurveIdx.loop].size() == 1) {
@@ -255,7 +252,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
     else if (vV1.isNew() and vV2.isHost()) {
       if (not isConsecutive(vV1.edgeId(), vV2.hostId())) {
         auto [tParam, curvePoint] =
-            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.hostId(), pt2, corners);
+            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV2.hostId(), pt2, corners).value();
         assertPoint(pt2, curvePoint);
 
         auto elementTrimmingCurve =
@@ -267,9 +264,11 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
         auto v2 = Dune::FieldVector<ScalarType, dim>{pt2.x, pt2.y};
 
         FieldVector<ScalarType, dim> p;
-        if (foundVertices.empty())
-          std::tie(std::ignore, p) =
-              Util::callFindIntersection(patchTrimData.getCurve(getTrimmingCurveIdx(vV1)), vV1.edgeId(), pt1, corners);
+        if (foundVertices.empty()) {
+          auto findIntersectionResult =
+              Util::callFindIntersection(patchTrimData.getCurve(getTrimmingCurveIdx(vV1)), vV1.edgeId(), pt1, corners).value();
+          p = findIntersectionResult.curvePoint;
+        }
         else
           p = foundVertices.back();
 
@@ -285,8 +284,10 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
       if (foundVertices.empty()) {
         currentCurveIdx = getTrimmingCurveIdx(vV1);
         FieldVector<ScalarType, dim> curvePoint;
-        std::tie(currentT, curvePoint) =
-            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.edgeId(), pt1, corners);
+        auto findIntersectionResult =
+            Util::callFindIntersection(patchTrimData.getCurve(currentCurveIdx), vV1.edgeId(), pt1, corners).value();
+        currentT = findIntersectionResult.tParam;
+        curvePoint = findIntersectionResult.curvePoint;
         assertPoint(pt1, curvePoint);
 
         foundVertices.push_back(curvePoint);
@@ -302,7 +303,7 @@ auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity
     } else if (vV1.isInside() and vV2.isNew()) {
       const auto& curve         = patchTrimData.loops()[vV1.loop()].curves()[vV1.subsequentCurve()];
       currentT                  = curve.domain().front().front();
-      auto [tParam, curvePoint] = Util::callFindIntersection(curve, vV2.edgeId(), pt2, corners);
+      auto [tParam, curvePoint] = Util::callFindIntersection(curve, vV2.edgeId(), pt2, corners).value();
       assertPoint(pt2, curvePoint);
 
       auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT, tParam);

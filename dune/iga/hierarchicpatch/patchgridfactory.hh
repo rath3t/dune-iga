@@ -23,7 +23,9 @@ class GridFactory<IGA::PatchGrid<dim_, dimworld_, ParameterSpaceType_, ScalarTyp
   using ParameterSpaceType      = typename PatchGrid::ParameterSpace;
   using PatchTrimData           = typename ParameterSpaceType::PatchTrimData;
 
+
 public:
+  using Grid = PatchGrid;
   using TrimParameterType = typename ParameterSpaceType::ParameterType;
 
   /** @brief Type used by the grid for coordinates */

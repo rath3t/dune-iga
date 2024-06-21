@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cliputils.hh"
+#include <dune/iga/utils/expected.hh>
 
 #include <clipper2/clipper.h>
 #include <variant>

@@ -146,6 +146,19 @@ auto testTriangleTrim() {
   return t;
 }
 
+auto testFactoryFactories() {
+  constexpr int dim      = 2;
+  constexpr int worldDim = 2;
+
+  auto identityFactory = makePatchGridFactory<dim, worldDim>();
+  auto defaultFactory  = makePatchGridFactory<dim, worldDim>(withTrimmingCapabilities());
+
+  static_assert(std::is_same_v<decltype(identityFactory)::Grid,
+                               PatchGrid<dim, worldDim, IdentityParameterSpace::PatchGridFamily>>);
+  static_assert(
+      std::is_same_v<decltype(defaultFactory)::Grid, PatchGrid<dim, worldDim, DefaultParameterSpace::PatchGridFamily>>);
+}
+
 #include <cfenv>
 int main(int argc, char** argv) try {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);
@@ -161,6 +174,8 @@ int main(int argc, char** argv) try {
 
   t.subTest(testTriangleTrim<true, 3>());
   t.subTest(testTriangleTrim<false, 3>());
+
+  testFactoryFactories();
 
   t.report();
 
