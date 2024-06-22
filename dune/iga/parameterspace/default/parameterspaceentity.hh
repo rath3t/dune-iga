@@ -189,7 +189,7 @@ public:
     if constexpr (codim_ == 1 or codim_ == 2) /* edge, vertex */ {
       return TrimmedParameterSpaceGeometry(trimData_->geometry.value());
     } else if constexpr (codim_ == 0) /* element */ {
-      return TrimmedParameterSpaceGeometry(hostEntity_.geometry(), this);
+      return TrimmedParameterSpaceGeometry(hostEntity_.geometry(), *this);
     }
     __builtin_unreachable();
   }

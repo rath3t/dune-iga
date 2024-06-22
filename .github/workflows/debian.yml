@@ -42,6 +42,22 @@ jobs:
            testRegex: "cpp"
           }
           - {
+           name: "Clang-18-Debug",
+           config: Debug,
+           compilerC: clang-18,
+           compilerCxx: clang++-18,
+           lib: "-stdlib=libc++",
+           testRegex: "cpp"
+          }
+          - {
+           name: "Clang-18-Release",
+           config: Release,
+           compilerC: clang-16,
+           compilerCxx: clang++-16,
+           lib: "-stdlib=libc++",
+           testRegex: "cpp"
+          }
+          - {
             name: "GCC-Debug",
             config: Debug,
             compilerC: gcc-12,

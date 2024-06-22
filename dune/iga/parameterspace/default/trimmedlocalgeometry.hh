@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <dune/iga/geometrykernel/algorithms.hh>
 #include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 
 namespace Dune::IGA::DefaultParameterSpace {
@@ -54,10 +55,10 @@ public:
                                           ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
   /** constructor from host geometry  */
-  TrimmedLocalGeometryImpl() = default;
-  explicit TrimmedLocalGeometryImpl(const HostGeometry& hostGeometry, const ParameterSpaceElement* element)
+  TrimmedLocalGeometryImpl() = delete;
+  explicit TrimmedLocalGeometryImpl(const HostGeometry& hostGeometry, const ParameterSpaceElement& element)
       : hostGeometry_{hostGeometry},
-        trimData_{element->trimData()},
+        trimData_{element.trimData()},
         element_(element) {}
 
   bool operator==(const TrimmedLocalGeometryImpl& b) const {
@@ -82,14 +83,8 @@ public:
     return trimData_.size(2);
   }
 
-  // TODO write a test for that
   GlobalCoordinate center() const {
-    // average of corners
-    GlobalCoordinate c{0, 0};
-    for (auto i : Dune::range(corners()))
-      c += corner(i);
-
-    return c / corners();
+    return GeometryKernel::centerOfMass(*this);
   }
 
   // access to coordinates of corners. Index is the number of the corner
@@ -125,7 +120,7 @@ public:
     return true;
   }
 
-  // TODO // Use integration rule and area integration
+  // TODO
   [[nodiscard]] Volume integrationElement(const LocalCoordinate& local) const {
     return hostGeometry_.volume();
   }
@@ -136,7 +131,7 @@ public:
 
   auto getQuadratureRule(const std::optional<int>& p_order = std::nullopt,
                          const QuadratureType::Enum qt     = QuadratureType::GaussLegendre) const {
-    return element_->getQuadratureRule(p_order, qt);
+    return element_.getQuadratureRule(p_order, qt);
   }
 
   bool isTrimmed() const {
@@ -146,7 +141,8 @@ public:
 private:
   HostGeometry hostGeometry_;
   TrimData trimData_;
-  const ParameterSpaceElement* element_;
+  ParameterSpaceElement element_; // This can not be a ptr as the entity could live shorter than the geo, maybe only
+                                  // store a quadrature rule
 };
 
 template <int coorddim, class GridImp, LocalGeometryTag localGeometryTag>
