@@ -84,7 +84,7 @@ struct ElementTrimDataImpl
     vertices_.emplace_back(true, idx == 3 ? 0 : idx + 1, std::nullopt);
   }
 
-  void addEdgeHostNew(int idx, EdgePatchGeometry& geometry, Vertex& v2) {
+  void addEdgeHostNew(int idx, EdgePatchGeometry& geometry,  const Vertex& v2) {
     edges_.emplace_back(EdgeInfo{.isHost    = true,
                                  .isTrimmed = true,
                                  .idx       = idx,
@@ -93,7 +93,7 @@ struct ElementTrimDataImpl
     vertices_.emplace_back(false, newVertexCounter_++, v2);
   }
 
-  void addEdgeNewNew(EdgePatchGeometry& geometry, Vertex& v2) {
+  void addEdgeNewNew(EdgePatchGeometry& geometry, const Vertex& v2) {
     edges_.emplace_back(EdgeInfo{.isHost    = false,
                                  .isTrimmed = true,
                                  .idx       = newEdgeCounter_++,
