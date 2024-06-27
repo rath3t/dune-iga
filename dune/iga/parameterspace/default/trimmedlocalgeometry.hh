@@ -28,7 +28,7 @@ public:
 
   static constexpr int mydimension = 2;
   using ParameterSpace             = typename GridImp::ParameterSpace;
-  using SimplexGenerator           = SimplexGenerator<GridImp>;
+  using SimplexGeneratorImpl       = SimplexGenerator<GridImp>;
 
   static constexpr int coorddimension = coorddim;
   static constexpr int codim          = coorddimension - mydimension;
@@ -57,9 +57,9 @@ public:
 
   struct Triangulation
   {
-    std::vector<typename SimplexGenerator::Element> elements{};
-    std::vector<typename SimplexGenerator::Point> points{};
-    std::vector<typename SimplexGenerator::Index> indices{};
+    std::vector<typename SimplexGeneratorImpl::Element> elements{};
+    std::vector<typename SimplexGeneratorImpl::Point> points{};
+    std::vector<typename SimplexGeneratorImpl::Index> indices{};
   };
 
   /** constructor from host geometry  */
@@ -69,7 +69,7 @@ public:
         trimData_{element.trimData()},
         element_(element) {
     std::tie(triangulation_.elements, triangulation_.points, triangulation_.indices) =
-        SimplexGenerator::createSimplicies(element, {.boundaryDivisions = 5, .targetAccuracy = 2});
+        SimplexGeneratorImpl::createSimplicies(element, {.boundaryDivisions = 5, .targetAccuracy = 2});
     assert(triangulation_.elements.size() > 0);
   }
 
@@ -149,6 +149,7 @@ public:
   bool isTrimmed() const {
     return true;
   }
+
 
 private:
   HostGeometry hostGeometry_;

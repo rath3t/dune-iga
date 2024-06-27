@@ -42,7 +42,7 @@ auto checkUniqueEdges(const GridView& gridView) {
   else {
     std::set<std::array<FieldVector<double, gridDimensionworld>, 2>, Compare<double, gridDimensionworld, 2>>
         edgeVertexPairSet;
-    for (int eleIndex = 0; auto&& element : elements(gridView)) {
+    for (int eleIndex = 0; const auto& element : elements(gridView)) {
       edgeVertexPairSet.clear();
       for (int edgeIndex = 0; edgeIndex < element.subEntities(gridDimension - 1); ++edgeIndex) {
         auto edge = element.template subEntity<gridDimension - 1>(edgeIndex);
@@ -69,7 +69,7 @@ auto checkUniqueVertices(const GridView& gridView) {
 
   std::set<std::array<FieldVector<double, gridDimensionworld>, 1>, Compare<double, gridDimensionworld, 1>>
       elementVertexPairSet;
-  for (int eleIndex = 0; auto&& element : elements(gridView)) {
+  for (int eleIndex = 0; const auto& element : elements(gridView)) {
     elementVertexPairSet.clear();
     for (auto vertexIdx : Dune::range(element.subEntities(gridDimension))) {
       auto vertex = element.template subEntity<gridDimension>(vertexIdx);
@@ -97,7 +97,7 @@ auto checkUniqueSurfaces(const GridView& gridView) {
   else {
     std::set<std::array<FieldVector<double, gridDimensionworld>, 4>, Compare<double, gridDimensionworld, 4>>
         edgeVertexPairSet;
-    for (int eleIndex = 0; auto&& element : elements(gridView)) {
+    for (int eleIndex = 0; const auto& element : elements(gridView)) {
       edgeVertexPairSet.clear();
       for (int edgeIndex = 0; edgeIndex < element.subEntities(2); ++edgeIndex) {
         auto edge = element.template subEntity<2>(edgeIndex);
@@ -176,7 +176,7 @@ auto thoroughGridCheck(auto& grid) {
       tl.subTest(checkUniqueVertices(gv));
 
     auto extractGeo = std::views::transform([](const auto& ent) { return ent.geometry(); });
-    for (auto&& elegeo : elements(gv) | extractGeo)
+    for (const auto& elegeo : elements(gv) | extractGeo)
       checkJacobians(elegeo);
 
     for (auto&& vertGeo : vertices(gv) | extractGeo)
