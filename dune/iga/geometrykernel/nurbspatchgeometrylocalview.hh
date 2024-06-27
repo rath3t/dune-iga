@@ -142,7 +142,7 @@ namespace GeometryKernel {
     [[nodiscard]] GlobalCoordinate center() const {
       if constexpr (mydimension == gridDimension and not ParameterSpace::isAlwaysTrivial) {
         if (parameterSpaceGeometry->isTrimmed())
-          return GeometryKernel::position(centerOfMass(*parameterSpaceGeometry), nurbsLocalView_, localControlPointNet);
+          return GeometryKernel::position(parameterSpaceGeometry->center(), nurbsLocalView_, localControlPointNet);
       }
       return global(LocalCoordinate(0.5));
     }
@@ -154,7 +154,7 @@ namespace GeometryKernel {
     void bind(const ParameterSpaceGeometry& lGeo) {
       parameterSpaceGeometry = std::make_shared<ParameterSpaceGeometry>(lGeo);
       std::tie(nurbsLocalView_, localControlPointNet, spanIndices_) =
-          patchGeometry_->calculateNurbsAndControlPointNet(lGeo.center());
+          patchGeometry_->calculateNurbsAndControlPointNet(parameterSpaceGeometry->center());
     }
 
     /**

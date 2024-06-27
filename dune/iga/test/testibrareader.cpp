@@ -42,7 +42,7 @@ auto testIbraReader() {
       {      "auxiliaryfiles/quarter_plate.ibra", 3, 3},
       {       "auxiliaryfiles/element_trim.ibra", 0, 3},
       {        "auxiliaryfiles/trim_2edges.ibra", 0, 3},
-      {         "auxiliaryfiles/trim_multi.ibra", 0, 0},
+      {         "auxiliaryfiles/trim_multi.ibra", 1, 1},
       {       "auxiliaryfiles/surface-hole.ibra", 1, 3},
       {  "auxiliaryfiles/surface-hole-skew.ibra", 1, 3},
       {"auxiliaryfiles/surface-hole-square.ibra", 1, 3},
@@ -99,6 +99,7 @@ auto testIbraReader3d() {
     auto name = file_name.substr(0, file_name.find('.')).substr(file_name.find_last_of('/') + 1);
 
     for (int i = min; i <= max; i++) {
+      std::cout << "Testing now " << name << " (Refinement " << i << ", " << i << ")" << std::endl;
       gridFactory.insertJson(file_name, true, {i, i});
       auto grid = gridFactory.createGrid();
 

@@ -74,7 +74,6 @@ struct SimplexGenerator
   }
 
 private:
-private:
   static void splitBoundary(const auto& localGeometry, const Parameters& parameters, std::vector<Point>& points) {
     if (localGeometry.affine()) {
       points.push_back(localGeometry.global({0.0}));
@@ -126,8 +125,8 @@ private:
     return std::get<0>(getPointsAndDistance(localGeometry, numSegments));
   }
 
-  static auto getPointsAndDistance(const auto& localGeometry,
-                                   unsigned int numSegments) -> std::pair<double, std::vector<Point>> {
+  static auto getPointsAndDistance(const auto& localGeometry, unsigned int numSegments)
+      -> std::pair<double, std::vector<Point>> {
     auto distance = [](const Point& p1, const Point& p2) {
       return std::sqrt(Dune::power(p2[0] - p1[0], 2) + Dune::power(p2[1] - p1[1], 2));
     };

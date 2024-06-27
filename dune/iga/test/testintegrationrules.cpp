@@ -36,6 +36,7 @@ auto testAreaIntegration(Dune::TestSuite& t, const std::string& file_name, int r
   using IntegrationRuleGenerator = SimplexIntegrationRuleGenerator<const PatchGrid>;
 
   auto gridFactory = GridFactory();
+  std::cout << "Testing now " << file_name << " (Refinement " << refLevel << ", " << refLevel << ")" << std::endl;
   gridFactory.insertTrimParameters(GridFactory::TrimParameterType{splitter});
   gridFactory.insertJson(file_name, true, {refLevel, refLevel});
 

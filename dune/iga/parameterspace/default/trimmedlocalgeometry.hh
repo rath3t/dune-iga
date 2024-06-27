@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <dune/iga/geometrykernel/algorithms.hh>
+#include <dune/iga/geometrykernel/trimmedgeometryalgorithms.hh>
 #include <dune/iga/parameterspace/default/trimmingutils/indextransformations.hh>
 
 namespace Dune::IGA::DefaultParameterSpace {
@@ -28,6 +28,7 @@ public:
 
   static constexpr int mydimension = 2;
   using ParameterSpace             = typename GridImp::ParameterSpace;
+  using SimplexGenerator           = SimplexGenerator<GridImp>;
 
   static constexpr int coorddimension = coorddim;
   static constexpr int codim          = coorddimension - mydimension;
@@ -54,12 +55,23 @@ public:
       typename GeometryKernel::NURBSPatch<mydimension, coorddimension,
                                           ctype>::template GeometryLocalView<codim, ParameterSpace>;
 
+  struct Triangulation
+  {
+    std::vector<typename SimplexGenerator::Element> elements{};
+    std::vector<typename SimplexGenerator::Point> points{};
+    std::vector<typename SimplexGenerator::Index> indices{};
+  };
+
   /** constructor from host geometry  */
   TrimmedLocalGeometryImpl() = delete;
   explicit TrimmedLocalGeometryImpl(const HostGeometry& hostGeometry, const ParameterSpaceElement& element)
       : hostGeometry_{hostGeometry},
         trimData_{element.trimData()},
-        element_(element) {}
+        element_(element) {
+    std::tie(triangulation_.elements, triangulation_.points, triangulation_.indices) =
+        SimplexGenerator::createSimplicies(element, {.boundaryDivisions = 5, .targetAccuracy = 2});
+    assert(triangulation_.elements.size() > 0);
+  }
 
   bool operator==(const TrimmedLocalGeometryImpl& b) const {
     return b.hostGeometry_ == this->hostGeometry_;
@@ -84,7 +96,7 @@ public:
   }
 
   GlobalCoordinate center() const {
-    return GeometryKernel::centerOfMass(*this);
+    return global(GeometryKernel::centerOfMass(triangulation_.elements));
   }
 
   // access to coordinates of corners. Index is the number of the corner
@@ -143,6 +155,7 @@ private:
   TrimData trimData_;
   ParameterSpaceElement element_; // This can not be a ptr as the entity could live shorter than the geo, maybe only
                                   // store a quadrature rule
+  Triangulation triangulation_;
 };
 
 template <int coorddim, class GridImp, LocalGeometryTag localGeometryTag>

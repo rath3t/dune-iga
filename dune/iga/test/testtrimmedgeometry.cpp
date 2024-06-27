@@ -25,11 +25,12 @@ double referenceVolume(const GridView& gridView) {
   }
   return volume;
 }
+
 template <typename GridImp>
 FieldVector<double, 2> referenceCenter(
     const typename GridImp::ParameterSpace::template Codim<0>::ParameterSpaceGridEntity& element) {
   auto [elements, _, __] =
-      IGA::SimplexGenerator<GridImp>::createSimplicies(element, {.boundaryDivisions = 2, .targetAccuracy = 1});
+      IGA::SimplexGenerator<GridImp>::createSimplicies(element, {.boundaryDivisions = 5, .targetAccuracy = 2});
 
   double xs        = 0.0;
   double ys        = 0.0;
