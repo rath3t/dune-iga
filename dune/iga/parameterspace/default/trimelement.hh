@@ -29,7 +29,7 @@ class LoopHandler
   using ScalarType                    = typename ParameterSpace::ctype;
   using Vertex                        = Util::ClippingResult::Vertex;
   using BoundarySegmentIndexContainer = std::array<std::pair<bool, size_t>, numberOfCorners>;
-  using Point = Clipper2Lib::PointD;
+  using Point                         = Clipper2Lib::PointD;
 
 public:
   template <typename GV>
@@ -163,8 +163,8 @@ private:
 
 template <int dim, int dimworld, typename ScalarType>
 auto ParameterSpaceImpl<dim, dimworld, ScalarType>::trimElement(const YASPEntity<0>& element, const auto& gv,
-                                                                const PatchTrimData& patchTrimData, bool initFlag)
-    -> ElementTrimData {
+                                                                const PatchTrimData& patchTrimData,
+                                                                bool initFlag) -> ElementTrimData {
   auto [flag, result] = Util::clipElementRectangle(element, patchTrimData);
 
   ElementTrimData elementTrimData(flag, element);

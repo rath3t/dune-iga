@@ -150,7 +150,6 @@ public:
     return true;
   }
 
-
 private:
   HostGeometry hostGeometry_;
   TrimData trimData_;

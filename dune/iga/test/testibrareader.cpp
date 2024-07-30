@@ -92,7 +92,7 @@ auto testIbraReader3d() {
   const std::vector testCases{
       std::tuple<std::string, int, int>{ "auxiliaryfiles/shell-hole.ibra", 0, 2},
       std::tuple<std::string, int, int>{"auxiliaryfiles/kugelschale.ibra", 1, 4},
- // std::tuple<std::string, int, int>{"auxiliaryfiles/kugelschale_trimmed.ibra", 0, 4}
+      // std::tuple<std::string, int, int>{"auxiliaryfiles/kugelschale_trimmed.ibra", 0, 4}
   };
 
   for (auto& [file_name, min, max] : testCases) {

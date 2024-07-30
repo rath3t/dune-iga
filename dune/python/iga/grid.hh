@@ -20,39 +20,29 @@
   #include <dune/vtk/writers/vtkunstructuredgridwriter.hh>
 #endif
 
-namespace Dune {
-template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType>
-struct DGFGridFactory<IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
-{
-};
+// namespace Dune {
+// template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType>
+// struct DGFGridFactory<IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
+// {
+// };
 
-// DGFGridInfo
-// -----------
+// // DGFGridInfo
+// // -----------
 
-template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType>
-struct DGFGridInfo<IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
-{
-  static int refineStepsForHalf() {
-    return 1;
-  }
+// template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType>
+// struct DGFGridInfo<IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
+// {
+//   static int refineStepsForHalf() {
+//     return 1;
+//   }
 
-  static double refineWeight() {
-    return 0.5;
-  }
-};
-} // namespace Dune
+// static double refineWeight() {
+//   return 0.5;
+// }
+// };
+// } // namespace Dune
 
 namespace Dune::Python {
-
-template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType, typename In>
-inline static std::shared_ptr<Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>> readDGF(In& input) {
-  using Grid = Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>;
-
-  DGFGridFactory<Grid> dgfFactory(input);
-  std::shared_ptr<Grid> grid(dgfFactory.grid());
-  grid->loadBalance();
-  return grid;
-}
 
 #ifndef DOXYGEN
 // we have to ahead of
@@ -60,12 +50,6 @@ inline static std::shared_ptr<Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, S
 // thus we use requires(IsSpecializationTwoNonTypesAndType<Dune::IGA::NURBSGrid,Grid>::value) to be sure this overload
 // is used
 // make sure this type is used if an iga grid is passed this is function is enabled and used by adl
-
-template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType>
-struct Capabilities::HasGridFactory<Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
-    : public std::integral_constant<bool, false>
-{
-};
 
 template <template <auto, auto, template <int, int, typename> typename, typename> class Type, typename>
 struct IsSpecializationTwoNonTypesTemplateAndType : std::false_type
@@ -202,7 +186,7 @@ void registerHierarchicalGrid(pybind11::module module, pybind11::class_<Grid, op
       },
       pybind11::arg("elevationFactors"));
 
-  // The folllowing is copied from /dune/dune-grid/dune/python/grid/hierarchical.hh
+  // The following is copied from /dune/dune-grid/dune/python/grid/hierarchical.hh
   cls.def_property_readonly(
       "leafView",
       pybind11::cpp_function([](const Grid& self) { return self.leafGridView(); }, pybind11::keep_alive<0, 1>()),

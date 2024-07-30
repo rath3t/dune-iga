@@ -512,15 +512,15 @@ int main(int argc, char** argv) try {
                                       .firstLoopCurvesSize       = 6,
                                       .notAffineCounter          = 2}),
                       std::execution::seq));
-/* Test disables due to unknown regression
-  t.subTest(checkTrim("auxiliaryfiles/trim_multi.ibra",
-                      ExpectedValues({.straightLength            = 27.0662326,
-                                      .trimmingCurveCurvedLength = 13.6037540,
-                                      .trimmingCurveTotalLength  = 40.6699865,
-                                      .firstLoopCurvesSize       = 5,
-                                      .notAffineCounter          = 1}),
-                      std::execution::seq));
-*/
+  /* Test disables due to unknown regression
+    t.subTest(checkTrim("auxiliaryfiles/trim_multi.ibra",
+                        ExpectedValues({.straightLength            = 27.0662326,
+                                        .trimmingCurveCurvedLength = 13.6037540,
+                                        .trimmingCurveTotalLength  = 40.6699865,
+                                        .firstLoopCurvesSize       = 5,
+                                        .notAffineCounter          = 1}),
+                        std::execution::seq));
+  */
   t.subTest(checkTrim("auxiliaryfiles/element_trim_xb.ibra",
                       ExpectedValues({.straightLength            = 2.79197791,
                                       .trimmingCurveCurvedLength = 1.57240470,

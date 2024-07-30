@@ -14,8 +14,8 @@
 
 namespace Dune::IGA::DefaultParameterSpace::Util {
 template <typename ScalarType, int dim>
-auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2, const double prec)
-    -> bool {
+auto approxSamePoint(const Clipper2Lib::PointD& pt1, const FieldVector<ScalarType, dim>& pt2,
+                     const double prec) -> bool {
   return FloatCmp::eq(pt1.x, pt2[0], prec) and FloatCmp::eq(pt1.y, pt2[1], prec);
 }
 
@@ -60,8 +60,8 @@ struct FindIntersectionResult
   FieldVector<double, 2> curvePoint{};
 };
 
-auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip, const auto& corners)
-    -> Std::expected<FindIntersectionResult, FindIntersectionError> {
+auto callFindIntersection(const auto& curvePatchGeo, int edgeIdx, const auto& ip,
+                          const auto& corners) -> Std::expected<FindIntersectionResult, FindIntersectionError> {
   auto pos         = corners[edgeIdx];
   auto dir         = edgeDirections[edgeIdx];
   double lineGuess = (edgeIdx == 0 or edgeIdx == 2) ? (ip.x - pos[0]) / dir[0] : (ip.y - pos[1]) / dir[1];

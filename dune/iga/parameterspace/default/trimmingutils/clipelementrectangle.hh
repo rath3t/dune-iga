@@ -4,7 +4,6 @@
 #pragma once
 
 #include "cliputils.hh"
-#include <dune/iga/utils/expected.hh>
 
 #include <clipper2/clipper.h>
 #include <variant>
@@ -13,11 +12,12 @@
 #include "dune/iga/parameterspace/default/elementtrimdata.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/iga/geometrykernel/findintersection.hh>
+#include <dune/iga/utils/expected.hh>
 
 namespace Dune::IGA::DefaultParameterSpace::Util {
 
-auto clipElementRectangle(const auto& element, const auto& patchTrimData)
-    -> std::tuple<ElementTrimFlag, ClippingResult> {
+auto clipElementRectangle(const auto& element,
+                          const auto& patchTrimData) -> std::tuple<ElementTrimFlag, ClippingResult> {
   using namespace Clipper2Lib;
 
   auto eleGeo                          = element.geometry();
@@ -109,8 +109,7 @@ auto clipElementRectangle(const auto& element, const auto& patchTrimData)
   for (const auto& pt : resultClosedPaths.front()) {
     if (auto [isHost, idx] = isCornerVertex(pt, eleRect); isHost)
       result.addOriginalVertex(idx);
-    //      result.addOriginalVertex(idx, pt.z > 4 ? std::optional<size_t>(pt.z) : std::nullopt);
-
+    // result.addOriginalVertex(idx, pt.z > 4 ? std::optional<size_t>(pt.z) : std::nullopt);
   }
 
   // Now we have to check for points inside the elements
