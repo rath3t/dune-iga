@@ -3,6 +3,8 @@
 
 #define DUNE_CHECK_BOUNDS
 
+#define GRID_TEST_ACTIVE
+
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif

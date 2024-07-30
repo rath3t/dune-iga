@@ -84,22 +84,22 @@ struct ElementTrimDataImpl
     vertices_.emplace_back(true, idx == 3 ? 0 : idx + 1, std::nullopt);
   }
 
-  void addEdgeHostNew(int idx, EdgePatchGeometry& geometry,  const Vertex& v2) {
+  void addEdgeHostNew(int idx, EdgePatchGeometry& geometry, const Vertex& v2) {
     edges_.emplace_back(EdgeInfo{.isHost    = true,
                                  .isTrimmed = true,
                                  .idx       = idx,
                                  .geometry  = transform(geometry),
                                  .direction = TrimmedHostEdgeDirection::HostNew});
-    vertices_.emplace_back(false, newVertexCounter_++, v2);
+    vertices_.emplace_back(false, newVertexCounter_++, nudgedVertex(v2, idx));
   }
 
-  void addEdgeNewNew(EdgePatchGeometry& geometry, const Vertex& v2) {
+  void addEdgeNewNew(EdgePatchGeometry& geometry, const Vertex& v2, int originalEdgeIndex) {
     edges_.emplace_back(EdgeInfo{.isHost    = false,
                                  .isTrimmed = true,
                                  .idx       = newEdgeCounter_++,
                                  .geometry  = transform(geometry),
                                  .direction = TrimmedHostEdgeDirection::NewNew});
-    vertices_.emplace_back(false, newVertexCounter_++, v2);
+    vertices_.emplace_back(false, newVertexCounter_++, nudgedVertex(v2, originalEdgeIndex));
   }
 
   void addEdgeNewHost(int idx, EdgePatchGeometry& geometry, int v2Idx) {
@@ -116,7 +116,7 @@ struct ElementTrimDataImpl
                                  .idx       = idx,
                                  .geometry  = transform(geometry),
                                  .direction = TrimmedHostEdgeDirection::NewNew});
-    vertices_.emplace_back(false, newVertexCounter_++, v2);
+    vertices_.emplace_back(false, newVertexCounter_++, nudgedVertex(v2, idx));
   }
 
   void addBoundarySegmentIdxToLastEdge(size_t boundarySegmentIdx) {
@@ -262,6 +262,26 @@ private:
       {3, 2},
       {2, 0}
   };
+
+#ifdef GRID_TEST_ACTIVE
+  static constexpr double nudgeFactor{1e-9};
+  static constexpr std::array<Vertex, 4> nudgeVec{
+      Vertex{         0.0,  nudgeFactor},
+      Vertex{-nudgeFactor,          0.0},
+      Vertex{         0.0, -nudgeFactor},
+      Vertex{ nudgeFactor,          0.0}
+  };
+  // We are nudging the vertex slightly inward so that findSpan is guaranteed to succeed
+  auto nudgedVertex(const Vertex& v, int edgeIdx) {
+    if (edgeIdx == -1)
+      return v;
+    return v + nudgeVec[edgeIdx];
+  }
+#else
+  auto nudgedVertex(const Vertex& v, int edgeIdx) {
+    return v;
+  }
+#endif
 
 public:
   auto& finalize() {

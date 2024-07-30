@@ -4,7 +4,6 @@
 #pragma once
 #include <algorithm>
 #include <concepts>
-#include <numeric>
 #include <ranges>
 
 #include <dune/common/dynmatrix.hh>
@@ -28,28 +27,8 @@ auto findSpan(const int p, typename std::remove_cvref_t<Range>::value_type u, Ra
     return static_cast<long int>(p);
   if (u >= U.back())
     return static_cast<long int>(U.size() - p - 2); // if the coordinate is to big we return to the last non-end span
-  // auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
-  // return static_cast<long int>(std::distance(U.begin(), it) - 1);
-
-  // Perform binary search to find the span
-  const long int n = U.size() - p - 1;
-  long int low     = p;
-  long int high    = n + 1;
-  long int mid     = (low + high) / 2;
-
-  while (u < U[mid] || u >= U[mid + 1]) {
-    if (u < U[mid]) {
-      high = mid;
-    } else if (std::abs(u - U[mid]) < 1e-6) {
-      // Adjust to use the lower span if u is within the tolerance of U[mid]
-      return mid - 1;
-    } else {
-      low = mid;
-    }
-    mid = (low + high) / 2;
-  }
-
-  return mid;
+  auto it = std::upper_bound(U.begin() + p - 1 + offset, U.end(), u);
+  return static_cast<long int>(std::distance(U.begin(), it) - 1);
 }
 
 /** @brief Same as findSpan but for dim  knotvectors @see findSpan */

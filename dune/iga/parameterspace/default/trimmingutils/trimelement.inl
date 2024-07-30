@@ -41,7 +41,7 @@ void LoopHandler<ParameterSpace>::processNonConsecutiveHosts(const Vertex& vV1, 
   auto [tParam2, curvePoint2] = findIntersection(vV2, pt2);
   auto elementTrimmingCurve =
       Util::createTrimmingCurveSlice(patchTrimData_.getCurve(currentCurveIdx_), currentT_, tParam2);
-  elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint2);
+  elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint2, -1);
   addNewBoundarySegementIdx(currentCurveIdx_, currentT_, tParam2);
 }
 
@@ -72,7 +72,7 @@ void LoopHandler<ParameterSpace>::processHostToNew(const Vertex& vV1, const Vert
 
     auto elementTrimmingCurve =
         Util::createTrimmingCurveSlice(patchTrimData_.getCurve(currentCurveIdx_), currentT_, tParam);
-    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, vV2.edgeId());
     addNewBoundarySegementIdx(currentCurveIdx_, currentT_, tParam);
 
     foundVertices_.push_back(curvePoint);
@@ -124,7 +124,7 @@ void LoopHandler<ParameterSpace>::processNewToNew(const Vertex& vV1, const Verte
     if (currentCurveIdx_.loop > 0 && patchTrimData_.loops()[currentCurveIdx_.loop].size() == 1) {
       if (auto curve = patchTrimData_.getCurve(currentCurveIdx_); curve.isConnectedAtBoundary(0)) {
         auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT_, curve.domain()[0].back());
-        elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+        elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, vV2.edgeId());
         addNewBoundarySegementIdx(currentCurveIdx_, currentT_, curve.domain()[0].back());
 
         success = true;
@@ -143,7 +143,7 @@ void LoopHandler<ParameterSpace>::processNewToNew(const Vertex& vV1, const Verte
   } else {
     auto elementTrimmingCurve =
         Util::createTrimmingCurveSlice(patchTrimData_.getCurve(currentCurveIdx_), currentT_, tParam);
-    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, vV2.edgeId());
     addNewBoundarySegementIdx(currentCurveIdx_, currentT_, tParam);
   }
 
@@ -162,7 +162,7 @@ void LoopHandler<ParameterSpace>::processNewToHost(const Vertex& vV1, const Vert
 
     auto elementTrimmingCurve =
         Util::createTrimmingCurveSlice(patchTrimData_.getCurve(currentCurveIdx_), currentT_, tParam);
-    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, -1);
     addNewBoundarySegementIdx(currentCurveIdx_, currentT_, tParam);
 
   } else {
@@ -207,7 +207,7 @@ bool LoopHandler<ParameterSpace>::processAdditionalCases(const Vertex& vV1, cons
     double tParam             = curve.domain().front().back();
     auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT_, tParam);
     auto curvePoint           = curve.corner(1);
-    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, vV1.edgeId());
     addNewBoundarySegementIdx(
         CurveIndex{.loop = static_cast<int>(vV2.loop()), .curve = static_cast<int>(vV2.formerCurve())}, currentT_,
         tParam);
@@ -219,7 +219,7 @@ bool LoopHandler<ParameterSpace>::processAdditionalCases(const Vertex& vV1, cons
     assertPoint(pt2, curvePoint);
 
     auto elementTrimmingCurve = Util::createTrimmingCurveSlice(curve, currentT_, tParam);
-    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint);
+    elementTrimData_.addEdgeNewNew(elementTrimmingCurve, curvePoint, vV2.edgeId());
     addNewBoundarySegementIdx(
         CurveIndex{.loop = static_cast<int>(vV1.loop()), .curve = static_cast<int>(vV1.subsequentCurve())}, currentT_,
         tParam);
