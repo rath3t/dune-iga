@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
-name: Debian
+name: Debian Using henrij22/dunebase
 on:
   push:
     paths-ignore:
@@ -19,7 +19,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
     container:
-      image: ikarusproject/dunebase-gcc:latest
+      image: henrij22/dunebase-gcc:latest
       options: --memory-swap="20g" --memory="20g" --cpus="2"
     strategy:
       fail-fast: false
