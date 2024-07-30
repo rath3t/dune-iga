@@ -1,16 +1,14 @@
 import os
-import logging
 
-os.environ["DUNE_LOG_LEVEL"] = "warning"
-os.environ["DUNE_SAVE_BUILD"] = "console"
 import dune.iga
 from dune.iga import IGAGrid, IGAGridType, ControlPointNet, ControlPoint, NurbsPatchData
 from dune.iga import reader as readeriga
 
 if __name__ == "__main__":
-
+    filedir = os.path.dirname(__file__)
+    filename = os.path.join(filedir, f"auxiliaryfiles/element_trim.ibra")
     inputParameter = dict(
-        file_path="../../iga/test/auxiliaryfiles/element_trim.ibra",
+        file_path=filename,
         reader=readeriga.json,
         pre_knot_refine=(1, 1),
     )
@@ -33,4 +31,3 @@ if __name__ == "__main__":
     assert gridView_trimmed.size(2) == 10
 
     gridView_trimmed.hierarchicalGrid.globalRefine(1)
-

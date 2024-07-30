@@ -1,10 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
-# The top part of this code is taken from https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/dune/python/test/poisson.py
-# Thus, see also their license https://gitlab.dune-project.org/staging/dune-functions/-/blob/master/COPYING
-import setpath
 
-setpath.set_path()
+
 import numpy as np
 import math
 from scipy.sparse import lil_matrix
@@ -13,14 +10,11 @@ import dune.geometry
 import dune.grid
 from dune.iga import reader as readeriga
 from dune.iga.basis import defaultGlobalBasis, Power, Lagrange, Nurbs
-from dune.iga import IGAGrid, boundaryPatch
+from dune.iga import IGAGrid, boundaryPatch, IGAGridType
 from dune.grid import gridFunction
 from dune.common import FieldVector
 import os
 
-os.environ["ALUGRID_VERBOSITY_LEVEL"] = "0"
-os.environ['DUNE_LOG_LEVEL'] = 'debug'
-os.environ['DUNE_SAVE_BUILD'] = 'console'
 
 # f(x) = 1
 f = lambda x: 1
@@ -106,7 +100,7 @@ def globalAssembler(basis):
         localView.bind(element)
 
         # set of all shape functions with support in this element
-        localBasis = localView.tree().finiteElement.localBasis
+        localBasis = localView.tree().finiteElement().localBasis
 
         localN = len(localBasis)
 
@@ -132,9 +126,12 @@ def globalAssembler(basis):
 ############################### START ########################################
 
 # create a trimmed grid from file
-reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element_trim_xb.ibra")
+filedir = os.path.dirname(__file__)
+filename = os.path.join(filedir, f"auxiliaryfiles/element_trim_xb.ibra")
 
-gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
+reader = (readeriga.json, filename)
+
+gridView = IGAGrid(reader, dimgrid=2, dimworld=2, gridType=IGAGridType.Default)
 gridView.hierarchicalGrid.globalRefine(2)
 
 neumannVertices = np.zeros(gridView.size(2), dtype=bool)

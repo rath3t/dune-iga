@@ -3,22 +3,32 @@
 
 dune_python_add_test(
   NAME
-  pytest1
+  testidentitygrid
   SCRIPT
-  readgrid.py
+  testidentitygrid.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS
   python
 )
-# dune_python_add_test( NAME pytest2 SCRIPT poisson.py WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-# LABELS python )
+
 
 dune_python_add_test(
   NAME
-  testigagrid
+  testtrimmedgrid
   SCRIPT
-  testigagrid.py
+  testtrimmedgrid.py
+  WORKING_DIRECTORY
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  LABELS
+  python
+)
+
+dune_python_add_test(
+  NAME
+  poissontest
+  SCRIPT
+  poissontest.py
   WORKING_DIRECTORY
   ${CMAKE_CURRENT_SOURCE_DIR}
   LABELS

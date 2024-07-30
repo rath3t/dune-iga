@@ -44,6 +44,16 @@ struct DGFGridInfo<IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>>
 
 namespace Dune::Python {
 
+template <int dim, int dimworld, template <int, int, typename> typename GridFamily_, typename ScalarType, typename In>
+inline static std::shared_ptr<Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>> readDGF(In& input) {
+  using Grid = Dune::IGA::PatchGrid<dim, dimworld, GridFamily_, ScalarType>;
+
+  DGFGridFactory<Grid> dgfFactory(input);
+  std::shared_ptr<Grid> grid(dgfFactory.grid());
+  grid->loadBalance();
+  return grid;
+}
+
 #ifndef DOXYGEN
 // we have to ahead of
 // https://gitlab.dune-project.org/core/dune-grid/-/blob/releases/2.9/dune/python/grid/hierarchical.hh?ref_type=heads#L233

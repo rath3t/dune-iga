@@ -1,15 +1,8 @@
 # SPDX-FileCopyrightText: 2022-2024 The dune-iga developers mueller@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
-import sys
 import math
 
-
-import os, logging
-
-# enable DUNE_SAVE_BUILD to test various output options
-os.environ["DUNE_LOG_LEVEL"] = "warning"
-os.environ["DUNE_SAVE_BUILD"] = "console"
-
+import os
 
 from dune.iga import (
     IGAGrid,
@@ -19,7 +12,6 @@ from dune.iga import (
     makeCircularArc,
     makeSurfaceOfRevolution,
 )
-from dune.grid import structuredGrid
 
 from dune.iga import reader as readeriga
 from dune.iga.basis import defaultGlobalBasis, Power, Lagrange, Nurbs
@@ -34,7 +26,11 @@ if __name__ == "__main__":
     net = ControlPointNet(netC)
     nurbsPatchData = NurbsPatchData(((0, 0, 1, 1)), net, (1))
     gridView = IGAGrid(nurbsPatchData)
-    reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element_trim.ibra")
+
+    filedir = os.path.dirname(__file__)
+    filename = os.path.join(filedir, "auxiliaryfiles/element.ibra")
+    reader = (readeriga.json, filename)
+
     refinements = 5
     gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
     gridView.hierarchicalGrid.globalRefine(refinements)
@@ -113,7 +109,7 @@ if __name__ == "__main__":
     except ValueError:
         pass
 
-    reader = (readeriga.json, "../../iga/test/auxiliaryfiles/element.ibra")
+    reader = (readeriga.json, filename)
     gridView = IGAGrid(reader, dimgrid=2, dimworld=2)
 
     assert gridView.size(0) == 1
@@ -137,7 +133,7 @@ if __name__ == "__main__":
 
     # read and refine
     inputParameter = dict(
-        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        file_path=filename,
         reader=readeriga.json,
         degree_elevate=(1, 1),
     )
@@ -153,7 +149,7 @@ if __name__ == "__main__":
     assert patchD.degree[1] == 2
 
     inputParameter = dict(
-        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        file_path=filename,
         reader=readeriga.json,
         pre_knot_refine=(1, 1),
     )
@@ -163,7 +159,7 @@ if __name__ == "__main__":
     assert gridView3.size(2) == 9
 
     inputParameter = dict(
-        file_path="../../iga/test/auxiliaryfiles/element.ibra",
+        file_path=filename,
         reader=readeriga.json,
     )
     gridView4 = IGAGrid(inputParameter, dimgrid=2, dimworld=2)
