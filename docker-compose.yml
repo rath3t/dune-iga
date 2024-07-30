@@ -4,7 +4,7 @@
 version: "3.3"
 services:
   OpenIkarusContainer-clang:
-    image: henrij22/dunebase-clang-iwyu:latest
+    image: ikarusproject/ikarus-dev-gcc:latest
     entrypoint: /bin/bash
     tty: true
     user: root

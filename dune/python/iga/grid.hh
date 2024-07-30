@@ -80,6 +80,7 @@ struct IsSpecializationTwoNonTypesTemplateAndType<Type, Type<T, T2, GF, S>> : st
 
 } // namespace Dune::Python
 #endif
+
 namespace Dune::Python::IGA {
 template <class Grid>
 requires(IsSpecializationTwoNonTypesTemplateAndType<Dune::IGA::PatchGrid, Grid>::value)
@@ -126,6 +127,9 @@ requires(IsSpecializationTwoNonTypesTemplateAndType<Dune::IGA::PatchGrid, Grid>:
 void registerHierarchicalGrid(pybind11::module module, pybind11::class_<Grid, options...> cls) {
   using pybind11::operator""_a;
 
+  pybind11::module::import("dune.geometry");
+  pybind11::module::import("dune.grid");
+
   static constexpr std::integral auto dimension      = Grid::dimension;
   static constexpr std::integral auto dimensionworld = Grid::dimensionworld;
   using ctype                                        = typename Grid::ctype;
@@ -133,9 +137,12 @@ void registerHierarchicalGrid(pybind11::module module, pybind11::class_<Grid, op
   if constexpr (dimension == 2)
     module.def("reader", [](const pybind11::dict& args_) { return Dune::Python::IGA::reader<Grid>(args_); });
 
-  Dune::Python::registerHierarchicalGrid(module, cls);
+  // Dune::Python::registerHierarchicalGrid(module, cls);
+  registerHierarchicalGridIdSets(cls);
+  registerHierarchicalGridPicklingSupport(cls);
 
-  using LeafGridView = typename Grid::LeafGridView;
+  using LeafGridView  = typename Grid::LeafGridView;
+  using LevelGridView = typename Grid::LevelGridView;
 
   auto clsLeafView = insertClass<LeafGridView>(module, "LeafGrid", GenerateTypeName(cls, "LeafGridView"));
   if (clsLeafView.second)
@@ -194,5 +201,30 @@ void registerHierarchicalGrid(pybind11::module module, pybind11::class_<Grid, op
         self.degreeElevateOnAllLevels(elevationFactors);
       },
       pybind11::arg("elevationFactors"));
+
+  // The folllowing is copied from /dune/dune-grid/dune/python/grid/hierarchical.hh
+  cls.def_property_readonly(
+      "leafView",
+      pybind11::cpp_function([](const Grid& self) { return self.leafGridView(); }, pybind11::keep_alive<0, 1>()),
+      R"doc(
+          Obtain leaf view of the grid
+          Returns:  leaf grid view
+        )doc");
+  cls.def(
+      "_levelView", [](const Grid& self, int level) { return self.levelGridView(level); }, pybind11::keep_alive<0, 1>(),
+      "level"_a,
+      R"doc(
+          Obtain level view of the grid
+          Args:
+              level:    level to obtain view for
+          Returns:  level grid view
+        )doc");
+
+  cls.def_property_readonly("maxLevel", [](const Grid& self) -> int { return self.maxLevel(); });
+  cls.def_property_readonly_static("dimension", [](pybind11::object) { return int(Grid::dimension); });
+  cls.def_property_readonly_static("dimensionworld", [](pybind11::object) { return int(Grid::dimensionworld); });
+
+  auto addHAttr = pybind11::module::import("dune.grid.grid_generator").attr("addHAttr");
+  addHAttr(module);
 }
 } // namespace Dune::Python::IGA
