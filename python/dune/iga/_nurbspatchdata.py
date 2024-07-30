@@ -25,16 +25,16 @@ def ControlPointNet(controlPoints):
     generator = MySimpleGenerator("MultiDimensionalNet", "Dune::Python")
 
     try:
-        controlPointType= controlPoints[0][0][0].cppTypeName
-        netDim=3
+        controlPointType = controlPoints[0][0][0].cppTypeName
+        netDim = 3
     except:
         try:
-            controlPointType= controlPoints[0][0].cppTypeName
-            netDim=2
+            controlPointType = controlPoints[0][0].cppTypeName
+            netDim = 2
         except:
             try:
-                controlPointType= controlPoints[0].cppTypeName
-                netDim=1
+                controlPointType = controlPoints[0].cppTypeName
+                netDim = 1
             except:
                 raise Exception("Controlpoint type not deducable from list")
     element_type = f"Dune::IGA::MultiDimensionalNet<{netDim},{controlPointType}>"
@@ -52,7 +52,7 @@ def ControlPointNet(controlPoints):
 def NurbsPatchData(knotSpans, controlPointNet, degree):
     generator = MySimpleGenerator("NurbsPatchData", "Dune::Python")
 
-    worldDim = len(controlPointNet.directGet( 0).coords)
+    worldDim = len(controlPointNet.directGet(0).coords)
     dim = controlPointNet.netDim
     element_type = f"Dune::IGA::NURBSPatchData<{dim},{worldDim},double>"
 
@@ -63,11 +63,15 @@ def NurbsPatchData(knotSpans, controlPointNet, degree):
         includes=includes, typeName=element_type, moduleName=moduleName
     )
 
-    if isinstance(knotSpans,tuple):
-        if isinstance(knotSpans[0],float) or  isinstance(knotSpans[0], int):
-            knotSpans= list([list(knotSpans),])
-    if isinstance(degree,int):
-        degree=(degree,)
+    if isinstance(knotSpans, tuple):
+        if isinstance(knotSpans[0], float) or isinstance(knotSpans[0], int):
+            knotSpans = list(
+                [
+                    list(knotSpans),
+                ]
+            )
+    if isinstance(degree, int):
+        degree = (degree,)
     return module.NurbsPatchData(knotSpans, controlPointNet, degree)
 
 

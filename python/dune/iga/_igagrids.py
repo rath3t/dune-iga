@@ -5,13 +5,15 @@ from .generator import MySimpleGenerator
 
 from enum import Enum
 
-IGAGridType = Enum('IGAGridType', ['Identity', 'Default'])
+IGAGridType = Enum("IGAGridType", ["Identity", "Default"])
 
 """@package dune-iga
 Documentation for this module.
 
 More details.
 """
+
+
 def IGAGrid(constructor, dimgrid=None, dimworld=None, gridType=IGAGridType.Identity):
     """
     Create an IGAGrid instance.
@@ -41,10 +43,20 @@ def IGAGrid(constructor, dimgrid=None, dimworld=None, gridType=IGAGridType.Ident
             "If you don't pass the patch data you have to pass dimgrid and dimworld"
         )
 
-    trimmerType = "Dune::IGA::IdentityParameterSpace::PatchGridFamily" if gridType == IGAGridType.Identity else "Dune::IGA::DefaultParameterSpace::PatchGridFamily"
+    trimmerType = (
+        "Dune::IGA::IdentityParameterSpace::PatchGridFamily"
+        if gridType == IGAGridType.Identity
+        else "Dune::IGA::DefaultParameterSpace::PatchGridFamily"
+    )
 
     typeName = (
-        "Dune::IGA::PatchGrid< " + str(dimgrid) + ", " + str(dimworld) + ", " + trimmerType + ", double>"
+        "Dune::IGA::PatchGrid< "
+        + str(dimgrid)
+        + ", "
+        + str(dimworld)
+        + ", "
+        + trimmerType
+        + ", double>"
     )
 
     includes = ["dune/python/iga/grid.hh"]

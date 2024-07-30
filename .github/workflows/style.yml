@@ -32,7 +32,7 @@ jobs:
           pip install clang-format==18.1.8
           clang-format --version
           pip install cmake_format==0.6.13 pyyaml
-          pip install black==23.3.0
+          pip install black==24.4.2
 
       - name: configure
         run: cmake -S "cmake/FormatTarget" -Bbuild -DADD_FORMATTARGET=TRUE
