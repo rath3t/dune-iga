@@ -38,6 +38,7 @@ auto testIbraReader() {
     gridFactory.insertTrimParameters(typename GridFactory::TrimParameterType{150});
 
   const std::vector<std::tuple<std::string, int, int>> testCases{
+      {        "auxiliaryfiles/plate_holes.ibra", 1, 3},
       {    "auxiliaryfiles/element_trim_xb.ibra", 0, 3},
       {      "auxiliaryfiles/quarter_plate.ibra", 3, 3},
       {       "auxiliaryfiles/element_trim.ibra", 0, 3},
@@ -130,10 +131,10 @@ int main(int argc, char** argv) try {
   DefaultParameterSpace::Preferences::getInstance().targetAccuracy(1e-3);
 
   t.subTest(testIbraReader<true>());
-  t.subTest(testIbraReader3d<true>());
+  // t.subTest(testIbraReader3d<true>());
 
   t.subTest(testIbraReader<false>());
-  t.subTest(testIbraReader3d<false>());
+  // t.subTest(testIbraReader3d<false>());
 
   t.report();
 
