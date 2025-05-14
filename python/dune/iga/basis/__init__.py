@@ -21,7 +21,7 @@ duneFunctionsLayouts = {"lexicographic": "Lexicographic", "interleaved": "Interl
 
 def indexMergingStrategy(blocked, layout):
     return (
-        "Dune::Functions::BasisBuilder::"
+        "Dune::Functions::BasisFactory::"
         + ("Blocked" if blocked else "Flat")
         + duneFunctionsLayouts[layout]
     )
