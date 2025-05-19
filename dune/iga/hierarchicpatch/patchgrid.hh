@@ -353,7 +353,7 @@ public:
    */
   void degreeElevate(const std::array<int, dim>& elevationFactors, int lvl) {
     if (lvl > maxLevel() and lvl >= 0)
-      DUNE_THROW(Dune : RangeError, "This level does not exist");
+      DUNE_THROW(Dune::RangeError, "This level does not exist");
     auto& patchData                = patchGeometries_[lvl].patchData();
     patchGeometriesUnElevated[lvl] = GeometryKernel::NURBSPatch<dim, dimworld, ctype>(patchData);
     for (int dir = 0; auto elevatesInDirection : elevationFactors) {
